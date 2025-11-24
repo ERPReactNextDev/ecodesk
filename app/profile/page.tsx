@@ -58,7 +58,6 @@ export default function NavProfilePage() {
     const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
         useState<DateRange | undefined>(undefined);
 
-
     useEffect(() => {
         if (!userId) {
             setError("User ID missing in URL");

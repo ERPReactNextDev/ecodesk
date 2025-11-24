@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { type DateRange } from "react-day-picker";
 
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -42,6 +43,8 @@ function SettingsContent() {
 
   // Get userId from URL query param and sync to context
   const queryUserId = searchParams?.get("id") ?? "";
+  const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
+          useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
     if (queryUserId && queryUserId !== userId) {
@@ -167,7 +170,11 @@ function SettingsContent() {
           </div>
         </div>
       </SidebarInset>
-      <SidebarRight userId={userId ?? undefined} />
+      <SidebarRight
+        userId={userId ?? undefined}
+        dateCreatedFilterRange={dateCreatedFilterRange}
+        setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+      />
     </>
   );
 }
