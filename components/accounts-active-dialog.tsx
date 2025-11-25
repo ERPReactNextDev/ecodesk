@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
+import { Select, SelectTrigger, SelectContent, SelectItem, } from "@/components/ui/select";
+import { Label } from "@/components/ui/label"
 import { toast } from "sonner";
 
-// Levenshtein Distance (for fuzzy matching)
+// Levenshtein Distance for fuzzy matching duplicates
 function levenshtein(a: string, b: string) {
   const matrix: number[][] = [];
   for (let i = 0; i <= b.length; i++) matrix[i] = [i];
@@ -19,37 +20,29 @@ function levenshtein(a: string, b: string) {
         b[i - 1] === a[j - 1]
           ? matrix[i - 1][j - 1]
           : Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
+            );
     }
   }
 
   return matrix[b.length][a.length];
 }
 
-// Clean and Normalize Company Name
+// Clean & normalize company name for checks
 function cleanCompanyName(name: string) {
   if (!name) return "";
   let n = name.toUpperCase();
-  // Remove special characters: - _ .
-  n = n.replace(/[-_.]/g, "");
-  // Normalize spaces and trim
+  n = n.replace(/[-_.]/g, ""); // remove special chars
   n = n.replace(/\s+/g, " ").trim();
-  // Remove trailing numbers like 1, 2, 001 etc.
-  n = n.replace(/\d+$/g, "");
-  // Final trim after removal
-  n = n.trim();
-  return n;
+  n = n.replace(/\d+$/g, ""); // trailing digits removal
+  return n.trim();
 }
 
-// List of disallowed abbreviations (case insensitive)
-const disallowedAbbreviations = ["INC", "CORP", "LTD", "CO", "LLC",
-  // add more as needed
-];
+// Disallowed abbreviations
+const disallowedAbbreviations = ["INC", "CORP", "LTD", "CO", "LLC"];
 
-// Check if company name contains disallowed abbreviation as a separate word
 function containsDisallowedAbbreviation(name: string) {
   const words = name.toUpperCase().split(/\s+/);
   return words.some((word) => disallowedAbbreviations.includes(word));
@@ -103,9 +96,7 @@ const INDUSTRY_OPTIONS = [
   "OTHER",
 ];
 
-const TYPECLIENT_OPTIONS = [
-  "TSA CLIENT",
-];
+const TYPECLIENT_OPTIONS = ["TSA CLIENT"];
 
 const AREA_OPTIONS = [
   "Region I - Ilocos Region",
@@ -126,6 +117,19 @@ const AREA_OPTIONS = [
   "Region XIII - Caraga",
   "MIMAROPA Region",
 ];
+
+// Simple email validation helper
+function isValidEmail(email: string): boolean {
+  if (!email) return false;
+
+  const lower = email.trim().toLowerCase();
+
+  if (["none", "n/a", "na"].includes(lower)) return false;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+
+  return emailRegex.test(email);
+}
 
 interface AccountFormData {
   id?: string;
@@ -194,6 +198,7 @@ export function AccountDialog({
     Array<{ company_name: string; owner_referenceid: string }>
   >([]);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+
   const submitLock = useRef(false);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -225,12 +230,13 @@ export function AccountDialog({
       }
 
       if (cleaned.startsWith("#")) {
-        setCompanyError("Company names starting with # require supporting documents.");
+        setCompanyError(
+          "Company names starting with # require supporting documents."
+        );
         setDuplicateInfo([]);
         return;
       }
 
-      // New check for disallowed abbreviations
       if (containsDisallowedAbbreviation(cleaned)) {
         setCompanyError(
           "Company name cannot contain abbreviations like INC, CORP, LTD, etc. Please use full words."
@@ -244,7 +250,12 @@ export function AccountDialog({
       const controller = new AbortController();
       const signal = controller.signal;
 
-      fetch(`/api/com-check-duplicate-account?company_name=${encodeURIComponent(cleaned)}`, { signal })
+      fetch(
+        `/api/com-check-duplicate-account?company_name=${encodeURIComponent(
+          cleaned
+        )}`,
+        { signal }
+      )
         .then(async (res) => {
           if (!res.ok) throw new Error("Failed to check duplicates");
           const data: DuplicateCheckResponse = await res.json();
@@ -291,7 +302,7 @@ export function AccountDialog({
         .finally(() => setIsCheckingDuplicate(false));
 
       return () => controller.abort();
-    }, 500); // debounce delay 500ms
+    }, 500);
 
     return () => {
       if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
@@ -306,6 +317,15 @@ export function AccountDialog({
       toast.error(companyError);
       submitLock.current = false;
       return;
+    }
+
+    // Validate email formats before submit
+    for (const em of formData.email_address) {
+      if (em.trim() && !isValidEmail(em)) {
+        toast.error(`Invalid email address: ${em}`);
+        submitLock.current = false;
+        return;
+      }
     }
 
     const cleanData = {
@@ -341,9 +361,10 @@ export function AccountDialog({
         className="w-full max-w-[1280px] max-h-[85vh] overflow-y-auto"
         style={{ width: "40vw", maxWidth: "1600px", minWidth: "600px" }}
       >
-
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Create New Account" : "Edit Account"}</DialogTitle>
+          <DialogTitle>
+            {mode === "create" ? "Create New Account" : "Edit Account"}
+          </DialogTitle>
           <DialogDescription>Fill out the account details below.</DialogDescription>
         </DialogHeader>
 
@@ -359,19 +380,28 @@ export function AccountDialog({
             {mode === "edit" ? (
               <>
                 <p className="uppercase font-semibold">{formData.company_name}</p>
-                <input type="hidden" value={formData.company_name} />
+                <input type="hidden" value={formData.company_name} readOnly />
               </>
             ) : (
               <Input
                 required
                 value={formData.company_name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, company_name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    company_name: e.target.value,
+                  }))
+                }
                 placeholder="Company Name"
                 className="uppercase"
               />
             )}
-            {companyError && <p className="text-red-500 text-sm mt-1">{companyError}</p>}
-            {isCheckingDuplicate && <p className="text-gray-500 text-xs">Checking duplicates...</p>}
+            {companyError && (
+              <p className="text-red-500 text-sm mt-1">{companyError}</p>
+            )}
+            {isCheckingDuplicate && (
+              <p className="text-gray-500 text-xs">Checking duplicates...</p>
+            )}
 
             {duplicateInfo.length > 0 && (
               <div className="mt-2 text-sm">
@@ -389,7 +419,7 @@ export function AccountDialog({
 
           {/* Contact Person(s) */}
           <div>
-            <label className="font-semibold mb-2 block">Contact Person(s)</label>
+            <Label className="mb-2">Contact Person(s)</Label>
             {formData.contact_person.map((cp, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <Input
@@ -425,7 +455,12 @@ export function AccountDialog({
             ))}
             <Button
               type="button"
-              onClick={() => setFormData((prev) => ({ ...prev, contact_person: [...prev.contact_person, ""] }))}
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  contact_person: [...prev.contact_person, ""],
+                }))
+              }
             >
               Add Contact Person
             </Button>
@@ -433,11 +468,10 @@ export function AccountDialog({
 
           {/* Contact Number(s) */}
           <div>
-            <label className="font-semibold mb-2 block">Contact Number(s)</label>
+            <Label className="mb-2">Contact Number(s)</Label>
             {formData.contact_number.map((cn, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <Input
-                  required
                   value={cn}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -469,7 +503,12 @@ export function AccountDialog({
             ))}
             <Button
               type="button"
-              onClick={() => setFormData((prev) => ({ ...prev, contact_number: [...prev.contact_number, ""] }))}
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  contact_number: [...prev.contact_number, ""],
+                }))
+              }
             >
               Add Contact Number
             </Button>
@@ -477,44 +516,56 @@ export function AccountDialog({
 
           {/* Email Address(es) */}
           <div>
-            <label className="font-semibold mb-2 block">Email Address(es)</label>
-            {formData.email_address.map((em, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <Input
-                  required
-                  type="email"
-                  value={em}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFormData((prev) => {
-                      const copy = [...prev.email_address];
-                      copy[i] = val;
-                      return { ...prev, email_address: copy };
-                    });
-                  }}
-                  placeholder="Email Address"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => {
-                    if (formData.email_address.length > 1) {
+            <Label className="mb-2">Email Address(es)</Label>
+            {formData.email_address.map((em, i) => {
+              const emailError = em && !isValidEmail(em) ? "Invalid email format or domain" : "";
+
+              return (
+                <div key={i} className="flex gap-2 mb-2">
+                  <Input
+                    type="email"
+                    value={em}
+                    onChange={(e) => {
+                      const val = e.target.value;
                       setFormData((prev) => {
                         const copy = [...prev.email_address];
-                        copy.splice(i, 1);
+                        copy[i] = val;
                         return { ...prev, email_address: copy };
                       });
-                    }
-                  }}
-                  disabled={formData.email_address.length === 1}
-                >
-                  Remove
-                </Button>
-              </div>
-            ))}
+                    }}
+                    placeholder="Email Address"
+                    className={emailError ? "border-red-500" : ""}
+                  />
+                  {emailError && (
+                    <p className="text-red-500 text-sm">{emailError}</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      if (formData.email_address.length > 1) {
+                        setFormData((prev) => {
+                          const copy = [...prev.email_address];
+                          copy.splice(i, 1);
+                          return { ...prev, email_address: copy };
+                        });
+                      }
+                    }}
+                    disabled={formData.email_address.length === 1}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              );
+            })}
             <Button
               type="button"
-              onClick={() => setFormData((prev) => ({ ...prev, email_address: [...prev.email_address, ""] }))}
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  email_address: [...prev.email_address, ""],
+                }))
+              }
             >
               Add Email Address
             </Button>
@@ -522,34 +573,45 @@ export function AccountDialog({
 
           {/* Address */}
           <div>
+            <Label className="mb-2">Address</Label>
             <Input
               required
               name="address"
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, address: e.target.value }))
+              }
               placeholder="Address"
+              className="uppercase"
             />
           </div>
 
           {/* Delivery Address */}
           <div>
+            <Label className="mb-2">Delivery Address</Label>
             <Input
               required
               name="delivery_address"
               value={formData.delivery_address}
-              onChange={(e) => setFormData({ ...formData, delivery_address: e.target.value })}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, delivery_address: e.target.value }))
+              }
               placeholder="Delivery Address"
+              className="uppercase"
             />
           </div>
 
           {/* Region */}
           <div>
+            <Label className="mb-2">Region</Label>
             <Select
-              value={formData.type_client}
-              onValueChange={(value) => setFormData({ ...formData, type_client: value })}
+              value={formData.region}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, region: value }))
+              }
             >
               <SelectTrigger className="w-full">
-                <span>{formData.region}</span>
+                <span>{formData.region || "Choose Region"}</span>
               </SelectTrigger>
               <SelectContent>
                 {AREA_OPTIONS.map((region) => (
@@ -563,9 +625,12 @@ export function AccountDialog({
 
           {/* Type Client */}
           <div>
+            <Label className="mb-2">Type of Client</Label>
             <Select
               value={formData.type_client}
-              onValueChange={(value) => setFormData({ ...formData, type_client: value })}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, type_client: value }))
+              }
             >
               <SelectTrigger className="w-full">
                 <span>{formData.type_client}</span>
@@ -582,9 +647,12 @@ export function AccountDialog({
 
           {/* Industry */}
           <div>
+            <Label className="mb-2">Type of Industry</Label>
             <Select
               value={formData.industry}
-              onValueChange={(value) => setFormData({ ...formData, industry: value })}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, industry: value }))
+              }
             >
               <SelectTrigger className="w-full">
                 <span>{formData.industry}</span>
@@ -601,20 +669,26 @@ export function AccountDialog({
 
           {/* Company Group */}
           <div>
+            <Label className="mb-2">Group / Affiliate (Optional)</Label>
             <Input
               required
               name="company_group"
               value={formData.company_group}
-              onChange={(e) => setFormData({ ...formData, company_group: e.target.value })}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, company_group: e.target.value }))
+              }
               placeholder="Group / Affiliate"
             />
           </div>
 
           {/* Status */}
           <div>
+            <Label className="mb-2">Status</Label>
             <Select
               value={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value })}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, status: value }))
+              }
             >
               <SelectTrigger className="w-full">
                 <span>{formData.status}</span>
