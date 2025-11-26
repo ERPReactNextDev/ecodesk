@@ -1,10 +1,10 @@
-import { ChevronRight, MoreHorizontal, Plus } from "lucide-react"
+import { ChevronRight } from "lucide-react";
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -16,21 +16,25 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 export function NavWorkspaces({
   workspaces,
+  openSections,
+  onToggleSection,
 }: {
   workspaces: {
-    name: string
-    emoji: React.ReactNode
-    url?: string // optional, kung gusto mo gawing link din ang workspace title
+    name: string;
+    emoji: React.ReactNode;
+    url?: string;
     pages: {
-      name: string
-      emoji: React.ReactNode
-      url: string
-    }[]
-  }[]
+      name: string;
+      emoji: React.ReactNode;
+      url: string;
+    }[];
+  }[];
+  openSections: Record<string, boolean>;
+  onToggleSection: (section: string) => void;
 }) {
   return (
     <SidebarGroup>
@@ -38,10 +42,13 @@ export function NavWorkspaces({
       <SidebarGroupContent>
         <SidebarMenu>
           {workspaces.map((workspace) => (
-            <Collapsible key={workspace.name}>
+            <Collapsible
+              key={workspace.name}
+              open={!!openSections[workspace.name]}
+              onOpenChange={() => onToggleSection(workspace.name)}
+            >
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  {/* Gamitin ang workspace.url kung meron */}
                   <a href={workspace.url || "#"}>
                     <span>{workspace.emoji}</span>
                     <span>{workspace.name}</span>
@@ -60,7 +67,6 @@ export function NavWorkspaces({
                     {workspace.pages.map((page) => (
                       <SidebarMenuSubItem key={page.name}>
                         <SidebarMenuSubButton asChild>
-                          {/* Gamitin ang tamang url ng page */}
                           <a href={page.url}>
                             <span>{page.emoji}</span>
                             <span>{page.name}</span>
@@ -76,6 +82,5 @@ export function NavWorkspaces({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }
-

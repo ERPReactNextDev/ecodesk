@@ -1,9 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Plus } from "lucide-react";
-
 import { DatePicker } from "@/components/date-picker";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -11,13 +8,13 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";  // <-- import card components
 import { useFormat } from "@/contexts/FormatContext";
 import { type DateRange } from "react-day-picker";
+
+import { Meeting } from "@/components/activity-planner-meeting";
 
 type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
   userId?: string;
@@ -36,6 +33,9 @@ export function SidebarRight({
   const [date, setDate] = React.useState("");
 
   const [userDetails, setUserDetails] = React.useState({
+    ReferenceID: "",
+    TSM: "",
+    Manager: "",
     Firstname: "",
     Lastname: "",
     Position: "",
@@ -82,6 +82,9 @@ export function SidebarRight({
       .then((res) => res.json())
       .then((data) => {
         setUserDetails({
+          ReferenceID: data.ReferenceID || "",
+          TSM: data.TSM || "",
+          Manager: data.Manager || "",
           Firstname: data.Firstname || "",
           Lastname: data.Lastname || "",
           Position: data.Position || "",
@@ -109,7 +112,7 @@ export function SidebarRight({
               position: userDetails.Position,
               avatar: userDetails.profilePicture || "/avatars/shadcn.jpg",
             }}
-            userId={userId} 
+            userId={userId}
           />
         ) : (
           <NavUser
@@ -118,28 +121,31 @@ export function SidebarRight({
               position: userDetails.Position,
               avatar: userDetails.profilePicture || "/avatars/shadcn.jpg",
             }}
-            userId={userId ?? ""} // or pass it here too for consistency
+            userId={userId ?? ""}
           />
         )}
       </SidebarHeader>
-      <SidebarContent>
+
+      <SidebarContent className="custom-scrollbar">
         <DatePicker
           selectedDateRange={dateCreatedFilterRange}
           onDateSelectAction={handleDateRangeSelect}
         />
+
         <SidebarSeparator className="mx-0" />
+
+        <Card className="rounded-xs shadow-none border-0 bg-gray-50">
+          <CardContent>
+            <Meeting
+              referenceid={userDetails.ReferenceID}
+              tsm={userDetails.TSM}
+              manager={userDetails.Manager}
+            />
+          </CardContent>
+        </Card>
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarMenu className="w-full">
-          <SidebarMenuItem>
-            <SidebarMenuButton>
-              <Plus />
-              <span>New Calendar</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-
         <div className="border-t border-sidebar-border mt-2 pt-2 text-center text-xs text-muted-foreground">
           <div>{time}</div>
           <div className="text-[11px]">{date}</div>

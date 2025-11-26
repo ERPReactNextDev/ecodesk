@@ -15,6 +15,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
+
 // Dummy getMenuItems function - replace or import your actual function
 function getMenuItems(userId: string | null) {
   return [
@@ -70,7 +71,7 @@ const data = {
       pages: [
         { name: "Activity Planner", url: "/activity/planner", emoji: "🎯" },
         { name: "Manual Task", url: "#", emoji: "✍️" },
-        { name: "Notes", url: "#", emoji: "📝" },
+        { name: "Notes", url: "/activity/notes", emoji: "📝" },
         { name: "Quotation", url: "#", emoji: "💬" },
         { name: "Client Coverage Guide", url: "#", emoji: "🧭" },
       ],
@@ -118,6 +119,17 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
     ReferenceID: "",
   });
   const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
+  React.useEffect(() => {
+    const saved = localStorage.getItem("sidebarOpenSections");
+    if (saved) {
+      setOpenSections(JSON.parse(saved));
+    }
+  }, []);
+
+  React.useEffect(() => {
+    localStorage.setItem("sidebarOpenSections", JSON.stringify(openSections));
+  }, [openSections]);
+
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -283,7 +295,12 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
 
       <SidebarContent>
         <NavFavorites favorites={data.favorites} />
-        <NavWorkspaces workspaces={workspacesWithId} />
+        <NavWorkspaces
+          workspaces={workspacesWithId}
+          openSections={openSections}
+          onToggleSection={handleToggle}
+        />
+
         <NavSecondary items={navSecondaryWithId} className="mt-auto" />
       </SidebarContent>
 
