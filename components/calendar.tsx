@@ -3,218 +3,337 @@
 import * as React from "react";
 
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import {
+  collection,
+  query,
+  orderBy,
+  Timestamp,
+  onSnapshot,
+} from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 interface EventItem {
-    id: string;
-    date: string; // "YYYY-MM-DD" in local time
-    title: string;
-    description: string;
+  id: string;
+  date: string; // "YYYY-MM-DD"
+  time?: string; // "hh:mm AM/PM" format, optional
+  title: string;
+  description: string;
 }
 
 function getDaysInMonth(year: number, month: number) {
-    return new Date(year, month + 1, 0).getDate();
+  return new Date(year, month + 1, 0).getDate();
 }
 
 function getWeekdayOfFirstDay(year: number, month: number) {
-    return new Date(year, month, 1).getDay();
+  return new Date(year, month, 1).getDay();
 }
 
 function formatDateLocal(date: Date) {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatTime(date: Date) {
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${hours}:${minutes} ${ampm}`;
+}
+
+const hours = Array.from({ length: 24 }, (_, i) => i);
+
+function formatHour(hour24: number) {
+  const ampm = hour24 >= 12 ? "PM" : "AM";
+  let hour12 = hour24 % 12;
+  if (hour12 === 0) hour12 = 12;
+  return `${hour12} ${ampm}`;
+}
+
+function eventsByHour(events: EventItem[]) {
+  const map: Record<number, EventItem[]> = {};
+  for (let i = 0; i < 24; i++) map[i] = [];
+
+  events.forEach((ev) => {
+    if (!ev.time) return;
+    const match = ev.time.match(/^(\d{1,2}):\d{2} (AM|PM)$/);
+    if (!match) return;
+    let hour = parseInt(match[1], 10);
+    const ampm = match[2];
+    if (ampm === "PM" && hour !== 12) hour += 12;
+    if (ampm === "AM" && hour === 12) hour = 0;
+    map[hour].push(ev);
+  });
+
+  return map;
 }
 
 export function SimpleCalendar() {
-    const now = React.useMemo(() => new Date(), []);
-    const [currentYear, setCurrentYear] = React.useState(now.getFullYear());
-    const [currentMonth, setCurrentMonth] = React.useState(now.getMonth()); // 0-indexed
-    const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
-    const [events, setEvents] = React.useState<EventItem[]>([]);
+  const now = React.useMemo(() => new Date(), []);
+  const [currentYear, setCurrentYear] = React.useState(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = React.useState(now.getMonth());
+  // Set default selected date as today
+  const [selectedDate, setSelectedDate] = React.useState<Date | null>(now);
 
-    React.useEffect(() => {
-        async function fetchEvents() {
-            try {
-                const q = query(collection(db, "meetings"), orderBy("start_date"));
-                const snapshot = await getDocs(q);
+  const [events, setEvents] = React.useState<EventItem[]>([]);
 
-                const fetchedEvents = snapshot.docs.map((doc) => {
-                    const data = doc.data();
-                    let dateStr = data.start_date;
-                    if (data.start_date instanceof Timestamp) {
-                        dateStr = formatDateLocal(data.start_date.toDate());
-                    }
-                    return {
-                        id: doc.id,
-                        date: dateStr,
-                        title: data.type_activity || "No title",
-                        description: data.remarks || "",
-                    };
-                });
+  React.useEffect(() => {
+    function processSnapshot(
+      snapshot: any,
+      dateField: string,
+      titleField: string,
+      descriptionField: string
+    ) {
+      const items: EventItem[] = [];
+      snapshot.forEach((doc: any) => {
+        const data = doc.data();
+        let dateStr = "";
+        let timeStr: string | undefined = undefined;
 
-                setEvents(fetchedEvents);
-            } catch (err) {
-                console.error("Failed to fetch events", err);
-            }
+        const dateValue = data[dateField];
+        if (dateValue instanceof Timestamp) {
+          const dateObj = dateValue.toDate();
+          dateStr = formatDateLocal(dateObj);
+          timeStr = formatTime(dateObj);
+        } else if (
+          typeof dateValue === "string" ||
+          typeof dateValue === "number"
+        ) {
+          const dateObj = new Date(dateValue);
+          if (!isNaN(dateObj.getTime())) {
+            dateStr = formatDateLocal(dateObj);
+            timeStr = formatTime(dateObj);
+          }
         }
-        fetchEvents();
-    }, []);
 
-    const eventsByDate = React.useMemo(() => {
-        const map: Record<string, EventItem[]> = {};
-        for (const ev of events) {
-            if (!map[ev.date]) map[ev.date] = [];
-            map[ev.date].push(ev);
-        }
-        return map;
-    }, [events]);
-
-    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
-    const firstWeekday = getWeekdayOfFirstDay(currentYear, currentMonth);
-
-    const daysArray = [];
-
-    for (let i = 0; i < firstWeekday; i++) {
-        daysArray.push(null);
-    }
-    for (let day = 1; day <= daysInMonth; day++) {
-        daysArray.push(day);
+        items.push({
+          id: doc.id,
+          date: dateStr,
+          time: timeStr,
+          title: data[titleField] || "Event",
+          description: data[descriptionField] || "",
+        });
+      });
+      return items;
     }
 
-    const handleDayClick = (day: number) => {
-        const date = new Date(currentYear, currentMonth, day);
-        setSelectedDate(date);
-    };
+    const unsubscribes: (() => void)[] = [];
 
-    const selectedDateStr = selectedDate ? formatDateLocal(selectedDate) : null;
+    // Meetings listener
+    const meetingQuery = query(collection(db, "meetings"), orderBy("start_date"));
+    const unsubscribeMeetings = onSnapshot(meetingQuery, (snapshot) => {
+      const meetingEvents = processSnapshot(
+        snapshot,
+        "start_date",
+        "type_activity",
+        "remarks"
+      );
+      setEvents((currentEvents) => {
+        const otherEvents = currentEvents.filter(
+          (ev) => !meetingEvents.some((me) => me.id === ev.id)
+        );
+        return [...otherEvents, ...meetingEvents];
+      });
+    });
+    unsubscribes.push(unsubscribeMeetings);
 
-    const selectedEvents = selectedDateStr ? eventsByDate[selectedDateStr] || [] : [];
-
-    return (
-        <div className="flex flex-col md:flex-row max-w-7xl mx-auto gap-6 min-h-[700px]">
-            {/* Calendar on left */}
-            <Card className="flex-shrink-0 w-full md:w-2/3">
-                <CardHeader className="flex justify-between items-center mb-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            if (currentMonth === 0) {
-                                setCurrentYear((y) => y - 1);
-                                setCurrentMonth(11);
-                            } else {
-                                setCurrentMonth((m) => m - 1);
-                            }
-                            setSelectedDate(null);
-                        }}
-                    >
-                        Prev
-                    </Button>
-                    <CardTitle className="text-lg font-semibold">
-                        {new Date(currentYear, currentMonth).toLocaleString("default", {
-                            month: "long",
-                            year: "numeric",
-                        })}
-                    </CardTitle>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            if (currentMonth === 11) {
-                                setCurrentYear((y) => y + 1);
-                                setCurrentMonth(0);
-                            } else {
-                                setCurrentMonth((m) => m + 1);
-                            }
-                            setSelectedDate(null);
-                        }}
-                    >
-                        Next
-                    </Button>
-                </CardHeader>
-
-                {/* Weekday labels */}
-                <div className="grid grid-cols-7 text-center font-semibold text-gray-600 mb-2 select-none">
-                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
-                        <div key={wd} className="text-sm">
-                            {wd}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Days grid */}
-                <div
-                    className="grid grid-cols-7 gap-1"
-                    style={{ "--cell-size": "6rem" } as React.CSSProperties}
-                >
-                    {daysArray.map((day, i) =>
-                        day ? (
-                            <button
-                                key={i}
-                                type="button"
-                                onClick={() => handleDayClick(day)}
-                                className={`relative flex items-center justify-center rounded-md text-lg font-semibold cursor-pointer
-                  ${selectedDate?.getDate() === day &&
-                                        selectedDate.getMonth() === currentMonth &&
-                                        selectedDate.getFullYear() === currentYear
-                                        ? "bg-primary text-primary-foreground"
-                                        : "hover:bg-primary/20"
-                                    }
-                `}
-                                style={{
-                                    height: "var(--cell-size)",
-                                    minWidth: "var(--cell-size)",
-                                    aspectRatio: "1 / 1",
-                                }}
-                            >
-                                {day}
-                                {eventsByDate[
-                                    `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(
-                                        day
-                                    ).padStart(2, "0")}`
-                                ] && (
-                                        <Badge
-                                            variant="secondary"
-                                            className="absolute bottom-2 right-2 rounded-full h-3 w-3 p-0"
-                                        />
-                                    )}
-                            </button>
-                        ) : (
-                            <div
-                                key={i}
-                                className="h-[6rem]"
-                                style={{ minWidth: "var(--cell-size)" }}
-                            />
-                        )
-                    )}
-                </div>
-            </Card>
-
-            {/* Events panel on right */}
-            <Card className="w-full md:w-1/3 gap-2 overflow-auto shadow-none border-0">
-
-                {selectedEvents.length === 0 && selectedDate && (
-                    <p className="text-xs text-muted-foreground">
-                        No events for this date.
-                    </p>
-                )}
-
-                {selectedEvents.map((ev) => (
-                    <CardContent
-                        key={ev.id}
-                        className="border rounded-md p-2 bg-muted hover:shadow-lg transition-shadow cursor-pointer"
-                    >
-                        <p className="font-semibold text-xs">{ev.title}</p>
-                        <p className="text-xs text-muted-foreground">{ev.description}</p>
-                    </CardContent>
-                ))}
-            </Card>
-        </div>
+    // Activity logs listener
+    const logQuery = query(
+      collection(db, "activity_logs"),
+      orderBy("date_created", "desc")
     );
+    const unsubscribeLogs = onSnapshot(logQuery, (snapshot) => {
+      const logEvents = processSnapshot(
+        snapshot,
+        "date_created",
+        "status",
+        "details"
+      );
+      setEvents((currentEvents) => {
+        const otherEvents = currentEvents.filter(
+          (ev) => !logEvents.some((le) => le.id === ev.id)
+        );
+        return [...otherEvents, ...logEvents];
+      });
+    });
+    unsubscribes.push(unsubscribeLogs);
+
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+    };
+  }, []);
+
+  // Group events by date string "YYYY-MM-DD"
+  const eventsByDate = React.useMemo(() => {
+    const map: Record<string, EventItem[]> = {};
+    for (const ev of events) {
+      if (!map[ev.date]) map[ev.date] = [];
+      map[ev.date].push(ev);
+    }
+    return map;
+  }, [events]);
+
+  const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+  const firstWeekday = getWeekdayOfFirstDay(currentYear, currentMonth);
+
+  const daysArray: (number | null)[] = [];
+  for (let i = 0; i < firstWeekday; i++) daysArray.push(null);
+  for (let day = 1; day <= daysInMonth; day++) daysArray.push(day);
+
+  const handleDayClick = (day: number) => {
+    const date = new Date(currentYear, currentMonth, day);
+    setSelectedDate(date);
+  };
+
+  const selectedDateStr = selectedDate ? formatDateLocal(selectedDate) : null;
+  const selectedEvents = selectedDateStr ? eventsByDate[selectedDateStr] || [] : [];
+
+  return (
+    <div className="flex flex-col md:flex-row max-w-7xl mx-auto gap-6 min-h-[700px]">
+      {/* Calendar left */}
+      <Card className="flex-shrink-0 w-full md:w-2/3">
+        <CardHeader className="flex justify-between items-center mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (currentMonth === 0) {
+                setCurrentYear((y) => y - 1);
+                setCurrentMonth(11);
+              } else setCurrentMonth((m) => m - 1);
+              setSelectedDate(null); // Reset selection on month change (optional)
+            }}
+          >
+            Prev
+          </Button>
+          <CardTitle className="text-lg font-semibold">
+            {new Date(currentYear, currentMonth).toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+            })}
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (currentMonth === 11) {
+                setCurrentYear((y) => y + 1);
+                setCurrentMonth(0);
+              } else setCurrentMonth((m) => m + 1);
+              setSelectedDate(null); // Reset selection on month change (optional)
+            }}
+          >
+            Next
+          </Button>
+        </CardHeader>
+
+        {/* Weekdays */}
+        <div className="grid grid-cols-7 text-center font-semibold text-gray-600 mb-2 select-none">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
+            <div key={wd} className="text-sm">
+              {wd}
+            </div>
+          ))}
+        </div>
+
+        {/* Days */}
+        <div
+          className="grid grid-cols-7 gap-1"
+          style={{ "--cell-size": "6rem" } as React.CSSProperties}
+        >
+          {daysArray.map((day, i) =>
+            day ? (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleDayClick(day)}
+                className={`relative flex items-center justify-center rounded-md text-lg font-semibold cursor-pointer
+                ${
+                  selectedDate?.getDate() === day &&
+                  selectedDate.getMonth() === currentMonth &&
+                  selectedDate.getFullYear() === currentYear
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-primary/20"
+                }
+              `}
+                style={{
+                  height: "var(--cell-size)",
+                  minWidth: "var(--cell-size)",
+                  aspectRatio: "1 / 1",
+                }}
+              >
+                {day}
+
+                {/* Dot indicator if events exist on this day */}
+                {eventsByDate[
+                  `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+                ] && (
+                  <Badge
+                    variant="secondary"
+                    className="absolute bottom-2 right-2 rounded-full h-3 w-3 p-0"
+                  />
+                )}
+              </button>
+            ) : (
+              <div key={i} className="h-[6rem]" />
+            )
+          )}
+        </div>
+      </Card>
+
+      {/* Right panel: hourly schedule */}
+      <Card className="w-full md:w-1/3 gap-1 overflow-auto shadow-none border-0 max-h-[700px]">
+        {selectedDate ? (
+          (() => {
+            const groupedEvents = eventsByHour(selectedEvents);
+
+            return (
+              <div className="flex flex-col">
+                {hours.map((hour) => (
+                  <div
+                    key={hour}
+                    className="flex border-b border-gray-200 min-h-[3rem] items-start gap-2 px-2"
+                  >
+                    {/* Hour label */}
+                    <div className="w-12 text-xs text-gray-500 select-none">
+                      {formatHour(hour)}
+                    </div>
+
+                    {/* Events in this hour */}
+                    <div className="flex-1 space-y-1 p-2">
+                      {groupedEvents[hour].length === 0 && (
+                        <div className="text-xs text-muted-foreground italic">—</div>
+                      )}
+
+                      {groupedEvents[hour].map((ev) => (
+                        <div
+                          key={ev.id}
+                          className="rounded-md p-1 bg-muted hover:bg-muted/70 cursor-pointer"
+                        >
+                          <p className="font-semibold text-xs capitalize">
+                            {ev.time} - {ev.title}
+                          </p>
+                          {ev.description && (
+                            <p className="text-xs text-muted-foreground">{ev.description}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()
+        ) : (
+          <p className="text-xs text-muted-foreground p-4">Select a date to see events</p>
+        )}
+      </Card>
+    </div>
+  );
 }

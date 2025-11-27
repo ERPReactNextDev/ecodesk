@@ -141,7 +141,7 @@ export function MeetingDialog({
               <Label htmlFor="startDate">Start Date</Label>
               <Input
                 id="startDate"
-                type="date"
+                type="datetime-local"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
@@ -151,7 +151,7 @@ export function MeetingDialog({
               <Label htmlFor="endDate">End Date</Label>
               <Input
                 id="endDate"
-                type="date"
+                type="datetime-local"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required

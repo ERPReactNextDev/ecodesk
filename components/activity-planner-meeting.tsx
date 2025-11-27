@@ -127,13 +127,13 @@ export function Meeting({ referenceid, tsm, manager }: MeetingProps) {
               end_date,
             }) => (
               <AccordionItem key={id} value={id}>
-                <AccordionTrigger>
+                <AccordionTrigger className="text-[10px]">
                   {type_activity} — {start_date} to {end_date}
                 </AccordionTrigger>
                 <AccordionContent className="flex flex-col gap-2">
-                  <p className="text-xs"><strong>Remarks:</strong> {remarks}</p>
-                  <p className="text-xs"><strong>Start Date:</strong> {start_date}</p>
-                  <p className="text-xs"><strong>End Date:</strong> {end_date}</p>
+                  <p className="text-[10px]"><strong>Remarks:</strong> {remarks}</p>
+                  <p className="text-[10px]"><strong>Start Date:</strong> {start_date}</p>
+                  <p className="text-[10px]"><strong>End Date:</strong> {end_date}</p>
                   <div className="mt-2">
                     <Button
                       variant="ghost"

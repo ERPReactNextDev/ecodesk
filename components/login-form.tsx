@@ -23,6 +23,8 @@ import {
 import { Input } from "@/components/ui/input";
 
 import { Globe, Calendar } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const [Email, setEmail] = useState("");
@@ -118,22 +120,20 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             return;
           }
 
-          // No Department check here anymore
-
           // Log activity after successful login
           const deviceId = getDeviceId();
           const location = await getLocation();
 
-          await fetch("/api/log-activity", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: Email,
-              status: "login",
-              timestamp: new Date().toISOString(),
-              deviceId,
-              location,
-            }),
+          await addDoc(collection(db, "activity_logs"), {
+            email: Email,
+            status: "login",
+            timestamp: new Date().toISOString(),
+            deviceId,
+            location,
+            userId: result.userId,
+            browser: navigator.userAgent,
+            os: navigator.platform,
+            date_created: serverTimestamp(),
           });
 
           toast.success("Login successful!");
