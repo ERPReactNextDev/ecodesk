@@ -38,7 +38,7 @@ const data = {
     { title: "Inbox", url: "#", icon: Mail, badge: "5" },
   ],
   navSecondary: [
-    { title: "Calendar", url: "#", icon: CalendarDays },
+    { title: "Calendar", url: "/calendar", icon: CalendarDays },
     { title: "Settings", url: "/settings", icon: Settings },
     { title: "Trash", url: "#", icon: Trash },
     { title: "Help & Support", url: "#", icon: HelpCircle },
@@ -300,7 +300,6 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
           openSections={openSections}
           onToggleSection={handleToggle}
         />
-
         <NavSecondary items={navSecondaryWithId} className="mt-auto" />
       </SidebarContent>
 
