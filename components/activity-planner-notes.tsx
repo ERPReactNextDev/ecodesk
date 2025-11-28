@@ -99,12 +99,17 @@ export const Notes: React.FC<NotesProps> = ({
 
                     q = query(
                         notesRef,
+                        where("referenceid", "==", referenceid),
                         where("date_created", ">=", fromTimestamp),
                         where("date_created", "<=", toTimestamp),
                         orderBy("date_created", "desc")
                     );
                 } else {
-                    q = query(notesRef, orderBy("date_created", "desc"));
+                    q = query(
+                        notesRef,
+                        where("referenceid", "==", referenceid),
+                        orderBy("date_created", "desc")
+                    );
                 }
 
                 const querySnapshot = await getDocs(q);
@@ -135,7 +140,7 @@ export const Notes: React.FC<NotesProps> = ({
         }
 
         fetchNotes();
-    }, [dateCreatedFilterRange]);
+    }, [dateCreatedFilterRange, referenceid]);
 
     // Filter notes by search term and type_activity & tab (latest/past)
     const filteredNotes = useMemo(() => {
