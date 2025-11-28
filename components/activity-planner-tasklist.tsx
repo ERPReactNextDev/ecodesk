@@ -256,27 +256,46 @@ export const TaskList: React.FC<CompletedProps> = ({
         return mergedActivities
             .filter((item) => {
                 if (!search) return true;
-
-                // Check all values if any match the search term
                 return Object.values(item).some((val) => {
                     if (val === null || val === undefined) return false;
-
-                    // Convert value to string
-                    const valStr = String(val).toLowerCase();
-
-                    return valStr.includes(search);
+                    return String(val).toLowerCase().includes(search);
                 });
             })
             .filter((item) => {
                 if (filterStatus !== "all" && item.status !== filterStatus) return false;
-
                 if (filterTypeActivity !== "all" && item.type_activity !== filterTypeActivity) return false;
+                return true;
+            })
+
+            /* ⭐⭐⭐ DATE RANGE FILTER HERE ⭐⭐⭐ */
+            .filter((item) => {
+                if (!dateCreatedFilterRange || (!dateCreatedFilterRange.from && !dateCreatedFilterRange.to)) {
+                    return true;
+                }
+
+                const updated = item.date_updated
+                    ? new Date(item.date_updated)
+                    : new Date(item.date_created);
+
+                if (isNaN(updated.getTime())) return false;
+
+                const from = dateCreatedFilterRange.from ? new Date(dateCreatedFilterRange.from) : null;
+                const to = dateCreatedFilterRange.to ? new Date(dateCreatedFilterRange.to) : null;
+
+                if (from && updated < from) return false;
+                if (to && updated > to) return false;
 
                 return true;
             })
-            .filter(hasMeaningfulData);
-    }, [mergedActivities, searchTerm, filterStatus, filterTypeActivity]);
 
+            .filter(hasMeaningfulData);
+    }, [
+        mergedActivities,
+        searchTerm,
+        filterStatus,
+        filterTypeActivity,
+        dateCreatedFilterRange,
+    ]);
 
     const isLoading = loadingCompanies || loadingActivities;
     const error = errorCompanies || errorActivities;
