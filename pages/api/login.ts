@@ -1,14 +1,13 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { validateUser } from "@/lib/mongodb";
+import { validateUser, connectToDatabase } from "@/lib/mongodb";
 import { serialize } from "cookie";
-import { connectToDatabase } from "@/lib/mongodb";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { Email, Password } = req.body; // Department removed
+  const { Email, Password } = req.body;
 
   if (!Email || !Password) {
     return res.status(400).json({ message: "All fields are required." });
@@ -17,19 +16,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const db = await connectToDatabase();
   const usersCollection = db.collection("users");
 
-  // Find the user by email
+  // Find the user
   const user = await usersCollection.findOne({ Email });
 
   if (!user) {
     return res.status(401).json({ message: "Invalid credentials." });
   }
 
+  // ❌ Block resigned / terminated
   if (user.Status === "Resigned" || user.Status === "Terminated") {
     return res.status(403).json({
       message: `Your account is ${user.Status}. Login not allowed.`,
     });
   }
 
+  // Account lock checks
   const now = new Date();
   const lockDuration = 50 * 365 * 24 * 60 * 60 * 1000;
   const lockUntil = user.LockUntil ? new Date(user.LockUntil) : null;
@@ -41,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  // Validate user credentials without department
+  // Validate credentials
   const result = await validateUser({ Email, Password });
 
   if (!result.success || !result.user) {
@@ -49,6 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (attempts >= 3) {
       const newLockUntil = new Date(now.getTime() + lockDuration);
+
       await usersCollection.updateOne(
         { Email },
         {
@@ -66,14 +68,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    await usersCollection.updateOne({ Email }, { $set: { LoginAttempts: attempts } });
+    await usersCollection.updateOne(
+      { Email },
+      { $set: { LoginAttempts: attempts } }
+    );
 
     return res.status(401).json({ message: "Invalid credentials." });
   }
 
-  // No Department check anymore
+  // ❗ ❗ FINAL FILTER — ONLY SALES CAN LOGIN
+  if (user.Department !== "Sales") {
+    return res.status(403).json({
+      message: "Only Sales department users are allowed to log in.",
+    });
+  }
 
-  // Reset login attempts on successful login
+  // Reset attempts after success
   await usersCollection.updateOne(
     { Email },
     {
@@ -87,6 +97,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const userId = result.user._id.toString();
 
+  // Create session cookie
   res.setHeader(
     "Set-Cookie",
     serialize("session", userId, {
@@ -102,5 +113,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     message: "Login successful",
     userId,
     Status: result.user.Status,
+    Department: user.Department,
   });
 }

@@ -98,70 +98,82 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         const response = await fetch("/api/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ Email, Password }), // Department removed
+          body: JSON.stringify({ Email, Password }),
         });
 
         const text = await response.text();
-
         let result;
+
         try {
           result = JSON.parse(text);
-        } catch (e) {
-          toast.error("Invalid response from server");
+        } catch {
+          toast.error("Invalid server response.");
+          playSound("/login-failed.mp3");
           setLoading(false);
           return;
         }
 
-        if (response.ok) {
-          if (result.Status === "Resigned" || result.Status === "Terminated") {
-            toast.error(`Your account is ${result.Status}. Login not allowed.`);
-            playSound("/login-failed.mp3");
-            setLoading(false);
-            return;
-          }
-
-          // Log activity after successful login
-          const deviceId = getDeviceId();
-          const location = await getLocation();
-
-          await addDoc(collection(db, "activity_logs"), {
-            email: Email,
-            status: "login",
-            timestamp: new Date().toISOString(),
-            deviceId,
-            location,
-            userId: result.userId,
-            browser: navigator.userAgent,
-            os: navigator.platform,
-            date_created: serverTimestamp(),
-          });
-
-          toast.success("Login successful!");
-          playSound("/login.mp3");
-
-          setUserId(result.userId);
-          router.push(`/dashboard?id=${encodeURIComponent(result.userId)}`);
-
-          setLoading(false);
-        } else {
+        if (!response.ok) {
           if (result.lockUntil) {
             setLockUntil(result.lockUntil);
-            toast.error(`Account locked! Try again after ${new Date(result.lockUntil).toLocaleString()}.`);
-            playSound("/reset.mp3");
+            toast.error(
+              `Account locked! Try again after ${new Date(result.lockUntil).toLocaleString()}.`
+            );
           } else {
             toast.error(result.message || "Login failed!");
-            playSound("/reset.mp3");
           }
+          playSound("/reset.mp3");
           setLoading(false);
+          return;
         }
+
+        // ❗ BLOCK LOGIN IF NOT FROM SALES DEPARTMENT
+        if (result.Department !== "Sales") {
+          toast.error("Only Sales department users are allowed to log in.");
+          playSound("/login-failed.mp3");
+          setLoading(false);
+          return;
+        }
+
+        // ❗ BLOCK RESIGNED / TERMINATED
+        if (result.Status === "Resigned" || result.Status === "Terminated") {
+          toast.error(`Your account is ${result.Status}. Login not allowed.`);
+          playSound("/login-failed.mp3");
+          setLoading(false);
+          return;
+        }
+
+        // ✅ SUCCESS — log activity
+        const deviceId = getDeviceId();
+        const location = await getLocation();
+
+        await addDoc(collection(db, "activity_logs"), {
+          email: Email,
+          status: "login",
+          timestamp: new Date().toISOString(),
+          deviceId,
+          location,
+          userId: result.userId,
+          browser: navigator.userAgent,
+          os: navigator.platform,
+          date_created: serverTimestamp(),
+        });
+
+        toast.success("Login successful!");
+        playSound("/login.mp3");
+
+        setUserId(result.userId);
+        router.push(`/dashboard?id=${encodeURIComponent(result.userId)}`);
+
+        setLoading(false);
       } catch (error) {
         console.error("Login error:", error);
-        toast.error("An error occurred while logging in!");
+        toast.error("An error occurred during login.");
         playSound("/login-failed.mp3");
         setLoading(false);
       }
     },
-    [Email, Password, router, setUserId] // Department removed here
+    [Email, Password, router, setUserId]
   );
 
   return (
