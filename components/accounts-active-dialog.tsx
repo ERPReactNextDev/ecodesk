@@ -730,7 +730,6 @@ export function AccountDialog({
           <div>
             <Label className="mb-2">Group / Affiliate (Optional)</Label>
             <Input
-              required
               name="company_group"
               value={formData.company_group}
               onChange={(e) =>
