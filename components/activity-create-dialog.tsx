@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldSet, FieldTitle, } from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, } from "@/components/ui/empty";
-
+import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemMedia, ItemTitle, } from "@/components/ui/item"
+import { Progress } from "@/components/ui/progress"
 import { Spinner } from "@/components/ui/spinner";
 import { CancelDialog } from "./activity-cancel-dialog";
 import { OutboundSheet } from "./activity-sheet-outbound";
@@ -51,6 +52,7 @@ interface Activity {
     project_name?: string;
     quotation_number?: string;
     quotation_amount?: string;
+    quotation_type?: string;
 
     // sales order fields
     so_number?: string;
@@ -84,6 +86,8 @@ interface CreateActivityDialogProps {
     contact_person: string;
     address: string;
     company_name: string;
+    tsmname: string;
+    managername: string;
     activityReferenceNumber?: string;
     accountReferenceNumber?: string;
 }
@@ -125,6 +129,8 @@ export function CreateActivityDialog({
     contact_person,
     email_address,
     address,
+    tsmname,
+    managername,
     activityReferenceNumber,
     accountReferenceNumber,
 }: CreateActivityDialogProps) {
@@ -156,6 +162,7 @@ export function CreateActivityDialog({
     const [projectName, setProjectName] = useState("");
     const [quotationNumber, setQuotationNumber] = useState("");
     const [quotationAmount, setQuotationAmount] = useState("");
+    const [quotationType, setQuotationType] = useState("");
 
     const [soNumber, setSoNumber] = useState("");
     const [soAmount, setSoAmount] = useState("");
@@ -173,6 +180,8 @@ export function CreateActivityDialog({
 
     const [loading, setLoading] = useState(false);
     const [elapsedTime, setElapsedTime] = useState("");
+    const [showExportNotification, setShowExportNotification] = React.useState(false);
+    const [exportStatusMessage, setExportStatusMessage] = useState("");
 
     // AUTO SET DATE CREATED
     useEffect(() => {
@@ -197,6 +206,7 @@ export function CreateActivityDialog({
         projectName: "",
         quotationNumber: "",
         quotationAmount: "",
+        quotationType: "",
         soNumber: "",
         soAmount: "",
         followUpDate: "",
@@ -224,6 +234,7 @@ export function CreateActivityDialog({
         setProjectName(initialState.projectName);
         setQuotationNumber(initialState.quotationNumber);
         setQuotationAmount(initialState.quotationAmount);
+        setQuotationType(initialState.quotationType);
         setSoNumber(initialState.soNumber);
         setSoAmount(initialState.soAmount);
         setFollowUpDate(initialState.followUpDate);
@@ -320,6 +331,76 @@ export function CreateActivityDialog({
         day: "numeric",
     });
 
+    // Set export in progress
+    localStorage.setItem('exportInProgress', 'true');
+
+    // Clear kapag done
+    localStorage.removeItem('exportInProgress');
+
+    // Sa component mount (useEffect)
+    useEffect(() => {
+        const inProgress = localStorage.getItem('exportInProgress');
+        if (inProgress === 'true') {
+            setShowExportNotification(true);
+            // Simulate progress resume or start counting from 0 again
+        }
+    }, []);
+
+
+    // Sa loob ng component mo, i-add state para sa progress:
+    const [progress, setProgress] = useState(0);
+
+    // Function to handle export with progress bar + delayed download
+    const startProgressAndDownload = (url: string, refNo: string) => {
+        setShowExportNotification(true);
+        setProgress(0);
+        setExportStatusMessage("Initializing product table creation...");
+
+        const duration = 20000; // 20 seconds total progress duration
+        const intervalTime = 50; // update every 50ms
+        const totalSteps = duration / intervalTime;
+        let step = 0;
+
+        const interval = setInterval(() => {
+            step++;
+            const newProgress = Math.min(100, (step / totalSteps) * 100);
+            setProgress(newProgress);
+
+            // Update status messages based on progress ranges
+            if (newProgress <= 30) {
+                setExportStatusMessage("Creating product tables...");
+            } else if (newProgress <= 60) {
+                setExportStatusMessage("Processing media and content...");
+            } else if (newProgress < 90) {
+                setExportStatusMessage("Finalizing export and packaging...");
+            } else if (newProgress < 100) {
+                setExportStatusMessage("Almost done! Preparing download...");
+            } else if (newProgress === 100) {
+                setExportStatusMessage("Your quotation has been successfully created.");
+            }
+
+            if (newProgress === 100) {
+                clearInterval(interval);
+
+                // Trigger download when progress hits 100%
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `Quotation_${refNo}.xlsx`;
+                a.click();
+
+                // Close notification and reset form after short delay so user can see final message
+                setTimeout(() => {
+                    setShowExportNotification(false);
+                    resetForm();
+                    setStep(1);
+                    setSheetOpen(false);
+                    setExportStatusMessage(""); // reset message
+                }, 1500);
+            }
+        }, intervalTime);
+    };
+
+
     const handleSave = async () => {
         setLoading(true);
 
@@ -354,6 +435,7 @@ export function CreateActivityDialog({
             project_name: projectName || undefined,
             quotation_number: quotationNumber || undefined,
             quotation_amount: quotationAmount || undefined,
+            quotation_type: quotationType || undefined,
 
             so_number: soNumber || undefined,
             so_amount: soAmount || undefined,
@@ -371,6 +453,7 @@ export function CreateActivityDialog({
         };
 
         try {
+            // Save activity
             const res = await fetch("/api/act-save-activity", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -384,6 +467,7 @@ export function CreateActivityDialog({
                 return;
             }
 
+            // Update status
             const statusRes = await fetch("/api/act-edit-status-activity", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -400,83 +484,117 @@ export function CreateActivityDialog({
                 return;
             }
 
+            // Success save + status update toast
             toast.success("Activity created and status updated successfully!");
 
             if (typeActivity === "Quotation Preparation") {
-                // Split comma-separated fields into arrays
-                const productCats = productCat ? productCat.split(",") : [];
-                const quantities = productQuantity ? productQuantity.split(",") : [];
-                const amounts = productAmount ? productAmount.split(",") : [];
-                const photos = productPhoto ? productPhoto.split(",") : [];
-                const titles = productTitle ? productTitle.split(",") : [];
-                const skus = productSku ? productSku.split(",") : [];
-                // For descriptions, using "||" as separator as per your original code
-                const descriptions = productDescription ? productDescription.split("||") : [];
-                const salesRepresentativeName = `${firstname} ${lastname}`;
-                const salesemail = `${email}`;
-                const salescontact = `${contact}`;
+                // Check if productCat is empty/undefined/blank
+                if (!productCat || productCat.trim() === "") {
+                    toast.error("Cannot export quotation: Product Category is empty.");
+                    resetForm();
+                    setStep(1);
+                    setSheetOpen(false);
+                } else {
+                    // Proceed with export only if productCat is present
 
-                // Map into items array
-                const items = productCats.map((_, index) => {
-                    const qty = Number(quantities[index] || 0);
-                    const amount = Number(amounts[index] || 0);
-                    const photo = photos[index] || "";
-                    const title = titles[index] || "";
-                    const sku = skus[index] || "";
-                    const description = descriptions[index] || "";
+                    const productCats = productCat.split(",");
+                    const quantities = productQuantity ? productQuantity.split(",") : [];
+                    const amounts = productAmount ? productAmount.split(",") : [];
+                    const photos = productPhoto ? productPhoto.split(",") : [];
+                    const titles = productTitle ? productTitle.split(",") : [];
+                    const skus = productSku ? productSku.split(",") : [];
+                    const descriptions = productDescription ? productDescription.split("||") : [];
 
-                    const descriptionTable = `<table>
-                    <tr><td>${title}</td></tr>
-                    <tr><td>${sku}</td></tr>
-                    <tr><td>${description}</td></tr>
-                    </table>`;
+                    const salesRepresentativeName = `${firstname} ${lastname}`;
 
-                    return {
-                        itemNo: index + 1,
-                        qty,
-                        referencePhoto: photo,
-                        description: descriptionTable,
-                        unitPrice: qty > 0 ? amount / qty : 0,
-                        totalAmount: amount,
+                    // Extract username part before '@' if email already has domain
+                    const emailUsername = email.split("@")[0];
+
+                    // Determine email domain based on quotationType
+                    let emailDomain = "";
+                    if (quotationType === "Disruptive Solutions Inc") {
+                        emailDomain = "disruptivesolutionsinc.com";
+                    } else if (quotationType === "Ecoshift Corporation") {
+                        emailDomain = "ecoshiftcorp.com";
+                    } else {
+                        emailDomain = email.split("@")[1] || ""; // fallback to original domain if any
+                    }
+
+                    const salesemail = `${emailUsername}@${emailDomain}`;
+                    const salescontact = `${contact}`;
+                    const salestsmname = `${tsmname}`;
+                    const salesmanagername = `${managername}`;
+
+                    const items = productCats.map((_, index) => {
+                        const qty = Number(quantities[index] || 0);
+                        const amount = Number(amounts[index] || 0);
+                        const photo = photos[index] || "";
+                        const title = titles[index] || "";
+                        const sku = skus[index] || "";
+                        const description = descriptions[index] || "";
+
+                        const descriptionTable = `<table>
+            <tr><td>${title}</td></tr>
+            <tr><td>${sku}</td></tr>
+            <tr><td>${description}</td></tr>
+          </table>`;
+
+                        return {
+                            itemNo: index + 1,
+                            qty,
+                            referencePhoto: photo,
+                            description: descriptionTable,
+                            unitPrice: qty > 0 ? amount / qty : 0,
+                            totalAmount: amount,
+                        };
+                    });
+
+                    const quotationData = {
+                        referenceNo: quotationNumber || activityRef,
+                        date: formattedDate,
+                        companyName: company_name,
+                        address: address,
+                        telNo: contact_number,
+                        email: email_address,
+                        attention: `${contact_person}, ${address}`,
+                        subject: "For Quotation",
+                        items,
+                        vatType: "Vat Inc",
+                        totalPrice: Number(quotationAmount),
+                        salesRepresentative: salesRepresentativeName,
+                        salesemail,
+                        salescontact,
+                        salestsmname,
+                        salesmanagername,
                     };
-                });
 
-                const quotationData = {
-                    referenceNo: quotationNumber || activityRef,
-                    date: formattedDate,
-                    companyName: company_name,
-                    address: address,
-                    telNo: contact_number,
-                    email: email_address,
-                    attention: `${contact_person}, ${address}`,
-                    subject: "For Quotation",
-                    items, // multiple items here
-                    vatType: "Vat Inc",
-                    totalPrice: Number(quotationAmount),
-                    salesRepresentative: salesRepresentativeName,
-                    salesemail: salesemail,
-                    salescontact: salescontact,
-                };
+                    // Determine API endpoint based on quotationType
+                    let apiEndpoint = "/api/quotation/disruptive"; // default
 
-                // Call server API to generate Excel
-                const res = await fetch("/api/quotation", {
-                    method: "POST",
-                    body: JSON.stringify(quotationData),
-                });
+                    if (quotationType === "Ecoshift Corporation") {
+                        apiEndpoint = "/api/quotation/ecoshift";
+                    } else if (quotationType === "Disruptive Solutions Inc") {
+                        apiEndpoint = "/api/quotation/disruptive";
+                    }
 
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `Quotation_${quotationData.referenceNo}.xlsx`;
-                a.click();
+                    // Call server API to generate Excel
+                    const resExport = await fetch(apiEndpoint, {
+                        method: "POST",
+                        body: JSON.stringify(quotationData),
+                    });
+
+                    const blob = await resExport.blob();
+                    const url = URL.createObjectURL(blob);
+
+                    startProgressAndDownload(url, quotationData.referenceNo || activityRef);
+
+                }
             }
-
-            onCreated(newActivity);
 
             resetForm();
             setStep(1);
             setSheetOpen(false);
+
         } catch (error) {
             toast.error("Server error. Please try again.");
         } finally {
@@ -708,6 +826,8 @@ export function CreateActivityDialog({
                                     setQuotationNumber={setQuotationNumber}
                                     quotationAmount={quotationAmount}
                                     setQuotationAmount={setQuotationAmount}
+                                    quotationType={quotationType}
+                                    setQuotationType={setQuotationType}
                                     callType={callType}
                                     setCallType={setCallType}
                                     followUpDate={followUpDate}
@@ -780,6 +900,35 @@ export function CreateActivityDialog({
 
                 </SheetContent>
             </Sheet>
+
+            {showExportNotification && (
+                <div style={{
+                    position: "fixed",
+                    top: "1rem",
+                    right: "1rem",
+                    zIndex: 9999,
+                    backgroundColor: "white",
+                }}>
+                    <Item variant="outline">
+                        <ItemMedia variant="icon">
+                            <Spinner />
+                        </ItemMedia>
+                        <ItemContent>
+                            <ItemTitle>Quotation Export</ItemTitle>
+                            <ItemDescription>{exportStatusMessage}</ItemDescription>
+                        </ItemContent>
+                        <ItemActions className="hidden sm:flex">
+                            <Button variant="outline" size="sm" onClick={() => setShowExportNotification(false)}>
+                                Close
+                            </Button>
+                        </ItemActions>
+                        <ItemFooter>
+                            <Progress value={progress} />
+                            {Math.round(progress)}%
+                        </ItemFooter>
+                    </Item>
+                </div>
+            )}
         </>
     );
 }

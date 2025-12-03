@@ -43,6 +43,8 @@ interface NewTaskProps {
     lastname: string;
     email: string;
     contact: string;
+    tsmname: string;
+    managername: string;
     dateCreatedFilterRange: DateRange | undefined;
     setDateCreatedFilterRangeAction: React.Dispatch<
         React.SetStateAction<DateRange | undefined>
@@ -56,6 +58,8 @@ export const Progress: React.FC<NewTaskProps> = ({
     lastname,
     email,
     contact,
+    tsmname,
+    managername,
     dateCreatedFilterRange,
     setDateCreatedFilterRangeAction,
 }) => {
@@ -319,6 +323,8 @@ export const Progress: React.FC<NewTaskProps> = ({
                                                 target_quota={target_quota}
                                                 email={email}
                                                 contact={contact}
+                                                tsmname={tsmname}
+                                                managername={managername}
                                                 referenceid={item.referenceid}
                                                 tsm={item.tsm}
                                                 manager={item.manager}

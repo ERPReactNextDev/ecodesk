@@ -44,6 +44,8 @@ interface UserDetails {
     email: string;
     contact: string;
     target_quota: string;
+    tsmname: string;
+    managername: string;
 }
 
 function DashboardContent() {
@@ -59,6 +61,8 @@ function DashboardContent() {
         email: "",
         contact: "",
         target_quota: "",
+        tsmname: "",
+        managername: "",
     });
 
     const [posts, setPosts] = useState<Account[]>([]);
@@ -106,6 +110,8 @@ function DashboardContent() {
                     email: data.Email || "",
                     contact: data.Contact || "",
                     target_quota: data.TargetQuota || "",
+                    tsmname: data.TSMName || "",
+                    managername: data.ManagerName || "",
                 });
 
                 toast.success("User data loaded successfully!");
@@ -169,6 +175,8 @@ function DashboardContent() {
                             lastname={userDetails.lastname}
                             email={userDetails.email}
                             contact={userDetails.contact}
+                            tsmname={userDetails.tsmname}
+                            managername={userDetails.managername}
                             target_quota={userDetails.target_quota}
                             dateCreatedFilterRange={dateCreatedFilterRange}
                             setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction} />

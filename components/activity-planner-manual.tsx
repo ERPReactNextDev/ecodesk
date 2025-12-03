@@ -57,6 +57,8 @@ interface ManualProps {
   lastname: string;
   email: string;
   contact: string;
+  tsmname: string;
+  managername: string;
   target_quota?: string;
   dateCreatedFilterRange: DateRange | undefined;
   setDateCreatedFilterRangeAction: React.Dispatch<
@@ -72,6 +74,8 @@ export const Manual: React.FC<ManualProps> = ({
   lastname,
   email,
   contact,
+  tsmname,
+  managername,
   target_quota,
   dateCreatedFilterRange,
   setDateCreatedFilterRangeAction,
@@ -576,6 +580,8 @@ export const Manual: React.FC<ManualProps> = ({
                             target_quota={target_quota}
                             email={email}
                             contact={contact}
+                            tsmname={tsmname}
+                            managername={managername}
                             referenceid={item.referenceid}
                             tsm={item.tsm}
                             manager={item.manager}

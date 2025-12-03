@@ -38,6 +38,8 @@ interface Props {
   setQuotationNumber: (v: string) => void;
   quotationAmount: string;
   setQuotationAmount: (v: string) => void;
+  quotationType: string;
+  setQuotationType: (v: string) => void;
   callType: string;
   setCallType: (v: string) => void;
   followUpDate: string;
@@ -93,6 +95,7 @@ export function QuotationSheet(props: Props) {
     projectName, setProjectName,
     quotationNumber, setQuotationNumber,
     quotationAmount, setQuotationAmount,
+    quotationType, setQuotationType,
     callType, setCallType,
     followUpDate, setFollowUpDate,
     remarks, setRemarks,
@@ -472,9 +475,9 @@ export function QuotationSheet(props: Props) {
 
               {!isManualEntry && selectedProducts.length > 0 && (
                 <Alert variant="default">
-                  <AlertTitle>Grand Total: ₱</AlertTitle>
+                  <AlertTitle>Grand Total:</AlertTitle>
                   <AlertDescription>
-                    {selectedProducts.reduce((acc, p) => acc + p.quantity * p.price, 0).toFixed(2)}
+                    ₱{selectedProducts.reduce((acc, p) => acc + p.quantity * p.price, 0).toFixed(2)}
                   </AlertDescription>
                 </Alert>
               )}
@@ -553,6 +556,30 @@ export function QuotationSheet(props: Props) {
         <div>
           <FieldGroup>
             <FieldSet>
+              <FieldLabel className="mt-3">Quotation For</FieldLabel>
+              <RadioGroup value={quotationType} required onValueChange={setQuotationType}>
+                {[
+                  {
+                    label: "Ecoshift Corporation",
+                    description: "The Fastest-Growing Provider of Innovative Lighting Solutions",
+                  },
+                  {
+                    label: "Disruptive Solutions Inc",
+                    description: "future-ready lighting solutions that brighten spaces, cut costs, and power smarter business",
+                  },
+                ].map(({ label, description }) => (
+                  <FieldLabel key={label}>
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle>{label}</FieldTitle>
+                        <FieldDescription>{description}</FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value={label} />
+                    </Field>
+                  </FieldLabel>
+                ))}
+              </RadioGroup>
+
               <FieldLabel>Quotation Number</FieldLabel>
               <Input
                 type="text"
@@ -648,6 +675,7 @@ export function QuotationSheet(props: Props) {
                 onChange={(e) => setRemarks(e.target.value)}
                 placeholder="Enter any remarks here..."
                 rows={3}
+                required
               />
 
               <FieldLabel className="mt-3">Status</FieldLabel>
