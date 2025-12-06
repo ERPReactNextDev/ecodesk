@@ -11,34 +11,36 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-interface DoneDialogProps {
+interface ActDeleteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  selectedToDeleteCount: number;
+  deleting: boolean;
   onConfirm: () => void;
-  loading?: boolean;
 }
 
-export const DoneDialog: React.FC<DoneDialogProps> = ({
+export const ActDeleteDialog: React.FC<ActDeleteDialogProps> = ({
   open,
   onOpenChange,
+  selectedToDeleteCount,
+  deleting,
   onConfirm,
-  loading = false,
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Mark Transaction as Closed</DialogTitle>
+          <DialogTitle>Confirm Delete</DialogTitle>
           <DialogDescription>
-            Are you sure you want to mark this transaction as Closed? It will remain in the list but its status will be updated. You can reopen the ticket later if needed.
+            Are you sure you want to delete {selectedToDeleteCount} activities?
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex justify-end gap-2 mt-4">
-          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={loading}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={deleting}>
             Cancel
           </Button>
-          <Button onClick={onConfirm} disabled={loading}>
-            {loading ? "Updating..." : "Confirm"}
+          <Button variant="destructive" onClick={onConfirm} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,7 +1,38 @@
 // pages/api/act-fetch-activity.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { supabase } from "../../utils/supabase";
-import redis from "../../lib/redis";
+import { MongoClient } from "mongodb";
+
+const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_DB = process.env.MONGODB_DB;
+
+if (!MONGODB_URI) {
+  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+}
+
+if (!MONGODB_DB) {
+  throw new Error("Please define the MONGODB_DB environment variable inside .env.local");
+}
+
+const mongoUri: string = MONGODB_URI;
+const mongoDb: string = MONGODB_DB;
+
+let cachedClient: MongoClient | null = null;
+let cachedDb: any = null;
+
+async function connectToDatabase() {
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
+  }
+
+  const client = new MongoClient(mongoUri);
+  await client.connect();
+  const db = client.db(mongoDb);
+
+  cachedClient = client;
+  cachedDb = db;
+
+  return { client, db };
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -11,38 +42,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { referenceid } = req.query;
 
-    const cacheKey = referenceid && typeof referenceid === "string"
-      ? `activity:referenceid:${referenceid}`
-      : null;
-
-    if (cacheKey) {
-      const cached = await redis.get(cacheKey);
-      if (cached && typeof cached === "string") {
-        return res.status(200).json({ success: true, data: JSON.parse(cached), cached: true });
-      }
+    if (!referenceid || typeof referenceid !== "string") {
+      return res.status(400).json({ error: "Missing or invalid referenceid" });
     }
 
-    let query = supabase.from("activity").select("*");
+    const { db } = await connectToDatabase();
+    const collection = db.collection("activity");
 
-    if (referenceid && typeof referenceid === "string") {
-      query = query.eq("referenceid", referenceid);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Supabase fetch error:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    if (cacheKey && data) {
-      // Cache the data for 5 minutes
-      await redis.set(cacheKey, JSON.stringify(data), { ex: 300 });
-    }
+    const data = await collection.find({ referenceid }).toArray();
 
     return res.status(200).json({ success: true, data, cached: false });
-  } catch (err: any) {
-    console.error("Server error:", err);
+  } catch (error: any) {
+    console.error("MongoDB fetch error:", error);
     return res.status(500).json({ error: "Server error" });
   }
 }

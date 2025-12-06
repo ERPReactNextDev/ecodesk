@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, Suspense } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { UserProvider, useUser } from "@/contexts/UserContext";
@@ -13,33 +13,11 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 
-import { SITable } from "@/components/reports-si-table";
-
+import { Ticket } from "@/components/ticket";
 import { type DateRange } from "react-day-picker";
-
-interface Account {
-    id: string;
-    referenceid: string;
-    company_name: string;
-    type_client: string;
-    date_created: string;
-    date_updated: string;
-    contact_person: string;
-    contact_number: string;
-    email_address: string;
-    address: string;
-    delivery_address: string;
-    region: string;
-    industry: string;
-    status?: string;
-    company_group?: string;
-}
 
 interface UserDetails {
     referenceid: string;
-    tsm: string;
-    manager: string;
-    target_quota: string;
 }
 
 function DashboardContent() {
@@ -48,14 +26,9 @@ function DashboardContent() {
 
     const [userDetails, setUserDetails] = useState<UserDetails>({
         referenceid: "",
-        tsm: "",
-        manager: "",
-        target_quota: "",
     });
 
-    const [posts, setPosts] = useState<Account[]>([]);
     const [loadingUser, setLoadingUser] = useState(true);
-    const [loadingAccounts, setLoadingAccounts] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] = React.useState<
         DateRange | undefined
@@ -88,9 +61,6 @@ function DashboardContent() {
 
                 setUserDetails({
                     referenceid: data.ReferenceID || "",
-                    tsm: data.TSM || "",
-                    manager: data.Manager || "",
-                    target_quota: data.TargetQuota || "",
                 });
 
                 toast.success("User data loaded successfully!");
@@ -105,27 +75,6 @@ function DashboardContent() {
         fetchUserData();
     }, [userId]);
 
-    const loading = loadingUser || loadingAccounts;
-
-    // Filter accounts by created date range (optional)
-    const filteredData = useMemo(() => {
-        if (
-            !dateCreatedFilterRange ||
-            !dateCreatedFilterRange.from ||
-            !dateCreatedFilterRange.to
-        ) {
-            return posts;
-        }
-
-        const fromTime = dateCreatedFilterRange.from.setHours(0, 0, 0, 0);
-        const toTime = dateCreatedFilterRange.to.setHours(23, 59, 59, 999);
-
-        return posts.filter((item) => {
-            const createdDate = new Date(item.date_created).getTime();
-            return createdDate >= fromTime && createdDate <= toTime;
-        });
-    }, [posts, dateCreatedFilterRange]);
-
     return (
         <>
             <SidebarLeft />
@@ -137,7 +86,7 @@ function DashboardContent() {
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage className="line-clamp-1">Reports - Sales Invoice Summary</BreadcrumbPage>
+                                    <BreadcrumbPage className="line-clamp-1">Creation of Tickets</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
@@ -146,9 +95,8 @@ function DashboardContent() {
 
                 <main className="flex flex-1 flex-col gap-4 p-4 overflow-auto">
                     <div>
-                        <SITable
+                        <Ticket
                             referenceid={userDetails.referenceid}
-                            target_quota={userDetails.target_quota}
                             dateCreatedFilterRange={dateCreatedFilterRange}
                             setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction} />
                     </div>

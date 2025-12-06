@@ -128,8 +128,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         }
 
         // ❗ BLOCK LOGIN IF NOT FROM SALES DEPARTMENT
-        if (result.Department !== "Sales") {
-          toast.error("Only Sales department users are allowed to log in.");
+        if (result.Department !== "CSR") {
+          toast.error("Only CSR department users are allowed to log in.");
           playSound("/login-failed.mp3");
           setLoading(false);
           return;
@@ -185,7 +185,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Welcome back</h1>
                 <p className="text-muted-foreground text-balance">
-                  Login to your Taskflow account
+                  Login to your Ecodesk account
                 </p>
               </div>
               <Field>
@@ -241,10 +241,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                 <Globe size={16} />
                 Official Website:{" "}
                 <Link
-                  href="https://www.ecoshiftcorp.com/"
+                  href="https://www.disruptivesolutionsinc.com/"
                   className="underline text-green-700 hover:text-green-800"
                 >
-                  ecoshiftcorp.com
+                  disruptivesolutionsinc.com
                 </Link>
               </p>
               <p className="flex items-center justify-center gap-1">

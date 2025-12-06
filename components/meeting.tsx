@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { MeetingDialog } from "@/components/activity-planner-meeting-dialog";
+import { MeetingDialog } from "@/components/meeting-dialog";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,6 @@ import { toast } from "sonner";
 interface MeetingItem {
   id: string;
   referenceid: string;
-  tsm: string;
-  manager: string;
   type_activity: string;
   remarks: string;
   start_date: string; // stored as ISO string or similar
@@ -40,8 +38,6 @@ interface MeetingItem {
 
 interface MeetingProps {
   referenceid: string;
-  tsm: string;
-  manager: string;
 }
 
 // Helper to format date string to "November 23 2025 / 8:00 AM"
@@ -71,7 +67,7 @@ function formatDateTime(dateStr: string) {
   return `${datePart} / ${timePart}`;
 }
 
-export function Meeting({ referenceid, tsm, manager }: MeetingProps) {
+export function Meeting({ referenceid }: MeetingProps) {
   const [meetings, setMeetings] = useState<MeetingItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -143,8 +139,6 @@ export function Meeting({ referenceid, tsm, manager }: MeetingProps) {
         <h2 className="text-sm font-semibold">Meeting</h2>
         <MeetingDialog
           referenceid={referenceid}
-          tsm={tsm}
-          manager={manager}
           onMeetingCreated={handleMeetingCreated}
         >
           <Button variant="outline" className="inline-flex items-center">

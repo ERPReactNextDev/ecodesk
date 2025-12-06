@@ -1,6 +1,37 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { supabase } from "../../utils/supabase";
-import redis from "../../lib/redis";
+import { MongoClient } from "mongodb";
+
+const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_DB = process.env.MONGODB_DB;
+
+if (!MONGODB_URI) {
+  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+}
+
+if (!MONGODB_DB) {
+  throw new Error("Please define the MONGODB_DB environment variable inside .env.local");
+}
+
+const mongoUri: string = MONGODB_URI;
+const mongoDb: string = MONGODB_DB;
+
+let cachedClient: MongoClient | null = null;
+let cachedDb: any = null;
+
+async function connectToDatabase() {
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
+  }
+
+  const client = new MongoClient(mongoUri);
+  await client.connect();
+  const db = client.db(mongoDb);
+
+  cachedClient = client;
+  cachedDb = db;
+
+  return { client, db };
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -8,50 +39,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const {
+    const { referenceid, account_reference_number, status, activity_reference_number } = req.body;
+
+    if (!referenceid || !account_reference_number || !status || !activity_reference_number) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const { db } = await connectToDatabase();
+
+    const collection = db.collection("activity");
+
+    const insertResult = await collection.insertOne({
       referenceid,
-      tsm,
-      manager,
       account_reference_number,
       status,
       activity_reference_number,
-    } = req.body;
+      date_created: new Date(),
+      date_updated: new Date(),
+    });
 
-    if (!referenceid || !tsm || !manager || !account_reference_number || !status || !activity_reference_number) {
-      return res.status(400).json({ error: "Missing fields" });
-    }
+    // Note: insertOne result does not have "ops" in latest MongoDB driver
+    // Use insertedId to fetch the inserted document if needed
+    const insertedDoc = await collection.findOne({ _id: insertResult.insertedId });
 
-    // Insert to Supabase table
-    const { data, error } = await supabase
-      .from("activity")
-      .insert({
-        referenceid,
-        tsm,
-        manager,
-        account_reference_number,
-        status,
-        activity_reference_number,
-      });
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    // Clear cache related to this activity_reference_number and referenceid
-    try {
-      const cacheKeyByActivity = `activity:referenceid:${activity_reference_number}`;
-      const cacheKeyByRefId = `activity:referenceid:${referenceid}`;
-      await redis.del(cacheKeyByActivity);
-      await redis.del(cacheKeyByRefId);
-    } catch (cacheErr) {
-      console.warn("Failed to clear cache:", cacheErr);
-      // Don't fail the request just because cache clearing failed
-    }
-
-    return res.status(200).json({ success: true, data });
-  } catch (err: any) {
-    console.error("Server error:", err);
-    return res.status(500).json({ error: "Server error" });
+    return res.status(200).json({ success: true, data: insertedDoc });
+  } catch (error: any) {
+    console.error("MongoDB insert error:", error);
+    return res.status(500).json({ error: "Failed to save activity" });
   }
 }

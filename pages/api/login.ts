@@ -77,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // ❗ ❗ FINAL FILTER — ONLY SALES CAN LOGIN
-  if (user.Department !== "Sales") {
+  if (user.Department !== "CSR") {
     return res.status(403).json({
       message: "Only Sales department users are allowed to log in.",
     });

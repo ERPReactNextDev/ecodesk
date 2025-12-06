@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { useFormat } from "@/contexts/FormatContext";
 import { type DateRange } from "react-day-picker";
 
-import { Meeting } from "@/components/activity-planner-meeting";
+import { Meeting } from "@/components/meeting";
 
 type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
   userId?: string;
@@ -28,8 +28,6 @@ export function SidebarRight({
 
   const [userDetails, setUserDetails] = React.useState({
     ReferenceID: "",
-    TSM: "",
-    Manager: "",
     Firstname: "",
     Lastname: "",
     Position: "",
@@ -78,8 +76,6 @@ export function SidebarRight({
       .then((data) => {
         setUserDetails({
           ReferenceID: data.ReferenceID || "",
-          TSM: data.TSM || "",
-          Manager: data.Manager || "",
           Firstname: data.Firstname || "",
           Lastname: data.Lastname || "",
           Position: data.Position || "",
@@ -136,8 +132,6 @@ export function SidebarRight({
           <CardContent>
             <Meeting
               referenceid={userDetails.ReferenceID}
-              tsm={userDetails.TSM}
-              manager={userDetails.Manager}
             />
           </CardContent>
         </Card>

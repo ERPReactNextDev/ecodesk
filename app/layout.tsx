@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 export const metadata: Metadata = {
-  title: "Taskflow - Sales Activity Planner and Tracker",
+  title: "Ecodesk - Customer Ticketing Management System",
   description: "Developed by IT Team and Leroux Y Xchire",
 };
 

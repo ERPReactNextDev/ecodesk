@@ -24,8 +24,8 @@ export function TeamSwitcher({
         <SidebarMenuButton className="w-full">
           <div className="flex items-center space-x-3">
             <Image
-              src="/Taskflow.png"
-              alt="Taskflow Logo"
+              src="/Ecodesk.png"
+              alt="Ecodesk Logo"
               width={28}
               height={28}
               className="rounded-full"

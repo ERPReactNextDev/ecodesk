@@ -2,41 +2,19 @@
 
 import * as React from "react";
 import {
-  Bot,
   LayoutDashboard,
-  Mail,
   CalendarDays,
   Settings,
-  Building,
   BarChart2,
   Phone,
   Home,
-  BookOpen,
-  PlusCircle,
-  Slash,
-  Clock,
-  Trash2,
-  Repeat,
-  Users,
-  Briefcase,
-  Target,
-  Edit2,
   FileText,
-  MessageSquare,
-  Compass,
-  DollarSign,
-  ShoppingCart,
-  XCircle ,
-  File,
-  Leaf,
-  ShoppingBag,
-  TrendingUp,
-  PhoneCall,
-  CreditCard,
-  Rocket,
   ClipboardList,
-  ClipboardPenLine,
-  UserCheck
+  ShoppingCart,
+  Briefcase,
+  Compass,
+  HelpCircle,
+  PhoneCall,
 } from "lucide-react";
 
 import { NavFavorites } from "@/components/nav-favorites";
@@ -55,79 +33,48 @@ import {
 function getMenuItems(userId: string | null) {
   return [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Ask AI", url: "#", icon: Bot },
-    { title: "Inbox", url: "#", icon: Mail, badge: "5" },
+    //{ title: "Ask AI", url: "#", icon: Bot },
+    //{ title: "Inbox", url: "#", icon: Mail, badge: "5" },
   ];
 }
 
 const data = {
   teams: [
     {
-      name: "Taskflow",
+      name: "Ecodesk",
       plan: "Enterprise",
     },
   ],
   navMain: [
     { title: "Dashboard", url: "#", icon: LayoutDashboard, isActive: true },
+    //{ title: "Ask AI", url: "#", icon: Bot },
+    //{ title: "Inbox", url: "#", icon: Mail, badge: "5" },
   ],
   navSecondary: [
+    { title: "Help", url: "/settings", icon: HelpCircle },
     { title: "Calendar", url: "/calendar", icon: CalendarDays },
     { title: "Settings", url: "/settings", icon: Settings },
   ],
   favorites: [
-    { name: "Sales Performance", url: "#", icon: BarChart2 },
-    { name: "National Call Ranking", url: "#", icon: Phone },
+    { name: "Inquiries", url: "/inquiries", icon: BarChart2 },
+    { name: "Customer Database", url: "/accounts", icon: Phone },
   ],
   workspaces: [
     {
-      name: "Customer Database",
+      name: "Reports",
       icon: Home,
       pages: [
-        { name: "All", url: "/companies/all", icon: BookOpen }, // For TSM and Manager
-        { name: "Active", url: "/companies/active", icon: BookOpen },
-        { name: "New Client", url: "/companies/newclient", icon: PlusCircle },
-        { name: "Non-Buying", url: "/companies/nonbuying", icon: Slash },
-        { name: "Inactive", url: "/companies/inactive", icon: Clock },
-        { name: "Deletion", url: "/companies/remove", icon: Trash2 },
-        { name: "Follow Ups", url: "/companies/followup", icon: Repeat },
-        { name: "Group Affiliate", url: "/companies/group", icon: Users },
-        { name: "Account Deletion", url: "/companies/approval", icon: Trash2 },
+        { name: "Daily CSR Transaction", url: "/reports/dst", icon: FileText },
+        { name: "SKU Listing", url: "/reports/sku", icon: ClipboardList },
+        { name: "Received PO", url: "/reports/po", icon: ShoppingCart },
+        { name: "D-Tracking", url: "/reports/dtr", icon: Compass },
       ],
     },
     {
-      name: "Work Management",
+      name: "Taskflow",
       icon: Briefcase,
       pages: [
-        { name: "Activity Planner", url: "/activity/planner", icon: Target },
-        { name: "Task List", url: "/activity/tasklist", icon: ClipboardList },
-        { name: "Manual Task", url: "/activity/manual", icon: Edit2 },
-        { name: "Notes", url: "/activity/notes", icon: FileText },
-        { name: "Client Coverage Guide", url: "/activity/ccg", icon: Compass },
-      ],
-    },
-    {
-      name: "Reports",
-      icon: BarChart2,
-      pages: [
-        { name: "Account Sales Summary", url: "/reports/am", icon: DollarSign },
-        { name: "Quotation Summary", url: "/reports/quotation", icon: FileText },
-        { name: "Sales Order Summary", url: "/reports/so", icon: ShoppingCart },
-        //{ name: "Pending Sales Order", url: "/reports/pending", icon: XCircle  },
-        { name: "Sales Invoice Summary", url: "/reports/si", icon: File },
-        { name: "CSR Inquiry Summary", url: "/reports/csr", icon: Phone },
-        { name: "SPF Summary", url: "/reports/spf", icon: ClipboardPenLine },
-        { name: "New Client Summary", url: "/reports/ncs", icon: Leaf },
-        { name: "FB Marketplace Summary", url: "/reports/fb", icon: ShoppingBag },
-      ],
-    },
-    {
-      name: "Conversion Rates",
-      icon: TrendingUp,
-      pages: [
-        //{ name: "Calls to Quote", url: "#", icon: PhoneCall },
-        //{ name: "Quote To SO", url: "#", icon: FileText },
-        //{ name: "SO To SI", url: "#", icon: CreditCard },
-        //{ name: "Calls to SI", url: "#", icon: Rocket },
+        { name: "OB Calls", url: "/taskflow/obc", icon: PhoneCall },
       ],
     },
   ],
@@ -136,14 +83,14 @@ const data = {
 export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [userId, setUserId] = React.useState<string | null>(null);
   const [userDetails, setUserDetails] = React.useState({
-    Firstname: "Task",
-    Lastname: "Flow",
-    Email: "taskflow@ecoshiftcorp.com",
-    Department: "ecoshiftcorp.com",
+    Firstname: "Eco",
+    Lastname: "Desk",
+    Email: "ecodesk@disruptivesolutions.com",
+    Department: "disruptivesolutions.com",
     Location: "Philippines",
     Role: "Admin",
     Position: "",
-    Company: "Ecoshift Corporation",
+    Company: "Disruptive Solutions Inc",
     Status: "None",
     profilePicture: "",
     ReferenceID: "",
@@ -201,51 +148,25 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
       Admin: menuItems.map((m) => m.title),
       "Super Admin": menuItems.map((m) => m.title),
       Manager: [
-        "Session Logs",
-        "Sales Performance",
-        "Conversion Rates",
+        "Tickets",
         "Customer Database",
-        "National",
-        "My Team",
-        "Work Management",
         "Reports",
-        "Help Center",
-        "What is Taskflow?",
+        "Taskflow",
+        "Help",
       ],
-      "Special Access": [
-        "Session Logs",
-        "Sales Performance",
-        "Conversion Rates",
+      "CSR Agent": [
+        "Tickets",
         "Customer Database",
-        "National",
-        "My Team",
         "Reports",
-        "Help Center",
-        "What is Taskflow?",
+        "Taskflow",
+        "Help",
       ],
-      "Territory Sales Manager": [
-        "Session Logs",
-        "Sales Performance",
-        "Conversion Rates",
+      "CSR Admin": [
+        "Tickets",
         "Customer Database",
-        "National",
-        "Work Management",
-        "My Team",
         "Reports",
-        "Help Center",
-        "What is Taskflow?",
-      ],
-      "Territory Sales Associate": [
-        "Dashboard",
-        "Session Logs",
-        "Sales Performance",
-        "Conversion Rates",
-        "Customer Database",
-        "National",
-        "Work Management",
-        "Reports",
-        "Help Center",
-        "What is Taskflow?",
+        "Taskflow",
+        "Help",
       ],
     };
     return menuItems.filter((item) => allowed[role]?.includes(item.title));
@@ -264,27 +185,7 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
 
   // Filter pages in Customer Database workspace for TSM and Manager roles
   const filteredWorkspaces = React.useMemo(() => {
-    const role = userDetails.Role || "Admin";
-
     return data.workspaces.map((workspace) => {
-      if (workspace.name === "Customer Database") {
-        if (role === "Territory Sales Associate") {
-          return {
-            ...workspace,
-            pages: workspace.pages.filter(
-              (page) =>
-                !["All", "Pending Accounts", "Account Deletion", "Pending Transferred"].includes(page.name)
-            ),
-          };
-        } else if (role === "Territory Sales Manager") {
-          return {
-            ...workspace,
-            pages: workspace.pages.filter((page) =>
-              ["All", "Pending Accounts", "Account Deletion", "Pending Transferred"].includes(page.name)
-            ),
-          };
-        }
-      }
       return workspace;
     });
   }, [userDetails.Role]);
@@ -300,6 +201,16 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
         })),
       })),
     [filteredWorkspaces, withUserId]
+  );
+
+  // Append userId to URLs in favorites as well
+  const favoritesWithId = React.useMemo(
+    () =>
+      data.favorites.map((favorite) => ({
+        ...favorite,
+        url: withUserId(favorite.url),
+      })),
+    [data.favorites, withUserId]
   );
 
   const navMainWithId = React.useMemo(
@@ -320,7 +231,7 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
       </SidebarHeader>
 
       <SidebarContent>
-        <NavFavorites favorites={data.favorites} />
+        <NavFavorites favorites={favoritesWithId} />
         <NavWorkspaces
           workspaces={workspacesWithId}
           openSections={openSections}

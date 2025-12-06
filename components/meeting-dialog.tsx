@@ -29,23 +29,19 @@ import { toast } from "sonner";
 
 interface MeetingDialogProps {
   referenceid: string;
-  tsm: string;
-  manager: string;
   onMeetingCreated?: (meeting: any) => void; // callback to parent
   children: React.ReactNode; // button trigger passed from parent
 }
 
 export function MeetingDialog({
   referenceid,
-  tsm,
-  manager,
   onMeetingCreated,
   children,
 }: MeetingDialogProps) {
   const [open, setOpen] = useState(false);
 
   // Form state
-  const [typeActivity, setTypeActivity] = useState("Site Visit");
+  const [typeActivity, setTypeActivity] = useState("Group Meeting");
   const [remarks, setRemarks] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -53,7 +49,7 @@ export function MeetingDialog({
   // Reset form on dialog open
   useEffect(() => {
     if (open) {
-      setTypeActivity("Site Visit");
+      setTypeActivity("Group Meeting");
       setRemarks("");
       setStartDate("");
       setEndDate("");
@@ -63,7 +59,7 @@ export function MeetingDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!referenceid || !tsm || !manager || !startDate || !endDate) {
+    if (!referenceid || !startDate || !endDate) {
       toast.error("Please fill in all required fields.");
       return;
     }
@@ -73,8 +69,6 @@ export function MeetingDialog({
 
       const newMeeting = {
         referenceid,
-        tsm,
-        manager,
         type_activity: typeActivity,
         remarks: remarks || "No remarks",
         start_date: startDate,
@@ -116,9 +110,8 @@ export function MeetingDialog({
                 <SelectValue placeholder="Select an activity type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Site Visit">Site Visit</SelectItem>
-                <SelectItem value="Client Meeting">Client Meeting</SelectItem>
                 <SelectItem value="Group Meeting">Group Meeting</SelectItem>
+                <SelectItem value="Trainings">Trainings</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -132,6 +125,7 @@ export function MeetingDialog({
               onChange={(e) => setRemarks(e.target.value)}
               placeholder="Add remarks..."
               rows={3}
+              className="capitalize"
             />
           </div>
 
