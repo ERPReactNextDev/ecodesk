@@ -55,20 +55,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const inquiry = typeof body.inquiry === "string" ? body.inquiry : "";
     const manager = typeof body.manager === "string" ? body.manager : "";
     const agent = typeof body.agent === "string" ? body.agent : "";
+    const status = typeof body.status === "string" ? body.status : "";
 
     // (Optional) Basic required field check - remove if no validation needed
     if (
       !account_reference_number ||
       !company_name ||
-      !contact_person ||
-      !contact_number ||
-      !email_address ||
-      !address ||
+     
       !ticket_reference_number ||
       !wrap_up ||
       !inquiry ||
       !manager ||
-      !agent
+      !agent ||
+      !status
     ) {
       return res.status(400).json({ error: "Missing required fields" });
     }
@@ -90,6 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       inquiry,
       manager,
       agent,
+      status,
       date_created: now,
       date_updated: now,
     });

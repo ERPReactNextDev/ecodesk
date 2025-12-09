@@ -369,6 +369,7 @@ export function UpdateTicketDialog({
           inquiry: inquiryState,
           manager: managerState,
           agent: agentState,
+          status: "Endorsed"
         };
 
         const endorsedRes = await fetch("/api/act-endorsed-ticket", {
