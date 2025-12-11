@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, } from "@/components/ui/card";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemMedia, ItemTitle, } from "@/components/ui/item";
 import { Progress } from "@/components/ui/progress";
+import { AddCompanyModal } from "./add-company-modal";
 
 interface Company {
     id: string;
@@ -336,22 +337,42 @@ export const Ticket: React.FC<TicketProps> = ({
 
     const excludedCompanyStatuses = ["Pending", "Transferred", "Remove"];
 
-    const filteredCompanies = companies.filter((c) => {
-        if (excludedCompanyStatuses.includes(c.status)) return false;
+const normalize = (str: string) =>
+  str
+    .toLowerCase()
+    .replace(/[_\s]+/g, " ") // replace underscores and multiple spaces with single space
+    .trim();
 
-        // Filter only companies with type_client === "CSR Client"
-        if (c.type_client !== "CSR Client") return false;
+const filteredCompanies = companies
+  .filter((c) => {
+    if (excludedCompanyStatuses.includes(c.status)) return false;
+    if (c.type_client !== "CSR Client") return false;
 
-        const term = searchTerm.toLowerCase();
-        return (
-            (c.company_name?.toLowerCase().includes(term) ?? false) ||
-            (c.email_address?.toLowerCase().includes(term) ?? false) ||
-            (c.contact_number?.toLowerCase().includes(term) ?? false) ||
-            (c.contact_person?.toLowerCase().includes(term) ?? false)
-        );
-    });
+    const term = normalize(searchTerm);
 
-    const MAX_DISPLAY = 20;
+    const name = normalize(c.company_name || "");
+    const email = normalize(c.email_address || "");
+    const contact = normalize(c.contact_number || "");
+    const person = normalize(c.contact_person || "");
+
+    return name.includes(term) || email.includes(term) || contact.includes(term) || person.includes(term);
+  })
+  .sort((a, b) => {
+    const term = normalize(searchTerm);
+    const nameA = normalize(a.company_name || "");
+    const nameB = normalize(b.company_name || "");
+
+    const score = (name: string) => {
+      if (name === term) return 0; // exact match
+      if (name.startsWith(term)) return 1; // prefix match
+      return 2; // contains match
+    };
+
+    return score(nameA) - score(nameB);
+  });
+
+
+    const MAX_DISPLAY = 99999999999;
 
     const displayedCompanies = searchTerm
         ? filteredCompanies
@@ -702,79 +723,84 @@ export const Ticket: React.FC<TicketProps> = ({
     return (
         <div className="flex flex-col md:flex-row gap-4">
             {/* LEFT SIDE — COMPANIES */}
-            <Card className="w-full md:w-1/3 p-3 rounded-lg">
+                <Card className="w-full md:w-1/3 p-3 rounded-lg">
                 <CardHeader className="p-0">
+                    <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold">Companies</CardTitle>
+                    {/* LEFT SIDE — COMPANIES */}
+                    <AddCompanyModal /> 
+                    </div>
                 </CardHeader>
 
                 <CardContent className="p-0 flex flex-col">
                     <input
-                        type="search"
-                        placeholder="Search company, email, contact, person..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="mb-3 px-3 py-2 border rounded-md text-sm"
+                    type="search"
+                    placeholder="Search company, email, contact, person..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="mb-3 px-3 py-2 border rounded-md text-sm"
                     />
 
                     {displayedCompanies.length === 0 ? (
-                        <div className="text-muted-foreground text-sm p-3 border rounded-lg">
-                            No company info available.
-                        </div>
+                    <div className="text-muted-foreground text-sm p-3 border rounded-lg">
+                        No company info available.
+                    </div>
                     ) : (
-                        <Accordion
-                            type="multiple"
-                            className="overflow-auto space-y-2 p-2 max-h-[500px]"
+                    <Accordion
+                        type="multiple"
+                        className="overflow-auto space-y-2 p-2 max-h-[500px]"
+                    >
+                        {displayedCompanies.map((c) => (
+                        <AccordionItem
+                            key={c.account_reference_number}
+                            value={c.account_reference_number}
                         >
-                            {displayedCompanies.map((c) => (
-                                <AccordionItem
-                                    key={c.account_reference_number}
-                                    value={c.account_reference_number}
+                            <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
+                            <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
+                                <span
+                                className="flex-1 text-left break-words whitespace-normal"
+                                style={{ minWidth: 0 }}
                                 >
-                                    <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
-                                        <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
-                                            <span
-                                                className="flex-1 text-left break-words whitespace-normal"
-                                                style={{ minWidth: 0 }}
-                                            >
-                                                {c.company_name}
-                                            </span>
-                                        </AccordionTrigger>
+                                {c.company_name}
+                                </span>
+                            </AccordionTrigger>
 
-                                        <Button
-                                            variant="outline"
-                                            disabled={addingAccount === c.account_reference_number}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleAddActivity(c);
-                                            }}
-                                            className="text-xs px-3 py-1"
-                                        >
-                                            {addingAccount === c.account_reference_number
-                                                ? "Adding..."
-                                                : "Add"}
-                                        </Button>
-                                    </div>
+                            <Button
+                                variant="outline"
+                                disabled={addingAccount === c.account_reference_number}
+                                onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddActivity(c);
+                                }}
+                                className="text-xs px-3 py-1"
+                            >
+                                {addingAccount === c.account_reference_number
+                                ? "Adding..."
+                                : "Add"}
+                            </Button>
+                            </div>
 
-                                    <AccordionContent className="text-xs px-4 pb-2 pt-0">
-                                        <p>
-                                            <strong>Contact Number:</strong> {c.contact_number || "-"}
-                                        </p>
-                                        <p>
-                                            <strong>Email Address:</strong> {c.email_address || "-"}
-                                        </p>
-                                        <p>
-                                            <strong>Contact Person:</strong> {c.contact_person || "-"}
-                                        </p>
-                                        <p>
-                                            <strong>Type Client:</strong> {c.type_client || "-"}
-                                        </p>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
+                            <AccordionContent className="text-xs px-4 pb-2 pt-0">
+                            <p>
+                                <strong>Contact Number:</strong> {c.contact_number || "-"}
+                            </p>
+                            <p>
+                                <strong>Email Address:</strong> {c.email_address || "-"}
+                            </p>
+                            <p>
+                                <strong>Contact Person:</strong> {c.contact_person || "-"}
+                            </p>
+                            <p>
+                                <strong>Type Client:</strong> {c.type_client || "-"}
+                            </p>
+                            </AccordionContent>
+                        </AccordionItem>
+                        ))}
+                    </Accordion>
                     )}
                 </CardContent>
-            </Card>
+                </Card>
+
 
             {/* RIGHT SIDE — ACTIVITIES */}
             <Card className="w-full md:w-2/3 p-4 rounded-xl flex flex-col">

@@ -9,8 +9,11 @@ const Xchire_sql = neon(Xchire_databaseUrl);
 
 export async function GET(req: Request) {
   try {
+    // Fetch all CSR Client accounts, sorted alphabetically by company_name
     const Xchire_fetch = await Xchire_sql`
-      SELECT * FROM accounts WHERE type_client = 'CSR Client';
+      SELECT * FROM accounts
+      WHERE type_client = 'CSR Client'
+      ORDER BY company_name ASC;
     `;
 
     if (Xchire_fetch.length === 0) {

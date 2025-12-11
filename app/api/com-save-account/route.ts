@@ -73,12 +73,12 @@ export async function POST(req: Request) {
       company_group
     } = body;
 
-    if (!referenceid || !company_name || !type_client || !region) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields: referenceid, company_name, type_client or region." },
-        { status: 400 }
-      );
-    }
+    // if (!referenceid || !company_name || !type_client || !region) {
+    //   return NextResponse.json(
+    //     { success: false, error: "Missing required fields: referenceid, company_name, type_client or region." },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Generate account_reference_number
     const prefix = getPrefix(company_name, region);
