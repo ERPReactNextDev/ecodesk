@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, } from "@/components/ui/card"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemMedia, ItemTitle, } from "@/components/ui/item";
 import { Progress } from "@/components/ui/progress";
 import { AddCompanyModal } from "./add-company-modal";
+import { Separator } from "@/components/ui/separator"
 
 interface Company {
     id: string;
@@ -202,11 +203,9 @@ export const Ticket: React.FC<TicketProps> = ({
         }
     };
 
-
     useEffect(() => {
         fetchCompanies();
     }, []);
-
 
     // Fetch activities when referenceid changes
     const fetchActivities = useCallback(async () => {
@@ -294,15 +293,18 @@ export const Ticket: React.FC<TicketProps> = ({
         // Step 1: Search bar filter (activitySearchTerm)
         if (activitySearchTerm.trim() !== "") {
             const term = activitySearchTerm.toLowerCase();
+
             data = data.filter((item) => {
+                const companyName = (item.company_name ?? "").toString().toLowerCase();
+                const ticketRef = (item.ticket_reference_number ?? "").toString().toLowerCase();
+
                 return (
-                    item.company_name.toLowerCase().includes(term) ||
-                    item.status.toLowerCase().includes(term) ||
-                    item.activity_reference_number.toLowerCase().includes(term) ||
-                    item.account_reference_number.toLowerCase().includes(term)
+                    companyName.includes(term) ||
+                    ticketRef.includes(term)
                 );
             });
         }
+
 
         // Step 2: UI filters from filters object
         Object.entries(filters).forEach(([key, val]) => {
@@ -405,12 +407,14 @@ export const Ticket: React.FC<TicketProps> = ({
         if (!activitySearchTerm.trim()) return mergedData;
 
         const term = activitySearchTerm.toLowerCase();
+
         return mergedData.filter((item) => {
+            const companyName = (item.company_name ?? "").toString().toLowerCase();
+            const ticketRef = (item.ticket_reference_number ?? "").toString().toLowerCase();
+
             return (
-                item.company_name.toLowerCase().includes(term) ||
-                item.status.toLowerCase().includes(term) ||
-                item.activity_reference_number.toLowerCase().includes(term) ||
-                item.account_reference_number.toLowerCase().includes(term)
+                companyName.includes(term) ||
+                ticketRef.includes(term)
             );
         });
     }, [activitySearchTerm, mergedData]);
@@ -742,7 +746,7 @@ export const Ticket: React.FC<TicketProps> = ({
     return (
         <div className="flex flex-col md:flex-row gap-4">
             {/* LEFT SIDE — COMPANIES */}
-            <Card className="w-full md:w-1/3 p-3 rounded-lg">
+            <Card className="w-full md:w-1/3 p-3 rounded-lg flex flex-col">
                 <CardHeader className="p-0">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm font-semibold">Companies</CardTitle>
@@ -755,7 +759,7 @@ export const Ticket: React.FC<TicketProps> = ({
                     </div>
                 </CardHeader>
 
-                <CardContent className="p-0 flex flex-col">
+                <CardContent className="p-0 flex flex-col flex-grow overflow-hidden">
                     <Input
                         type="search"
                         placeholder="Search company, email, contact, person..."
@@ -770,7 +774,7 @@ export const Ticket: React.FC<TicketProps> = ({
                     ) : (
                         <Accordion
                             type="multiple"
-                            className="overflow-auto space-y-2 p-2 max-h-[500px]"
+                            className="overflow-auto space-y-2 p-2 max-h-[700px]"
                         >
                             {displayedCompanies.map((c) => (
                                 <AccordionItem
@@ -880,7 +884,7 @@ export const Ticket: React.FC<TicketProps> = ({
                 </div>
 
                 {/* ACTIVITIES LIST */}
-                <div className="max-h-[400px] overflow-auto space-y-4 custom-scrollbar flex-grow">
+                <div className="max-h-[600px] overflow-auto space-y-4 custom-scrollbar flex-grow">
                     <Accordion type="single" collapsible className="w-full">
                         {paginatedActivities.map((item, index) => {
                             let badgeColor: "default" | "secondary" | "outline" = "default";
@@ -988,7 +992,9 @@ export const Ticket: React.FC<TicketProps> = ({
 
                                     <AccordionContent className="text-xs px-4 py-2">
                                         {/* Always show contact info */}
-                                        <p><strong>Contact Person:</strong> {item.contact_person || "-"}</p>
+                                        <p className="uppercase"><strong>Ticket #:</strong> {item.ticket_reference_number || "-"}</p>
+                                        <Separator className="my-4" />
+                                        <p className="capitalize"><strong>Contact Person:</strong> {item.contact_person || "-"}</p>
                                         <p><strong>Contact Number:</strong> {item.contact_number || "-"}</p>
                                         <p><strong>Email Address:</strong> {item.email_address || "-"}</p>
                                         <p><strong>Date Created:</strong> {new Date(item.date_created).toLocaleDateString()}</p>
