@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { SidebarLeft } from "@/components/sidebar-left";
 import { SidebarRight } from "@/components/sidebar-right";
 import { useSearchParams } from "next/navigation";
@@ -104,7 +104,30 @@ export function CustomerDatabaseContent() {
   const [hideModalOpen, setHideModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
+  // Agents state and loading
+  const [agents, setAgents] = useState<{ Firstname: string; Lastname: string; ReferenceID: string }[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
 
+  // Fetch all users (agents) from /api/fetch-all-users (no query params needed)
+  useEffect(() => {
+    async function fetchAgents() {
+      setAgentsLoading(true);
+      try {
+        const res = await fetch('/api/fetch-agent');
+        if (!res.ok) throw new Error("Failed to fetch agents");
+        const data = await res.json();
+        setAgents(data);
+      } catch (err) {
+        console.error(err);
+        setAgents([]);
+      } finally {
+        setAgentsLoading(false);
+      }
+    }
+    fetchAgents();
+  }, []);
+
+  // Fetch user data based on userId (to get userDetails.referenceid)
   useEffect(() => {
     if (!userId) {
       setError("User ID is missing.");
@@ -133,6 +156,7 @@ export function CustomerDatabaseContent() {
     fetchUserData();
   }, [userId]);
 
+  // Fetch accounts
   useEffect(() => {
     async function fetchAccounts() {
       try {
@@ -151,9 +175,8 @@ export function CustomerDatabaseContent() {
     fetchAccounts();
   }, []);
 
-  // Filtered and searched accounts logic
+  // Filter and search accounts logic
   const filteredAccounts = accounts.filter((acc) => {
-    // Exclude accounts with certain statuses
     if (["Removed", "Deletion", "Transferred"].includes(acc.status)) {
       return false;
     }
@@ -177,7 +200,6 @@ export function CustomerDatabaseContent() {
     return matchesSearch && matchesTypeClient && matchesIndustry;
   });
 
-
   const totalPages = Math.ceil(filteredAccounts.length / accountsPerPage);
   const indexOfLast = currentPage * accountsPerPage;
   const indexOfFirst = indexOfLast - accountsPerPage;
@@ -194,7 +216,6 @@ export function CustomerDatabaseContent() {
     );
   };
 
-  /* Handle Delete - now triggers Hide Modal */
   const handleDelete = (account: Account) => {
     setSelectedAccount(account);
     setHideModalOpen(true);
@@ -222,6 +243,13 @@ export function CustomerDatabaseContent() {
         .filter((v): v is string => typeof v === "string" && v.trim() !== "")
     )
   );
+
+  // Get agent name by ReferenceID
+  const getAgentNameByReferenceID = (refId: string | null | undefined) => {
+    if (!refId) return "-";
+    const agent = agents.find((a) => a.ReferenceID === refId);
+    return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
+  };
 
   return (
     <>
@@ -283,8 +311,9 @@ export function CustomerDatabaseContent() {
                   <label className="block mb-1 font-medium text-sm">Type Client</label>
                   <Select
                     value={filterTypeClient ?? ""}
-                    onValueChange={(value) => setFilterTypeClient(value === "__clear" ? undefined : value)}
-
+                    onValueChange={(value) =>
+                      setFilterTypeClient(value === "__clear" ? undefined : value)
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select Type Client" />
@@ -304,8 +333,9 @@ export function CustomerDatabaseContent() {
                   <label className="block mb-1 font-medium text-sm">Industry</label>
                   <Select
                     value={filterIndustry ?? ""}
-                    onValueChange={(value) => setFilterIndustry(value === "__clear" ? undefined : value)}
-
+                    onValueChange={(value) =>
+                      setFilterIndustry(value === "__clear" ? undefined : value)
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select Industry" />
@@ -338,7 +368,6 @@ export function CustomerDatabaseContent() {
             </DialogContent>
           </Dialog>
 
-
           {/* Loading, Error and No Data states */}
           {loading && <p>Loading accounts...</p>}
           {error && <p className="text-destructive">{error}</p>}
@@ -353,7 +382,7 @@ export function CustomerDatabaseContent() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Actions</TableHead>
-                    <TableHead>Reference ID</TableHead>
+                    <TableHead>Account Owner</TableHead>
                     <TableHead>Company Name</TableHead>
                     <TableHead>Contact Person</TableHead>
                     <TableHead>Contact Number</TableHead>
@@ -390,7 +419,7 @@ export function CustomerDatabaseContent() {
                           </>
                         )}
                       </TableCell>
-                      <TableCell>{acc.referenceid}</TableCell>
+                      <TableCell className="capitalize">{getAgentNameByReferenceID(acc.referenceid)}</TableCell>
                       <TableCell>{acc.company_name ?? "-"}</TableCell>
                       <TableCell>{acc.contact_person ?? "-"}</TableCell>
                       <TableCell>{acc.contact_number ?? "-"}</TableCell>
