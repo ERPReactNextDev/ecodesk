@@ -368,23 +368,27 @@ export function CustomerDatabaseContent() {
                   {currentAccounts.map((acc) => (
                     <TableRow key={acc.id} className="hover:bg-gray-50">
                       <TableCell className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingAccount(acc);
-                            setEditModalOpen(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(acc)}
-                        >
-                          Delete
-                        </Button>
+                        {acc.type_client === "CSR Client" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingAccount(acc);
+                                setEditModalOpen(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(acc)}
+                            >
+                              Delete
+                            </Button>
+                          </>
+                        )}
                       </TableCell>
                       <TableCell>{acc.referenceid}</TableCell>
                       <TableCell>{acc.company_name ?? "-"}</TableCell>
@@ -404,18 +408,20 @@ export function CustomerDatabaseContent() {
 
           {/* Pagination */}
           {!loading && !error && filteredAccounts.length > 0 && (
-            <div className="flex justify-center gap-2 mt-4">
+            <div className="mt-4 flex justify-center items-center space-x-2 text-xs">
               <Button
+                size="sm"
                 onClick={() => goToPage(currentPage - 1)}
                 disabled={currentPage === 1}
                 variant="outline"
               >
                 Previous
               </Button>
-              <span className="px-3 py-1">
-                Page {currentPage} of {totalPages}
+              <span>
+                Page {currentPage} / {totalPages || 1}
               </span>
               <Button
+                size="sm"
                 onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 variant="outline"
