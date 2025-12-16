@@ -75,8 +75,8 @@ export function AddCompanyModal({ referenceid }: AddCompanyModalProps) {
         .then((data) => {
           if (data.success) {
             const companies = data.data.map((c: any) => ({
-              company_name: c.company_name.toLowerCase().trim(),
-              contact_person: c.contact_person.toLowerCase().trim(),
+              company_name: (c.company_name ?? "").toLowerCase().trim(),
+              contact_person: (c.contact_person ?? "").toLowerCase().trim(),
             }));
             setExistingCompanies(companies);
           }
@@ -113,75 +113,75 @@ export function AddCompanyModal({ referenceid }: AddCompanyModalProps) {
   };
 
   const handleSave = async () => {
-  if (!isFormValid()) {
-    alert("Please fill all required fields correctly and avoid duplicates.");
-    return;
-  }
-
-  try {
-    const gender = genders.includes(formData.gender) ? formData.gender : "Male";
-
-    // Generate account_reference_number using companyName + region
-    const getPrefix = (company_name: string | null, region: string | null) => {
-      const companyPart = (company_name ?? "").trim().substring(0, 2).toUpperCase();
-      const regionPart = (region ?? "").trim().toUpperCase().replace(/\s+/g, "");
-      return `${companyPart}-${regionPart}`;
-    };
-
-    const accountReferenceNumber = getPrefix(formData.company_name, formData.region);
-
-    // 1️⃣ Payload for company API
-    const companyPayload = {
-      referenceid,
-      account_reference_number: accountReferenceNumber,
-      ...formData,
-      gender,
-      remarks: formData.remarks.trim() === "" ? null : formData.remarks,
-      date_created: new Date().toISOString(),
-    };
-
-    const companyRes = await fetch("/api/com-save-company", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(companyPayload),
-    });
-
-    const companyResult = await companyRes.json();
-    if (!companyRes.ok) {
-      alert("Company save failed: " + (companyResult.error || "Unknown error"));
+    if (!isFormValid()) {
+      alert("Please fill all required fields correctly and avoid duplicates.");
       return;
     }
 
-    // 2️⃣ Payload for activity/ticket API
-    const ticketPayload = {
-      referenceid, // same as props
-      account_reference_number: accountReferenceNumber,
-      traffic: formData.traffic || null,
-      status: "On-Progress",
-      date_created: new Date().toISOString(),
-    };
+    try {
+      const gender = genders.includes(formData.gender) ? formData.gender : "Male";
 
-    const ticketRes = await fetch("/api/act-save-ticket", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(ticketPayload),
-    });
+      // Generate account_reference_number using companyName + region
+      const getPrefix = (company_name: string | null, region: string | null) => {
+        const companyPart = (company_name ?? "").trim().substring(0, 2).toUpperCase();
+        const regionPart = (region ?? "").trim().toUpperCase().replace(/\s+/g, "");
+        return `${companyPart}-${regionPart}`;
+      };
 
-    const ticketResult = await ticketRes.json();
-    if (!ticketRes.ok) {
-      alert("Activity save failed: " + (ticketResult.error || "Unknown error"));
-      return;
+      const accountReferenceNumber = getPrefix(formData.company_name, formData.region);
+
+      // 1️⃣ Payload for company API
+      const companyPayload = {
+        referenceid,
+        account_reference_number: accountReferenceNumber,
+        ...formData,
+        gender,
+        remarks: formData.remarks.trim() === "" ? null : formData.remarks,
+        date_created: new Date().toISOString(),
+      };
+
+      const companyRes = await fetch("/api/com-save-company", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(companyPayload),
+      });
+
+      const companyResult = await companyRes.json();
+      if (!companyRes.ok) {
+        alert("Company save failed: " + (companyResult.error || "Unknown error"));
+        return;
+      }
+
+      // 2️⃣ Payload for activity/ticket API
+      const ticketPayload = {
+        referenceid, // same as props
+        account_reference_number: accountReferenceNumber,
+        traffic: formData.traffic || null,
+        status: "On-Progress",
+        date_created: new Date().toISOString(),
+      };
+
+      const ticketRes = await fetch("/api/act-save-ticket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ticketPayload),
+      });
+
+      const ticketResult = await ticketRes.json();
+      if (!ticketRes.ok) {
+        alert("Activity save failed: " + (ticketResult.error || "Unknown error"));
+        return;
+      }
+
+      // Success
+      alert("Company and activity saved successfully!");
+      setOpen(false);
+      resetForm(); // make sure you have a resetForm function to clear formData
+    } catch (err) {
+      console.error("Request failed:", err);
+      alert("Request failed: " + err);
     }
-
-    // Success
-    alert("Company and activity saved successfully!");
-    setOpen(false);
-    resetForm(); // make sure you have a resetForm function to clear formData
-  } catch (err) {
-    console.error("Request failed:", err);
-    alert("Request failed: " + err);
-  }
-};
+  };
 
 
   const resetForm = () => {
@@ -217,8 +217,8 @@ export function AddCompanyModal({ referenceid }: AddCompanyModalProps) {
   return (
     <>
       {/* Trigger Button */}
-      <Button size="sm" variant="default" onClick={() => setOpen(true)}>
-        + Add Company
+      <Button variant="default" onClick={() => setOpen(true)}>
+        Add Account
       </Button>
 
       {/* Modal */}
@@ -381,7 +381,7 @@ export function AddCompanyModal({ referenceid }: AddCompanyModalProps) {
                 </Select>
               </div>
 
-               {/* Delivery Address */}
+              {/* Delivery Address */}
               <div className="col-span-2">
                 <Label>Traffic *</Label>
                 <Input

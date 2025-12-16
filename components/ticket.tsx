@@ -13,6 +13,7 @@ import { ActDeleteDialog } from "./act-delete-dialog";
 import { ActFilterDialog } from "./act-filter-dialog";
 import { type DateRange } from "react-day-picker";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, } from "@/components/ui/card";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemMedia, ItemTitle, } from "@/components/ui/item";
 import { Progress } from "@/components/ui/progress";
@@ -338,70 +339,68 @@ export const Ticket: React.FC<TicketProps> = ({
     const excludedCompanyStatuses = ["Pending", "Transferred", "Remove"];
 
     const normalize = (str: string) =>
-    str
-        .toLowerCase()
-        .replace(/[_\s]+/g, " ") // replace underscores and multiple spaces with single space
-        .trim();
+        str
+            .toLowerCase()
+            .replace(/[_\s]+/g, " ") // replace underscores and multiple spaces with single space
+            .trim();
 
     const filteredCompanies = companies
-    .filter((c) => {
-        if (excludedCompanyStatuses.includes(c.status)) return false;
-        if (c.type_client !== "CSR Client") return false;
+        .filter((c) => {
+            if (excludedCompanyStatuses.includes(c.status)) return false;
+            if (c.type_client !== "CSR Client") return false;
 
-        const term = normalize(searchTerm);
-        if (!term) return true;
+            const term = normalize(searchTerm);
+            if (!term) return true;
 
-        const fields = [
-        normalize(c.company_name || ""),
-        normalize(c.email_address || ""),
-        normalize(c.contact_number || ""),
-        normalize(c.contact_person || ""),
-        ];
+            const fields = [
+                normalize(c.company_name || ""),
+                normalize(c.email_address || ""),
+                normalize(c.contact_number || ""),
+                normalize(c.contact_person || ""),
+            ];
 
-        return fields.some((field) => field.includes(term));
-    })
-    .sort((a, b) => {
-        const term = normalize(searchTerm);
-        if (!term) return 0;
+            return fields.some((field) => field.includes(term));
+        })
+        .sort((a, b) => {
+            const term = normalize(searchTerm);
+            if (!term) return 0;
 
-        const score = (company: Company) => {
-        const fields = [
-            normalize(company.company_name || ""),
-            normalize(company.email_address || ""),
-            normalize(company.contact_number || ""),
-            normalize(company.contact_person || ""),
-        ];
+            const score = (company: Company) => {
+                const fields = [
+                    normalize(company.company_name || ""),
+                    normalize(company.email_address || ""),
+                    normalize(company.contact_number || ""),
+                    normalize(company.contact_person || ""),
+                ];
 
-        // Get the best match score among all fields
-        let bestScore = 3;
-        fields.forEach((field) => {
-            if (field === term) bestScore = Math.min(bestScore, 0);
-            else if (field.startsWith(term)) bestScore = Math.min(bestScore, 1);
-            else if (field.includes(term)) bestScore = Math.min(bestScore, 2);
+                // Get the best match score among all fields
+                let bestScore = 3;
+                fields.forEach((field) => {
+                    if (field === term) bestScore = Math.min(bestScore, 0);
+                    else if (field.startsWith(term)) bestScore = Math.min(bestScore, 1);
+                    else if (field.includes(term)) bestScore = Math.min(bestScore, 2);
+                });
+
+                return bestScore;
+            };
+
+            return score(a) - score(b);
         });
-
-        return bestScore;
-        };
-
-        return score(a) - score(b);
-    });
-
-
 
     const MAX_DISPLAY = 20;
 
-const displayedCompanies = useMemo(() => {
-    // 1️⃣ Exclude the company that is currently being added
-    const filtered = filteredCompanies.filter(
-        (c) => c.account_reference_number !== addingAccount
-    );
+    const displayedCompanies = useMemo(() => {
+        // 1️⃣ Exclude the company that is currently being added
+        const filtered = filteredCompanies.filter(
+            (c) => c.account_reference_number !== addingAccount
+        );
 
-    // 2️⃣ Slice to MAX_DISPLAY after relevance sorting
-    return filtered.slice(0, MAX_DISPLAY);
-}, [filteredCompanies, addingAccount]); // added addingAccount as dependency
+        // 2️⃣ Slice to MAX_DISPLAY after relevance sorting
+        return filtered.slice(0, MAX_DISPLAY);
+    }, [filteredCompanies, addingAccount]); // added addingAccount as dependency
     // Filter activities by search term (right side)
-        const filteredActivities = useMemo(() => {
-            if (!activitySearchTerm.trim()) return mergedData;
+    const filteredActivities = useMemo(() => {
+        if (!activitySearchTerm.trim()) return mergedData;
 
         const term = activitySearchTerm.toLowerCase();
         return mergedData.filter((item) => {
@@ -498,8 +497,6 @@ const displayedCompanies = useMemo(() => {
             setSelectedActivityId(null);
         }
     };
-
-
 
     const handleAddActivity = async (company: Company) => {
         if (!referenceid) {
@@ -744,83 +741,82 @@ const displayedCompanies = useMemo(() => {
     return (
         <div className="flex flex-col md:flex-row gap-4">
             {/* LEFT SIDE — COMPANIES */}
-                <Card className="w-full md:w-1/3 p-3 rounded-lg">
+            <Card className="w-full md:w-1/3 p-3 rounded-lg">
                 <CardHeader className="p-0">
                     <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold">Companies</CardTitle>
-                    {/* LEFT SIDE — COMPANIES */}
-                    <AddCompanyModal referenceid={referenceid} />
+                        <CardTitle className="text-sm font-semibold">Companies</CardTitle>
+                        {/* LEFT SIDE — COMPANIES */}
+                        <AddCompanyModal referenceid={referenceid} />
                     </div>
                 </CardHeader>
 
                 <CardContent className="p-0 flex flex-col">
-                    <input
-                    type="search"
-                    placeholder="Search company, email, contact, person..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="mb-3 px-3 py-2 border rounded-md text-sm"
+                    <Input
+                        type="search"
+                        placeholder="Search company, email, contact, person..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                     />
 
                     {displayedCompanies.length === 0 ? (
-                    <div className="text-muted-foreground text-sm p-3 border rounded-lg">
-                        No company info available.
-                    </div>
+                        <div className="text-muted-foreground text-sm p-3 border rounded-lg">
+                            No company info available.
+                        </div>
                     ) : (
-                    <Accordion
-                        type="multiple"
-                        className="overflow-auto space-y-2 p-2 max-h-[500px]"
-                    >
-                        {displayedCompanies.map((c) => (
-                        <AccordionItem
-                            key={c.account_reference_number}
-                            value={c.account_reference_number} //may kaparehas kasi bro
+                        <Accordion
+                            type="multiple"
+                            className="overflow-auto space-y-2 p-2 max-h-[500px]"
                         >
-                            <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
-                            <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
-                                <span
-                                className="flex-1 text-left break-words whitespace-normal"
-                                style={{ minWidth: 0 }}
+                            {displayedCompanies.map((c) => (
+                                <AccordionItem
+                                    key={c.account_reference_number}
+                                    value={c.account_reference_number} //may kaparehas kasi bro
                                 >
-                                {c.company_name}
-                                </span>
-                            </AccordionTrigger>
+                                    <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
+                                        <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
+                                            <span
+                                                className="flex-1 text-left break-words whitespace-normal"
+                                                style={{ minWidth: 0 }}
+                                            >
+                                                {c.company_name}
+                                            </span>
+                                        </AccordionTrigger>
 
-                            <Button
-                                variant="outline"
-                                disabled={addingAccount === c.account_reference_number}
-                                onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddActivity(c);
-                                }}
-                                className="text-xs px-3 py-1"
-                            >
-                                {addingAccount === c.account_reference_number
-                                ? "Adding..."
-                                : "Add"}
-                            </Button>
-                            </div>
+                                        <Button
+                                            variant="outline"
+                                            disabled={addingAccount === c.account_reference_number}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddActivity(c);
+                                            }}
+                                            className="text-xs px-3 py-1"
+                                        >
+                                            {addingAccount === c.account_reference_number
+                                                ? "Adding..."
+                                                : "Add"}
+                                        </Button>
+                                    </div>
 
-                            <AccordionContent className="text-xs px-4 pb-2 pt-0">
-                            <p>
-                                <strong>Contact Number:</strong> {c.contact_number || "-"}
-                            </p>
-                            <p>
-                                <strong>Email Address:</strong> {c.email_address || "-"}
-                            </p>
-                            <p>
-                                <strong>Contact Person:</strong> {c.contact_person || "-"}
-                            </p>
-                            <p>
-                                <strong>Type Client:</strong> {c.type_client || "-"}
-                            </p>
-                            </AccordionContent>
-                        </AccordionItem>
-                        ))}
-                    </Accordion>
+                                    <AccordionContent className="text-xs px-4 pb-2 pt-0">
+                                        <p>
+                                            <strong>Contact Number:</strong> {c.contact_number || "-"}
+                                        </p>
+                                        <p>
+                                            <strong>Email Address:</strong> {c.email_address || "-"}
+                                        </p>
+                                        <p>
+                                            <strong>Contact Person:</strong> {c.contact_person || "-"}
+                                        </p>
+                                        <p>
+                                            <strong>Type Client:</strong> {c.type_client || "-"}
+                                        </p>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
                     )}
                 </CardContent>
-                </Card>
+            </Card>
 
 
             {/* RIGHT SIDE — ACTIVITIES */}

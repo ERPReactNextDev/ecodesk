@@ -357,47 +357,46 @@ export function UpdateTicketDialog({
       }
 
       if (statusState === "Endorsed") {
-  try {
-    setLoading(true);
+        try {
+          setLoading(true);
 
-    const endorsedData = {
-      agent: referenceid,
-      account_reference_number,
-      company_name,
-      contact_person,
-      contact_number,
-      email_address,
-      address,
-      ticket_reference_number: ticketReferenceNumber,
-      wrap_up: wrapUpState,
-      inquiry: inquiryState,
-      tsm: managerState,
-      referenceid: agentState,
-      status: "Endorsed",
-    };
+          const endorsedData = {
+            agent: referenceid,
+            account_reference_number,
+            company_name,
+            contact_person,
+            contact_number,
+            email_address,
+            address,
+            ticket_reference_number: ticketReferenceNumber,
+            wrap_up: wrapUpState,
+            inquiry: inquiryState,
+            tsm: managerState,
+            referenceid: agentState,
+            status: "Endorsed",
+          };
 
-    const endorsedRes = await fetch("/api/act-save-endorsed-ticket", {
-      method: "POST", // <-- now POST
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(endorsedData),
-    });
+          const endorsedRes = await fetch("/api/act-save-endorsed-ticket", {
+            method: "POST", // <-- now POST
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(endorsedData),
+          });
 
-    if (!endorsedRes.ok) {
-      const err = await endorsedRes.json();
-      toast.error(err.error || "Failed to save endorsed ticket.");
-      setLoading(false);
-      return;
-    }
+          if (!endorsedRes.ok) {
+            const err = await endorsedRes.json();
+            toast.error(err.error || "Failed to save endorsed ticket.");
+            setLoading(false);
+            return;
+          }
 
-    toast.success("Ticket successfully endorsed!");
-  } catch (err: any) {
-    console.error(err);
-    toast.error(err.message || "Something went wrong.");
-  } finally {
-    setLoading(false);
-  }
-}
-
+          toast.success("Ticket successfully endorsed!");
+        } catch (err: any) {
+          console.error(err);
+          toast.error(err.message || "Something went wrong.");
+        } finally {
+          setLoading(false);
+        }
+      }
 
       toast.success("Activity saved successfully!");
       onCreated(newActivity);
@@ -432,7 +431,7 @@ export function UpdateTicketDialog({
     <>
       <Sheet open={sheetOpen} onOpenChange={onSheetOpenChange}>
         <SheetTrigger asChild>
-          <Button type="button" variant="secondary" onClick={() => setSheetOpen(true)}>
+          <Button type="button" variant="outline" onClick={() => setSheetOpen(true)}>
             Update
           </Button>
         </SheetTrigger>
