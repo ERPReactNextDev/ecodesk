@@ -174,6 +174,7 @@ function CustomerDatabaseContent() {
   };
 
   const filteredAccounts = accounts
+    .filter(acc => acc.status !== "Removed") // <- filter out removed accounts
     .map((acc) => {
       const fieldMap: Record<string, string> = {
         "Company Name": acc.company_name ?? "",
@@ -186,10 +187,10 @@ function CustomerDatabaseContent() {
         "Type Client": acc.type_client ?? "",
       };
 
-      const fieldsToSearch =
-        activeFilters.length > 0
-          ? activeFilters.map((f) => fieldMap[f])
-          : Object.values(fieldMap);
+   const fieldsToSearch =
+      activeFilters.length > 0
+        ? activeFilters.map((f) => fieldMap[f])
+        : Object.values(fieldMap);
 
       const score = Math.max(...fieldsToSearch.map((f) => getRelevanceScore(f, searchTerm)));
 
@@ -325,29 +326,48 @@ function CustomerDatabaseContent() {
           )}
 
           {!loading && !error && filteredAccounts.length > 0 && (
-            <div className="flex justify-between items-center mb-2">
-              <span>
-                Showing {indexOfFirst + 1}-{Math.min(indexOfLast, filteredAccounts.length)} of{" "}
-                {filteredAccounts.length}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-1">
-                  Page {currentPage} of {totalPages}
+            <div className="mb-2">
+              {/* Top row: Showing + Pagination */}
+              <div className="flex justify-between items-center">
+                <span>
+                  Showing {indexOfFirst + 1}-{Math.min(indexOfLast, filteredAccounts.length)} of{" "}
+                  {filteredAccounts.length}
                 </span>
-                <button
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+
+                <div className="flex gap-2">
+                  <button
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+
+                  <span className="px-3 py-1">
+                    Page {currentPage} of {totalPages}
+                  </span>
+
+                  <button
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom row: CREATE ACCOUNT BUTTON (LEFT SIDE ONLY) */}
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  className="font-semibold"
+                  onClick={() => {
+                    // no function yet
+                  }}
                 >
-                  Next
-                </button>
+                  + Create Account
+                </Button>
               </div>
             </div>
           )}

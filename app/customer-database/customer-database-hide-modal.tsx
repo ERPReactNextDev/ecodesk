@@ -51,6 +51,7 @@ export const CustomerDatabaseHideModal: React.FC<HideModalProps> = ({
     } finally {
       setLoading(false);
     }
+    //after 0.2s refresh the app\customer-database\customer-database-hide-modal.tsx
   };
 
   const handleCloseAttempt = () => setShowCancelDialog(true);
