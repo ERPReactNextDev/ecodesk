@@ -102,7 +102,7 @@ interface UpdateActivityDialogProps {
   po_number?: string;
   so_date?: string;
   so_number?: string;
-  so_amount?: number;
+  so_amount?: string;
   qty_sold?: string;
   quotation_number?: string;
   quotation_amount?: string;
