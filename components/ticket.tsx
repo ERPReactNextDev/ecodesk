@@ -863,8 +863,9 @@ export const Ticket: React.FC<TicketProps> = ({
                         variant="outline"
                         disabled={filteredActivities.length === 0}
                         onClick={() => handleExportCsv(filteredActivities)}
+                        className="bg-green-500 text-white hover:bg-green-600"
                     >
-                        Export CSV
+                        Download CSV
                     </Button>
 
                     <Button

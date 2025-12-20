@@ -198,6 +198,7 @@ export function ChannelCard({
           onClick={downloadCSV}
           type="button"
           aria-label="Download channel counts CSV"
+          className="bg-green-500 text-white hover:bg-green-600"
         >
           Download CSV
         </Button>

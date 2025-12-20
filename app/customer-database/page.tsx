@@ -44,8 +44,8 @@ import { Separator } from "@/components/ui/separator";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { FormatProvider } from "@/contexts/FormatContext";
 import { type DateRange } from "react-day-picker";
-import { CustomerDatabaseEditModal } from "./customer-database-edit-modal";
-import { CustomerDatabaseHideModal } from "./customer-database-hide-modal";
+import { CustomerDatabaseEditModal } from "@/components/customer-database-edit-dialog";
+import { CustomerDatabaseHideModal } from "@/components/customer-database-delete-dialog";
 import { Funnel } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 

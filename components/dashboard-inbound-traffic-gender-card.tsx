@@ -202,6 +202,7 @@ export function InboundTrafficGenderCard({
         <Button
           onClick={handleDownloadCSV}
           disabled={loading || groupedData.length === 0}
+          className="bg-green-500 text-white hover:bg-green-600"
         >
           Download CSV
         </Button>

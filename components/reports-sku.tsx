@@ -63,6 +63,7 @@ interface Ticket {
     so_number?: string;
     so_amount?: string;
     qty_sold?: string;
+    gender: string;
     quotation_number?: string;
     quotation_amount?: string;
     payment_terms?: string;
@@ -593,8 +594,9 @@ export const SKU: React.FC<TicketProps> = ({
                         variant="outline"
                         disabled={filteredActivities.length === 0}
                         onClick={() => handleExportCsv(filteredActivities)}
+                        className="bg-green-500 text-white hover:bg-green-600"
                     >
-                        Export CSV
+                        Download CSV
                     </Button>
 
                     <Button
@@ -671,6 +673,7 @@ export const SKU: React.FC<TicketProps> = ({
                                                                 ticket_received: item.ticket_received,
                                                                 ticket_endorsed: item.ticket_endorsed,
                                                                 traffic: item.traffic,
+                                                                gender: item.gender,
                                                                 source_company: item.source_company,
                                                                 channel: item.channel,
                                                                 wrap_up: item.wrap_up,

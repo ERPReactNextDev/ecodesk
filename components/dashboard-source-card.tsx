@@ -170,6 +170,7 @@ export function SourceCard({
                     onClick={downloadCSV}
                     type="button"
                     aria-label="Download source counts CSV"
+                    className="bg-green-500 text-white hover:bg-green-600"
                 >
                     Download CSV
                 </Button>

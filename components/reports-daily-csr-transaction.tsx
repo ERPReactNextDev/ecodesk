@@ -504,8 +504,9 @@ export const DCT: React.FC<TicketProps> = ({
                                 variant="outline"
                                 onClick={downloadAllCSV}
                                 disabled={filteredGroupedData.length === 0 || exporting}
+                                className="bg-green-500 text-white hover:bg-green-600"
                             >
-                                Export CSV
+                                Download CSV
                             </Button>
                         </div>
 
