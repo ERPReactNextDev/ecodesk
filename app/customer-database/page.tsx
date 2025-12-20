@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -47,6 +47,7 @@ import { type DateRange } from "react-day-picker";
 import { CustomerDatabaseEditModal } from "./customer-database-edit-modal";
 import { CustomerDatabaseHideModal } from "./customer-database-hide-modal";
 import { Funnel } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Account {
   id: number;
@@ -88,7 +89,6 @@ export function CustomerDatabaseContent() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const accountsPerPage = 20;
   const [dateCreatedFilterRange, setDateCreatedFilterRange] =
     useState<DateRange | undefined>(undefined);
 
@@ -107,6 +107,8 @@ export function CustomerDatabaseContent() {
   // Agents state and loading
   const [agents, setAgents] = useState<{ Firstname: string; Lastname: string; ReferenceID: string }[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
+  const [filterAccountOwner, setFilterAccountOwner] = useState<string | undefined>(undefined);
+  const [accountsPerPage, setAccountsPerPage] = useState(20);
 
   // Fetch all users (agents) from /api/fetch-all-users (no query params needed)
   useEffect(() => {
@@ -130,7 +132,6 @@ export function CustomerDatabaseContent() {
   // Fetch user data based on userId (to get userDetails.referenceid)
   useEffect(() => {
     if (!userId) {
-      setError("User ID is missing.");
       setLoading(false);
       return;
     }
@@ -196,8 +197,9 @@ export function CustomerDatabaseContent() {
 
     const matchesTypeClient = filterTypeClient ? acc.type_client === filterTypeClient : true;
     const matchesIndustry = filterIndustry ? acc.industry === filterIndustry : true;
+    const matchesAccountOwner = filterAccountOwner ? acc.referenceid === filterAccountOwner : true;
 
-    return matchesSearch && matchesTypeClient && matchesIndustry;
+    return matchesSearch && matchesTypeClient && matchesIndustry && matchesAccountOwner;
   });
 
   const totalPages = Math.ceil(filteredAccounts.length / accountsPerPage);
@@ -228,21 +230,37 @@ export function CustomerDatabaseContent() {
   };
 
   // Extract unique options for filters
-  const uniqueTypeClients: string[] = Array.from(
+  // Dynamic options for filters based on currentAccounts
+  const uniqueTypeClients = Array.from(
     new Set(
-      accounts
+      currentAccounts
         .map((a) => a.type_client)
         .filter((v): v is string => typeof v === "string" && v.trim() !== "")
     )
   );
 
-  const uniqueIndustries: string[] = Array.from(
+  const uniqueIndustries = Array.from(
     new Set(
-      accounts
+      currentAccounts
         .map((a) => a.industry)
         .filter((v): v is string => typeof v === "string" && v.trim() !== "")
     )
   );
+
+  // Agents that have accounts in currentAccounts
+  const uniqueAgentReferenceIDs = Array.from(
+    new Set(
+      currentAccounts
+        .map((a) => a.referenceid)
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+    )
+  );
+
+  // Filter the agents list to only show those present in currentAccounts
+  const filteredAgents = agents.filter((agent) =>
+    uniqueAgentReferenceIDs.includes(agent.ReferenceID)
+  );
+
 
   // Get agent name by ReferenceID
   const getAgentNameByReferenceID = (refId: string | null | undefined) => {
@@ -308,6 +326,28 @@ export function CustomerDatabaseContent() {
 
               <div className="flex flex-col gap-4 mt-4">
                 <div>
+                  <label className="block mb-1 font-medium text-sm">Account Owner</label>
+                  <Select
+                    value={filterAccountOwner ?? ""}
+                    onValueChange={(value) =>
+                      setFilterAccountOwner(value === "__clear" ? undefined : value)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Account Owner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__clear">Clear</SelectItem>
+                      {filteredAgents.map((agent) => (
+                        <SelectItem className="capitalize" key={agent.ReferenceID} value={agent.ReferenceID}>
+                          {agent.Firstname} {agent.Lastname}
+                        </SelectItem>
+                      ))}
+
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <label className="block mb-1 font-medium text-sm">Type Client</label>
                   <Select
                     value={filterTypeClient ?? ""}
@@ -350,6 +390,31 @@ export function CustomerDatabaseContent() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div>
+                  <label htmlFor="pageSize" className="text-sm font-medium">
+                    Items per page:
+                  </label>
+                  <Select
+                    value={accountsPerPage.toString()}
+                    onValueChange={(value) => {
+                      setAccountsPerPage(Number(value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select page size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[20, 50, 100, 200, 500, 1000].map((size) => (
+                        <SelectItem key={size} value={size.toString()}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
               </div>
 
               <DialogFooter className="mt-6 flex justify-end space-x-2">
@@ -368,12 +433,12 @@ export function CustomerDatabaseContent() {
             </DialogContent>
           </Dialog>
 
-          {/* Loading, Error and No Data states */}
-          {loading && <p>Loading accounts...</p>}
-          {error && <p className="text-destructive">{error}</p>}
-          {!loading && !error && filteredAccounts.length === 0 && (
-            <p>No accounts found.</p>
+          {loading && (
+            <div className="flex justify-center items-center h-40">
+              <Spinner className="size-8" />
+            </div>
           )}
+          {error && <p className="text-destructive">{error}</p>}
 
           {/* Table container */}
           {!loading && !error && currentAccounts.length > 0 && (
@@ -382,6 +447,7 @@ export function CustomerDatabaseContent() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Actions</TableHead>
+                    <TableHead>Type Client</TableHead>
                     <TableHead>Account Owner</TableHead>
                     <TableHead>Company Name</TableHead>
                     <TableHead>Contact Person</TableHead>
@@ -390,7 +456,6 @@ export function CustomerDatabaseContent() {
                     <TableHead>Address</TableHead>
                     <TableHead>Region</TableHead>
                     <TableHead>Industry</TableHead>
-                    <TableHead>Type Client</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -419,6 +484,18 @@ export function CustomerDatabaseContent() {
                           </>
                         )}
                       </TableCell>
+                      <TableCell>
+                        {acc.type_client ? (
+                          <Badge
+                            variant={acc.type_client === "CSR Client" ? "destructive" : "default"}
+                            className="capitalize"
+                          >
+                            {acc.type_client}
+                          </Badge>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
                       <TableCell className="capitalize">{getAgentNameByReferenceID(acc.referenceid)}</TableCell>
                       <TableCell>{acc.company_name ?? "-"}</TableCell>
                       <TableCell>{acc.contact_person ?? "-"}</TableCell>
@@ -427,7 +504,6 @@ export function CustomerDatabaseContent() {
                       <TableCell>{acc.address ?? "-"}</TableCell>
                       <TableCell>{acc.region ?? "-"}</TableCell>
                       <TableCell>{acc.industry ?? "-"}</TableCell>
-                      <TableCell>{acc.type_client ?? "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -102,7 +102,7 @@ interface UpdateActivityDialogProps {
   po_number?: string;
   so_date?: string;
   so_number?: string;
-  so_amount?: string;
+  so_amount?: number;
   qty_sold?: string;
   quotation_number?: string;
   quotation_amount?: string;
@@ -245,7 +245,7 @@ export function UpdateTicketDialog({
     setPoNumber(po_number || "");
     setSoDate(so_date || "");
     setSoNumber(so_number || "");
-    setSoAmount(so_amount || "");
+    setSoAmount(so_amount?.toString() || "");
     setQuotationNumber(quotation_number || "");
     setQuotationAmount(quotation_amount || "");
     setQtySold(qty_sold || "");
@@ -659,6 +659,8 @@ export function UpdateTicketDialog({
                   dateCreated={dateCreatedState}
                   setDateCreated={setDateCreated}
                   loading={loading}
+                  ticketReferenceNumber={ticketReferenceNumber}
+                  setTicketReferenceNumber={setTicketReferenceNumber}
                   handleBack={() => setStep((prev) => prev - 1)}
                   handleNext={() => setStep((prev) => prev + 1)}
                   handleUpdate={handleUpdate}

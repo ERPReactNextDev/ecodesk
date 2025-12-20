@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     FieldGroup,
     FieldSet,
@@ -21,11 +21,20 @@ import {
     SelectContent,
     SelectItem,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2Icon } from "lucide-react";
 
 interface Option {
     value: string;
     title: string;
     description: string;
+}
+
+interface Activity {
+    ticket_reference_number?: string | null;
+    so_number: string;
+    so_amount: number | string;
+    product_quantity: string;
 }
 
 interface TicketSheetProps {
@@ -85,6 +94,8 @@ interface TicketSheetProps {
     setDeliveryDate: React.Dispatch<React.SetStateAction<string>>;
     dateCreated: string;
     setDateCreated: React.Dispatch<React.SetStateAction<string>>;
+    ticketReferenceNumber: string;
+    setTicketReferenceNumber: React.Dispatch<React.SetStateAction<string>>;
     loading: boolean;
     handleBack: () => void;
     handleNext: () => void;
@@ -250,10 +261,64 @@ export function TicketSheet(props: TicketSheetProps) {
         setManager,
         agent,
         setAgent,
+        ticketReferenceNumber,
+        setTicketReferenceNumber,
         handleBack,
         handleNext,
         handleUpdate
     } = props;
+
+    const [loadingActivities, setLoadingActivities] = useState(false);
+    const [errorActivities, setErrorActivities] = useState(null);
+    const [activities, setActivities] = useState<Activity[]>([]);
+
+    const fetchActivities = useCallback(() => {
+        setLoadingActivities(true);
+        setErrorActivities(null);
+
+        fetch("/api/act-fetch-history")
+            .then(async (res) => {
+                if (!res.ok) throw new Error("Failed to fetch activities");
+                return res.json();
+            })
+            .then((data) => {
+                const acts: Activity[] = data.activities || [];
+                setActivities(acts);
+            })
+            .catch((err) => setErrorActivities(err.message))
+            .finally(() => setLoadingActivities(false));
+    }, []);
+
+    useEffect(() => {
+        fetchActivities();
+    }, [fetchActivities]);
+
+    const groupedActivities = activities.filter(
+        (act) => act.ticket_reference_number === ticketReferenceNumber
+    );
+
+    const soNumberFromActivity =
+        groupedActivities.find((act) => act.so_number)?.so_number ?? "N/A";
+
+    const soAmountFromActivity =
+        groupedActivities.find((act) => act.so_amount)?.so_amount ?? "N/A";
+
+    const productQuantityFromActivity =
+        groupedActivities.find((act) => act.product_quantity)?.product_quantity ?? "N/A";    
+
+    const handleApplySO = () => {
+        if (soNumberFromActivity !== "N/A") {
+            setSoNumber(String(soNumberFromActivity));
+        }
+
+        if (soAmountFromActivity !== "N/A") {
+            setSoAmount(String(soAmountFromActivity));
+        }
+
+        if (productQuantityFromActivity !== "N/A") {
+            setQtySold(String(productQuantityFromActivity));
+        }
+    };
 
     const [errors, setErrors] = useState<{
         ticketReceived?: string;
@@ -275,7 +340,6 @@ export function TicketSheet(props: TicketSheetProps) {
         { value: "Sales", title: "Sales", description: "Follow up on sales opportunities and client requests." },
         { value: "Warehouse", title: "Warehouse & Logistics", description: "Coordinate logistics and inventory follow-ups." },
     ];
-
 
     const customerStatusOptions: Option[] = [
         { value: "New Client", title: "New Client", description: "A newly onboarded client with initial transactions." },
@@ -979,6 +1043,53 @@ export function TicketSheet(props: TicketSheetProps) {
 
                     {status === "Converted into Sales" && (
                         <>
+                            {ticketReferenceNumber &&
+                                groupedActivities.length > 0 &&
+                                (soNumberFromActivity !== "N/A" || soAmountFromActivity !== "N/A") && (
+                                    <Alert variant="default" className="relative mt-4 bg-green-100">
+                                        <CheckCircle2Icon className="h-4 w-4" />
+
+                                        <AlertTitle>Ticket Reference Number</AlertTitle>
+
+                                        <AlertDescription className="relative space-y-1 text-black">
+                                            <p>
+                                                <strong>{ticketReferenceNumber}</strong>
+                                            </p>
+
+                                            <p className="text-sm text-black">
+                                                The Sales Order details below are automatically retrieved from the
+                                                <strong> Taskflow System</strong> based on the Ticket Reference Number
+                                                provided to the assigned agent.
+                                            </p>
+
+                                            {soNumberFromActivity !== "N/A" && (
+                                                <p className="uppercase">
+                                                    SO Number: <strong>{soNumberFromActivity}</strong>
+                                                </p>
+                                            )}
+
+                                            {soAmountFromActivity !== "N/A" && (
+                                                <p className="uppercase">
+                                                    SO Amount: <strong>{soAmountFromActivity}</strong>
+                                                </p>
+                                            )}
+
+                                            {productQuantityFromActivity !== "N/A" && (
+                                                <p className="uppercase">
+                                                    QTY Sold: <strong>{productQuantityFromActivity}</strong>
+                                                </p>
+                                            )}
+
+                                            {/* BUTTON — bottom right */}
+                                            <div className="absolute bottom-0 right-0">
+                                                <Button size="sm" onClick={handleApplySO}>
+                                                    Apply
+                                                </Button>
+                                            </div>
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
                             <Field>
                                 <FieldLabel>SO Number</FieldLabel>
                                 <InputField

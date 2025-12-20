@@ -15,6 +15,8 @@ import {
   Compass,
   HelpCircle,
   PhoneCall,
+  Bot,
+  Mail
 } from "lucide-react";
 
 import { NavFavorites } from "@/components/nav-favorites";
@@ -29,12 +31,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-// Dummy getMenuItems function - replace or import your actual function
 function getMenuItems(userId: string | null) {
   return [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    //{ title: "Ask AI", url: "#", icon: Bot },
-    //{ title: "Inbox", url: "#", icon: Mail, badge: "5" },
   ];
 }
 
@@ -44,11 +43,6 @@ const data = {
       name: "Ecodesk",
       plan: "Enterprise",
     },
-  ],
-  navMain: [
-    { title: "Dashboard", url: "#", icon: LayoutDashboard, isActive: true },
-    //{ title: "Ask AI", url: "#", icon: Bot },
-    //{ title: "Inbox", url: "#", icon: Mail, badge: "5" },
   ],
   navSecondary: [
     { title: "Help", url: "/settings", icon: HelpCircle },
@@ -73,9 +67,7 @@ const data = {
     {
       name: "Taskflow",
       icon: Briefcase,
-      pages: [
-        { name: "OB Calls", url: "/taskflow/obc", icon: PhoneCall },
-      ],
+      pages: [{ name: "OB Calls", url: "/taskflow/obc", icon: PhoneCall }],
     },
   ],
 };
@@ -97,6 +89,7 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
   });
   const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
 
+  // Load open sections from localStorage on mount
   React.useEffect(() => {
     const saved = localStorage.getItem("sidebarOpenSections");
     if (saved) {
@@ -104,15 +97,18 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
     }
   }, []);
 
+  // Save open sections on change
   React.useEffect(() => {
     localStorage.setItem("sidebarOpenSections", JSON.stringify(openSections));
   }, [openSections]);
 
+  // Get userId from URL query param on mount
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setUserId(params.get("id"));
   }, []);
 
+  // Fetch user details based on userId
   React.useEffect(() => {
     if (!userId) return;
     fetch(`/api/user?id=${encodeURIComponent(userId)}`)
@@ -140,38 +136,10 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // Get menu items with userId if needed
   const menuItems = React.useMemo(() => getMenuItems(userId), [userId]);
 
-  const filteredMenuItems = React.useMemo(() => {
-    const role = userDetails.Role || "Admin";
-    const allowed: Record<string, string[]> = {
-      Admin: menuItems.map((m) => m.title),
-      "Super Admin": menuItems.map((m) => m.title),
-      Manager: [
-        "Tickets",
-        "Customer Database",
-        "Reports",
-        "Taskflow",
-        "Help",
-      ],
-      "CSR Agent": [
-        "Tickets",
-        "Customer Database",
-        "Reports",
-        "Taskflow",
-        "Help",
-      ],
-      "CSR Admin": [
-        "Tickets",
-        "Customer Database",
-        "Reports",
-        "Taskflow",
-        "Help",
-      ],
-    };
-    return menuItems.filter((item) => allowed[role]?.includes(item.title));
-  }, [menuItems, userDetails]);
-
+  // Append userId to URLs except for "#" or empty string
   const withUserId = React.useCallback(
     (url: string) => {
       if (!userId) return url;
@@ -183,14 +151,18 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
     [userId]
   );
 
-  // Filter pages in Customer Database workspace for TSM and Manager roles
+  // No filtering here: just append userId to menuItems URLs
+  const navMainWithId = React.useMemo(
+    () => menuItems.map((item) => ({ ...item, url: withUserId(item.url || "#") })),
+    [menuItems, withUserId]
+  );
+
+  // For now, no filtering on workspaces, but you can add later
   const filteredWorkspaces = React.useMemo(() => {
-    return data.workspaces.map((workspace) => {
-      return workspace;
-    });
+    return data.workspaces.map((workspace) => workspace);
   }, [userDetails.Role]);
 
-  // Append userId to URLs in filtered workspaces
+  // Append userId to workspace pages URLs
   const workspacesWithId = React.useMemo(
     () =>
       filteredWorkspaces.map((workspace) => ({
@@ -203,7 +175,7 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
     [filteredWorkspaces, withUserId]
   );
 
-  // Append userId to URLs in favorites as well
+  // Append userId to favorites URLs
   const favoritesWithId = React.useMemo(
     () =>
       data.favorites.map((favorite) => ({
@@ -213,11 +185,7 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
     [data.favorites, withUserId]
   );
 
-  const navMainWithId = React.useMemo(
-    () => filteredMenuItems.map((item) => ({ ...item, url: withUserId(item.url || "#") })),
-    [filteredMenuItems, withUserId]
-  );
-
+  // Append userId to secondary nav URLs
   const navSecondaryWithId = React.useMemo(
     () => data.navSecondary.map((item) => ({ ...item, url: withUserId(item.url) })),
     [withUserId]

@@ -7,17 +7,14 @@ import { AlertCircleIcon, CheckCircle2Icon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { DoneDialog } from "./activity-done-dialog";
 import { UpdateTicketDialog } from "./ticket-update-dialog";
 import { ActDeleteDialog } from "./act-delete-dialog";
 import { ActFilterDialog } from "./act-filter-dialog";
 import { type DateRange } from "react-day-picker";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, } from "@/components/ui/card";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemMedia, ItemTitle, } from "@/components/ui/item";
 import { Progress } from "@/components/ui/progress";
-import { AddCompanyModal } from "./add-company-modal";
 import { Separator } from "@/components/ui/separator"
 
 interface Company {
@@ -57,7 +54,7 @@ interface Ticket {
     department?: string;
     manager?: string;
     agent?: string;
-    remarks?: string;
+    remarks: string;
     inquiry?: string;
     item_code?: string;
     item_description?: string;
@@ -88,7 +85,7 @@ interface TicketProps {
     >;
 }
 
-export const Ticket: React.FC<TicketProps> = ({
+export const SKU: React.FC<TicketProps> = ({
     referenceid,
     dateCreatedFilterRange,
     setDateCreatedFilterRangeAction,
@@ -99,14 +96,6 @@ export const Ticket: React.FC<TicketProps> = ({
     const [loadingActivities, setLoadingActivities] = useState(false);
     const [errorCompanies, setErrorCompanies] = useState<string | null>(null);
     const [errorActivities, setErrorActivities] = useState<string | null>(null);
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
-
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
-
-    const [addingAccount, setAddingAccount] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState("");
-
     // For activities right side search and pagination
     const [activitySearchTerm, setActivitySearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -269,14 +258,14 @@ export const Ticket: React.FC<TicketProps> = ({
         return true;
     };
 
-    const allowedStatuses = ["On-Progress", "Closed", "Endorsed", "Converted into Sales"];
+    const allowedRemarks = ["No Stocks / Insufficient Stocks", "Item Not Carried", "Non-Standard Item"];
 
     // Merge activity with company info, filter by status and date range
     const mergedData = React.useMemo(() => {
         if (companies.length === 0) return [];
 
         return activities
-            .filter((a) => allowedStatuses.includes(a.status))
+            .filter((a) => allowedRemarks.includes(a.remarks))
             .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
             .map((activity) => {
                 const company = companies.find(
@@ -351,68 +340,6 @@ export const Ticket: React.FC<TicketProps> = ({
     const isLoading = loadingCompanies || loadingActivities;
     const error = errorCompanies || errorActivities;
 
-    const excludedCompanyStatuses = ["Pending", "Transferred", "Remove"];
-
-    const normalize = (str: string) =>
-        str
-            .toLowerCase()
-            .replace(/[_\s]+/g, " ") // replace underscores and multiple spaces with single space
-            .trim();
-
-    const filteredCompanies = companies
-        .filter((c) => {
-            if (excludedCompanyStatuses.includes(c.status)) return false;
-            if (c.type_client !== "CSR Client") return false;
-
-            const term = normalize(searchTerm);
-            if (!term) return true;
-
-            const fields = [
-                normalize(c.company_name || ""),
-                normalize(c.email_address || ""),
-                normalize(c.contact_number || ""),
-                normalize(c.contact_person || ""),
-            ];
-
-            return fields.some((field) => field.includes(term));
-        })
-        .sort((a, b) => {
-            const term = normalize(searchTerm);
-            if (!term) return 0;
-
-            const score = (company: Company) => {
-                const fields = [
-                    normalize(company.company_name || ""),
-                    normalize(company.email_address || ""),
-                    normalize(company.contact_number || ""),
-                    normalize(company.contact_person || ""),
-                ];
-
-                // Get the best match score among all fields
-                let bestScore = 3;
-                fields.forEach((field) => {
-                    if (field === term) bestScore = Math.min(bestScore, 0);
-                    else if (field.startsWith(term)) bestScore = Math.min(bestScore, 1);
-                    else if (field.includes(term)) bestScore = Math.min(bestScore, 2);
-                });
-
-                return bestScore;
-            };
-
-            return score(a) - score(b);
-        });
-
-    const MAX_DISPLAY = 20;
-
-    const displayedCompanies = useMemo(() => {
-        // 1️⃣ Exclude the company that is currently being added
-        const filtered = filteredCompanies.filter(
-            (c) => c.account_reference_number !== addingAccount
-        );
-
-        // 2️⃣ Slice to MAX_DISPLAY after relevance sorting
-        return filtered.slice(0, MAX_DISPLAY);
-    }, [filteredCompanies, addingAccount]); // added addingAccount as dependency
     // Filter activities by search term (right side)
     const filteredActivities = useMemo(() => {
         if (!activitySearchTerm.trim()) return mergedData;
@@ -441,120 +368,6 @@ export const Ticket: React.FC<TicketProps> = ({
         if (page < 1) page = 1;
         else if (page > totalPages) page = totalPages;
         setCurrentPage(page);
-    };
-
-    // Generates activity reference number from company initials + region + timestamp
-    function generateActivityReferenceNumber(companyName: string): string {
-        const initials = companyName
-            .split(" ")
-            .map((w) => w[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2);
-        const region = "REG"; // TODO: replace with real region logic if needed
-        const timestamp = Date.now();
-        return `${initials}-${region}-${timestamp}`;
-    }
-
-    const openDoneDialog = (_id: string) => {
-        // Make sure id is defined and non-empty
-        if (!_id) {
-            toast.error("Invalid activity ID");
-            return;
-        }
-        setSelectedActivityId(_id);
-        setDialogOpen(true);
-    };
-
-    const handleConfirmDone = async () => {
-        if (!selectedActivityId) return;
-
-        try {
-            setUpdatingId(selectedActivityId);
-            setDialogOpen(false);
-
-            // Find the activity to update in your current state (activities or mergedData)
-            const activityToUpdate = activities.find(a => a._id === selectedActivityId);
-            if (!activityToUpdate) {
-                toast.error("Activity not found in current data.");
-                setUpdatingId(null);
-                return;
-            }
-
-            // Prepare updated activity data
-            const updatedActivity = {
-                ...activityToUpdate,
-                status: "Closed", // or your desired final status
-                date_updated: new Date().toISOString(),
-                // Add or modify other fields if needed
-            };
-
-            const res = await fetch("/api/act-update-status", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedActivity),
-                cache: "no-store",
-            });
-
-            const result = await res.json();
-
-            if (!res.ok) {
-                toast.error(`Failed to update status: ${result.error || "Unknown error"}`);
-                setUpdatingId(null);
-                return;
-            }
-
-            await fetchActivities();
-
-            toast.success("Transaction marked as Done.");
-        } catch {
-            toast.error("An error occurred while updating status.");
-        } finally {
-            setUpdatingId(null);
-            setSelectedActivityId(null);
-        }
-    };
-
-    const handleAddActivity = async (company: Company) => {
-        if (!referenceid) {
-            toast.error("Missing reference ID");
-            return;
-        }
-
-        setAddingAccount(company.account_reference_number);
-
-        const newActivityReferenceNumber = generateActivityReferenceNumber(company.company_name);
-
-        const payload = {
-            referenceid, // <-- from props, NOT company
-            account_reference_number: company.account_reference_number,
-            status: "On-Progress",
-            activity_reference_number: newActivityReferenceNumber,
-        };
-
-        try {
-            const res = await fetch("/api/act-save-account", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-                cache: "no-store",
-            });
-
-            const json = await res.json();
-
-            if (!res.ok) {
-                toast.error(`Failed to save activity: ${json.error || "Unknown error"}`);
-                setAddingAccount(null);
-                return;
-            }
-
-            toast.success("Activity added.");
-            await fetchActivities();
-        } catch (error) {
-            toast.error("Error saving activity");
-        } finally {
-            setAddingAccount(null);
-        }
     };
 
     if (isLoading) {
@@ -739,7 +552,7 @@ export const Ticket: React.FC<TicketProps> = ({
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
-            link.setAttribute("download", `TICKETS_${Date.now()}.csv`);
+            link.setAttribute("download", `SKU_LISTING_${Date.now()}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -756,93 +569,10 @@ export const Ticket: React.FC<TicketProps> = ({
 
     return (
         <div className="flex flex-col md:flex-row gap-4">
-            {/* LEFT SIDE — COMPANIES */}
-            <Card className="w-full md:w-1/3 p-3 rounded-lg flex flex-col">
-                <CardHeader className="p-0">
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-semibold">Companies</CardTitle>
-                        {/* LEFT SIDE — COMPANIES */}
-                        <AddCompanyModal
-                            referenceid={referenceid}
-                            onCreated={fetchCompanies} // pass the fetch function here
-                        />
-
-                    </div>
-                </CardHeader>
-
-                <CardContent className="p-0 flex flex-col flex-grow overflow-hidden">
-                    <Input
-                        type="search"
-                        placeholder="Search company, email, contact, person..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-
-                    {displayedCompanies.length === 0 ? (
-                        <div className="text-muted-foreground text-sm p-3 border rounded-lg">
-                            No company info available.
-                        </div>
-                    ) : (
-                        <Accordion
-                            type="multiple"
-                            className="overflow-auto space-y-2 p-2 max-h-[700px]"
-                        >
-                            {displayedCompanies.map((c) => (
-                                <AccordionItem
-                                    key={c.account_reference_number}
-                                    value={c.account_reference_number} //may kaparehas kasi bro
-                                >
-                                    <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
-                                        <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
-                                            <span
-                                                className="flex-1 text-left break-words whitespace-normal"
-                                                style={{ minWidth: 0 }}
-                                            >
-                                                {c.company_name}
-                                            </span>
-                                        </AccordionTrigger>
-
-                                        <Button
-                                            variant="outline"
-                                            disabled={addingAccount === c.account_reference_number}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleAddActivity(c);
-                                            }}
-                                            className="text-xs px-3 py-1"
-                                        >
-                                            {addingAccount === c.account_reference_number
-                                                ? "Adding..."
-                                                : "Add"}
-                                        </Button>
-                                    </div>
-
-                                    <AccordionContent className="text-xs px-4 pb-2 pt-0">
-                                        <p>
-                                            <strong>Contact Number:</strong> {c.contact_number || "-"}
-                                        </p>
-                                        <p>
-                                            <strong>Email Address:</strong> {c.email_address || "-"}
-                                        </p>
-                                        <p className="capitalize">
-                                            <strong>Contact Person:</strong> {c.contact_person || "-"}
-                                        </p>
-                                        <p>
-                                            <strong>Type Client:</strong> {c.type_client || "-"}
-                                        </p>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                    )}
-                </CardContent>
-            </Card>
-
-
             {/* RIGHT SIDE — ACTIVITIES */}
-            <Card className="w-full md:w-2/3 p-4 rounded-xl flex flex-col">
+            <Card className="w-full p-4 rounded-xl flex flex-col">
                 <div className="mb-2 text-xs font-bold">
-                    Total On-Progress Activities: {filteredActivities.length}
+                    Total Sku Listing's: {filteredActivities.length}
                 </div>
 
                 <div className="flex mb-3 space-x-2 items-center">
@@ -977,18 +707,6 @@ export const Ticket: React.FC<TicketProps> = ({
                                                             }}
                                                             onCreated={() => fetchActivities()}
                                                         />
-
-                                                        <Button
-                                                            type="button"
-                                                            variant="secondary"
-                                                            disabled={updatingId === item._id}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                openDoneDialog(item._id);
-                                                            }}
-                                                        >
-                                                            {updatingId === item._id ? "Updating..." : "Closed"}
-                                                        </Button>
                                                     </div>
                                                 )}
                                             </div>
@@ -1103,12 +821,6 @@ export const Ticket: React.FC<TicketProps> = ({
                 />
 
             </Card>
-
-            <DoneDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                onConfirm={handleConfirmDone}
-            />
 
             {exporting && (
                 <div
