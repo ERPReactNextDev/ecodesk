@@ -3,28 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Field,
-  FieldContent,
-  FieldLabel,
-} from "@/components/ui/field";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 
 interface EditPOProps {
   isOpen: boolean;
@@ -47,12 +30,7 @@ const SALES_AGENTS = [
   "Shane Rey Santos", "Venzross Posadas", "Vince Ortiz",
 ];
 
-export const EditPO: React.FC<EditPOProps> = ({
-  isOpen,
-  onClose,
-  record,
-  onSave,
-}) => {
+export const EditPO: React.FC<EditPOProps> = ({ isOpen, onClose, record, onSave }) => {
   const [form, setForm] = useState<any>({
     referenceid: "",
     company_name: "",
@@ -70,9 +48,15 @@ export const EditPO: React.FC<EditPOProps> = ({
 
   const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
 
+  // Safe date parser
+  const parseDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const parsed = parseISO(dateStr);
+    return isValid(parsed) ? format(parsed, "yyyy-MM-dd'T'HH:mm") : "";
+  };
+
   useEffect(() => {
     if (record) {
-      // Split multiple numbers by ' / '
       const numbers = record.contact_number?.split(" / ").filter(Boolean) || [""];
 
       setForm({
@@ -81,20 +65,15 @@ export const EditPO: React.FC<EditPOProps> = ({
         po_number: record.po_number || "",
         amount: record.amount || "",
         so_number: record.so_number || "",
-        so_date: record.so_date
-          ? format(parseISO(record.so_date), "yyyy-MM-dd'T'HH:mm")
-          : "",
+        so_date: parseDate(record.so_date),
         sales_agent: record.sales_agent || "",
         payment_terms: record.payment_terms || "",
-        payment_date: record.payment_date
-          ? format(parseISO(record.payment_date), "yyyy-MM-dd'T'HH:mm")
-          : "",
-        delivery_pickup_date: record.delivery_pickup_date
-          ? format(parseISO(record.delivery_pickup_date), "yyyy-MM-dd'T'HH:mm")
-          : "",
+        payment_date: parseDate(record.payment_date),
+        delivery_pickup_date: parseDate(record.delivery_pickup_date),
         source: record.source || "",
         status: record.status || "",
       });
+
       setContactNumbers(numbers);
     }
   }, [record]);
@@ -109,7 +88,7 @@ export const EditPO: React.FC<EditPOProps> = ({
     setContactNumbers(updated);
   };
 
-  const addContactField = () => setContactNumbers((prev) => [...prev, ""]);
+  const addContactField = () => setContactNumbers(prev => [...prev, ""]);
   const removeContactField = (index: number) => {
     if (contactNumbers.length === 1) return;
     const updated = [...contactNumbers];
@@ -152,7 +131,7 @@ export const EditPO: React.FC<EditPOProps> = ({
 
         <form
           className="space-y-6"
-          onSubmit={(e) => {
+          onSubmit={e => {
             e.preventDefault();
             handleSave();
           }}
@@ -163,7 +142,7 @@ export const EditPO: React.FC<EditPOProps> = ({
               <Input
                 name="company_name"
                 value={form.company_name}
-                onChange={(e) => handleChange("company_name", e.target.value)}
+                onChange={e => handleChange("company_name", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -177,14 +156,10 @@ export const EditPO: React.FC<EditPOProps> = ({
                     <Input
                       type="tel"
                       value={num}
-                      onChange={(e) => handleContactChange(idx, e.target.value)}
+                      onChange={e => handleContactChange(idx, e.target.value)}
                       className="flex-grow"
                     />
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => removeContactField(idx)}
-                    >
+                    <Button variant="outline" type="button" onClick={() => removeContactField(idx)}>
                       −
                     </Button>
                   </div>
@@ -202,7 +177,7 @@ export const EditPO: React.FC<EditPOProps> = ({
               <Input
                 name="po_number"
                 value={form.po_number}
-                onChange={(e) => handleChange("po_number", e.target.value)}
+                onChange={e => handleChange("po_number", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -214,7 +189,7 @@ export const EditPO: React.FC<EditPOProps> = ({
                 name="amount"
                 type="number"
                 value={form.amount}
-                onChange={(e) => handleChange("amount", e.target.value)}
+                onChange={e => handleChange("amount", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -225,7 +200,7 @@ export const EditPO: React.FC<EditPOProps> = ({
               <Input
                 name="so_number"
                 value={form.so_number}
-                onChange={(e) => handleChange("so_number", e.target.value)}
+                onChange={e => handleChange("so_number", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -237,7 +212,7 @@ export const EditPO: React.FC<EditPOProps> = ({
                 type="datetime-local"
                 name="so_date"
                 value={form.so_date}
-                onChange={(e) => handleChange("so_date", e.target.value)}
+                onChange={e => handleChange("so_date", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -245,18 +220,13 @@ export const EditPO: React.FC<EditPOProps> = ({
           <Field>
             <FieldLabel>Sales Agent</FieldLabel>
             <FieldContent>
-              <Select
-                value={form.sales_agent}
-                onValueChange={(v) => handleChange("sales_agent", v)}
-              >
+              <Select value={form.sales_agent} onValueChange={v => handleChange("sales_agent", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Agent" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SALES_AGENTS.map((agent) => (
-                    <SelectItem key={agent} value={agent}>
-                      {agent}
-                    </SelectItem>
+                  {SALES_AGENTS.map(agent => (
+                    <SelectItem key={agent} value={agent}>{agent}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -269,7 +239,7 @@ export const EditPO: React.FC<EditPOProps> = ({
               <Input
                 name="payment_terms"
                 value={form.payment_terms}
-                onChange={(e) => handleChange("payment_terms", e.target.value)}
+                onChange={e => handleChange("payment_terms", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -281,7 +251,7 @@ export const EditPO: React.FC<EditPOProps> = ({
                 type="datetime-local"
                 name="payment_date"
                 value={form.payment_date}
-                onChange={(e) => handleChange("payment_date", e.target.value)}
+                onChange={e => handleChange("payment_date", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -293,7 +263,7 @@ export const EditPO: React.FC<EditPOProps> = ({
                 type="datetime-local"
                 name="delivery_pickup_date"
                 value={form.delivery_pickup_date}
-                onChange={(e) => handleChange("delivery_pickup_date", e.target.value)}
+                onChange={e => handleChange("delivery_pickup_date", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -304,7 +274,7 @@ export const EditPO: React.FC<EditPOProps> = ({
               <Input
                 name="source"
                 value={form.source}
-                onChange={(e) => handleChange("source", e.target.value)}
+                onChange={e => handleChange("source", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -312,15 +282,12 @@ export const EditPO: React.FC<EditPOProps> = ({
           <Field>
             <FieldLabel>Status</FieldLabel>
             <FieldContent>
-              <Select
-                value={form.status}
-                onValueChange={(v) => handleChange("status", v)}
-              >
+              <Select value={form.status} onValueChange={v => handleChange("status", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {["PO Received"].map((s) => (
+                  {["PO Received"].map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
