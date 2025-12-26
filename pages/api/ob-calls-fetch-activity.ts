@@ -15,21 +15,33 @@ export default async function handler(
   }
 
   try {
-    const { referenceid, type_activity } = req.query;
+    const {
+      referenceid,
+      type_activity,
+      tsm,
+      manager,
+      project_name,
+      status,
+      start_date,
+      end_date,
+      date_created,
+    } = req.query;
 
-    let query = supabase
-      .from("history")
-      .select("*")
-      .order("date_created", { ascending: false });
+    // Initialize the query to select all records, ordered by date_created descending
+    let query = supabase.from("history").select("*").order("date_created", { ascending: false });
 
+    // Apply filters based on query parameters
     if (referenceid && typeof referenceid === "string") {
       query = query.eq("referenceid", referenceid);
     }
 
     if (type_activity && typeof type_activity === "string") {
-      query = query.eq("type_activity", type_activity);
-    }
+  query = query.eq("type_activity", type_activity); // Filter by type_activity
+} else {
+  query = query.eq("type_activity", "Outbound Calls"); // Default to Outbound Calls
+}
 
+    // Execute the query and handle results
     const { data, error } = await query;
 
     if (error) {
