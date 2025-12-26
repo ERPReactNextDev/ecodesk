@@ -22,15 +22,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 import {
-    Item,
-    ItemActions,
-    ItemContent,
-    ItemDescription,
-    ItemFooter,
-    ItemHeader,
-    ItemMedia,
-    ItemTitle,
-} from "@/components/ui/item";
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 function TooltipInfo({ children }: { children: React.ReactNode }) {
     return (
@@ -45,6 +44,9 @@ interface Activity {
     date_created?: string;
     so_amount?: number | string;
     remarks?: string;
+    traffic: string;
+    qty_sold: number | string;
+    status: string;
 }
 
 interface Agent {
@@ -139,7 +141,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     const groupedData = useMemo(() => {
         const map: Record<
             string,
-            { referenceid: string; count: number; amount: number }
+            { referenceid: string; salesCount: number; nonSalesCount: number; convertedCount: number; amount: number; qtySold: number }
         > = {};
 
         activities
@@ -148,19 +150,31 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     isDateInRange(a.date_created, dateCreatedFilterRange) &&
                     a.referenceid &&
                     a.referenceid.trim() !== "" &&
-                    (!a.remarks ||
-                        !["po received", "po received"].includes(a.remarks.toLowerCase()))
+                    (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
             )
             .forEach((a) => {
                 const referenceid = a.referenceid!.trim();
                 const soAmount = Number(a.so_amount ?? 0);
+                const traffic = a.traffic?.toLowerCase() ?? "";
+                const qtySold = Number(a.qty_sold ?? 0);
+                const status = a.status?.toLowerCase() ?? "";
 
                 if (!map[referenceid]) {
-                    map[referenceid] = { referenceid, count: 0, amount: 0 };
+                    map[referenceid] = { referenceid, salesCount: 0, nonSalesCount: 0, convertedCount: 0, amount: 0, qtySold: 0 };
                 }
 
-                map[referenceid].count += 1;
+                if (traffic === "sales") {
+                    map[referenceid].salesCount += 1;
+                } else if (traffic === "non-sales") {
+                    map[referenceid].nonSalesCount += 1;
+                }
+
+                if (status === "converted into sales") {
+                    map[referenceid].convertedCount += 1;
+                }
+
                 map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
+                map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
             });
 
         return Object.values(map);
@@ -171,7 +185,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     return (
         <Card>
             <CardHeader className="flex justify-between items-center">
-                <CardTitle>Agent Sales Conversion</CardTitle>
+                <CardTitle>Agent Sales Conversion Table</CardTitle>
 
                 <div
                     className="relative cursor-pointer text-muted-foreground hover:text-foreground"
@@ -182,8 +196,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     <Info size={18} />
                     {showTooltip && (
                         <TooltipInfo>
-                            This list shows total sales amount and count per agent within
-                            the selected date range, excluding remarks "PO Received".
+                            This list shows total sales amount and count per agent within the
+                            selected date range, excluding remarks "PO Received".
                         </TooltipInfo>
                     )}
                 </div>
@@ -198,46 +212,94 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                 )}
 
                 {!loading && !agentsLoading && !error && groupedData.length > 0 && (
-                    <div className="flex flex-col space-y-2">
-                        {groupedData
-                            .slice() // clone so we don't mutate original
-                            .sort((a, b) => b.amount - a.amount)
-                            .map(({ referenceid, count, amount }, index) => {
-                                const agent = agents.find((a) => a.ReferenceID === referenceid);
-                                const fullName = agent
-                                    ? `${agent.Firstname} ${agent.Lastname}`
-                                    : "(Unknown Agent)";
-                                const rank = index + 1;
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[50px]">Rank</TableHead>
+                                    <TableHead>Agent Name</TableHead>
+                                    <TableHead className="text-right">Sales</TableHead>
+                                    <TableHead className="text-right">Non-Sales</TableHead>
+                                    <TableHead className="text-right">QTY Sold</TableHead>
+                                    <TableHead className="text-right">Converted Sales</TableHead>
+                                    <TableHead className="text-right">% Conversion Inquiry to Sales</TableHead>
+                                    <TableHead className="text-right">Total Amount</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {groupedData
+                                    .slice()
+                                    .sort((a, b) => b.amount - a.amount)
+                                    .map(({ referenceid, salesCount, nonSalesCount, convertedCount, amount, qtySold }, index) => {
+                                        const agent = agents.find((a) => a.ReferenceID === referenceid);
+                                        const fullName = agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown Agent)";
+                                        const rank = index + 1;
 
-                                return (
-                                    <Item key={referenceid} variant="outline">
-                                        <ItemHeader className="flex justify-between items-center">
-                                            {/* Left side: Rank badge + full name */}
-                                            <div className="flex items-center space-x-2">
-                                                <Badge className="w-6 h-6 rounded-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
-                                                    {rank}
-                                                </Badge>
-                                                <span className="font-semibold capitalize">{fullName}</span>
-                                            </div>
+                                        return (
+                                            <TableRow key={referenceid} className="hover:bg-muted/50">
+                                                <TableCell className="font-medium text-center">{rank}</TableCell>
+                                                <TableCell className="capitalize">{fullName}</TableCell>
+                                                <TableCell className="font-mono tabular-nums text-right">{salesCount.toLocaleString()}</TableCell>
+                                                <TableCell className="font-mono tabular-nums text-right">{nonSalesCount.toLocaleString()}</TableCell>
+                                                <TableCell className="font-mono tabular-nums text-right">{qtySold.toLocaleString()}</TableCell>
+                                                <TableCell className="font-mono tabular-nums text-right">{convertedCount.toLocaleString()}</TableCell>
+                                                <TableCell className="font-mono tabular-nums text-right">
+                                                    {salesCount === 0
+                                                        ? "0.00%"
+                                                        : ((convertedCount / salesCount) * 100).toFixed(2) + "%"}
+                                                </TableCell>
+                                                <TableCell className="font-mono tabular-nums text-right">
+                                                    {amount.toLocaleString(undefined, {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2,
+                                                    })}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                            </TableBody>
 
-                                            {/* Right side: Sales badge */}
-                                            <Badge className="font-mono tabular-nums px-3 rounded-full">
-                                                Sales:{" "}
-                                                {amount.toLocaleString(undefined, {
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 2,
-                                                })}
-                                            </Badge>
-                                        </ItemHeader>
-                                    </Item>
+                            <tfoot>
+                                <TableRow className="bg-muted/30 font-semibold">
+                                    <TableCell className="text-center">-</TableCell>
+                                    <TableCell className="text-right">Total</TableCell>
+                                    <TableCell className="font-mono tabular-nums text-right">
+                                        {groupedData.reduce((sum, row) => sum + row.salesCount, 0).toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="font-mono tabular-nums text-right">
+                                        {groupedData.reduce((sum, row) => sum + row.nonSalesCount, 0).toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="font-mono tabular-nums text-right">
+                                        {groupedData.reduce((sum, row) => sum + row.qtySold, 0).toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="font-mono tabular-nums text-right">
+                                        {groupedData.reduce((sum, row) => sum + row.convertedCount, 0).toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="font-mono tabular-nums text-right">
+                                        {(() => {
+                                            const totalSales = groupedData.reduce((sum, row) => sum + row.salesCount, 0);
+                                            const totalConverted = groupedData.reduce((sum, row) => sum + row.convertedCount, 0);
+                                            if (totalSales === 0) return "0.00%";
+                                            return ((totalConverted / totalSales) * 100).toFixed(2) + "%";
+                                        })()}
+                                    </TableCell>
+                                    <TableCell className="font-mono tabular-nums text-right">
+                                        {totalSoAmount.toLocaleString(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })}
+                                    </TableCell>
+                                </TableRow>
+                            </tfoot>
 
-                                );
-                            })}
+
+                        </Table>
                     </div>
                 )}
             </CardContent>
 
             <Separator />
+
             <CardFooter className="flex justify-end">
                 <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
                     Total Amount:{" "}

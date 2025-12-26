@@ -75,6 +75,7 @@ interface Activity {
   source_company: string;
   company_name: string;
   contact_person?: string;
+  remarks: string;
 }
 
 function DashboardContent() {
