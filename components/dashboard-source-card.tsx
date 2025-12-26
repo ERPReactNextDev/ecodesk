@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -20,11 +20,9 @@ import {
     ItemTitle,
 } from "@/components/ui/item";
 
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 
-// Tooltip component for info explanation
 function TooltipInfo({ children }: { children: React.ReactNode }) {
     return (
         <div className="absolute top-full mt-1 w-64 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
@@ -43,17 +41,19 @@ interface SourceListProps {
     loading: boolean;
     error: string | null;
     dateCreatedFilterRange: DateRange | undefined;
-    setDateCreatedFilterRangeAction: React.Dispatch<
-        React.SetStateAction<DateRange | undefined>
-    >;
+    setDateCreatedFilterRangeAction?: React.Dispatch<React.SetStateAction<DateRange | undefined>>; // optional if not used here
 }
 
-export function SourceCard({
+export interface SourceCardRef {
+  downloadCSV: () => void;
+}
+
+const SourceCard = forwardRef<SourceCardRef, SourceListProps>(({
     activities,
     loading,
     error,
     dateCreatedFilterRange,
-}: SourceListProps) {
+}, ref) => {
     const [showTooltip, setShowTooltip] = useState(false);
 
     const isDateInRange = (dateStr: string | undefined, range: DateRange | undefined) => {
@@ -78,12 +78,10 @@ export function SourceCard({
         return true;
     };
 
-    // Filter activities by date range first
     const filteredActivities = useMemo(() => {
         return activities.filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange));
     }, [activities, dateCreatedFilterRange]);
 
-    // Count per source (including duplicates)
     const sourceCountsArray = useMemo(() => {
         const counts: Record<string, number> = {};
         filteredActivities.forEach((a) => {
@@ -97,28 +95,29 @@ export function SourceCard({
             .sort((a, b) => b.count - a.count);
     }, [filteredActivities]);
 
-    // Total sources including duplicates count
     const totalSourcesCount = useMemo(() => {
         return filteredActivities.filter((a) => a.source && a.source.trim() !== "").length;
     }, [filteredActivities]);
 
-    // CSV download helper
-    const downloadCSV = () => {
-        const header = ["Source", "Count"];
-        const rows = sourceCountsArray.map(({ source, count }) => [source, count.toString()]);
+    // Expose downloadCSV to parent via ref
+    useImperativeHandle(ref, () => ({
+        downloadCSV() {
+            const header = ["Source", "Count"];
+            const rows = sourceCountsArray.map(({ source, count }) => [source, count.toString()]);
 
-        const csvContent =
-            "data:text/csv;charset=utf-8," +
-            [header, ...rows].map((e) => e.join(",")).join("\n");
+            const csvContent =
+                "data:text/csv;charset=utf-8," +
+                [header, ...rows].map((e) => e.join(",")).join("\n");
 
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "source_counts.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "source_counts.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        },
+    }));
 
     return (
         <Card>
@@ -162,19 +161,13 @@ export function SourceCard({
                 )}
             </CardContent>
             <Separator />
-            <CardFooter className="flex justify-between items-center text-sm">
+            <CardFooter className="flex justify-end items-center text-sm">
                 <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
                     Total: {totalSourcesCount}
                 </Badge>
-                <Button
-                    onClick={downloadCSV}
-                    type="button"
-                    aria-label="Download source counts CSV"
-                    className="bg-green-500 text-white hover:bg-green-600"
-                >
-                    Download CSV
-                </Button>
             </CardFooter>
         </Card>
     );
-}
+});
+
+export default SourceCard;

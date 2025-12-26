@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -50,13 +50,17 @@ interface ChannelTableProps {
   >;
 }
 
-export function SourceCompanyCard({
+export interface SourceCompanyCardRef {
+  downloadCSV: () => void;
+}
+
+const SourceCompanyCard = forwardRef<SourceCompanyCardRef, ChannelTableProps>(({
   activities,
   loading,
   error,
   dateCreatedFilterRange,
-  setDateCreatedFilterRangeAction,
-}: ChannelTableProps) {
+}, ref) => {
+
   const [showTooltip, setShowTooltip] = useState(false);
 
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
@@ -124,43 +128,46 @@ export function SourceCompanyCard({
 
   const totalCount = displayData.reduce((sum, row) => sum + row.count, 0);
 
-  // CSV download handler includes company_name and contact_person
-  const handleDownloadCSV = () => {
-    const headers = [
-      "Customer Type",
-      "Company Name",
-      "Contact Person",
-      "Count",
-    ];
-    const rows = groupedData.map(
-      ({ source_company, company_name, contact_person, count }) => [
-        source_company,
-        company_name,
-        contact_person ?? "",
-        count.toString(),
-      ]
-    );
+  useImperativeHandle(ref, () => ({
+    downloadCSV: () => {
 
-    const csvContent =
-      [headers, ...rows]
-        .map((row) =>
-          row
-            .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
-            .join(",")
-        )
-        .join("\n") + "\n";
+      const headers = [
+        "Customer Type",
+        "Company Name",
+        "Contact Person",
+        "Count",
+      ];
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+      const rows = groupedData.map(
+        ({ source_company, company_name, contact_person, count }) => [
+          source_company,
+          company_name,
+          contact_person ?? "",
+          count.toString(),
+        ]
+      );
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "source_company.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+      const csvContent =
+        [headers, ...rows]
+          .map((row) =>
+            row
+              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
+              .join(",")
+          )
+          .join("\n") + "\n";
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "source_company.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }));
 
   return (
     <Card>
@@ -216,18 +223,12 @@ export function SourceCompanyCard({
         )}
       </CardContent>
       <Separator />
-      <CardFooter className="flex justify-between">
-        <Badge className="h-10 min-w-10 rounded-full px-1 font-mono tabular-nums">
-          {totalCount}
+      <CardFooter className="flex justify-end">
+        <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+         Total: {totalCount}
         </Badge>
-        <Button
-          onClick={handleDownloadCSV}
-          disabled={loading || groupedData.length === 0}
-          className="bg-green-500 text-white hover:bg-green-600"
-        >
-          Download CSV
-        </Button>
       </CardFooter>
     </Card>
   );
-}
+});
+export default SourceCompanyCard;

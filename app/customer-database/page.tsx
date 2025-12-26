@@ -274,7 +274,7 @@ export function CustomerDatabaseContent() {
       <SidebarLeft />
 
       <SidebarInset className="overflow-auto">
-        <header className="bg-background sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b">
+        <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2 px-3 z-[50]">
           <div className="flex flex-1 items-center gap-2 px-3">
             <SidebarTrigger />
             <Separator

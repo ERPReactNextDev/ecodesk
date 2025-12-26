@@ -1,7 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { TrendingUp, Info } from "lucide-react";
+import React, {
+  useState,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+  ForwardRefRenderFunction,
+} from "react";
+import { Info } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
 import { type DateRange } from "react-day-picker";
 
@@ -20,9 +26,8 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
-import { Separator } from "@/components/ui/separator"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 // Tooltip component for info
 function TooltipInfo({ children }: { children: React.ReactNode }) {
@@ -48,6 +53,10 @@ interface ChannelBarChartProps {
   >;
 }
 
+export interface ChannelCardRef {
+  downloadCSV: () => void;
+}
+
 const chartConfig = {
   label: {
     color: "var(--foreground)",
@@ -57,12 +66,10 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function ChannelCard({
-  activities,
-  loading,
-  error,
-  dateCreatedFilterRange,
-}: ChannelBarChartProps) {
+const ChannelCard: ForwardRefRenderFunction<ChannelCardRef, ChannelBarChartProps> = (
+  { activities, loading, error, dateCreatedFilterRange },
+  ref
+) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   const isDateInRange = (dateStr: string | undefined, range: DateRange | undefined) => {
@@ -125,6 +132,11 @@ export function ChannelCard({
     link.click();
     document.body.removeChild(link);
   };
+
+  // Expose downloadCSV to parent via ref
+  useImperativeHandle(ref, () => ({
+    downloadCSV,
+  }));
 
   return (
     <Card>
@@ -190,19 +202,13 @@ export function ChannelCard({
         )}
       </CardContent>
       <Separator />
-      <CardFooter className="flex justify-between items-center text-sm">
+      <CardFooter className="flex justify-end items-center text-sm">
         <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
           Total: {totalChannelsCount}
         </Badge>
-        <Button
-          onClick={downloadCSV}
-          type="button"
-          aria-label="Download channel counts CSV"
-          className="bg-green-500 text-white hover:bg-green-600"
-        >
-          Download CSV
-        </Button>
       </CardFooter>
     </Card>
   );
-}
+};
+
+export default forwardRef(ChannelCard);

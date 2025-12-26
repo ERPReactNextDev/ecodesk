@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -20,9 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 // Tooltip component
 function TooltipInfo({ children }: { children: React.ReactNode }) {
@@ -50,13 +49,16 @@ interface ChannelTableProps {
   >;
 }
 
-export function InboundTrafficGenderCard({
-  activities,
-  loading,
-  error,
-  dateCreatedFilterRange,
-  setDateCreatedFilterRangeAction,
-}: ChannelTableProps) {
+export interface InboundTrafficCardRef {
+  downloadCSV: () => void;
+}
+
+const InboundTrafficGenderCard = forwardRef<InboundTrafficCardRef, ChannelTableProps>(({
+    activities,
+    loading,
+    error,
+    dateCreatedFilterRange,
+}, ref) => {  
   const [showTooltip, setShowTooltip] = useState(false);
 
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
@@ -100,48 +102,46 @@ export function InboundTrafficGenderCard({
 
   const totalCount = groupedData.reduce((sum, row) => sum + row.count, 0);
 
-  // CSV download handler
-  // CSV download handler
-  const handleDownloadCSV = () => {
-    // Filter activities by date range and valid gender/company_name
-    const filtered = activities.filter(
-      (a) =>
-        isDateInRange(a.date_created, dateCreatedFilterRange) &&
-        a.gender &&
-        a.gender.trim() !== "" &&
-        a.company_name &&
-        a.company_name.trim() !== ""
-    );
+  useImperativeHandle(ref, () => ({
+    downloadCSV: () => {
+      const filtered = activities.filter(
+        (a) =>
+          isDateInRange(a.date_created, dateCreatedFilterRange) &&
+          a.gender &&
+          a.gender.trim() !== "" &&
+          a.company_name &&
+          a.company_name.trim() !== ""
+      );
 
-    const headers = ["Gender", "Company Name", "Contact Person"];
+      const headers = ["Gender", "Company Name", "Contact Person"];
 
-    const rows = filtered.map(({ gender, company_name, contact_person }) => [
-      gender?.trim() ?? "",
-      company_name.trim(),
-      contact_person?.trim() ?? "",
-    ]);
+      const rows = filtered.map(({ gender, company_name, contact_person }) => [
+        gender?.trim() ?? "",
+        company_name.trim(),
+        contact_person?.trim() ?? "",
+      ]);
 
-    const csvContent =
-      [headers, ...rows]
-        .map((row) =>
-          row
-            .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
-            .join(",")
-        )
-        .join("\n") + "\n";
+      const csvContent =
+        [headers, ...rows]
+          .map((row) =>
+            row
+              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
+              .join(",")
+          )
+          .join("\n") + "\n";
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "inbound_traffic_details.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "inbound_traffic_details.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }));
 
   return (
     <Card>
@@ -195,18 +195,13 @@ export function InboundTrafficGenderCard({
         )}
       </CardContent>
       <Separator />
-      <CardFooter className="flex justify-between">
-        <Badge className="h-10 min-w-10 rounded-full px-1 font-mono tabular-nums">
-          {totalCount}
+      <CardFooter className="flex justify-end">
+        <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+         Total: {totalCount}
         </Badge>
-        <Button
-          onClick={handleDownloadCSV}
-          disabled={loading || groupedData.length === 0}
-          className="bg-green-500 text-white hover:bg-green-600"
-        >
-          Download CSV
-        </Button>
       </CardFooter>
     </Card>
   );
-}
+});
+
+export default InboundTrafficGenderCard;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -20,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 
@@ -50,13 +49,17 @@ interface ChannelTableProps {
   >;
 }
 
-export function CustomerStatusCard({
+export interface CustomerStatusCardRef {
+  downloadCSV: () => void;
+}
+
+const CustomerStatusCard = forwardRef<CustomerStatusCardRef, ChannelTableProps>(({
   activities,
   loading,
   error,
   dateCreatedFilterRange,
-  setDateCreatedFilterRangeAction,
-}: ChannelTableProps) {
+}, ref) => {
+
   const [showTooltip, setShowTooltip] = useState(false);
 
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
@@ -124,41 +127,43 @@ export function CustomerStatusCard({
 
   const totalCount = displayData.reduce((sum, row) => sum + row.count, 0);
 
-  // CSV download handler includes company_name and contact_person
-  const handleDownloadCSV = () => {
-    const headers = [
-      "Customer Status",
-      "Company Name",
-      "Contact Person",
-    ];
-    const rows = groupedData.map(
-      ({ customer_status, company_name, contact_person }) => [
-        customer_status,
-        company_name,
-        contact_person ?? "",
-      ]
-    );
+  useImperativeHandle(ref, () => ({
+    downloadCSV: () => {
 
-    const csvContent =
-      [headers, ...rows]
-        .map((row) =>
-          row
-            .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
-            .join(",")
-        )
-        .join("\n") + "\n";
+      const headers = [
+        "Customer Status",
+        "Company Name",
+        "Contact Person",
+      ];
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+      const rows = groupedData.map(
+        ({ customer_status, company_name, contact_person }) => [
+          customer_status,
+          company_name,
+          contact_person ?? "",
+        ]
+      );
+      const csvContent =
+        [headers, ...rows]
+          .map((row) =>
+            row
+              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
+              .join(",")
+          )
+          .join("\n") + "\n";
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "customer_status.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "customer_status.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }));
 
   return (
     <Card>
@@ -215,19 +220,13 @@ export function CustomerStatusCard({
         )}
       </CardContent>
       <Separator />
-      <CardFooter className="flex justify-between">
-        <Badge className="h-10 min-w-10 rounded-full px-1 font-mono tabular-nums">
-          {totalCount}
+      <CardFooter className="flex justify-end">
+        <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+          Total: {totalCount}
         </Badge>
-        <Button
-          onClick={handleDownloadCSV}
-          disabled={loading || groupedData.length === 0}
-          className="bg-green-500 text-white hover:bg-green-600"
-          
-        >
-          Download CSV
-        </Button>
       </CardFooter>
     </Card>
   );
-}
+});
+
+export default CustomerStatusCard;

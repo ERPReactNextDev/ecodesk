@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, Suspense } from "react";
+import React, { useEffect, useState, useCallback, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { FormatProvider } from "@/contexts/FormatContext";
@@ -19,7 +19,15 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { type DateRange } from "react-day-picker";
+import { Button } from "@/components/ui/button"
 import { toast } from "sonner";
 
 import { AccountsCard } from "@/components/dashboard-accounts-card";
@@ -28,13 +36,12 @@ import { EndorsedCard } from "@/components/dashboard-endorsed-card";
 import { ConvertedSalesCard } from "@/components/dashboard-converted-sales-card";
 import { MetricsCard } from "@/components/dashboard-metrics-card";
 import { WeeklyInboundCard } from "@/components/dashboard-weekly-inbound-card";
-import { InboundTrafficGenderCard } from "@/components/dashboard-inbound-traffic-gender-card";
-import { CustomerStatusCard } from "@/components/dashboard-customer-status-card";
-import { CustomerTypeCard } from "@/components/dashboard-customer-type-card";
-import { SourceCompanyCard } from "@/components/dashboard-source-company-card";
-import { ChannelCard } from "@/components/dashboard-channel-card";
-import { SourceCard } from "@/components/dashboard-source-card";
-
+import InboundTrafficGenderCard from "@/components/dashboard-inbound-traffic-gender-card";
+import CustomerStatusCard from "@/components/dashboard-customer-status-card";
+import CustomerTypeCard from "@/components/dashboard-customer-type-card";
+import SourceCompanyCard from "@/components/dashboard-source-company-card";
+import ChannelCard from "@/components/dashboard-channel-card";
+import SourceCard from "@/components/dashboard-source-card";
 
 interface UserDetails {
   referenceid: string;
@@ -88,7 +95,15 @@ function DashboardContent() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [errorCompanies, setErrorCompanies] = useState<string | null>(null);
+  const [selectedExport, setSelectedExport] = useState<string>("");
 
+  // Ref to access ChannelCard download function
+  const channelCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const sourceCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const inboundTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const customerStatusCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const customerTypeCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const companyDistributionCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const queryUserId = searchParams?.get("id") ?? "";
 
   useEffect(() => {
@@ -229,14 +244,90 @@ function DashboardContent() {
     fetchActivities();
   }, [fetchActivities]);
 
+  const handleExportAll = () => {
+    // Kung meron kang multiple refs na may downloadCSV method, tawagin lahat sila dito
+    if (channelCardRef.current) {
+      channelCardRef.current.downloadCSV();
+    }
+    if (sourceCardRef.current) {
+      sourceCardRef.current.downloadCSV();
+    }
+    if (inboundTrafficCardRef.current) {
+      inboundTrafficCardRef.current.downloadCSV();
+    }
+    if (customerStatusCardRef.current) {
+      customerStatusCardRef.current.downloadCSV();
+    }
+    if (customerTypeCardRef.current) {
+      customerTypeCardRef.current.downloadCSV();
+    }
+    if (companyDistributionCardRef.current) {
+      companyDistributionCardRef.current.downloadCSV();
+    }
+    // Kung may iba pang cards na may export, idagdag rin dito
+    toast.success("Exported all available data!");
+  };
+
+  const handleExportDownload = () => {
+    console.log("Selected export option:", selectedExport);
+    if (selectedExport === "Export Channel Usage") {
+      if (channelCardRef.current) {
+        console.log("Calling downloadCSV from ChannelCard");
+        channelCardRef.current.downloadCSV();
+      } else {
+        console.log("channelCardRef.current is null");
+      }
+    } else if (selectedExport === "Export Source Usage") {
+      if (sourceCardRef.current) {
+        console.log("Calling downloadCSV from SourceCard");
+        sourceCardRef.current.downloadCSV();
+      } else {
+        console.log("sourceCardRef.current is null");
+      }
+    } else if (selectedExport === "Export Inbound Traffic by Gender") {
+      if (inboundTrafficCardRef.current) {
+        console.log("Calling downloadCSV from InboundTrafficGenderCard");
+        inboundTrafficCardRef.current.downloadCSV();
+      } else {
+        console.log("inboundTrafficCardRef.current is null");
+      }
+    } else if (selectedExport === "Export Customer Status Distribution") {
+      if (customerStatusCardRef.current) {
+        console.log("Calling downloadCSV from CustomerStatusCard");
+        customerStatusCardRef.current.downloadCSV();
+      } else {
+        console.log("customerStatusCardRef.current is null");
+      }
+    } else if (selectedExport === "Export Type Distribution") {
+      if (customerTypeCardRef.current) {
+        console.log("Calling downloadCSV from CustomerTypeCard");
+        customerTypeCardRef.current.downloadCSV();
+      } else {
+        console.log("customerTypeCardRef.current is null");
+      }
+    } else if (selectedExport === "Export Company Distribution") {
+      if (companyDistributionCardRef.current) {
+        console.log("Calling downloadCSV from SourceCompanyCard");
+        companyDistributionCardRef.current.downloadCSV();
+      } else {
+        console.log("companyDistributionCardRef.current is null");
+      }
+    } else if (selectedExport === "Export All") {
+      handleExportAll();
+    } else {
+      toast.error("Please select a valid export option");
+    }
+  };
+
   return (
     <>
       <SidebarLeft />
       <SidebarInset>
-        <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 px-3">
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+        <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2 px-3 z-[50]">
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+
+          <div className="flex justify-between items-center w-full">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -244,6 +335,27 @@ function DashboardContent() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+
+            <div className="flex items-center space-x-2">
+              <Select defaultValue="" onValueChange={(value) => setSelectedExport(value)}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Option" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Export All">Export All</SelectItem>
+                  <SelectItem value="Export Channel Usage">Export Channel Usage</SelectItem>
+                  <SelectItem value="Export Source Usage">Export Source Usage</SelectItem>
+                  <SelectItem value="Export Inbound Traffic by Gender">Export Inbound Traffic by Gender</SelectItem>
+                  <SelectItem value="Export Customer Status Distribution">Export Customer Status Distribution</SelectItem>
+                  <SelectItem value="Export Type Distribution">Export Type Distribution</SelectItem>
+                  <SelectItem value="Export Company Distribution">Export Company Distribution</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button variant="outline" onClick={handleExportDownload}>
+                Download as CSV
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -296,6 +408,7 @@ function DashboardContent() {
             />
 
             <ChannelCard
+              ref={channelCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -304,6 +417,7 @@ function DashboardContent() {
             />
 
             <SourceCard
+              ref={sourceCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -314,6 +428,7 @@ function DashboardContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <InboundTrafficGenderCard
+              ref={inboundTrafficCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -322,6 +437,7 @@ function DashboardContent() {
             />
 
             <CustomerStatusCard
+              ref={customerStatusCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -330,6 +446,7 @@ function DashboardContent() {
             />
 
             <CustomerTypeCard
+              ref={customerTypeCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -338,6 +455,7 @@ function DashboardContent() {
             />
 
             <SourceCompanyCard
+              ref={companyDistributionCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
