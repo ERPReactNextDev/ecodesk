@@ -42,6 +42,10 @@ import CustomerTypeCard from "@/components/dashboard-customer-type-card";
 import SourceCompanyCard from "@/components/dashboard-source-company-card";
 import ChannelCard from "@/components/dashboard-channel-card";
 import SourceCard from "@/components/dashboard-source-card";
+import WrapUpCard from "@/components/dashboard-wrapup-card";
+import { WrapUpWeeklyCard } from "@/components/dashboard-weekly-wrapup-card";
+import AgentSalesConversionCard from "@/components/dashboard-agent-sales-conversion";
+import AgentSalesTableCard from "@/components/dashboard-agent-sales-conversion-table";
 
 interface UserDetails {
   referenceid: string;
@@ -65,6 +69,7 @@ interface Activity {
   so_amount: string;
   qty_sold: string;
   gender: string;
+  wrap_up: string;
   customer_status: string;
   customer_type: string;
   source_company: string;
@@ -390,7 +395,21 @@ function DashboardContent() {
 
           </div>
 
+          <Separator />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AgentSalesConversionCard
+              ref={inboundTrafficCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            />
+
+            <AgentSalesTableCard
+              ref={inboundTrafficCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            />
+
             <MetricsCard
               activities={activities}
               loading={loadingActivities}
@@ -456,6 +475,25 @@ function DashboardContent() {
 
             <SourceCompanyCard
               ref={companyDistributionCardRef}
+              activities={activities}
+              loading={loadingActivities}
+              error={errorActivities}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <WrapUpCard
+              ref={sourceCardRef}
+              activities={activities}
+              loading={loadingActivities}
+              error={errorActivities}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            />
+
+            <WrapUpWeeklyCard
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
