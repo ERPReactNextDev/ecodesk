@@ -890,6 +890,7 @@ export function TicketSheet(props: TicketSheetProps) {
                                 <FieldLabel>Delivery Date</FieldLabel>
                                 <FieldDescription>Date the product was delivered.</FieldDescription>
                                 <InputField
+                                    type="date"
                                     value={deliveryDate}
                                     onChange={(e) => setDeliveryDate(e.target.value)}
                                 />

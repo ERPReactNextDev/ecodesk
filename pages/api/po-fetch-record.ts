@@ -2,33 +2,20 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { MongoClient } from "mongodb";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-const MONGODB_DB = process.env.MONGODB_DB;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    "Please define the MONGODB_URI environment variable inside .env.local"
-  );
-}
-
-if (!MONGODB_DB) {
-  throw new Error(
-    "Please define the MONGODB_DB environment variable inside .env.local"
-  );
-}
-
-const mongoUri: string = MONGODB_URI;
-const mongoDb: string = MONGODB_DB;
+const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_DB = process.env.MONGODB_DB!;
 
 let cachedClient: MongoClient | null = null;
 let cachedDb: any = null;
 
 async function connectToDatabase() {
-  if (cachedClient && cachedDb) return { client: cachedClient, db: cachedDb };
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
+  }
 
-  const client = new MongoClient(mongoUri);
+  const client = new MongoClient(MONGODB_URI);
   await client.connect();
-  const db = client.db(mongoDb);
+  const db = client.db(MONGODB_DB);
 
   cachedClient = client;
   cachedDb = db;
@@ -45,21 +32,29 @@ export default async function handler(
   }
 
   try {
-    // Optional query filter, e.g., ?referenceid=123
     const { referenceid } = req.query;
 
     const { db } = await connectToDatabase();
-    const collection = db.collection("po");
+    const collection = db.collection("activity");
 
-    let filter = {};
+    const filter: any = {
+      remarks: { $in: ["PO Received", "Po Received"] },
+    };
+
     if (referenceid && typeof referenceid === "string") {
-      filter = { referenceid }; // match the field in your PO documents
+      filter.referenceid = referenceid;
     }
 
-    const data = await collection.find(filter).sort({ date_created: -1 }).toArray();
+    const data = await collection
+      .find(filter)
+      .sort({ date_created: -1 })
+      .toArray();
 
-    return res.status(200).json({ success: true, data, cached: false });
-  } catch (error: any) {
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
     console.error("MongoDB fetch error (PO):", error);
     return res.status(500).json({ error: "Server error" });
   }

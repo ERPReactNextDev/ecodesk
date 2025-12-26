@@ -68,18 +68,18 @@ export default async function handler(
 
       source,
 
-      status,
+      remarks,
     } = req.body;
 
     /* 🔒 Basic validation (minimal scaffold) */
-    if (!company_name || !po_number || !status) {
+    if (!company_name || !po_number || !remarks) {
       return res.status(400).json({
         error: "Missing required fields",
       });
     }
 
     const { db } = await connectToDatabase();
-    const collection = db.collection("po");
+    const collection = db.collection("activity");
 
     /* 📌 Build document */
     const newRecord = {
@@ -103,7 +103,7 @@ export default async function handler(
 
       source,
 
-      status,
+      remarks,
 
       isActive: true,
       date_created: new Date().toISOString(),

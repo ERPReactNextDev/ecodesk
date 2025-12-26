@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!id) return res.status(400).json({ error: "Missing PO record ID" });
 
     const { db } = await connectToDatabase();
-    const collection = db.collection("po");
+    const collection = db.collection("activity");
 
     const result = await collection.updateOne(
       { _id: new ObjectId(id) },

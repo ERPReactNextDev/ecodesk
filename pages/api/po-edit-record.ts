@@ -86,7 +86,7 @@ export default async function handler(
     }
 
     const { db } = await connectToDatabase();
-    const collection = db.collection("po");
+    const collection = db.collection("activity");
 
     /* 📌 Build update document */
     const updateDoc: any = {

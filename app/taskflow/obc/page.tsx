@@ -104,17 +104,6 @@ export function OBCContent() {
         </header>
 
         <main className="flex flex-1 flex-col gap-4 p-4">
-          {/* Section Header */}
-          <div className="mb-4">
-            <h1 className="text-xl font-semibold">Outbound Calls</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              This section displays details about outbound calls made to clients. It
-              includes a search and filter functionality to refine call records based
-              on client type, date range, and other criteria. The total number of
-              entries is shown to provide an overview of recorded outbound calls.
-            </p>
-          </div>
-
           {loading && (
             <div className="flex justify-center items-center h-40">
               <Spinner className="size-8" />

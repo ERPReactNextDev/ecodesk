@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,13 +23,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import debounce from "lodash/debounce";
 
 interface POTrackingAddDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave?: (data: any) => void;
   userId: string; // current user ID
+  isEditMode?: boolean;
 }
 
 const SALES_AGENTS = [
@@ -45,6 +47,66 @@ const SALES_AGENTS = [
   "Rodney Mendoza", "Roselyn Barnes", "Ruby Del Rosario", "Sherilyn Rapote",
   "Shane Rey Santos", "Venzross Posadas", "Vince Ortiz",
 ];
+
+interface Company {
+  account_reference_number: string;
+  company_name: string;
+  contact_number: string[];
+}
+
+const ContactNumberInput = React.memo(function ContactNumberInput({
+  index,
+  value,
+  onChange,
+  onRemove,
+  disableRemove,
+}: {
+  index: number;
+  value: string;
+  onChange: (index: number, value: string) => void;
+  onRemove: (index: number) => void;
+  disableRemove: boolean;
+}) {
+  // Debounce the onChange calls to reduce frequent updates
+  const debouncedChange = React.useMemo(
+    () =>
+      debounce((val: string) => {
+        onChange(index, val);
+      }, 300),
+    [index, onChange]
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedChange(e.target.value);
+  };
+
+  // Cancel debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedChange.cancel();
+    };
+  }, [debouncedChange]);
+
+  return (
+    <div className="flex gap-2 items-center">
+      <Input
+        type="tel"
+        defaultValue={value}
+        onChange={handleChange}
+        placeholder="+63 9123456789"
+        className="flex-grow"
+      />
+      <Button
+        variant="outline"
+        type="button"
+        onClick={() => onRemove(index)}
+        disabled={disableRemove}
+      >
+        −
+      </Button>
+    </div>
+  );
+});
 
 export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
   isOpen,
@@ -63,11 +125,16 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
     payment_date: "",
     delivery_pickup_date: "",
     source: "",
-    status: "PO Received",
+    remarks: "PO Received",
   });
 
   const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
   const [referenceId, setReferenceId] = useState<string>("");
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [errorCompanies, setErrorCompanies] = useState<string | null>(null);
+
+  const companiesFetched = useRef(false);
 
   // Fetch reference ID for current user
   useEffect(() => {
@@ -89,15 +156,66 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
     fetchUserData();
   }, [userId]);
 
+  const fetchCompanies = useCallback(async () => {
+    setLoadingCompanies(true);
+    setErrorCompanies(null);
+
+    try {
+      const res = await fetch("/api/com-fetch-po-company", {
+        cache: "no-store",
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch company data");
+
+      const data = await res.json();
+      setCompanies(data.data || []);
+    } catch (err: any) {
+      setErrorCompanies(err.message || "Error fetching company data");
+    } finally {
+      setLoadingCompanies(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || companiesFetched.current) return;
+
+    companiesFetched.current = true;
+    fetchCompanies();
+  }, [isOpen, fetchCompanies]);
+
   const handleChange = (key: string, value: any) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === "company_name") {
+      setForm((prev) => ({ ...prev, company_name: value }));
+
+      // Find company by account_reference_number
+      const selectedCompany = companies.find(
+        (c) => c.account_reference_number === value
+      );
+
+      if (selectedCompany && selectedCompany.contact_number) {
+        if (Array.isArray(selectedCompany.contact_number)) {
+          setContactNumbers(selectedCompany.contact_number);
+        } else if (typeof selectedCompany.contact_number === "string") {
+          setContactNumbers([selectedCompany.contact_number]);
+        } else {
+          setContactNumbers([""]);
+        }
+      } else {
+        setContactNumbers([""]);
+      }
+    } else {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    }
   };
 
-  const handleContactChange = (index: number, value: string) => {
-    const updated = [...contactNumbers];
-    updated[index] = value;
-    setContactNumbers(updated);
-  };
+  // Update contact number without debounce here (called from debounced child)
+  const updateContactNumber = useCallback((index: number, value: string) => {
+    setContactNumbers((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  }, []);
 
   const addContactField = () => setContactNumbers((prev) => [...prev, ""]);
   const removeContactField = (index: number) => {
@@ -105,17 +223,6 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
     const updated = [...contactNumbers];
     updated.splice(index, 1);
     setContactNumbers(updated);
-  };
-
-  // Format datetime-local value for input
-  const formatDateTimeLocal = (dateStr: string | undefined) => {
-    if (!dateStr) return "";
-    try {
-      const parsed = parseISO(dateStr);
-      return format(parsed, "yyyy-MM-dd'T'HH:mm");
-    } catch {
-      return "";
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,8 +237,12 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
       ...form,
       referenceid: referenceId,
       contact_number: contactNumberString,
-      so_date: form.so_date ? format(new Date(form.so_date), "MM/dd/yyyy hh:mm aa") : "",
-      payment_date: form.payment_date ? format(new Date(form.payment_date), "MM/dd/yyyy hh:mm aa") : "",
+      so_date: form.so_date
+        ? format(new Date(form.so_date), "MM/dd/yyyy hh:mm aa")
+        : "",
+      payment_date: form.payment_date
+        ? format(new Date(form.payment_date), "MM/dd/yyyy hh:mm aa")
+        : "",
       delivery_pickup_date: form.delivery_pickup_date
         ? format(new Date(form.delivery_pickup_date), "MM/dd/yyyy hh:mm aa")
         : "",
@@ -170,11 +281,38 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
           <Field>
             <FieldLabel>Company Name</FieldLabel>
             <FieldContent>
-              <Input
+              <Select
                 value={form.company_name}
-                onChange={(e) => handleChange("company_name", e.target.value)}
-                required
-              />
+                onValueChange={(value) => handleChange("company_name", value)}
+                disabled={loadingCompanies}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      loadingCompanies ? "Loading companies..." : "Select company"
+                    }
+                  />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {companies.map((company) => {
+                    if (!company.account_reference_number) return null;
+
+                    return (
+                      <SelectItem
+                        key={company.account_reference_number}
+                        value={company.account_reference_number}
+                      >
+                        {company.company_name}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+
+              {errorCompanies && (
+                <p className="text-sm text-red-500 mt-1">{errorCompanies}</p>
+              )}
             </FieldContent>
           </Field>
 
@@ -183,22 +321,14 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
             <FieldContent>
               <div className="space-y-2">
                 {contactNumbers.map((num, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <Input
-                      type="tel"
-                      value={num}
-                      onChange={(e) => handleContactChange(idx, e.target.value)}
-                      placeholder="+63 9123456789"
-                      className="flex-grow"
-                    />
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => removeContactField(idx)}
-                    >
-                      −
-                    </Button>
-                  </div>
+                  <ContactNumberInput
+                    key={idx}
+                    index={idx}
+                    value={num}
+                    onChange={updateContactNumber}
+                    onRemove={removeContactField}
+                    disableRemove={contactNumbers.length === 1}
+                  />
                 ))}
                 <Button variant="secondary" type="button" onClick={addContactField}>
                   + Add another number
@@ -207,12 +337,14 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
             </FieldContent>
           </Field>
 
+          {/* The rest of the form fields */}
           <Field>
             <FieldLabel>PO Number</FieldLabel>
             <FieldContent>
               <Input
                 value={form.po_number}
                 onChange={(e) => handleChange("po_number", e.target.value)}
+                className="uppercase"
                 required
               />
             </FieldContent>
@@ -234,6 +366,7 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
               <Input
                 value={form.so_number}
                 onChange={(e) => handleChange("so_number", e.target.value)}
+                className="uppercase"
               />
             </FieldContent>
           </Field>
@@ -242,7 +375,7 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
             <FieldLabel>SO Date</FieldLabel>
             <FieldContent>
               <Input
-                type="datetime-local"
+                type="date"
                 value={form.so_date}
                 onChange={(e) => handleChange("so_date", e.target.value)}
               />
@@ -294,7 +427,7 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
             <FieldLabel>Payment Date</FieldLabel>
             <FieldContent>
               <Input
-                type="datetime-local"
+                type="date"
                 value={form.payment_date}
                 onChange={(e) => handleChange("payment_date", e.target.value)}
               />
@@ -305,11 +438,9 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
             <FieldLabel>Delivery / Pick-Up Date</FieldLabel>
             <FieldContent>
               <Input
-                type="datetime-local"
+                type="date"
                 value={form.delivery_pickup_date}
-                onChange={(e) =>
-                  handleChange("delivery_pickup_date", e.target.value)
-                }
+                onChange={(e) => handleChange("delivery_pickup_date", e.target.value)}
               />
             </FieldContent>
           </Field>
@@ -337,8 +468,8 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
             <FieldLabel>Status</FieldLabel>
             <FieldContent>
               <Select
-                value={form.status}
-                onValueChange={(v) => handleChange("status", v)}
+                value={form.remarks}
+                onValueChange={(v) => handleChange("remarks", v)}
               >
                 <SelectTrigger>
                   <SelectValue />

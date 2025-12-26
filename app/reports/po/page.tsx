@@ -41,6 +41,12 @@ interface UserDetails {
   Lastname?: string;
 }
 
+interface Company {
+  account_reference_number: string;
+  company_name: string;
+  contact_number?: string[];
+}
+
 function POContent() {
   const searchParams = useSearchParams();
   const { userId, setUserId } = useUser();
@@ -58,6 +64,10 @@ function POContent() {
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<any | null>(null);
+
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [errorCompanies, setErrorCompanies] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -103,6 +113,49 @@ function POContent() {
     fetchUserData();
   }, [userId]);
 
+  const fetchCompanies = async () => {
+    setLoadingCompanies(true);
+    setErrorCompanies(null);
+    try {
+      const res = await fetch("/api/com-fetch-po-company", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch companies");
+      const json = await res.json();
+      setCompanies(json.data || []);
+    } catch (err: any) {
+      setErrorCompanies(err.message || "Error fetching companies");
+      setCompanies([]);
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
+
+  // Fetch companies on mount
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  const companyMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const c of companies) {
+      if (c.account_reference_number) {
+        map[c.account_reference_number] = c.company_name;
+      }
+    }
+    return map;
+  }, [companies]);
+
+  const recordsWithCompanyName = useMemo(() => {
+    return records.map((r) => {
+      // Assuming the account_reference_number is in r.account_reference_number (adjust if needed)
+      const acctRef = r.account_reference_number || r.company_ref_number || r.company_name;
+      const actualCompanyName = companyMap[acctRef] || "Unknown Company";
+      return {
+        ...r,
+        company_name: actualCompanyName,
+      };
+    });
+  }, [records, companyMap]);
+
   useEffect(() => {
     if (!userDetails.referenceid) return;
 
@@ -128,12 +181,13 @@ function POContent() {
   }, [userDetails.referenceid]);
 
   const filteredRecords = useMemo(() => {
-    if (!searchTerm) return records;
+    if (!searchTerm) return recordsWithCompanyName;
     const term = searchTerm.toLowerCase();
-    return records.filter((r) =>
+    return recordsWithCompanyName.filter((r) =>
       [
         r.csr_agent,
-        r.company_name,
+        r.company_name, // which is account_reference_number now
+        r.contact_number,
         r.po_number,
         r.amount,
         r.so_number,
@@ -146,7 +200,7 @@ function POContent() {
         r.source,
       ].some((field) => field?.toString().toLowerCase().includes(term))
     );
-  }, [records, searchTerm]);
+  }, [recordsWithCompanyName, searchTerm]);
 
   const totalPages = Math.ceil(filteredRecords.length / rowsPerPage);
   const paginatedRecords = filteredRecords.slice(
@@ -181,7 +235,7 @@ function POContent() {
       "Created At",
     ];
 
-    const rows = records.map((r) => {
+    const rows = recordsWithCompanyName.map((r) => {
       const soDate = r.so_date ? new Date(r.so_date) : null;
       const paymentDate = r.payment_date ? new Date(r.payment_date) : null;
       const pendingFromSO = soDate ? Math.floor((today.getTime() - soDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
@@ -293,8 +347,8 @@ function POContent() {
                   {paginatedRecords.map((r: any) => {
                     const soDate = r.so_date ? new Date(r.so_date) : null;
                     const paymentDate = r.payment_date ? new Date(r.payment_date) : null;
-                    const pendingFromSO = soDate ? Math.floor((today.getTime() - soDate.getTime()) / (1000*60*60*24)) : 0;
-                    const pendingFromPayment = paymentDate ? Math.floor((today.getTime() - paymentDate.getTime()) / (1000*60*60*24)) : 0;
+                    const pendingFromSO = soDate ? Math.floor((today.getTime() - soDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                    const pendingFromPayment = paymentDate ? Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
                     return (
                       <TableRow key={r._id ?? r.po_number}>
@@ -321,12 +375,12 @@ function POContent() {
                           </Button>
                         </TableCell>
 
-                        <TableCell>{`${userDetails.Firstname ?? ""} ${userDetails.Lastname ?? ""}`.trim() || "—"}</TableCell>
-                        <TableCell>{r.company_name}</TableCell>
+                        <TableCell className="capitalize">{`${userDetails.Firstname ?? ""} ${userDetails.Lastname ?? ""}`.trim() || "—"}</TableCell>
+                        <TableCell className="uppercase">{r.company_name}</TableCell>
                         <TableCell>{r.contact_number ?? "—"}</TableCell>
-                        <TableCell>{r.po_number}</TableCell>
+                        <TableCell className="uppercase">{r.po_number}</TableCell>
                         <TableCell>{r.amount}</TableCell>
-                        <TableCell>{r.so_number}</TableCell>
+                        <TableCell className="uppercase">{r.so_number}</TableCell>
                         <TableCell>{r.so_date ?? "—"}</TableCell>
                         <TableCell>{r.sales_agent}</TableCell>
                         <TableCell>{pendingFromSO}</TableCell>
@@ -356,9 +410,9 @@ function POContent() {
 
             {totalPages > 1 && (
               <div className="mt-4 flex justify-center items-center space-x-2 text-xs">
-                <Button size="sm" variant="outline" onClick={handlePrevPage} disabled={currentPage===1}>Prev</Button>
+                <Button size="sm" variant="outline" onClick={handlePrevPage} disabled={currentPage === 1}>Prev</Button>
                 <span>Page {currentPage} / {totalPages || 1}</span>
-                <Button size="sm" variant="outline" onClick={handleNextPage} disabled={currentPage===totalPages}>Next</Button>
+                <Button size="sm" variant="outline" onClick={handleNextPage} disabled={currentPage === totalPages}>Next</Button>
               </div>
             )}
           </div>
