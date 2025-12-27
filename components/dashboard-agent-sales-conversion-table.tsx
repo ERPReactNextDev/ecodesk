@@ -33,7 +33,7 @@ import {
 
 function TooltipInfo({ children }: { children: React.ReactNode }) {
     return (
-        <div className="absolute top-full mt-1 w-80 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
+        <div className="absolute top-full right-0 mt-1 w-180 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
             {children}
         </div>
     );
@@ -196,8 +196,49 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     <Info size={18} />
                     {showTooltip && (
                         <TooltipInfo>
-                            This list shows total sales amount and count per agent within the
-                            selected date range, excluding remarks "PO Received".
+                            <div className="space-y-2">
+                                <p className="font-semibold">Column Computation Guide</p>
+
+                                <p>
+                                    <strong>Sales</strong> – Count of activities where traffic is <em>Sales</em>.
+                                </p>
+
+                                <p>
+                                    <strong>Non-Sales</strong> – Count of activities where traffic is <em>Non-Sales</em>.
+                                </p>
+
+                                <p>
+                                    <strong>QTY Sold</strong> – Total quantity sold per agent.
+                                </p>
+
+                                <p>
+                                    <strong>Converted Sales</strong> – Count of activities with status Converted into Sales.
+                                </p>
+
+                                <p>
+                                    <strong>% Conversion Inquiry to Sales</strong> –
+                                    (<em>Converted Sales ÷ Sales</em>) × 100
+                                </p>
+
+                                <p>
+                                    <strong>Avg Transaction Unit</strong> –
+                                    (<em>QTY Sold ÷ Converted Sales</em>) × 100
+                                </p>
+
+                                <p>
+                                    <strong>Avg Transaction Value</strong> –
+                                    <em>Total Amount ÷ Converted Sales</em>
+                                </p>
+
+                                <p>
+                                    <strong>Total Amount</strong> – Sum of all sales order amounts per agent.
+                                </p>
+
+                                <p className="italic text-xs">
+                                    Note: All computations exclude records with remark <em>"PO Received"</em>
+                                    and are filtered by the selected date range.
+                                </p>
+                            </div>
                         </TooltipInfo>
                     )}
                 </div>
@@ -223,6 +264,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                                     <TableHead className="text-right">QTY Sold</TableHead>
                                     <TableHead className="text-right">Converted Sales</TableHead>
                                     <TableHead className="text-right">% Conversion Inquiry to Sales</TableHead>
+                                    <TableHead className="text-right">Avg Transaction Unit</TableHead>
+                                    <TableHead className="text-right">Avg Transaction Value</TableHead>
                                     <TableHead className="text-right">Total Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -237,7 +280,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
                                         return (
                                             <TableRow key={referenceid} className="hover:bg-muted/50">
-                                                <TableCell className="font-medium text-center">{rank}</TableCell>
+                                                <TableCell className="font-medium text-center"><Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">{rank}</Badge></TableCell>
                                                 <TableCell className="capitalize">{fullName}</TableCell>
                                                 <TableCell className="font-mono tabular-nums text-right">{salesCount.toLocaleString()}</TableCell>
                                                 <TableCell className="font-mono tabular-nums text-right">{nonSalesCount.toLocaleString()}</TableCell>
@@ -249,7 +292,21 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                                                         : ((convertedCount / salesCount) * 100).toFixed(2) + "%"}
                                                 </TableCell>
                                                 <TableCell className="font-mono tabular-nums text-right">
-                                                    {amount.toLocaleString(undefined, {
+                                                    {convertedCount === 0
+                                                        ? "0.00%"
+                                                        : ((qtySold / convertedCount) * 100).toFixed(2) + "%"}
+                                                </TableCell>
+                                                <TableCell className="font-mono tabular-nums text-right">
+                                                    {convertedCount === 0
+                                                        ? "0.00"
+                                                        : (amount / convertedCount).toLocaleString(undefined, {
+                                                            minimumFractionDigits: 2,
+                                                            maximumFractionDigits: 2,
+                                                        })}
+                                                </TableCell>
+
+                                                <TableCell className="font-mono tabular-nums text-right">
+                                                    ₱{amount.toLocaleString(undefined, {
                                                         minimumFractionDigits: 2,
                                                         maximumFractionDigits: 2,
                                                     })}
@@ -284,7 +341,29 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                                         })()}
                                     </TableCell>
                                     <TableCell className="font-mono tabular-nums text-right">
-                                        {totalSoAmount.toLocaleString(undefined, {
+                                        {(() => {
+                                            const totalQtySold = groupedData.reduce((sum, row) => sum + row.qtySold, 0);
+                                            const totalConverted = groupedData.reduce((sum, row) => sum + row.convertedCount, 0);
+
+                                            if (totalConverted === 0) return "0.00%";
+                                            return ((totalQtySold / totalConverted) * 100).toFixed(2) + "%";
+                                        })()}
+                                    </TableCell>
+                                    <TableCell className="font-mono tabular-nums text-right">
+                                        {(() => {
+                                            const totalAmount = groupedData.reduce((sum, row) => sum + row.amount, 0);
+                                            const totalConverted = groupedData.reduce((sum, row) => sum + row.convertedCount, 0);
+
+                                            if (totalConverted === 0) return "₱0.00";
+
+                                            return (totalAmount / totalConverted).toLocaleString(undefined, {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            });
+                                        })()}
+                                    </TableCell>
+                                    <TableCell className="font-mono tabular-nums text-right">
+                                        ₱{totalSoAmount.toLocaleString(undefined, {
                                             minimumFractionDigits: 2,
                                             maximumFractionDigits: 2,
                                         })}
@@ -303,7 +382,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             <CardFooter className="flex justify-end">
                 <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
                     Total Amount:{" "}
-                    {totalSoAmount.toLocaleString(undefined, {
+                    ₱{totalSoAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     })}

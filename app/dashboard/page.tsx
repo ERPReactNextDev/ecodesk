@@ -44,8 +44,10 @@ import ChannelCard from "@/components/dashboard-channel-card";
 import SourceCard from "@/components/dashboard-source-card";
 import WrapUpCard from "@/components/dashboard-wrapup-card";
 import { WrapUpWeeklyCard } from "@/components/dashboard-weekly-wrapup-card";
-import AgentSalesConversionCard from "@/components/dashboard-agent-sales-conversion";
 import AgentSalesTableCard from "@/components/dashboard-agent-sales-conversion-table";
+import AgentSalesTableWeeklyCard from "@/components/dashboard-agent-sales-conversion-table-weekly";
+import TSASalesTableCard from "@/components/dashboard-tsa-sales-conversion-table";
+import TSMSalesTableCard from "@/components/dashboard-tsm-sales-conversion-table";
 
 interface UserDetails {
   referenceid: string;
@@ -110,6 +112,7 @@ function DashboardContent() {
   const customerStatusCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const customerTypeCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const companyDistributionCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const wrapupCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const queryUserId = searchParams?.get("id") ?? "";
 
   useEffect(() => {
@@ -270,6 +273,9 @@ function DashboardContent() {
     if (companyDistributionCardRef.current) {
       companyDistributionCardRef.current.downloadCSV();
     }
+    if (wrapupCardRef.current) {
+      wrapupCardRef.current.downloadCSV();
+    }
     // Kung may iba pang cards na may export, idagdag rin dito
     toast.success("Exported all available data!");
   };
@@ -318,6 +324,13 @@ function DashboardContent() {
       } else {
         console.log("companyDistributionCardRef.current is null");
       }
+      } else if (selectedExport === "Export Company Distribution") {
+      if (wrapupCardRef.current) {
+        console.log("Calling downloadCSV from WrapUpCard");
+        wrapupCardRef.current.downloadCSV();
+      } else {
+        console.log("wrapupCardRef.current is null");
+      }
     } else if (selectedExport === "Export All") {
       handleExportAll();
     } else {
@@ -350,11 +363,12 @@ function DashboardContent() {
                 <SelectContent>
                   <SelectItem value="Export All">Export All</SelectItem>
                   <SelectItem value="Export Channel Usage">Export Channel Usage</SelectItem>
-                  <SelectItem value="Export Source Usage">Export Source Usage</SelectItem>
+                  <SelectItem value="Export Source Usage">Export Wrap Up Usage</SelectItem>
                   <SelectItem value="Export Inbound Traffic by Gender">Export Inbound Traffic by Gender</SelectItem>
                   <SelectItem value="Export Customer Status Distribution">Export Customer Status Distribution</SelectItem>
                   <SelectItem value="Export Type Distribution">Export Type Distribution</SelectItem>
                   <SelectItem value="Export Company Distribution">Export Company Distribution</SelectItem>
+                  <SelectItem value="Export Wrap Up Distribution">Export Wrap Up Distribution</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -398,19 +412,35 @@ function DashboardContent() {
 
           <Separator />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AgentSalesConversionCard
-              ref={inboundTrafficCardRef}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-            />
-
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <AgentSalesTableCard
               ref={inboundTrafficCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
 
+            <AgentSalesTableWeeklyCard
+              ref={inboundTrafficCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            />
+
+            <TSASalesTableCard
+              ref={inboundTrafficCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            />
+
+            <TSMSalesTableCard
+              ref={inboundTrafficCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <MetricsCard
               activities={activities}
               loading={loadingActivities}
@@ -486,7 +516,7 @@ function DashboardContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <WrapUpCard
-              ref={sourceCardRef}
+              ref={wrapupCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}

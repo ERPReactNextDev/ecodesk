@@ -176,11 +176,11 @@ export function WeeklyInboundCard({
               {groupedData.map((row) => (
                 <TableRow key={row.channel}>
                   <TableCell className="font-medium pt-4 pb-4 text-left">{row.channel}</TableCell>
-                  <TableCell className="text-right">{row.week1}</TableCell>
-                  <TableCell className="text-right">{row.week2}</TableCell>
-                  <TableCell className="text-right">{row.week3}</TableCell>
-                  <TableCell className="text-right">{row.week4}</TableCell>
-                  <TableCell className="text-right font-bold">{row.total}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{row.week1}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{row.week4}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{row.total}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -188,11 +188,11 @@ export function WeeklyInboundCard({
             <tfoot className="bg-gray-100 font-semibold">
               <TableRow>
                 <TableCell>Total</TableCell>
-                <TableCell className="text-right">{totals.week1}</TableCell>
-                <TableCell className="text-right">{totals.week2}</TableCell>
-                <TableCell className="text-right">{totals.week3}</TableCell>
-                <TableCell className="text-right">{totals.week4}</TableCell>
-                <TableCell className="text-right font-bold">{totals.total}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{totals.week1}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{totals.week4}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{totals.total}</TableCell>
               </TableRow>
             </tfoot>
           </Table>

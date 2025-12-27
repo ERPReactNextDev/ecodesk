@@ -92,7 +92,7 @@ export function MetricsCard({
                     isDateInRange(a.date_created, dateCreatedFilterRange) &&
                     a.channel &&
                     a.channel.trim() !== "" &&
-                    a.traffic?.toLowerCase() === "sales"
+                    (a.traffic?.toLowerCase() === "sales" || a.traffic?.toLowerCase() === "non-sales")
             )
             .forEach((a) => {
                 const channel = a.channel!.trim();
@@ -220,25 +220,25 @@ export function MetricsCard({
                                 <TableRow key={row.channel}>
                                     <TableCell className="font-medium pt-4 pb-4 text-left">{row.channel}</TableCell>
 
-                                    <TableCell className="text-right">{row.traffic}</TableCell>
+                                    <TableCell className="text-right font-mono tabular-nums">{row.traffic}</TableCell>
 
-                                    <TableCell className="text-right font-bold">
+                                    <TableCell className="text-right font-mono tabular-nums">
                                         ₱{row.soAmountTotal.toLocaleString()}
                                     </TableCell>
 
-                                    <TableCell className="text-right font-bold">
+                                    <TableCell className="text-right font-mono tabular-nums">
                                         {row.qtySoldTotal.toLocaleString()}
                                     </TableCell>
 
-                                    <TableCell className="text-right font-bold">
+                                    <TableCell className="text-right font-mono tabular-nums">
                                         {row.convertedCount.toLocaleString()}
                                     </TableCell>
 
-                                    <TableCell className="text-right font-bold">
+                                    <TableCell className="text-right font-mono tabular-nums">
                                         {row.avgTransactionUnit.toFixed(2)}
                                     </TableCell>
 
-                                    <TableCell className="text-right font-bold">
+                                    <TableCell className="text-right font-mono tabular-nums">
                                         {row.avgTransactionValue.toFixed(2)}
                                     </TableCell>
                                 </TableRow>
@@ -247,12 +247,12 @@ export function MetricsCard({
                         <tfoot className="bg-gray-100 font-semibold">
                             <TableRow>
                                 <TableCell>Total</TableCell>
-                                <TableCell className="text-right p-4">{totalTraffic}</TableCell>
-                                <TableCell className="text-right">₱{totalSoAmount.toLocaleString()}</TableCell>
-                                <TableCell className="text-right">{totalQtySold.toLocaleString()}</TableCell>
-                                <TableCell className="text-right">{totalConverted.toLocaleString()}</TableCell>
-                                <TableCell className="text-right">{avgTransactionUnitTotal.toFixed(2)}</TableCell>
-                                <TableCell className="text-right">{avgTransactionValueTotal.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{totalTraffic}</TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">₱{totalSoAmount.toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">{totalQtySold.toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">{totalConverted.toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">{avgTransactionUnitTotal.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">{avgTransactionValueTotal.toFixed(2)}</TableCell>
                             </TableRow>
                         </tfoot>
                     </Table>
