@@ -1,7 +1,9 @@
 "use client";
 
+
 import React, { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { FaFilter } from "react-icons/fa";
 
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { FormatProvider } from "@/contexts/FormatContext";
@@ -339,7 +341,7 @@ function POContent() {
                 className="w-80"
               />
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setFilterDialogOpen(true)}>Filter</Button>
+                <Button variant="outline" onClick={() => setFilterDialogOpen(true)}><FaFilter /> Filter</Button>
                 {(Object.values(filters).some((v) => v !== "All") || dateCreatedFilterRange || searchTerm) && (
                   <Button variant="destructive" onClick={() => { setFilters({ ...defaultFilters }); setDateCreatedFilterRangeAction(undefined); setSearchTerm(""); }}>
                     Clear Filters

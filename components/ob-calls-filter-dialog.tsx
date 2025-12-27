@@ -115,7 +115,7 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                 <SelectValue placeholder="Select call type" />
               </SelectTrigger>
               <SelectContent>
-                {sortOptions(["All", "Outbound", "Inbound"]).map((i) => (
+                {sortOptions(["All", "Waiting for Future Projects", "Ringing Only","No Requirements", "Not Connected With The Company", "With RFQ", "Cannot Be Reached"]).map((i) => (
                   <SelectItem key={i} value={i}>
                     {i}
                   </SelectItem>
