@@ -281,34 +281,32 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
           <Field>
             <FieldLabel>Company Name</FieldLabel>
             <FieldContent>
-              <Select
-                value={form.company_name}
-                onValueChange={(value) => handleChange("company_name", value)}
-                disabled={loadingCompanies}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      loadingCompanies ? "Loading companies..." : "Select company"
-                    }
-                  />
-                </SelectTrigger>
+<Select
+  value={form.company_name}
+  onValueChange={(value) => handleChange("company_name", value)}
+  disabled={loadingCompanies}
+>
+  <SelectTrigger>
+    <SelectValue
+      placeholder={loadingCompanies ? "Loading companies..." : "Select company"}
+    />
+  </SelectTrigger>
 
-                <SelectContent>
-                  {companies.map((company) => {
-                    if (!company.account_reference_number) return null;
+  <SelectContent>
+    {companies.map((company) => {
+      if (!company.account_reference_number) return null;
 
-                    return (
-                      <SelectItem
-                        key={company.account_reference_number}
-                        value={company.account_reference_number}
-                      >
-                        {company.company_name}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+      return (
+        <SelectItem
+          key={company.account_reference_number} // key can still be reference number
+          value={company.company_name} // <-- use company_name here
+        >
+          {company.company_name}
+        </SelectItem>
+      );
+    })}
+  </SelectContent>
+</Select>
 
               {errorCompanies && (
                 <p className="text-sm text-red-500 mt-1">{errorCompanies}</p>
