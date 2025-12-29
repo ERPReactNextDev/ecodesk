@@ -113,6 +113,10 @@ function DashboardContent() {
   const customerTypeCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const companyDistributionCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const wrapupCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const tsaSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const agentSalesCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const queryUserId = searchParams?.get("id") ?? "";
 
   useEffect(() => {
@@ -276,6 +280,18 @@ function DashboardContent() {
     if (wrapupCardRef.current) {
       wrapupCardRef.current.downloadCSV();
     }
+    if (tsaSalesTrafficCardRef.current) {
+      tsaSalesTrafficCardRef.current.downloadCSV();
+    }
+    if (agentSalesCardRef.current) {
+      agentSalesCardRef.current.downloadCSV();
+    }
+    if (agentSalesWeeklyCardRef.current) {
+      agentSalesWeeklyCardRef.current.downloadCSV();
+    }
+    if (tsmSalesTrafficCardRef.current) {
+      tsmSalesTrafficCardRef.current.downloadCSV();
+    }
     // Kung may iba pang cards na may export, idagdag rin dito
     toast.success("Exported all available data!");
   };
@@ -331,6 +347,20 @@ function DashboardContent() {
       } else {
         console.log("wrapupCardRef.current is null");
       }
+      } else if (selectedExport === "Export TSA Sales Traffic") {
+      if (tsaSalesTrafficCardRef.current) {
+        console.log("Calling downloadCSV from TSASalesTrafficCard");
+        tsaSalesTrafficCardRef.current.downloadCSV();
+      } else {
+        console.log("tsaSalesTrafficCardRef.current is null");
+      }
+      } else if (selectedExport === "Export TSM Sales Traffic") {
+      if (tsmSalesTrafficCardRef.current) {
+        console.log("Calling downloadCSV from TSMSalesTrafficCard");
+        tsmSalesTrafficCardRef.current.downloadCSV();
+      } else {
+        console.log("tsmSalesTrafficCardRef.current is null");
+      }
     } else if (selectedExport === "Export All") {
       handleExportAll();
     } else {
@@ -369,6 +399,8 @@ function DashboardContent() {
                   <SelectItem value="Export Type Distribution">Export Type Distribution</SelectItem>
                   <SelectItem value="Export Company Distribution">Export Company Distribution</SelectItem>
                   <SelectItem value="Export Wrap Up Distribution">Export Wrap Up Distribution</SelectItem>
+                  <SelectItem value="Export TSA Sales Traffic">Export TSA Sales</SelectItem>
+                  <SelectItem value="Export TSM Sales Traffic">Export TSM Sales</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -414,25 +446,25 @@ function DashboardContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <AgentSalesTableCard
-              ref={inboundTrafficCardRef}
+              ref={agentSalesCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
 
             <AgentSalesTableWeeklyCard
-              ref={inboundTrafficCardRef}
+              ref={agentSalesWeeklyCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
 
             <TSASalesTableCard
-              ref={inboundTrafficCardRef}
+              ref={tsaSalesTrafficCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
 
             <TSMSalesTableCard
-              ref={inboundTrafficCardRef}
+              ref={tsmSalesTrafficCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />

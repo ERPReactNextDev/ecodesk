@@ -19,10 +19,18 @@ interface EndorsedTicket {
   id: string;
   company_name: string;
   date_created: string;
+  date_updated: string;
+  referenceid: string;
 }
 
 interface UserDetails {
   referenceid: string;
+}
+
+interface Agent {
+  ReferenceID: string;
+  Firstname: string;
+  Lastname: string;
 }
 
 export function TicketReceived() {
@@ -36,6 +44,8 @@ export function TicketReceived() {
   const [error, setError] = useState<string | null>(null);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [errorTickets, setErrorTickets] = useState<string | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [soundPlayed, setSoundPlayed] = useState(false);
 
@@ -79,6 +89,25 @@ export function TicketReceived() {
 
     fetchUserData();
   }, [userId]);
+
+  // Fetch agents once on mount
+  useEffect(() => {
+    async function fetchAgents() {
+      setAgentsLoading(true);
+      try {
+        const res = await fetch("/api/fetch-agent");
+        if (!res.ok) throw new Error("Failed to fetch agents");
+        const data = await res.json();
+        setAgents(data);
+      } catch (err) {
+        console.error(err);
+        setAgents([]);
+      } finally {
+        setAgentsLoading(false);
+      }
+    }
+    fetchAgents();
+  }, []);
 
   // Fetch received tickets
   const fetchReceivedTickets = useCallback(async () => {
@@ -198,26 +227,35 @@ export function TicketReceived() {
     const newDismissed = [...dismissedTickets, ...receivedTickets.map(t => t.id)];
     localStorage.setItem("dismissedEndorsedTickets", JSON.stringify(newDismissed));
 
+    localStorage.removeItem("ticketSoundPlayedFor");
+    setSoundPlayed(false);
+
     setShowDismissConfirm(false);
     setOpen(false);
 
-    localStorage.removeItem("ticketSoundPlayedFor");
-    setSoundPlayed(false);
   }
 
   function cancelDismiss() {
     setShowDismissConfirm(false);
   }
 
-  if (loadingUser || loadingTickets) return null;
+  if (loadingUser || loadingTickets || agentsLoading) return null;
   if (error || errorTickets) return null;
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(undefined, {
+  const formatDate = (value?: string | null) => {
+    if (!value) return "-";
+
+    const date = new Date(value);
+
+    return date.toLocaleString("en-PH", {
       year: "numeric",
-      month: "short",
-      day: "numeric",
+      month: "long",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Manila",
     });
   };
 
@@ -236,12 +274,19 @@ export function TicketReceived() {
                   </div>
                   <div className="max-h-[300px] overflow-y-auto mt-2">
                     <ul className="list-disc pl-5 space-y-4">
-                      {receivedTickets.map((t, i) => (
-                        <li key={t.id || i}>
-                          <strong>{t.company_name || "No subject"}</strong>
-                          <div>Created on: {formatDate(t.date_created)}</div>
-                        </li>
-                      ))}
+                      {receivedTickets.map((t, i) => {
+                        // Find agent details based on ticket.agent (ReferenceID)
+                        const agentDetails = agents.find((a) => a.ReferenceID === t.referenceid);
+                        const fullName = agentDetails ? `${agentDetails.Firstname} ${agentDetails.Lastname}` : "(Unknown Agent)";
+                        return (
+                          <li key={t.id || i}>
+                            <strong>{t.company_name || "No subject"}</strong>
+                            <div>Created on: {formatDate(t.date_created)}</div>
+                            <div>Received on: {formatDate(t.date_updated)}</div>
+                            <div className="capitalize font-semibold">Received by Sales Agent: {fullName}</div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 </>

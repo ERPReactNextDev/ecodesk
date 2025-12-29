@@ -4,7 +4,7 @@ import React, {
     useState,
     useMemo,
     forwardRef,
-    ForwardRefRenderFunction,
+    useImperativeHandle,
     useEffect,
 } from "react";
 import { Info } from "lucide-react";
@@ -63,12 +63,14 @@ interface AgentSalesConversionCardProps {
     >;
 }
 
-export interface AgentSalesConversionCardRef { }
+export interface AgentSalesConversionCardRef {
+    downloadCSV: () => void;
+}
 
-const AgentSalesTableCard: ForwardRefRenderFunction<
-    AgentSalesConversionCardRef,
-    AgentSalesConversionCardProps
-> = ({ dateCreatedFilterRange }, ref) => {
+const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesConversionCardProps>(({
+    dateCreatedFilterRange,
+}, ref) => {
+
     const [showTooltip, setShowTooltip] = useState(false);
 
     const [activities, setActivities] = useState<Activity[]>([]);
@@ -245,6 +247,90 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     }, [activities, dateCreatedFilterRange]);
 
     const totalSoAmount = groupedData.reduce((sum, row) => sum + row.amount, 0);
+
+    useImperativeHandle(ref, () => ({
+        downloadCSV: () => {
+            const headers = [
+                "Rank",
+                "TSM Name",
+                "Sales",
+                "Non-Sales",
+                "Total Amount",
+                "QTY Sold",
+                "Converted Sales",
+                "% Conversion Inquiry to Sales",
+                "New Client",
+                "New Non-Buying",
+                "Existing Active",
+                "Existing Inactive",
+                "New Client (Converted To Sales)",
+                "New Non-Buying (Converted To Sales)",
+                "Existing Active (Converted To Sales)",
+                "Existing Inactive (Converted To Sales)",
+            ];
+
+            const rows = groupedData
+                .slice()
+                .sort((a, b) => b.amount - a.amount)
+                .map((row, index) => {
+                    const managerDetails = managers.find(
+                        (m) => m.ReferenceID === row.manager
+                    );
+
+                    const fullName = managerDetails
+                        ? `${managerDetails.Firstname} ${managerDetails.Lastname}`
+                        : "(Unknown Manager)";
+
+                    const conversionRate =
+                        row.salesCount === 0
+                            ? "0.00%"
+                            : ((row.convertedCount / row.salesCount) * 100).toFixed(2) + "%";
+
+                    return [
+                        (index + 1).toString(),
+                        fullName,
+                        row.salesCount.toString(),
+                        row.nonSalesCount.toString(),
+                        row.amount.toFixed(2),
+                        row.qtySold.toString(),
+                        row.convertedCount.toString(),
+                        conversionRate,
+                        row.newClientCount.toString(),
+                        row.newNonBuyingCount.toString(),
+                        row.ExistingActiveCount.toString(),
+                        row.ExistingInactive.toString(),
+                        row.newClientConvertedAmount.toFixed(2),
+                        row.newNonBuyingConvertedAmount.toFixed(2),
+                        row.newExistingActiveConvertedAmount.toFixed(2),
+                        row.newExistingInactiveConvertedAmount.toFixed(2),
+                    ];
+                });
+
+            const csvContent =
+                [headers, ...rows]
+                    .map((row) =>
+                        row
+                            .map((item) =>
+                                `"${String(item).replace(/"/g, '""')}"`
+                            )
+                            .join(",")
+                    )
+                    .join("\n") + "\n";
+
+            const blob = new Blob([csvContent], {
+                type: "text/csv;charset=utf-8;",
+            });
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "tsm_sales_conversion.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        },
+    }));
 
     return (
         <Card>
@@ -530,6 +616,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             </CardFooter>
         </Card>
     );
-};
+});
 
-export default forwardRef(AgentSalesTableCard);
+export default AgentSalesTableCard;
+
