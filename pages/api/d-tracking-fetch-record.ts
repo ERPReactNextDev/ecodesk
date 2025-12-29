@@ -1,3 +1,4 @@
+// pages/api/act-fetch-activity.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { MongoClient } from "mongodb";
 
@@ -16,7 +17,7 @@ const mongoUri: string = MONGODB_URI;
 const mongoDb: string = MONGODB_DB;
 
 let cachedClient: MongoClient | null = null;
-let cachedDb: ReturnType<MongoClient["db"]> | null = null;
+let cachedDb: any = null;
 
 async function connectToDatabase() {
   if (cachedClient && cachedDb) {
@@ -41,20 +42,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { referenceid } = req.query;
 
-    // Build filter based on referenceid if provided and valid
-    const filter: Record<string, any> = {};
-    if (referenceid && typeof referenceid === "string" && referenceid.trim() !== "") {
-      filter.referenceid = referenceid;
-    }
-
     const { db } = await connectToDatabase();
     const collection = db.collection("d-tracking");
 
-    const data = await collection.find(filter).sort({ date_created: -1 }).toArray();
+    // If referenceid exists and is a string, filter by it, else return all
+    const filter = (referenceid && typeof referenceid === "string") ? { referenceid } : {};
+
+    const data = await collection.find(filter).toArray();
 
     return res.status(200).json({ success: true, data, cached: false });
-  } catch (error) {
+  } catch (error: any) {
     console.error("MongoDB fetch error:", error);
     return res.status(500).json({ error: "Server error" });
   }
 }
+

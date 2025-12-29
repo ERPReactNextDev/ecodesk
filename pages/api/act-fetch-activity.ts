@@ -42,14 +42,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { referenceid } = req.query;
 
-    if (!referenceid || typeof referenceid !== "string") {
-      return res.status(400).json({ error: "Missing or invalid referenceid" });
-    }
-
     const { db } = await connectToDatabase();
     const collection = db.collection("activity");
 
-    const data = await collection.find({ referenceid }).toArray();
+    // If referenceid exists and is a string, filter by it, else return all
+    const filter = (referenceid && typeof referenceid === "string") ? { referenceid } : {};
+
+    const data = await collection.find(filter).toArray();
 
     return res.status(200).json({ success: true, data, cached: false });
   } catch (error: any) {
@@ -57,3 +56,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: "Server error" });
   }
 }
+

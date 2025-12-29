@@ -84,6 +84,7 @@ interface Ticket {
 
 interface TicketProps {
     referenceid: string;
+    role: string;
     dateCreatedFilterRange: DateRange | undefined;
     setDateCreatedFilterRangeAction: React.Dispatch<
         React.SetStateAction<DateRange | undefined>
@@ -98,6 +99,7 @@ interface Agent {
 
 export const Ticket: React.FC<TicketProps> = ({
     referenceid,
+    role,
     dateCreatedFilterRange,
     setDateCreatedFilterRangeAction,
 }) => {
@@ -238,21 +240,20 @@ export const Ticket: React.FC<TicketProps> = ({
 
     // Fetch activities when referenceid changes
     const fetchActivities = useCallback(async () => {
-        if (!referenceid) {
-            setActivities([]);
-            return;
-        }
         setLoadingActivities(true);
         setErrorActivities(null);
 
         try {
+            // Determine the query param: kung admin, walang filter referenceid
+            // otherwise gamitin referenceid para sa filter
+            const queryParam = role === "Admin" ? "" : `?referenceid=${encodeURIComponent(referenceid)}`;
+
             const res = await fetch(
-                `/api/act-fetch-activity?referenceid=${encodeURIComponent(referenceid)}`,
+                `/api/act-fetch-activity${queryParam}`,
                 {
                     cache: "no-store",
                     headers: {
-                        "Cache-Control":
-                            "no-store, no-cache, must-revalidate, proxy-revalidate",
+                        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
                         Pragma: "no-cache",
                         Expires: "0",
                     },
@@ -271,7 +272,7 @@ export const Ticket: React.FC<TicketProps> = ({
         } finally {
             setLoadingActivities(false);
         }
-    }, [referenceid]);
+    }, [referenceid, role]);
 
     useEffect(() => {
         fetchActivities();

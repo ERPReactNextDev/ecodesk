@@ -34,10 +34,12 @@ export interface RecordType {
     endorsed_date?: string;
     closed_date?: string;
     isActive?: boolean;
+    referenceid: string;
 }
 
 interface DTRProps {
     referenceid: string;
+    role: string;
     dateCreatedFilterRange: DateRange | undefined;
     setDateCreatedFilterRangeAction: React.Dispatch<
         React.SetStateAction<DateRange | undefined>
@@ -46,6 +48,7 @@ interface DTRProps {
 
 export function DTR({
     referenceid,
+    role,
     dateCreatedFilterRange,
     setDateCreatedFilterRangeAction,
 }: DTRProps) {
@@ -69,11 +72,21 @@ export function DTR({
     const [recordToHide, setRecordToHide] = useState<RecordType | null>(null);
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [agents, setAgents] = useState<
+        Array<{ ReferenceID: string; Firstname: string; Lastname: string }>
+    >([]);
+    const [agentsLoading, setAgentsLoading] = useState(false);
     const rowsPerPage = 10;
 
     /* Fetch records */
     useEffect(() => {
-        fetch(`/api/d-tracking-fetch-record?referenceid=${encodeURIComponent(referenceid)}`)
+        // If admin, do not pass referenceid (fetch all)
+        const url =
+            role === "Admin"
+                ? `/api/d-tracking-fetch-record`
+                : `/api/d-tracking-fetch-record?referenceid=${encodeURIComponent(referenceid)}`;
+
+        fetch(url)
             .then((res) => res.json())
             .then((json) => {
                 console.log("API response data:", json.data);
@@ -91,7 +104,8 @@ export function DTR({
                 }
             })
             .catch(console.error);
-    }, [referenceid]);
+    }, [referenceid, role]);
+
 
     const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
         if (!range) return true;
@@ -233,6 +247,32 @@ export function DTR({
         return isNaN(d.getTime()) ? "-" : d.toLocaleString();
     };
 
+    useEffect(() => {
+        async function fetchAgents() {
+            setAgentsLoading(true);
+            try {
+                const res = await fetch("/api/fetch-agent");
+                if (!res.ok) throw new Error("Failed to fetch agents");
+                const data = await res.json();
+                setAgents(data); // assuming data is array of agents
+            } catch (err) {
+                console.error(err);
+                setAgents([]);
+            } finally {
+                setAgentsLoading(false);
+            }
+        }
+        fetchAgents();
+    }, []);
+
+    const getAgentNameByReferenceID = (
+        refId: string | null | undefined
+    ): string => {
+        if (!refId) return "-";
+        const agent = agents.find((a) => a.ReferenceID === refId);
+        return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
+    };
+
     return (
         <>
             {/* SEARCH LEFT, ACTIONS RIGHT */}
@@ -267,6 +307,7 @@ export function DTR({
                     <TableHeader>
                         <TableRow>
                             <TableHead>Actions</TableHead>
+                            <TableHead>CSR Agent</TableHead>
                             <TableHead>Company</TableHead>
                             <TableHead>Customer Name</TableHead>
                             <TableHead>Contact Number</TableHead>
@@ -303,8 +344,9 @@ export function DTR({
                                         Delete
                                     </Button>
                                 </TableCell>
-                                <TableCell>{highlightMatch(r.company_name)}</TableCell>
-                                <TableCell>{highlightMatch(r.customer_name)}</TableCell>
+                                <TableCell className="uppercase">{getAgentNameByReferenceID(r.referenceid)}</TableCell>
+                                <TableCell className="uppercase">{highlightMatch(r.company_name)}</TableCell>
+                                <TableCell className="capitalize">{highlightMatch(r.customer_name)}</TableCell>
                                 <TableCell>{highlightMatch(r.contact_number)}</TableCell>
                                 <TableCell>{highlightMatch(r.ticket_type)}</TableCell>
                                 <TableCell>{highlightMatch(r.ticket_concern)}</TableCell>

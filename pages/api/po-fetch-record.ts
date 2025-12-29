@@ -1,4 +1,3 @@
-// pages/api/po-fetch-record.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { MongoClient } from "mongodb";
 
@@ -37,13 +36,16 @@ export default async function handler(
     const { db } = await connectToDatabase();
     const collection = db.collection("activity");
 
+    // Base filter always on remarks
     const filter: any = {
       remarks: { $in: ["PO Received", "Po Received"] },
     };
 
-    if (referenceid && typeof referenceid === "string") {
+    // Add referenceid filter only if present and valid string
+    if (referenceid && typeof referenceid === "string" && referenceid.trim() !== "") {
       filter.referenceid = referenceid;
     }
+    // else no referenceid filter => fetch all (for Admin)
 
     const data = await collection
       .find(filter)

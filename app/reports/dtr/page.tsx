@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 interface UserDetails {
   referenceid: string;
+  role: string;
 }
 
 function DTrackingContent() {
@@ -29,6 +30,7 @@ function DTrackingContent() {
 
   const [userDetails, setUserDetails] = useState<UserDetails>({
     referenceid: "",
+    role: "",
   });
 
   const [loadingUser, setLoadingUser] = useState(true);
@@ -64,6 +66,7 @@ function DTrackingContent() {
 
         setUserDetails({
           referenceid: data.ReferenceID || "",
+          role: data.Role || "",
         });
 
         toast.success("User data loaded successfully!");
@@ -97,6 +100,7 @@ function DTrackingContent() {
         <main className="flex flex-col p-4">
           <DTR
             referenceid={userDetails.referenceid}
+            role={userDetails.role}
             dateCreatedFilterRange={dateCreatedFilterRange}
             setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
           />

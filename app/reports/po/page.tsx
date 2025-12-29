@@ -39,6 +39,7 @@ import {
 
 interface UserDetails {
   referenceid: string;
+  role: string;
   Firstname?: string;
   Lastname?: string;
 }
@@ -75,7 +76,7 @@ function POContent() {
   const searchParams = useSearchParams();
   const { userId, setUserId } = useUser();
 
-  const [userDetails, setUserDetails] = useState<UserDetails>({ referenceid: "" });
+  const [userDetails, setUserDetails] = useState<UserDetails>({ referenceid: "", role: "", });
   const [records, setRecords] = useState<any[]>([]);
   const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +99,11 @@ function POContent() {
 
   const [filters, setFilters] = useState({ ...defaultFilters });
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+
+  const [agents, setAgents] = useState<
+    Array<{ ReferenceID: string; Firstname: string; Lastname: string }>
+  >([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
 
   const queryUserId = searchParams?.get("id") ?? "";
 
@@ -123,6 +129,7 @@ function POContent() {
           referenceid: data.ReferenceID || "",
           Firstname: data.Firstname || "",
           Lastname: data.Lastname || "",
+          role: data.Role || "",
         });
         toast.success("User data loaded successfully!");
       } catch (err) {
@@ -176,15 +183,26 @@ function POContent() {
 
   // Fetch records
   useEffect(() => {
-    if (!userDetails.referenceid) return;
+    // Kung hindi pa loaded ang role or userDetails, wag mag-fetch
+    if (!userDetails.role) return;
 
     const fetchRecords = async () => {
       try {
-        const res = await fetch(`/api/po-fetch-record?referenceid=${encodeURIComponent(userDetails.referenceid)}`);
+        // Kung Admin, walang referenceid filter sa API
+        const url =
+          userDetails.role === "Admin"
+            ? "/api/po-fetch-record"
+            : `/api/po-fetch-record?referenceid=${encodeURIComponent(userDetails.referenceid)}`;
+
+        const res = await fetch(url);
         const json = await res.json();
+
         if (json.success && Array.isArray(json.data)) {
+          // Filter pa rin sa front end kung gusto mo pero pwede din tanggalin if full data na
           setRecords(json.data.filter((r: any) => r.isActive !== false));
-        } else setRecords([]);
+        } else {
+          setRecords([]);
+        }
       } catch (err) {
         console.error(err);
         setRecords([]);
@@ -192,17 +210,13 @@ function POContent() {
     };
 
     fetchRecords();
+
     const intervalId = setInterval(fetchRecords, 500);
     return () => clearInterval(intervalId);
-  }, [userDetails.referenceid]);
+  }, [userDetails.referenceid, userDetails.role]);
 
   const salesAgents = useMemo(
     () => Array.from(new Set(recordsWithCompanyName.map((r) => r.sales_agent).filter(Boolean))),
-    [recordsWithCompanyName]
-  );
-
-  const csrAgents = useMemo(
-    () => Array.from(new Set(recordsWithCompanyName.map((r) => r.csr_agent).filter(Boolean))),
     [recordsWithCompanyName]
   );
 
@@ -246,7 +260,9 @@ function POContent() {
           r.delivery_pickup_date,
           r.status,
           r.source,
-        ].some((field) => field?.toString().toLowerCase().includes(searchTerm.toLowerCase()));
+        ].some((field) =>
+          field?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
       const matchesFilters =
         (filters.status === "All" || r.status === filters.status) &&
@@ -254,9 +270,10 @@ function POContent() {
         (filters.sales_agent === "All" || r.sales_agent === filters.sales_agent) &&
         (filters.csr_agent === "All" || r.csr_agent === filters.csr_agent);
 
-      if (!isDateInRange(r.date_created, dateCreatedFilterRange)) return false;
+      // Return true lang kung pasok sa date range kung meron (otherwise true kung walang filter)
+      const matchesDateRange = isDateInRange(r.date_created, dateCreatedFilterRange);
 
-      return matchesSearch && matchesFilters && dateCreatedFilterRange;
+      return matchesSearch && matchesFilters && matchesDateRange;
     });
   }, [recordsWithCompanyName, searchTerm, filters, dateCreatedFilterRange]);
 
@@ -357,6 +374,32 @@ function POContent() {
     return isNaN(d.getTime()) ? "-" : d.toLocaleDateString();
   };
 
+  useEffect(() => {
+    async function fetchAgents() {
+      setAgentsLoading(true);
+      try {
+        const res = await fetch("/api/fetch-agent");
+        if (!res.ok) throw new Error("Failed to fetch agents");
+        const data = await res.json();
+        setAgents(data); // assuming data is array of agents
+      } catch (err) {
+        console.error(err);
+        setAgents([]);
+      } finally {
+        setAgentsLoading(false);
+      }
+    }
+    fetchAgents();
+  }, []);
+
+  const getAgentNameByReferenceID = (
+    refId: string | null | undefined
+  ): string => {
+    if (!refId) return "-";
+    const agent = agents.find((a) => a.ReferenceID === refId);
+    return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
+  };
+
   return (
     <>
       <SidebarLeft />
@@ -432,7 +475,7 @@ function POContent() {
                           <Button size="sm" variant="outline" onClick={() => { setRecordToEdit(r); setEditModalOpen(true); }}>Edit</Button>
                           <Button size="sm" variant="destructive" onClick={() => { setRecordToDelete(r); setDeleteModalOpen(true); }}>Delete</Button>
                         </TableCell>
-                        <TableCell className="uppercase">{highlightMatch(`${userDetails.Firstname ?? ""} ${userDetails.Lastname ?? ""}`, searchTerm)}</TableCell>
+                        <TableCell className="uppercase">{getAgentNameByReferenceID(r.referenceid)}</TableCell>
                         <TableCell>{highlightMatch(r.company_name, searchTerm)}</TableCell>
                         <TableCell>{highlightMatch(r.contact_number ?? "—", searchTerm)}</TableCell>
                         <TableCell className="uppercase">{highlightMatch(r.po_number ?? "—", searchTerm)}</TableCell>

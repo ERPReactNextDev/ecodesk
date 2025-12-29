@@ -53,6 +53,7 @@ interface UserDetails {
   referenceid: string;
   tsm?: string;
   manager?: string;
+  role: string;
 }
 
 interface Company {
@@ -92,6 +93,7 @@ function DashboardContent() {
     referenceid: "",
     tsm: "",
     manager: "",
+    role: "",
   });
   const [loadingUser, setLoadingUser] = useState(false);
   const [errorUser, setErrorUser] = useState<string | null>(null);
@@ -157,6 +159,7 @@ function DashboardContent() {
           referenceid: data.ReferenceID || "",
           tsm: data.TSM || "",
           manager: data.Manager || "",
+          role: data.Role || "",
         });
 
         toast.success("User data loaded successfully!");
@@ -199,25 +202,23 @@ function DashboardContent() {
 
   // Fetch activities by referenceid
   const fetchActivities = useCallback(async () => {
-    if (!userDetails.referenceid) {
-      setActivities([]);
-      return;
-    }
     setLoadingActivities(true);
     setErrorActivities(null);
 
     try {
-      const res = await fetch(
-        `/api/act-fetch-activity?referenceid=${encodeURIComponent(userDetails.referenceid)}`,
-        {
-          cache: "no-store",
-          headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        }
-      );
+      // If Admin, don't filter by referenceid; else filter by referenceid
+      const url = userDetails.role === "Admin"
+        ? `/api/act-fetch-activity`  // fetch all activities for Admin (API should support this)
+        : `/api/act-fetch-activity?referenceid=${encodeURIComponent(userDetails.referenceid)}`;
+
+      const res = await fetch(url, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
 
       if (!res.ok) {
         const json = await res.json();
@@ -225,13 +226,12 @@ function DashboardContent() {
       }
 
       const json = await res.json();
-      const fetchedActivities: Activity[] = json.data || [];
+      let fetchedActivities: Activity[] = json.data || [];
 
       // Merge company info by matching account_reference_number
       const mergedActivities = fetchedActivities.map((activity) => {
         const matchedCompany = companies.find(
-          (comp) =>
-            comp.account_reference_number === activity.account_reference_number
+          (comp) => comp.account_reference_number === activity.account_reference_number
         );
         return {
           ...activity,
@@ -246,7 +246,7 @@ function DashboardContent() {
     } finally {
       setLoadingActivities(false);
     }
-  }, [userDetails.referenceid, companies]);
+  }, [userDetails.role, userDetails.referenceid, companies]);
 
   // Fetch companies on mount or when user changes
   useEffect(() => {
@@ -340,21 +340,21 @@ function DashboardContent() {
       } else {
         console.log("companyDistributionCardRef.current is null");
       }
-      } else if (selectedExport === "Export Company Distribution") {
+    } else if (selectedExport === "Export Company Distribution") {
       if (wrapupCardRef.current) {
         console.log("Calling downloadCSV from WrapUpCard");
         wrapupCardRef.current.downloadCSV();
       } else {
         console.log("wrapupCardRef.current is null");
       }
-      } else if (selectedExport === "Export TSA Sales Traffic") {
+    } else if (selectedExport === "Export TSA Sales Traffic") {
       if (tsaSalesTrafficCardRef.current) {
         console.log("Calling downloadCSV from TSASalesTrafficCard");
         tsaSalesTrafficCardRef.current.downloadCSV();
       } else {
         console.log("tsaSalesTrafficCardRef.current is null");
       }
-      } else if (selectedExport === "Export TSM Sales Traffic") {
+    } else if (selectedExport === "Export TSM Sales Traffic") {
       if (tsmSalesTrafficCardRef.current) {
         console.log("Calling downloadCSV from TSMSalesTrafficCard");
         tsmSalesTrafficCardRef.current.downloadCSV();
