@@ -782,6 +782,15 @@ export const Ticket: React.FC<TicketProps> = ({
             setExporting(false);
         }
     }
+
+    const getAgentNameByReferenceID = (
+    refId: string | null | undefined
+  ): string => {
+    if (!refId) return "-";
+    const agent = agents.find((a) => a.ReferenceID === refId);
+    return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
+  };
+
     return (
         <div className="flex flex-col md:flex-row gap-4">
             {/* LEFT SIDE — COMPANIES */}
@@ -1033,7 +1042,7 @@ export const Ticket: React.FC<TicketProps> = ({
                                             <div className="ml-1">
                                                 <Badge variant={badgeColor} className="text-[8px]">
                                                     {item.status.replace("-", " ")}
-                                                </Badge>
+                                                </Badge> - <span className="text-xs capitalize font-bold">{getAgentNameByReferenceID(item.referenceid)}</span>
                                             </div>
                                         </div>
                                     </div>
