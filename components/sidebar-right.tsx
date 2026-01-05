@@ -33,10 +33,13 @@ export function SidebarRight({
   ...props
 }: SidebarRightProps) {
   const { timeFormat, dateFormat } = useFormat();
+
   const [time, setTime] = React.useState("");
   const [date, setDate] = React.useState("");
-
   const [dateFilterOpen, setDateFilterOpen] = React.useState(false);
+
+  /* ================= FILTER FLAG (0 | 1) ================= */
+  const [dateFilterFlag, setDateFilterFlag] = React.useState<0 | 1>(0);
 
   const [userDetails, setUserDetails] = React.useState({
     ReferenceID: "",
@@ -85,6 +88,7 @@ export function SidebarRight({
   /* ================= USER INFO ================= */
   React.useEffect(() => {
     if (!userId) return;
+
     fetch(`/api/user?id=${encodeURIComponent(userId)}`)
       .then((res) => res.json())
       .then((data) => {
@@ -97,30 +101,28 @@ export function SidebarRight({
           profilePicture: data.profilePicture || "",
         });
       })
-      .catch((err) => console.error(err));
+      .catch(console.error);
   }, [userId]);
 
   /* ================= DATE HANDLERS ================= */
   function handleDateRangeSelect(range: DateRange | undefined) {
     setDateCreatedFilterRangeAction(range);
+
+    if (range?.from && range?.to) {
+      setDateFilterFlag(1);
+    }
   }
 
   function clearDateFilter() {
     setDateCreatedFilterRangeAction(undefined);
+    setDateFilterFlag(0);
   }
 
-  /* ================= FORCE-HIDE VALIDATION ================= */
-  const hasActiveFilter = React.useMemo(() => {
-    if (!dateCreatedFilterRange) return false;
-
-    const { from, to } = dateCreatedFilterRange;
-
-    return (
-      from instanceof Date &&
-      !isNaN(from.getTime()) &&
-      to instanceof Date &&
-      !isNaN(to.getTime())
-    );
+  /* ================= HARD SYNC SAFETY ================= */
+  React.useEffect(() => {
+    if (!dateCreatedFilterRange) {
+      setDateFilterFlag(0);
+    }
   }, [dateCreatedFilterRange]);
 
   return (
@@ -151,8 +153,8 @@ export function SidebarRight({
             onDateSelectAction={handleDateRangeSelect}
           />
 
-          {/* CLEAR FILTER — FORCE HIDDEN WHEN EMPTY */}
-          {hasActiveFilter && (
+          {/* CLEAR FILTER — FLAG CONTROLLED */}
+          {dateFilterFlag === 1 && (
             <Button
               variant="destructive"
               size="sm"
@@ -175,7 +177,7 @@ export function SidebarRight({
 
           <SidebarSeparator className="mx-0" />
 
-          <Card className="rounded-xs shadow-none border-0">
+          <Card className="rounded-xs border-0 shadow-none">
             <CardContent>
               <Meeting referenceid={userDetails.ReferenceID} />
             </CardContent>
@@ -183,7 +185,7 @@ export function SidebarRight({
         </SidebarContent>
 
         <SidebarFooter>
-          <div className="border-t border-sidebar-border mt-2 pt-2 text-center text-xs">
+          <div className="border-sidebar-border mt-2 border-t pt-2 text-center text-xs">
             <div>{time}</div>
             <div className="text-[11px]">{date}</div>
           </div>
@@ -196,6 +198,7 @@ export function SidebarRight({
         onClose={() => setDateFilterOpen(false)}
         dateCreatedFilterRange={dateCreatedFilterRange}
         setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+        setDateFilterFlag={setDateFilterFlag}
       />
     </>
   );

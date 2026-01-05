@@ -31,6 +31,7 @@ interface DateFilterModalProps {
   setDateCreatedFilterRangeAction: React.Dispatch<
     React.SetStateAction<DateRange | undefined>
   >;
+  setDateFilterFlag: React.Dispatch<React.SetStateAction<0 | 1>>;
 }
 
 export function DateFilterModal({
@@ -38,6 +39,7 @@ export function DateFilterModal({
   onClose,
   dateCreatedFilterRange,
   setDateCreatedFilterRangeAction,
+  setDateFilterFlag,
 }: DateFilterModalProps) {
   const [filterKey, setFilterKey] = React.useState(0);
 
@@ -60,9 +62,10 @@ export function DateFilterModal({
       setToMonthYear(null);
       setYearFrom(null);
       setYearTo(null);
+      setDateFilterFlag(0);
       setFilterKey((k) => k + 1);
     }
-  }, [dateCreatedFilterRange]);
+  }, [dateCreatedFilterRange, setDateFilterFlag]);
 
   /* ================= CONFIRM MONTH + YEAR ================= */
   function confirmMonthYearRange() {
@@ -81,6 +84,7 @@ export function DateFilterModal({
     const to = endOfMonth(new Date(toMonthYear, toMonth));
 
     setDateCreatedFilterRangeAction({ from, to });
+    setDateFilterFlag(1);
     onClose();
   }
 
@@ -92,6 +96,7 @@ export function DateFilterModal({
     setYearFrom(null);
     setYearTo(null);
     setDateCreatedFilterRangeAction(undefined);
+    setDateFilterFlag(0);
     setFilterKey((k) => k + 1);
   }
 
@@ -108,6 +113,7 @@ export function DateFilterModal({
     const to = endOfYear(new Date(yearTo, 0));
 
     setDateCreatedFilterRangeAction({ from, to });
+    setDateFilterFlag(1);
     onClose();
   }
 
@@ -119,11 +125,13 @@ export function DateFilterModal({
     setToMonth(null);
     setToMonthYear(null);
     setDateCreatedFilterRangeAction(undefined);
+    setDateFilterFlag(0);
     setFilterKey((k) => k + 1);
   }
 
   function clearAll() {
     clearMonthYearRange();
+    setDateFilterFlag(0);
   }
 
   const months = [
