@@ -14,7 +14,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useFormat } from "@/contexts/FormatContext";
 import { type DateRange } from "react-day-picker";
-
 import { Meeting } from "@/components/meeting";
 import { DateFilterModal } from "@/components/date-filter-modal";
 
@@ -39,8 +38,6 @@ export function SidebarRight({
   const [time, setTime] = React.useState("");
   const [date, setDate] = React.useState("");
   const [dateFilterOpen, setDateFilterOpen] = React.useState(false);
-
-  /* ================= FILTER FLAG ================= */
   const [dateFilterFlag, setDateFilterFlag] = React.useState<0 | 1>(0);
 
   const [userDetails, setUserDetails] = React.useState({
@@ -52,7 +49,7 @@ export function SidebarRight({
     profilePicture: "",
   });
 
-  /* ================= RESTORE FILTER ON LOAD ================= */
+  /* ================= FORCE RESTORE ON EVERY PAGE ================= */
   React.useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
@@ -65,14 +62,14 @@ export function SidebarRight({
           from: new Date(parsed.from),
           to: new Date(parsed.to),
         });
-        setDateFilterFlag(parsed.flag === 1 ? 1 : 0);
+        setDateFilterFlag(1);
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, [setDateCreatedFilterRangeAction]);
 
-  /* ================= PERSIST FILTER ================= */
+  /* ================= ALWAYS PERSIST ================= */
   React.useEffect(() => {
     if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
       localStorage.setItem(
@@ -80,13 +77,13 @@ export function SidebarRight({
         JSON.stringify({
           from: dateCreatedFilterRange.from.toISOString(),
           to: dateCreatedFilterRange.to.toISOString(),
-          flag: 1,
         })
       );
+      setDateFilterFlag(1);
     }
   }, [dateCreatedFilterRange]);
 
-  /* ================= CLEAR STORAGE WHEN CLEARED ================= */
+  /* ================= CLEAR (MANUAL ONLY) ================= */
   function clearDateFilter() {
     setDateCreatedFilterRangeAction(undefined);
     setDateFilterFlag(0);
@@ -98,34 +95,34 @@ export function SidebarRight({
     const updateTime = () => {
       const now = new Date();
 
-      const formattedTime = now.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: timeFormat === "12h",
-      });
+      setTime(
+        now.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: timeFormat === "12h",
+        })
+      );
 
-      let formattedDate = "";
       if (dateFormat === "short") {
-        formattedDate = now.toLocaleDateString("en-US");
+        setDate(now.toLocaleDateString("en-US"));
       } else if (dateFormat === "iso") {
-        formattedDate = now.toISOString().split("T")[0];
+        setDate(now.toISOString().split("T")[0]);
       } else {
-        formattedDate = now.toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        });
+        setDate(
+          now.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })
+        );
       }
-
-      setTime(formattedTime);
-      setDate(formattedDate);
     };
 
     updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
+    const i = setInterval(updateTime, 1000);
+    return () => clearInterval(i);
   }, [timeFormat, dateFormat]);
 
   /* ================= USER INFO ================= */
@@ -152,7 +149,7 @@ export function SidebarRight({
         className="sticky top-0 hidden h-svh border-l lg:flex"
         {...props}
       >
-        <SidebarHeader className="border-sidebar-border h-16 border-b">
+        <SidebarHeader className="h-16 border-b">
           <NavUser
             user={{
               name:
@@ -166,12 +163,11 @@ export function SidebarRight({
           />
         </SidebarHeader>
 
-        <SidebarContent className="custom-scrollbar space-y-2">
+        <SidebarContent className="space-y-2">
           <DatePicker
             selectedDateRange={dateCreatedFilterRange}
             onDateSelectAction={(range) => {
               setDateCreatedFilterRangeAction(range);
-              if (range?.from && range?.to) setDateFilterFlag(1);
             }}
           />
 
@@ -195,9 +191,9 @@ export function SidebarRight({
             Advanced Date Filter
           </Button>
 
-          <SidebarSeparator className="mx-0" />
+          <SidebarSeparator />
 
-          <Card className="rounded-xs border-0 shadow-none">
+          <Card className="border-0 shadow-none">
             <CardContent>
               <Meeting referenceid={userDetails.ReferenceID} />
             </CardContent>
@@ -205,7 +201,7 @@ export function SidebarRight({
         </SidebarContent>
 
         <SidebarFooter>
-          <div className="border-sidebar-border mt-2 border-t pt-2 text-center text-xs">
+          <div className="border-t pt-2 text-center text-xs">
             <div>{time}</div>
             <div className="text-[11px]">{date}</div>
           </div>

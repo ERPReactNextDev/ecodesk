@@ -121,16 +121,30 @@ function DashboardContent() {
   const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const queryUserId = searchParams?.get("id") ?? "";
 
-  useEffect(() => {
-    if (!dateCreatedFilterRange) {
-      const today = new Date();
-      const from = new Date(today);
-      from.setHours(0, 0, 0, 0);
-      const to = new Date(today);
-      to.setHours(23, 59, 59, 999);
-      setDateCreatedFilterRangeAction({ from, to });
+useEffect(() => {
+  if (dateCreatedFilterRange) return;
+
+  const raw = localStorage.getItem("date-filter-dialog");
+
+  // ✅ If may saved filter, HUWAG galawin
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.from && parsed?.to) return;
+    } catch {
+      localStorage.removeItem("date-filter-dialog");
     }
-  }, [dateCreatedFilterRange]);
+  }
+
+  // ✅ Fallback ONLY if walang saved filter
+  const today = new Date();
+  const from = new Date(today);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(today);
+  to.setHours(23, 59, 59, 999);
+  setDateCreatedFilterRangeAction({ from, to });
+}, [dateCreatedFilterRange]);
+
 
   // Set userId from query params
   useEffect(() => {
