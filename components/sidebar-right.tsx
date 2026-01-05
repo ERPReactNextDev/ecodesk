@@ -47,7 +47,7 @@ export function SidebarRight({
     profilePicture: "",
   });
 
-  /* TIME + DATE */
+  /* ================= TIME + DATE ================= */
   React.useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -82,7 +82,7 @@ export function SidebarRight({
     return () => clearInterval(interval);
   }, [timeFormat, dateFormat]);
 
-  /* USER INFO */
+  /* ================= USER INFO ================= */
   React.useEffect(() => {
     if (!userId) return;
     fetch(`/api/user?id=${encodeURIComponent(userId)}`)
@@ -100,9 +100,28 @@ export function SidebarRight({
       .catch((err) => console.error(err));
   }, [userId]);
 
+  /* ================= DATE HANDLERS ================= */
   function handleDateRangeSelect(range: DateRange | undefined) {
     setDateCreatedFilterRangeAction(range);
   }
+
+  function clearDateFilter() {
+    setDateCreatedFilterRangeAction(undefined);
+  }
+
+  /* ================= FORCE-HIDE VALIDATION ================= */
+  const hasActiveFilter = React.useMemo(() => {
+    if (!dateCreatedFilterRange) return false;
+
+    const { from, to } = dateCreatedFilterRange;
+
+    return (
+      from instanceof Date &&
+      !isNaN(from.getTime()) &&
+      to instanceof Date &&
+      !isNaN(to.getTime())
+    );
+  }, [dateCreatedFilterRange]);
 
   return (
     <>
@@ -126,13 +145,25 @@ export function SidebarRight({
         </SidebarHeader>
 
         <SidebarContent className="custom-scrollbar space-y-2">
-          {/* CALENDAR */}
+          {/* DATE PICKER */}
           <DatePicker
             selectedDateRange={dateCreatedFilterRange}
             onDateSelectAction={handleDateRangeSelect}
           />
 
-          {/* OPEN MODAL BUTTON */}
+          {/* CLEAR FILTER — FORCE HIDDEN WHEN EMPTY */}
+          {hasActiveFilter && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="w-full"
+              onClick={clearDateFilter}
+            >
+              Clear Date Filter
+            </Button>
+          )}
+
+          {/* ADVANCED FILTER */}
           <Button
             variant="outline"
             size="sm"

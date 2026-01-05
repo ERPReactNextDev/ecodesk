@@ -51,6 +51,19 @@ export function DateFilterModal({
   const [yearFrom, setYearFrom] = React.useState<number | null>(null);
   const [yearTo, setYearTo] = React.useState<number | null>(null);
 
+  /* ================= SYNC WITH SIDEBAR CLEAR ================= */
+  React.useEffect(() => {
+    if (!dateCreatedFilterRange) {
+      setFromMonth(null);
+      setFromMonthYear(null);
+      setToMonth(null);
+      setToMonthYear(null);
+      setYearFrom(null);
+      setYearTo(null);
+      setFilterKey((k) => k + 1);
+    }
+  }, [dateCreatedFilterRange]);
+
   /* ================= CONFIRM MONTH + YEAR ================= */
   function confirmMonthYearRange() {
     if (
@@ -61,7 +74,6 @@ export function DateFilterModal({
     )
       return;
 
-    // clear year-only filter
     setYearFrom(null);
     setYearTo(null);
 
@@ -87,7 +99,6 @@ export function DateFilterModal({
   function confirmYearRange() {
     if (yearFrom === null || yearTo === null) return;
 
-    // clear month filter
     setFromMonth(null);
     setFromMonthYear(null);
     setToMonth(null);
@@ -137,7 +148,10 @@ export function DateFilterModal({
 
           <div className="text-xs">From</div>
           <div className="flex gap-2">
-            <Select onValueChange={(v) => setFromMonth(Number(v))}>
+            <Select
+              value={fromMonth !== null ? String(fromMonth) : undefined}
+              onValueChange={(v) => setFromMonth(Number(v))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
@@ -150,7 +164,10 @@ export function DateFilterModal({
               </SelectContent>
             </Select>
 
-            <Select onValueChange={(v) => setFromMonthYear(Number(v))}>
+            <Select
+              value={fromMonthYear !== null ? String(fromMonthYear) : undefined}
+              onValueChange={(v) => setFromMonthYear(Number(v))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
@@ -166,7 +183,10 @@ export function DateFilterModal({
 
           <div className="text-xs">To</div>
           <div className="flex gap-2">
-            <Select onValueChange={(v) => setToMonth(Number(v))}>
+            <Select
+              value={toMonth !== null ? String(toMonth) : undefined}
+              onValueChange={(v) => setToMonth(Number(v))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
@@ -179,7 +199,10 @@ export function DateFilterModal({
               </SelectContent>
             </Select>
 
-            <Select onValueChange={(v) => setToMonthYear(Number(v))}>
+            <Select
+              value={toMonthYear !== null ? String(toMonthYear) : undefined}
+              onValueChange={(v) => setToMonthYear(Number(v))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
@@ -225,7 +248,10 @@ export function DateFilterModal({
         <div key={`year-${filterKey}`} className="space-y-2 pt-4">
           <div className="text-xs font-medium">Filter by Year</div>
 
-          <Select onValueChange={(v) => setYearFrom(Number(v))}>
+          <Select
+            value={yearFrom !== null ? String(yearFrom) : undefined}
+            onValueChange={(v) => setYearFrom(Number(v))}
+          >
             <SelectTrigger>
               <SelectValue placeholder="From Year" />
             </SelectTrigger>
@@ -238,7 +264,10 @@ export function DateFilterModal({
             </SelectContent>
           </Select>
 
-          <Select onValueChange={(v) => setYearTo(Number(v))}>
+          <Select
+            value={yearTo !== null ? String(yearTo) : undefined}
+            onValueChange={(v) => setYearTo(Number(v))}
+          >
             <SelectTrigger>
               <SelectValue placeholder="To Year" />
             </SelectTrigger>

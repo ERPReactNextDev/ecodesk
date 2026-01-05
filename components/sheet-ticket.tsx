@@ -124,6 +124,138 @@ interface TicketSheetProps {
     handleUpdate: () => void;
 }
 
+const MANAGER_AGENT_MAP: Record<string, string[]> = {
+  "AB-NCR-288130": [
+    "JP-NCR-321488", // Jeff Puying
+    "VO-NCR-765107", // Vince Ortiz
+    "JC-NCR-635171", // Josh Candazo
+    "WA-NCR-532926", // Wilnie Ardeloso
+    "AP-NCR-338109", // Ansley Patelo
+    "CB-NCR-578383", // Cristy Bobis
+    "SR-NCR-157258", // Sherylin Rapote
+    "MQ-NCR-618228", // Michael Quijano
+    "CN-NCR-915669", // Candy Notob
+    "EL-NCR-403385", // Erwin Laude
+  ],
+
+  "RD-NCR-612038": [
+    "CA-NCR-506100", // Christopher Acierto
+  ],
+
+  "JA-NCR-727428": [
+    "AP-NCR-468624", // Agnes Angeli Panopio
+    "RB-NCR-968208", // Roselyn Barnes
+  ],
+
+  "RT-NCR-815758": [
+    "JL-NCR-577103", // Jeffrey Lacson
+    "LD-NCR-898785", // Lotty De Guzman
+    "RI-NCR-820157", // Rodelio Ico
+    "RF-NCR-864625", // Rialyn Francisco
+    "AP-NCR-362012", // Alvin Perez
+    "RD-NCR-118744", // Rodolfo Delizo
+    "RD-NCR-180410", // Ruby Del Rosario
+    "GR-NCR-401280", // Gene Mark Roxas
+    "DD-NCR-462607", // Dionisio Doyugan
+    "GA-NCR-330568", // Gretchel Aquino
+  ],
+
+  "AS-NCR-146592": [
+    "MV-CBU-151813", // Mark Villagonzalo
+    "CD-CBU-564558", // Connie Doroja
+    "RA-CBU-225479", // Rodelyn Abrea
+  ],
+
+  "JM-CBU-702043": [
+    "KY-DVO-679025", // Khay Marie Yango
+    "NM-DVO-812855", // Norman Maranga
+    "NJ-DVO-543095", // Neil Vincent Jarabej
+  ],
+
+  "MP-CDO-613398": [
+    "KG-CDO-910641", // Kurt Guangco
+    "VP-CDO-581288", // Venzross Posadas
+    "CG-CDO-771954", // Che Gumapac
+  ],
+
+  "MF-PH-840897": [
+    "JD-NCR-953794", // Jean Dela Cerna
+    "JS-NCR-606082", // Joy Merel Soriente
+    "RM-NCR-462285", // Rodney Mendoza
+    "RB-NCR-840445", // Raymart Binondo
+    "BL-NCR-704414", // Banjo Lising
+    "JC-NCR-245823", // Jonna Clarin
+    "AE-NCR-274606", // Alvin Estor
+  ],
+
+  "SH-NCR-420492": [
+    "RB-PH-765029", // Rafael Bayani
+    "JD-NCR-296929", // Jennifer Dela Cruz
+    "ES-PH-966693", // Elaine Soroan
+  ],
+
+  "KG-PH-878400": [
+    // ⚠️ NOT IN YOUR LIST YET
+    // Add only when confirmed IDs exist
+  ],
+};
+
+const AGENTS = [
+  { id: "AP-NCR-468624", name: "Agnes Angeli, Panopio" },
+  { id: "AE-NCR-274606", name: "Alvin, Estor" },
+  { id: "AP-NCR-362012", name: "Alvin, Perez" },
+  { id: "AP-NCR-338109", name: "Ansley, Patelo" },
+  { id: "BL-NCR-704414", name: "Banjo, Lising" },
+  { id: "CN-NCR-915669", name: "Candy, Notob" },
+  { id: "CG-CDO-771954", name: "Che, Gumapac" },
+  { id: "CA-NCR-506100", name: "Christopher, Acierto" },
+  { id: "CD-CBU-564558", name: "Connie, Doroja" },
+  { id: "CB-NCR-578383", name: "Cristy, Bobis" },
+  { id: "DD-DVO-211099", name: "Dane Ariane, Delute" },
+  { id: "DD-NCR-462607", name: "Dionisio, Doyugan" },
+  { id: "ES-PH-966693", name: "Elaine, Soroan" },
+  { id: "EL-NCR-403385", name: "Erwin Jr, Laude" },
+  { id: "FN-CBU-905953", name: "Ferdy, Navarro" },
+  { id: "GR-NCR-401280", name: "Gene Mark, Roxas" },
+  { id: "GA-NCR-330568", name: "Gretchel Ann, Aquino" },
+  { id: "JJ-DVO-928920", name: "Jayson, Jungaya" },
+  { id: "JD-NCR-953794", name: "Jean, Dela Cerna" },
+  { id: "JL-NCR-577103", name: "Jeffrey, Lacson" },
+  { id: "JP-DVO-561222", name: "Jevan, Pinero" },
+  { id: "JP-NCR-321488", name: "John Jeffrey, Puying" },
+  { id: "JC-NCR-245823", name: "Jonna, Clarin" },
+  { id: "JC-NCR-635171", name: "Josh, Candazo" },
+  { id: "JS-NCR-606082", name: "Joy Merel, Soriente" },
+  { id: "JT-CBU-850172", name: "Jude Francinni, Tan" },
+  { id: "KY-DVO-679025", name: "Khay, Yango" },
+  { id: "KG-CDO-910641", name: "Kurt Narrem, Guangco" },
+  { id: "LD-NCR-898785", name: "Lotty, De Guzman" },
+  { id: "MM-NCR-642069", name: "Maricar, Magdaong" },
+  { id: "MV-CBU-151813", name: "Mark, Villagonzalo" },
+  { id: "MQ-NCR-618228", name: "Michael, Quijano" },
+  { id: "NJ-DVO-543095", name: "Neil Vincent, Jarabej" },
+  { id: "NM-DVO-812855", name: "Norman, Maranga" },
+  { id: "RB-NCR-840445", name: "Raymart, Binondo" },
+  { id: "RN-CDO-536745", name: "Reggie, Nocete" },
+  { id: "RF-NCR-864625", name: "Rialyn, Francisco" },
+  { id: "RI-NCR-820157", name: "Rodelio, Ico" },
+  { id: "RA-CBU-225479", name: "Rodelyn, Abrea" },
+  { id: "RM-NCR-462285", name: "Rodney, Mendoza" },
+  { id: "RD-NCR-118744", name: "Rodolfo Jr, Delizo" },
+  { id: "RB-NCR-968208", name: "Roselyn, Barnes" },
+  { id: "RD-NCR-180410", name: "Ruby, Del Rosario" },
+  { id: "SS-NCR-369807", name: "Shane Rey, Santos" },
+  { id: "SN-NCR-514468", name: "Shermaine, Navarro" },
+  { id: "SR-NCR-157258", name: "Sherylin, Rapote" },
+  { id: "VP-CDO-581288", name: "Venzross, Posadas" },
+  { id: "VO-NCR-765107", name: "Vince, Ortiz" },
+  { id: "WA-NCR-532926", name: "Wilnie, Ardeloso" },
+  { id: "JD-NCR-296929", name: "Jennifer, Dela Cruz" },
+  { id: "RB-PH-765029", name: "Rafael, Bayani" },
+  { id: "JG-NCR-920587", name: "Test Leroux" },
+];
+
+
 // Reusable Radio Group
 const RadioOptionsGroup = ({
     options,
@@ -966,76 +1098,47 @@ export function TicketSheet(props: TicketSheetProps) {
                         </Select>
                     </Field>
 
-                    {wrapUp !== "Job Applicants" && (department === "Sales" || department === "Business Development") && (
-                        <>
-                            <Field>
-                                <FieldLabel>Agent</FieldLabel>
-                                <FieldDescription>Select the agent assigned to handle this ticket or inquiry.</FieldDescription>
-                                <Select
-                                    value={agent}
-                                    onValueChange={(value) => setAgent(value)}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select a Manager" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="AP-NCR-468624">Agnes Angeli, Panopio</SelectItem>
-                                        <SelectItem value="AE-NCR-274606">Alvin, Estor</SelectItem>
-                                        <SelectItem value="AP-NCR-362012">Alvin, Perez</SelectItem>
-                                        <SelectItem value="AP-NCR-338109">Ansley, Patelo</SelectItem>
-                                        <SelectItem value="BL-NCR-704414">Banjo, Lising</SelectItem>
-                                        <SelectItem value="CN-NCR-915669">Candy, Notob</SelectItem>
-                                        <SelectItem value="CG-CDO-771954">Che, Gumapac</SelectItem>
-                                        <SelectItem value="CA-NCR-506100">Christopher, Acierto</SelectItem>
-                                        <SelectItem value="CD-CBU-564558">Connie, Doroja</SelectItem>
-                                        <SelectItem value="CB-NCR-578383">Cristy, Bobis</SelectItem>
-                                        <SelectItem value="DD-DVO-211099">Dane Ariane, Delute</SelectItem>
-                                        <SelectItem value="DD-NCR-462607">Dionisio, Doyugan</SelectItem>
-                                        <SelectItem value="ES-PH-966693">Elaine, Soroan</SelectItem>
-                                        <SelectItem value="EL-NCR-403385">Erwin Jr, Laude</SelectItem>
-                                        <SelectItem value="FN-CBU-905953">Ferdy, Navarro</SelectItem>
-                                        <SelectItem value="GR-NCR-401280">Gene Mark, Roxas</SelectItem>
-                                        <SelectItem value="GA-NCR-330568">Gretchel Ann, Aquino</SelectItem>
-                                        <SelectItem value="JJ-DVO-928920">Jayson, Jungaya</SelectItem>
-                                        <SelectItem value="JD-NCR-953794">Jean, Dela Cerna</SelectItem>
-                                        <SelectItem value="JL-NCR-577103">Jeffrey, Lacson</SelectItem>
-                                        <SelectItem value="JP-DVO-561222">Jevan, Pinero</SelectItem>
-                                        <SelectItem value="JP-NCR-321488">John Jeffrey, Puying</SelectItem>
-                                        <SelectItem value="JC-NCR-245823">Jonna, Clarin</SelectItem>
-                                        <SelectItem value="JC-NCR-635171">Josh, Candazo</SelectItem>
-                                        <SelectItem value="JS-NCR-606082">Joy Merel, Soriente</SelectItem>
-                                        <SelectItem value="JT-CBU-850172">Jude Francinni, Tan</SelectItem>
-                                        <SelectItem value="KY-DVO-679025">Khay, Yango</SelectItem>
-                                        <SelectItem value="KG-CDO-910641">Kurt Narrem, Guangco</SelectItem>
-                                        <SelectItem value="LD-NCR-898785">Lotty, De Guzman</SelectItem>
-                                        <SelectItem value="MM-NCR-642069">Maricar, Magdaong</SelectItem>
-                                        <SelectItem value="MV-CBU-151813">Mark, Villagonzalo</SelectItem>
-                                        <SelectItem value="MQ-NCR-618228">Michael, Quijano</SelectItem>
-                                        <SelectItem value="NJ-DVO-543095">Neil Vincent, Jarabej</SelectItem>
-                                        <SelectItem value="NM-DVO-812855">Norman, Maranga</SelectItem>
-                                        <SelectItem value="RB-NCR-840445">Raymart, Binondo</SelectItem>
-                                        <SelectItem value="RN-CDO-536745">Reggie, Nocete</SelectItem>
-                                        <SelectItem value="RF-NCR-864625">Rialyn, Francisco</SelectItem>
-                                        <SelectItem value="RI-NCR-820157">Rodelio, Ico</SelectItem>
-                                        <SelectItem value="RA-CBU-225479">Rodelyn, Abrea</SelectItem>
-                                        <SelectItem value="RM-NCR-462285">Rodney, Mendoza</SelectItem>
-                                        <SelectItem value="RD-NCR-118744">Rodolfo Jr, Delizo</SelectItem>
-                                        <SelectItem value="RB-NCR-968208">Roselyn, Barnes</SelectItem>
-                                        <SelectItem value="RD-NCR-180410">Ruby, Del Rosario</SelectItem>
-                                        <SelectItem value="SS-NCR-369807">Shane Rey, Santos</SelectItem>
-                                        <SelectItem value="SN-NCR-514468">Shermaine, Navarro</SelectItem>
-                                        <SelectItem value="SR-NCR-157258">Sherylin, Rapote</SelectItem>
-                                        <SelectItem value="VP-CDO-581288">Venzross, Posadas</SelectItem>
-                                        <SelectItem value="VO-NCR-765107">Vince, Ortiz</SelectItem>
-                                        <SelectItem value="WA-NCR-532926">Wilnie, Ardeloso</SelectItem>
-                                        <SelectItem value="JD-NCR-296929">Jennifer, Dela Cruz</SelectItem>
-                                        <SelectItem value="RB-PH-765029">Rafael, Bayani</SelectItem>
-                                        <SelectItem value="JG-NCR-920587">Test Leroux</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                        </>
-                    )}
+{wrapUp !== "Job Applicants" &&
+  (department === "Sales" || department === "Business Development") && (
+    <>
+      <Field>
+        <FieldLabel>Agent</FieldLabel>
+        <FieldDescription>
+          Select the agent assigned to handle this ticket or inquiry.
+        </FieldDescription>
+
+        <Select
+          value={agent}
+          onValueChange={(value) => setAgent(value)}
+          disabled={!manager}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select an Agent" />
+          </SelectTrigger>
+
+          <SelectContent>
+            {(MANAGER_AGENT_MAP[manager] || []).length === 0 && (
+              <SelectItem value="__none__" disabled>
+                No agents available
+              </SelectItem>
+            )}
+
+            {(MANAGER_AGENT_MAP[manager] || []).map((agentId) => {
+              const agentItem = AGENTS.find((a) => a.id === agentId);
+              if (!agentItem) return null;
+
+              return (
+                <SelectItem key={agentItem.id} value={agentItem.id}>
+                  {agentItem.name}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </Field>
+    </>
+  )}
+
 
                     <Field>
                         <FieldLabel>Status</FieldLabel>
