@@ -200,7 +200,7 @@ const SourceCompanyCard = forwardRef<SourceCompanyCardRef, ChannelTableProps>(({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer Type</TableHead>
+                <TableHead></TableHead>
                 <TableHead className="text-right">Count</TableHead>
               </TableRow>
             </TableHeader>

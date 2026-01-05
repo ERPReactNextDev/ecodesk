@@ -18,6 +18,8 @@ import { type DateRange } from "react-day-picker";
 import { Meeting } from "@/components/meeting";
 import { DateFilterModal } from "@/components/date-filter-modal";
 
+const STORAGE_KEY = "date-filter-dialog";
+
 type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
   userId?: string;
   dateCreatedFilterRange: DateRange | undefined;
@@ -38,7 +40,7 @@ export function SidebarRight({
   const [date, setDate] = React.useState("");
   const [dateFilterOpen, setDateFilterOpen] = React.useState(false);
 
-  /* ================= FILTER FLAG (0 | 1) ================= */
+  /* ================= FILTER FLAG ================= */
   const [dateFilterFlag, setDateFilterFlag] = React.useState<0 | 1>(0);
 
   const [userDetails, setUserDetails] = React.useState({
@@ -49,6 +51,47 @@ export function SidebarRight({
     Email: "",
     profilePicture: "",
   });
+
+  /* ================= RESTORE FILTER ON LOAD ================= */
+  React.useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw);
+
+      if (parsed?.from && parsed?.to) {
+        setDateCreatedFilterRangeAction({
+          from: new Date(parsed.from),
+          to: new Date(parsed.to),
+        });
+        setDateFilterFlag(parsed.flag === 1 ? 1 : 0);
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [setDateCreatedFilterRangeAction]);
+
+  /* ================= PERSIST FILTER ================= */
+  React.useEffect(() => {
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          from: dateCreatedFilterRange.from.toISOString(),
+          to: dateCreatedFilterRange.to.toISOString(),
+          flag: 1,
+        })
+      );
+    }
+  }, [dateCreatedFilterRange]);
+
+  /* ================= CLEAR STORAGE WHEN CLEARED ================= */
+  function clearDateFilter() {
+    setDateCreatedFilterRangeAction(undefined);
+    setDateFilterFlag(0);
+    localStorage.removeItem(STORAGE_KEY);
+  }
 
   /* ================= TIME + DATE ================= */
   React.useEffect(() => {
@@ -88,7 +131,6 @@ export function SidebarRight({
   /* ================= USER INFO ================= */
   React.useEffect(() => {
     if (!userId) return;
-
     fetch(`/api/user?id=${encodeURIComponent(userId)}`)
       .then((res) => res.json())
       .then((data) => {
@@ -100,30 +142,8 @@ export function SidebarRight({
           Email: data.Email || "",
           profilePicture: data.profilePicture || "",
         });
-      })
-      .catch(console.error);
+      });
   }, [userId]);
-
-  /* ================= DATE HANDLERS ================= */
-  function handleDateRangeSelect(range: DateRange | undefined) {
-    setDateCreatedFilterRangeAction(range);
-
-    if (range?.from && range?.to) {
-      setDateFilterFlag(1);
-    }
-  }
-
-  function clearDateFilter() {
-    setDateCreatedFilterRangeAction(undefined);
-    setDateFilterFlag(0);
-  }
-
-  /* ================= HARD SYNC SAFETY ================= */
-  React.useEffect(() => {
-    if (!dateCreatedFilterRange) {
-      setDateFilterFlag(0);
-    }
-  }, [dateCreatedFilterRange]);
 
   return (
     <>
@@ -147,13 +167,14 @@ export function SidebarRight({
         </SidebarHeader>
 
         <SidebarContent className="custom-scrollbar space-y-2">
-          {/* DATE PICKER */}
           <DatePicker
             selectedDateRange={dateCreatedFilterRange}
-            onDateSelectAction={handleDateRangeSelect}
+            onDateSelectAction={(range) => {
+              setDateCreatedFilterRangeAction(range);
+              if (range?.from && range?.to) setDateFilterFlag(1);
+            }}
           />
 
-          {/* CLEAR FILTER — FLAG CONTROLLED */}
           {dateFilterFlag === 1 && (
             <Button
               variant="destructive"
@@ -165,7 +186,6 @@ export function SidebarRight({
             </Button>
           )}
 
-          {/* ADVANCED FILTER */}
           <Button
             variant="outline"
             size="sm"
@@ -192,7 +212,6 @@ export function SidebarRight({
         </SidebarFooter>
       </Sidebar>
 
-      {/* DATE FILTER MODAL */}
       <DateFilterModal
         open={dateFilterOpen}
         onClose={() => setDateFilterOpen(false)}
