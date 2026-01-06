@@ -79,25 +79,34 @@ export default async function handler(
     }
 
     /* ------------------------------
-       Build SET fields
+       Build SET + UNSET fields
     ------------------------------ */
     const setFields: Record<string, string> = {};
-
-    items.forEach((item: any, index: number) => {
-      if (!item.description?.trim()) {
-        throw new Error(`Description ${index + 1} is empty`);
-      }
-
-      setFields[`description_${index + 1}`] = item.description.trim();
-      setFields[`subtitle_${index + 1}`] = item.subtitle?.trim() || "";
-    });
-
-    /* ------------------------------
-       Build UNSET fields (EXCESS ONLY)
-    ------------------------------ */
     const unsetFields: Record<string, string> = {};
     const maxIndex = items.length;
 
+    items.forEach((item: any, index: number) => {
+      const i = index + 1;
+
+      if (!item.description?.trim()) {
+        throw new Error(`Description ${i} is empty`);
+      }
+
+      // ALWAYS set description
+      setFields[`description_${i}`] = item.description.trim();
+
+      // Subtitle logic
+      if (item.subtitle?.trim()) {
+        setFields[`subtitle_${i}`] = item.subtitle.trim();
+      } else {
+        // 🔥 subtitle hidden = DELETE FIELD
+        unsetFields[`subtitle_${i}`] = "";
+      }
+    });
+
+    /* ------------------------------
+       Delete excess old fields
+    ------------------------------ */
     Object.keys(existingFaq).forEach((key) => {
       const match = key.match(/^(description|subtitle)_(\d+)$/);
       if (match) {

@@ -28,7 +28,7 @@ interface DescriptionItem {
 interface EditFaqsModalProps {
   open: boolean;
   onClose: () => void;
-  faq: any | null; // full FAQ object from DB
+  faq: any | null;
   onUpdated: (updatedFaq: any) => void;
 }
 
@@ -45,7 +45,7 @@ export function EditFaqsModal({
   const [saving, setSaving] = useState(false);
 
   /* ------------------------------
-   🔁 Load FAQ from DB into modal
+     Load FAQ from DB
   ------------------------------ */
   useEffect(() => {
     if (!faq) return;
@@ -78,7 +78,7 @@ export function EditFaqsModal({
   }, [faq]);
 
   /* ------------------------------
-   🧩 Helpers
+     Helpers
   ------------------------------ */
   const addItem = () => {
     setItems((prev) => [
@@ -88,7 +88,7 @@ export function EditFaqsModal({
   };
 
   const removeItem = (index: number) => {
-    if (items.length === 1) return; // 🔒 minimum 1
+    if (items.length === 1) return;
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -105,7 +105,7 @@ export function EditFaqsModal({
   };
 
   /* ------------------------------
-   💾 Save Changes
+     Save Changes
   ------------------------------ */
   const handleSave = async () => {
     if (!title.trim()) {
@@ -136,13 +136,20 @@ export function EditFaqsModal({
 
       toast.success("FAQ updated successfully");
 
-      // rebuild updated FAQ for instant UI update
+      /* 🔥 Build CLEAN updated FAQ
+         - Hidden subtitles are NOT included
+         - Deleted descriptions stay deleted
+      */
       const updatedFaq = {
-        ...faq,
+        _id: faq._id,
         title,
         ...items.reduce((acc, item, i) => {
-          acc[`subtitle_${i + 1}`] = item.subtitle || "";
           acc[`description_${i + 1}`] = item.description;
+
+          if (item.showSubtitle && item.subtitle.trim()) {
+            acc[`subtitle_${i + 1}`] = item.subtitle.trim();
+          }
+
           return acc;
         }, {} as any),
       };
@@ -194,13 +201,16 @@ export function EditFaqsModal({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() =>
-                      updateItem(
-                        index,
-                        "showSubtitle",
-                        !item.showSubtitle
-                      )
-                    }
+                    onClick={() => {
+                      const willShow = !item.showSubtitle;
+
+                      updateItem(index, "showSubtitle", willShow);
+
+                      if (!willShow) {
+                        // 🔥 HIDE = DELETE subtitle
+                        updateItem(index, "subtitle", "");
+                      }
+                    }}
                   >
                     <Type className="h-4 w-4" />
                   </Button>
@@ -215,7 +225,7 @@ export function EditFaqsModal({
                     <Plus className="h-4 w-4" />
                   </Button>
 
-                  {/* REMOVE (MIN 1) */}
+                  {/* REMOVE */}
                   <Button
                     type="button"
                     variant="ghost"

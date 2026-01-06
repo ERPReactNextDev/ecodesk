@@ -265,11 +265,16 @@ function HelpContent() {
           setOpenEditFaqs(false);
           setSelectedFaq(null);
         }}
-        onUpdated={(updatedFaq) =>
+        onUpdated={(updatedFaq) => {
           setFaqs((prev) =>
-            prev.map((f) => (f._id === updatedFaq._id ? updatedFaq : f))
-          )
-        }
+            prev.map((f) => {
+              if (f._id !== updatedFaq._id) return f;
+
+              // 🔥 FULL REPLACEMENT (NO STALE KEYS)
+              return { ...updatedFaq };
+            })
+          );
+        }}
       />
     </>
   );
