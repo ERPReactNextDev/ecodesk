@@ -32,6 +32,7 @@ interface Company {
     address: string;
     status: string;
     referenceid: string;
+    date_created?: string; // ✅ ADD THIS
 }
 
 interface MergedActivity extends Ticket {
@@ -159,6 +160,24 @@ export const Ticket: React.FC<TicketProps> = ({
     "Endorsed": "bg-purple-100 text-purple-700 border-purple-300",
     "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
     };
+
+const isNewCompany = (dateCreated?: string) => {
+  if (!dateCreated) return false;
+
+  // Convert "YYYY-MM-DD HH:mm:ss.SSS" → local Date
+  const created = new Date(dateCreated.replace(" ", "T"));
+  if (isNaN(created.getTime())) return false;
+
+  const now = new Date();
+
+  // Difference in milliseconds
+  const diffMs = now.getTime() - created.getTime();
+
+  // 1 day = 24 hours
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+  return diffMs <= ONE_DAY_MS;
+};
 
     // Sorting field and order
     const sortableFields = [
@@ -406,48 +425,65 @@ export const Ticket: React.FC<TicketProps> = ({
             .replace(/[_\s]+/g, " ") // replace underscores and multiple spaces with single space
             .trim();
 
-    const filteredCompanies = companies
-        .filter((c) => {
-            if (excludedCompanyStatuses.includes(c.status)) return false;
-            if (c.type_client !== "CSR Client") return false;
+const filteredCompanies = companies
+    .filter((c) => {
+        if (excludedCompanyStatuses.includes(c.status)) return false;
+        if (c.type_client !== "CSR Client") return false;
 
-            const term = normalize(searchTerm);
-            if (!term) return true;
+        const term = normalize(searchTerm);
+        if (!term) return true;
 
+        const fields = [
+            normalize(c.company_name || ""),
+            normalize(c.email_address || ""),
+            normalize(c.contact_number || ""),
+            normalize(c.contact_person || ""),
+        ];
+
+        return fields.some((field) => field.includes(term));
+    })
+
+    // ✅ KEEP OLD SEARCH RELEVANCE SORT
+    .sort((a, b) => {
+        const term = normalize(searchTerm);
+        if (!term) return 0;
+
+        const score = (company: Company) => {
             const fields = [
-                normalize(c.company_name || ""),
-                normalize(c.email_address || ""),
-                normalize(c.contact_number || ""),
-                normalize(c.contact_person || ""),
+                normalize(company.company_name || ""),
+                normalize(company.email_address || ""),
+                normalize(company.contact_number || ""),
+                normalize(company.contact_person || ""),
             ];
 
-            return fields.some((field) => field.includes(term));
-        })
-        .sort((a, b) => {
-            const term = normalize(searchTerm);
-            if (!term) return 0;
+            let bestScore = 3;
+            fields.forEach((field) => {
+                if (field === term) bestScore = Math.min(bestScore, 0);
+                else if (field.startsWith(term)) bestScore = Math.min(bestScore, 1);
+                else if (field.includes(term)) bestScore = Math.min(bestScore, 2);
+            });
 
-            const score = (company: Company) => {
-                const fields = [
-                    normalize(company.company_name || ""),
-                    normalize(company.email_address || ""),
-                    normalize(company.contact_number || ""),
-                    normalize(company.contact_person || ""),
-                ];
+            return bestScore;
+        };
 
-                // Get the best match score among all fields
-                let bestScore = 3;
-                fields.forEach((field) => {
-                    if (field === term) bestScore = Math.min(bestScore, 0);
-                    else if (field.startsWith(term)) bestScore = Math.min(bestScore, 1);
-                    else if (field.includes(term)) bestScore = Math.min(bestScore, 2);
-                });
+        return score(a) - score(b);
+    })
 
-                return bestScore;
-            };
+    // 🔥 NEW SORT: NEW + LATEST ON TOP
+    .sort((a, b) => {
+        const aIsNew = isNewCompany((a as any).date_created);
+        const bIsNew = isNewCompany((b as any).date_created);
 
-            return score(a) - score(b);
-        });
+        // 1️⃣ NEW companies first
+        if (aIsNew && !bIsNew) return -1;
+        if (!aIsNew && bIsNew) return 1;
+
+        // 2️⃣ Latest created first
+        const aTime = new Date((a as any).date_created ?? 0).getTime();
+        const bTime = new Date((b as any).date_created ?? 0).getTime();
+
+        return bTime - aTime;
+    });
 
     const MAX_DISPLAY = 20;
 
@@ -864,14 +900,27 @@ const selectedActivity = activities.find(
                                         value={c.account_reference_number} // may kaparehas kasi bro
                                     >
                                         <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
-                                            <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
-                                                <span
-                                                    className="flex-1 text-left break-words whitespace-normal"
-                                                    style={{ minWidth: 0 }}
-                                                >
+                                        <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
+                                            <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
+                                                <span className="break-words whitespace-normal">
                                                     {c.company_name}
                                                 </span>
-                                            </AccordionTrigger>
+
+                                                    {isNewCompany(c.date_created) && (
+                                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full
+                                                        bg-green-100 text-green-700 border border-green-300 text-[9px] font-semibold">
+                                                        
+                                                        {/* glowing dot */}
+                                                        <span className="relative flex h-2 w-2">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
+                                                        </span>
+
+                                                        NEW
+                                                    </span>
+                                                    )}
+                                            </span>
+                                        </AccordionTrigger>
 
                                             <Button
                                                 variant="outline"

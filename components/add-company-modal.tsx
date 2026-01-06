@@ -19,15 +19,14 @@ import {
 } from "@/components/ui/select";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
-import { CancelDialog } from "./activity-cancel-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface AddCompanyModalProps {
   referenceid: string;
@@ -36,7 +35,6 @@ interface AddCompanyModalProps {
 
 export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps) {
   const [open, setOpen] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const [formData, setFormData] = useState({
     tsm: "",
@@ -80,140 +78,103 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
 
   const genders = ["Male", "Female"];
 
-  // Fetch existing companies when modal opens
+  // Fetch existing companies when sheet opens
   useEffect(() => {
     if (open) {
       fetch("/api/com-fetch-account")
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
-            const companies = data.data.map((c: any) => ({
-              company_name: (c.company_name ?? "").toLowerCase().trim(),
-              contact_person: (c.contact_person ?? "").toLowerCase().trim(),
-            }));
-            setExistingCompanies(companies);
+            setExistingCompanies(
+              data.data.map((c: any) => ({
+                company_name: (c.company_name ?? "").toLowerCase().trim(),
+                contact_person: (c.contact_person ?? "").toLowerCase().trim(),
+              }))
+            );
           }
         });
     }
   }, [open]);
 
-  // Check duplicates whenever company name or contact person changes
+  // Duplicate checker
   useEffect(() => {
     const name = formData.company_name.toLowerCase().trim();
     const person = formData.contact_person.toLowerCase().trim();
-    const isDuplicate = existingCompanies.some(
-      (c) => c.company_name === name && c.contact_person === person
-    );
-    setDuplicate({ contact: isDuplicate });
+
+    setDuplicate({
+      contact: existingCompanies.some(
+        (c) => c.company_name === name && c.contact_person === person
+      ),
+    });
   }, [formData.company_name, formData.contact_person, existingCompanies]);
 
   const isFormValid = () => {
-    const requiredFields: Array<keyof typeof formData> = [
+    const required: Array<keyof typeof formData> = [
       "company_name",
       "contact_person",
       "industry",
       "gender",
       "address",
     ];
-    const allFilled = requiredFields.every((field) => formData[field]);
-    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-      formData.email_address
-    );
-    const noDuplicate = !duplicate.contact;
-    return allFilled && emailValid && noDuplicate;
+
+    const allFilled = required.every((f) => formData[f]);
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
+
+    return allFilled && emailValid && !duplicate.contact;
   };
 
-  const generateAccountReferenceNumber = async (companyName: string): Promise<string> => {
+  const generateAccountReferenceNumber = async (companyName: string) => {
     const prefix = companyName.trim().substring(0, 2).toUpperCase();
-    const csrTag = "CSR";
-
-    // Fetch existing account_reference_numbers from your API or database that start with prefix + "-CSR-"
-    const res = await fetch(`/api/get-account-references?prefix=${prefix}-${csrTag}`);
+    const res = await fetch(`/api/get-account-references?prefix=${prefix}-CSR`);
     const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch existing account reference numbers");
-    }
-
-    // Extract all existing numbers (last 8 digits) from the existing account_reference_numbers
-    // and find the max number
-    let maxNumber = 0;
-    data.references.forEach((ref: string) => {
-      const match = ref.match(/^\w{2}-CSR-(\d{8})$/);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (num > maxNumber) maxNumber = num;
-      }
+    let max = 0;
+    data.references.forEach((r: string) => {
+      const m = r.match(/CSR-(\d{8})$/);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
     });
 
-    // Increment maxNumber by 1 for the new reference number
-    const nextNumber = (maxNumber + 1).toString().padStart(8, "0");
-
-    return `${prefix}-${csrTag}-${nextNumber}`;
+    return `${prefix}-CSR-${String(max + 1).padStart(8, "0")}`;
   };
-
 
   const handleSave = async () => {
     if (!isFormValid()) {
-      alert("Please fill all required fields correctly and avoid duplicates.");
+      toast.error("Please complete required fields and avoid duplicates.");
       return;
     }
 
     try {
-      const gender = genders.includes(formData.gender) ? formData.gender : "Male";
+      const account_reference_number =
+        await generateAccountReferenceNumber(formData.company_name);
 
-      const accountReferenceNumber = await generateAccountReferenceNumber(
-        formData.company_name
-      );
-
-      const companyPayload = {
-        referenceid,
-        account_reference_number: accountReferenceNumber,
-        ...formData,
-        gender,
-        date_created: new Date().toISOString(),
-      };
-
-      const companyRes = await fetch("/api/com-save-company", {
+      await fetch("/api/com-save-company", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(companyPayload),
+        body: JSON.stringify({
+          referenceid,
+          account_reference_number,
+          ...formData,
+          date_created: new Date().toISOString(),
+        }),
       });
 
-      const companyResult = await companyRes.json();
-      if (!companyRes.ok) {
-        alert("Company save failed: " + (companyResult.error || "Unknown error"));
-        return;
-      }
-
-      // Save ticket
-      const ticketPayload = {
-        referenceid,
-        account_reference_number: accountReferenceNumber,
-        status: "On-Progress",
-        date_created: new Date().toISOString(),
-      };
-
-      const ticketRes = await fetch("/api/act-save-ticket", {
+      await fetch("/api/act-save-ticket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(ticketPayload),
+        body: JSON.stringify({
+          referenceid,
+          account_reference_number,
+          status: "On-Progress",
+          date_created: new Date().toISOString(),
+        }),
       });
 
-      const ticketResult = await ticketRes.json();
-      if (!ticketRes.ok) {
-        alert("Activity save failed: " + (ticketResult.error || "Unknown error"));
-        return;
-      }
-
-      toast.success("Company and activity saved successfully");
+      toast.success("Company and activity saved");
       setOpen(false);
       resetForm();
-
-      // **IMPORTANT:** Await the parent's fetchCompanies callback here
       await onCreated();
-    } catch (err) {
-      toast.error("Request failed: " + err);
+    } catch (e) {
+      toast.error("Saving failed");
     }
   };
 
@@ -237,184 +198,160 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={(isOpen) => setOpen(isOpen)}>
-        <DialogTrigger asChild>
-          <Button variant="default">Add Account</Button>
-        </DialogTrigger>
+  <Sheet open={open} onOpenChange={setOpen}>
+    <SheetTrigger asChild>
+      <Button>Add Account</Button>
+    </SheetTrigger>
 
-        <DialogContent
-          style={{ maxWidth: "60vw", width: "40vw" }}
-          className="mx-auto rounded-lg p-6"
+    <SheetContent
+      side="right"
+      className="w-[420px] sm:w-[480px] p-0 flex flex-col"
+    >
+      {/* HEADER */}
+      <SheetHeader className="px-6 py-4 border-b">
+        <SheetTitle className="text-lg font-semibold">
+          Add New Account
+        </SheetTitle>
+        <p className="text-sm text-muted-foreground">
+          Update the details of the record below.
+        </p>
+      </SheetHeader>
+
+      {/* BODY */}
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        <FieldGroup className="space-y-5">
+          {/* Company Name */}
+          <Field>
+            <FieldLabel>Company *</FieldLabel>
+            <Input
+              value={formData.company_name}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  company_name: e.target.value.toUpperCase(),
+                })
+              }
+              className={duplicate.contact ? "border-red-500" : ""}
+            />
+            {duplicate.contact && (
+              <p className="text-xs text-red-600 mt-1">
+                Duplicate company with same contact person
+              </p>
+            )}
+          </Field>
+
+          {/* Customer Name */}
+          <Field>
+            <FieldLabel>Customer Name *</FieldLabel>
+            <Input
+              value={formData.contact_person}
+              onChange={(e) =>
+                setFormData({ ...formData, contact_person: e.target.value })
+              }
+            />
+          </Field>
+
+          {/* Contact Number */}
+          <Field>
+            <FieldLabel>Contact Number *</FieldLabel>
+            <PhoneInput
+              country="ph"
+              value={formData.contact_number}
+              onChange={(v) =>
+                setFormData({ ...formData, contact_number: v })
+              }
+              inputStyle={{ width: "100%", height: "40px" }}
+            />
+          </Field>
+
+          {/* Email */}
+          <Field>
+            <FieldLabel>Email Address *</FieldLabel>
+            <Input
+              type="email"
+              value={formData.email_address}
+              onChange={(e) =>
+                setFormData({ ...formData, email_address: e.target.value })
+              }
+            />
+          </Field>
+
+          {/* Gender */}
+          <Field>
+            <FieldLabel>Gender *</FieldLabel>
+            <Select
+              value={formData.gender}
+              onValueChange={(v) =>
+                setFormData({ ...formData, gender: v })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {genders.map((g) => (
+                  <SelectItem key={g} value={g}>
+                    {g}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          {/* Address */}
+          <Field>
+            <FieldLabel>Address *</FieldLabel>
+            <Input
+              value={formData.address}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
+            />
+          </Field>
+
+          {/* Client Segment */}
+          <Field>
+            <FieldLabel>Client Segment *</FieldLabel>
+            <Select
+              value={formData.industry}
+              onValueChange={(v) =>
+                setFormData({ ...formData, industry: v })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {clientSegments.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </FieldGroup>
+      </div>
+
+      {/* FOOTER */}
+      <div className="px-6 py-4 border-t flex gap-2">
+        <Button
+          className="flex-1"
+          onClick={handleSave}
+          disabled={!isFormValid()}
         >
-          <DialogHeader>
-            <DialogTitle>Add New Accounts</DialogTitle>
-          </DialogHeader>
+          Save
+        </Button>
+        <Button
+          className="flex-1"
+          variant="outline"
+          onClick={() => setOpen(false)}
+        >
+          Cancel
+        </Button>
+      </div>
+    </SheetContent>
+  </Sheet>
+);
 
-          <FieldGroup>
-            <FieldSet className="grid grid-cols-2 gap-4">
-              {/* Company Name */}
-              <div className="col-span-2">
-                <Field>
-                  <FieldLabel>Company Name *</FieldLabel>
-                  <FieldDescription>Enter the registered name of the company.</FieldDescription>
-                  <Input
-                    placeholder="Enter company name"
-                    value={formData.company_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, company_name: e.target.value.toUpperCase() })
-                    }
-                    className={duplicate.contact ? "border-red-500" : ""}
-                    disabled={showCancelDialog}
-                    style={{ textTransform: "uppercase" }}
-                  />
-
-                  {duplicate.contact && (
-                    <p className="text-red-600 text-sm mt-1">
-                      This company with the same contact person already exists!
-                    </p>
-                  )}
-                </Field>
-              </div>
-
-              {/* Customer Name */}
-
-              <Field>
-                <FieldLabel>Customer Name *</FieldLabel>
-                <FieldDescription>
-                  Enter the contact person for the company.
-                </FieldDescription>
-                <Input
-                  placeholder="Enter customer name"
-                  value={formData.contact_person}
-                  onChange={(e) =>
-                    setFormData({ ...formData, contact_person: e.target.value })
-                  }
-                  className={duplicate.contact ? "border-red-500" : ""}
-                  disabled={showCancelDialog}
-                  style={{ textTransform: "capitalize" }}
-                />
-              </Field>
-
-              {/* Gender */}
-              <Field>
-                <FieldLabel>Gender *</FieldLabel>
-                <FieldDescription>Select the gender of the contact person.</FieldDescription>
-                <Select
-                  value={formData.gender}
-                  onValueChange={(value: string) =>
-                    setFormData({ ...formData, gender: value })
-                  }
-                  disabled={showCancelDialog}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[10000]">
-                    {genders.map((g) => (
-                      <SelectItem key={g} value={g}>
-                        {g}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {/* Contact Number */}
-              <Field>
-                <FieldLabel>Contact Number *</FieldLabel>
-                <FieldDescription>Enter the contact phone number.</FieldDescription>
-                <PhoneInput
-                  country="ph"
-                  value={formData.contact_number}
-                  onChange={(value) =>
-                    setFormData({ ...formData, contact_number: value })
-                  }
-                  inputStyle={{ width: "100%", height: "40px" }}
-                  dropdownStyle={{ zIndex: 10000 }}
-                  disabled={showCancelDialog}
-                />
-              </Field>
-
-              {/* Email Address */}
-              <Field>
-                <FieldLabel>Email Address *</FieldLabel>
-                <FieldDescription>Enter a valid email address.</FieldDescription>
-                <Input
-                  type="email"
-                  placeholder="Enter email address"
-                  value={formData.email_address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email_address: e.target.value })
-                  }
-                  disabled={showCancelDialog}
-                />
-              </Field>
-
-              {/* Address */}
-
-              <Field>
-                <FieldLabel>Address *</FieldLabel>
-                <FieldDescription>Enter the full company address.</FieldDescription>
-                <Input
-                  placeholder="Enter address"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  disabled={showCancelDialog}
-                  style={{ textTransform: "uppercase" }}
-                />
-              </Field>
-
-              {/* Client Segment */}
-
-              <Field>
-                <FieldLabel>Client Segment *</FieldLabel>
-                <FieldDescription>Select the industry segment of the client.</FieldDescription>
-                <Select
-                  value={formData.industry}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, industry: value })
-                  }
-                  disabled={showCancelDialog}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select client segment" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-64 overflow-auto z-[10000]">
-                    {clientSegments.map((ind) => (
-                      <SelectItem key={ind} value={ind}>
-                        {ind}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {/* Save + Cancel Buttons */}
-              <div className="col-span-2 flex gap-2 mt-4">
-                <Button
-                  className="flex-1"
-                  onClick={handleSave}
-                  variant="default"
-                  disabled={!isFormValid() || showCancelDialog}
-                >
-                  Save Company
-                </Button>
-                <Button
-                  className="flex-1"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-
-              </div>
-            </FieldSet>
-          </FieldGroup>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
 }

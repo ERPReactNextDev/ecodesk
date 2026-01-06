@@ -2,41 +2,45 @@ import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 
 const Xchire_databaseUrl = process.env.TASKFLOW_DB_URL;
+
 if (!Xchire_databaseUrl) {
   throw new Error("TASKFLOW_DB_URL is not set in the environment variables.");
 }
+
 const Xchire_sql = neon(Xchire_databaseUrl);
 
 export async function GET(req: Request) {
   try {
-    // Fetch all CSR Client accounts excluding those with status 'Removed', including all fields used in page.tsx, sorted alphabetically by company_name
-const Xchire_fetch = await Xchire_sql`
-  SELECT 
-    id,
-    account_reference_number,
-    referenceid,
-    company_name,
-    contact_person,
-    contact_number,
-    email_address,
-    address,
-    region,
-    industry,
-    type_client,
-    status
-  FROM accounts
-  WHERE status IS DISTINCT FROM 'Removed'
-  ORDER BY 
-    CASE 
-      WHEN type_client = 'CSR Client' THEN 0
-      ELSE 1
-    END,
-    company_name ASC;
-`;
+    // Fetch all accounts excluding Removed
+    // CSR Client first, then alphabetical by company_name
+    const Xchire_fetch = await Xchire_sql`
+      SELECT 
+        id,
+        account_reference_number,
+        referenceid,
+        company_name,
+        contact_person,
+        contact_number,
+        email_address,
+        address,
+        region,
+        industry,
+        type_client,
+        status,
+        date_created -- ✅ REQUIRED FOR "NEW" BADGE
+      FROM accounts
+      WHERE status IS DISTINCT FROM 'Removed'
+      ORDER BY 
+        CASE 
+          WHEN type_client = 'CSR Client' THEN 0
+          ELSE 1
+        END,
+        company_name ASC;
+    `;
 
-    if (Xchire_fetch.length === 0) {
+    if (!Xchire_fetch || Xchire_fetch.length === 0) {
       return NextResponse.json(
-        { success: false, data: [], error: "No CSR Client accounts found." },
+        { success: false, data: [], error: "No accounts found." },
         { status: 404 }
       );
     }
@@ -46,9 +50,12 @@ const Xchire_fetch = await Xchire_sql`
       { status: 200 }
     );
   } catch (Xchire_error: any) {
-    console.error("Error fetching CSR Client accounts:", Xchire_error);
+    console.error("Error fetching accounts:", Xchire_error);
     return NextResponse.json(
-      { success: false, error: Xchire_error.message || "Failed to fetch accounts." },
+      {
+        success: false,
+        error: Xchire_error?.message || "Failed to fetch accounts.",
+      },
       { status: 500 }
     );
   }
