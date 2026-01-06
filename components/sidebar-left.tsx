@@ -55,7 +55,7 @@ const data = {
   ],
   workspaces: [
     {
-      name: "Reportss",
+      name: "Reports",
       icon: Home,
       pages: [
         { name: "Daily CSR Transaction", url: "/reports/dst", icon: FileText },

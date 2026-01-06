@@ -49,6 +49,15 @@ export function SidebarRight({
     profilePicture: "",
   });
 
+  /* ================= HELPERS ================= */
+  function isSameDay(a: Date, b: Date) {
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  }
+
   /* ================= FORCE RESTORE ON EVERY PAGE ================= */
   React.useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -69,18 +78,37 @@ export function SidebarRight({
     }
   }, [setDateCreatedFilterRangeAction]);
 
-  /* ================= ALWAYS PERSIST ================= */
+  /* ================= ALWAYS PERSIST (FIXED) ================= */
   React.useEffect(() => {
-    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          from: dateCreatedFilterRange.from.toISOString(),
-          to: dateCreatedFilterRange.to.toISOString(),
-        })
-      );
-      setDateFilterFlag(1);
+    if (!dateCreatedFilterRange?.from || !dateCreatedFilterRange?.to) {
+      setDateFilterFlag(0);
+      localStorage.removeItem(STORAGE_KEY);
+      return;
     }
+
+    const today = new Date();
+
+    const isOnlyToday =
+      isSameDay(dateCreatedFilterRange.from, today) &&
+      isSameDay(dateCreatedFilterRange.to, today);
+
+    // 🚫 TODAY ONLY = NOT A FILTER
+    if (isOnlyToday) {
+      setDateFilterFlag(0);
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+
+    // ✅ REAL FILTER
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        from: dateCreatedFilterRange.from.toISOString(),
+        to: dateCreatedFilterRange.to.toISOString(),
+      })
+    );
+
+    setDateFilterFlag(1);
   }, [dateCreatedFilterRange]);
 
   /* ================= CLEAR (MANUAL ONLY) ================= */
