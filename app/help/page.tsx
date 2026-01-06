@@ -170,99 +170,103 @@ function HelpContent() {
               </Button>
             </div>
 
-            {/* FAQ LIST */}
-            {loadingFaqs ? (
-              <p className="text-sm text-muted-foreground">Loading FAQs...</p>
-            ) : faqs.filter((f) => f.isActive !== false).length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No FAQs available.
-              </p>
-            ) : (
-              <Accordion type="single" collapsible className="w-full">
-                {faqs
-                  .filter((faq) => faq.isActive !== false)
-                  .map((faq) => {
-                    const items = Object.keys(faq)
-                      .filter((key) => key.startsWith("description_"))
-                      .map((key) => {
-                        const index = Number(
-                          key.replace("description_", "")
-                        );
-                        return {
-                          index,
-                          description: faq[key],
-                          subtitle: faq[`subtitle_${index}`] || "",
-                        };
-                      })
-                      .sort((a, b) => a.index - b.index);
+          {/* FAQ LIST */}
+          {loadingFaqs ? (
+            <p className="text-sm text-muted-foreground">Loading FAQs...</p>
+          ) : faqs.filter((f) => f.isActive !== false).length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No FAQs available.
+            </p>
+          ) : (
+            <Accordion type="single" collapsible className="w-full">
+              {faqs
+                .filter((faq) => faq.isActive !== false)
+                // 🔥 NEWEST ADDED FAQ ON TOP (EDIT DOES NOT AFFECT ORDER)
+                .sort((a, b) => {
+                  const aDate = new Date(a.date_created || 0).getTime();
+                  const bDate = new Date(b.date_created || 0).getTime();
+                  return bDate - aDate;
+                })
+                .map((faq) => {
+                  const items = Object.keys(faq)
+                    .filter((key) => key.startsWith("description_"))
+                    .map((key) => {
+                      const index = Number(key.replace("description_", ""));
+                      return {
+                        index,
+                        description: faq[key],
+                        subtitle: faq[`subtitle_${index}`] || "",
+                      };
+                    })
+                    .sort((a, b) => a.index - b.index);
 
-                    return (
-                      <AccordionItem key={faq._id} value={faq._id}>
-                        <AccordionTrigger>
-                          <div className="flex w-full justify-between items-center pr-2">
-                            <span>{faq.title}</span>
+                  return (
+                    <AccordionItem key={faq._id} value={faq._id}>
+                      <AccordionTrigger>
+                        <div className="flex w-full justify-between items-center pr-2">
+                          <span>{faq.title}</span>
 
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedFaq(faq);
-                                  setOpenEditFaqs(true);
-                                }}
-                              >
-                                Edit
-                              </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedFaq(faq);
+                                setOpenEditFaqs(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
 
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedFaq(faq);
-                                  setOpenDeleteFaqs(true);
-                                }}
-                              >
-                                Delete
-                              </Button>
-                            </div>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedFaq(faq);
+                                setOpenDeleteFaqs(true);
+                              }}
+                            >
+                              Delete
+                            </Button>
                           </div>
-                        </AccordionTrigger>
+                        </div>
+                      </AccordionTrigger>
 
-                        <AccordionContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {items.map((item, idx) => {
-                              const isLastItem = idx === items.length - 1;
-                              const isOddCount = items.length % 2 === 1;
-                              const isFullWidth = isLastItem && isOddCount;
+                      <AccordionContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {items.map((item, idx) => {
+                            const isLastItem = idx === items.length - 1;
+                            const isOddCount = items.length % 2 === 1;
+                            const isFullWidth = isLastItem && isOddCount;
 
-                              return (
-                                <div
-                                  key={idx}
-                                  className={`rounded-lg border p-4 space-y-2 ${
-                                    isFullWidth ? "md:col-span-2" : ""
-                                  }`}
-                                >
-                                  {item.subtitle && (
-                                    <div className="font-semibold text-sm">
-                                      {item.subtitle}
-                                    </div>
-                                  )}
-
-                                  <div className="text-sm text-muted-foreground whitespace-pre-line">
-                                    {item.description}
+                            return (
+                              <div
+                                key={idx}
+                                className={`rounded-lg border p-4 space-y-2 ${
+                                  isFullWidth ? "md:col-span-2" : ""
+                                }`}
+                              >
+                                {item.subtitle && (
+                                  <div className="font-semibold text-sm">
+                                    {item.subtitle}
                                   </div>
+                                )}
+
+                                <div className="text-sm text-muted-foreground whitespace-pre-line">
+                                  {item.description}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-              </Accordion>
-            )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+            </Accordion>
+          )}
           </div>
         </div>
       </SidebarInset>
