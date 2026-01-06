@@ -234,17 +234,24 @@ function HelpContent() {
                         </AccordionTrigger>
 
                         <AccordionContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-max">
                             {items.map((item, idx) => {
-                              const isLongContent =
-                                item.description?.length >= 300 ||
-                                item.description?.split("\n").length >= 6;
+                                const isLongContent =
+                                  item.description?.length >= 250 ||
+                                  item.description?.split("\n").length >= 5;
+                                const prevItem = items[idx - 1];
 
+                                const prevWasLong =
+                                  prevItem &&
+                                  (
+                                    prevItem.description?.length >= 250 ||
+                                    prevItem.description?.split("\n").length >= 5
+                                  );
                               return (
                                 <div
                                   key={idx}
                                   className={`rounded-lg border p-4 space-y-2 ${
-                                    isLongContent ? "md:col-span-2" : ""
+                                    isLongContent || prevWasLong ? "md:col-span-full" : ""
                                   }`}
                                 >
                                   {item.subtitle && (
@@ -253,7 +260,7 @@ function HelpContent() {
                                     </div>
                                   )}
 
-                                  <div className="text-sm text-muted-foreground whitespace-pre-line">
+                                  <div className="text-sm text-muted-foreground whitespace-pre-line text-justify">
                                     {item.description}
                                   </div>
                                 </div>
