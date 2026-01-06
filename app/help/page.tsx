@@ -9,6 +9,7 @@ import { FormatProvider } from "@/contexts/FormatContext";
 import { SidebarLeft } from "@/components/sidebar-left";
 import { SidebarRight } from "@/components/sidebar-right";
 import { AddFaqsModal } from "@/components/add-faqs-modal";
+import { EditFaqsModal } from "@/components/edit-faqs-modal";
 
 import {
   Breadcrumb,
@@ -41,82 +42,78 @@ interface UserDetails {
 interface FaqItem {
   _id: string;
   title: string;
-  [key: string]: any; // subtitle_1, description_1, etc.
+  [key: string]: any;
 }
 
 function HelpContent() {
   const searchParams = useSearchParams();
+
+  const { userId, setUserId } = useUser();
+
   const [userDetails, setUserDetails] = useState<UserDetails>({
     referenceid: "",
     role: "",
   });
-
-  const { userId, setUserId } = useUser();
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const queryUserId = searchParams?.get("id") ?? "";
   const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
     useState<DateRange | undefined>(undefined);
 
   const [openAddFaqs, setOpenAddFaqs] = useState(false);
+  const [openEditFaqs, setOpenEditFaqs] = useState(false);
+  const [selectedFaq, setSelectedFaq] = useState<FaqItem | null>(null);
+
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [loadingFaqs, setLoadingFaqs] = useState(true);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Sync URL query param with userId context
+  /* ------------------------------
+     Sync URL user id
+  ------------------------------ */
   useEffect(() => {
     if (queryUserId && queryUserId !== userId) {
       setUserId(queryUserId);
     }
   }, [queryUserId, userId, setUserId]);
 
-  // Fetch user data
+  /* ------------------------------
+     Fetch User
+  ------------------------------ */
   useEffect(() => {
-    if (!userId) {
-      setError("User ID is missing.");
-      setLoadingUser(false);
-      return;
-    }
+    if (!userId) return;
 
     const fetchUserData = async () => {
-      setError(null);
-      setLoadingUser(true);
       try {
-        const response = await fetch(
-          `/api/user?id=${encodeURIComponent(userId)}`
-        );
-        if (!response.ok) throw new Error("Failed to fetch user data");
-        const data = await response.json();
+        const res = await fetch(`/api/user?id=${encodeURIComponent(userId)}`);
+        if (!res.ok) throw new Error("Failed to fetch user");
+        const data = await res.json();
 
         setUserDetails({
           referenceid: data.ReferenceID || "",
           role: data.Role || "",
         });
       } catch (err) {
-        console.error("Error fetching user data:", err);
-      } finally {
-        setLoadingUser(false);
+        console.error(err);
       }
     };
 
     fetchUserData();
   }, [userId]);
 
-  // Initial Fetch FAQs
+  /* ------------------------------
+     Fetch FAQs
+  ------------------------------ */
   useEffect(() => {
     const fetchFaqs = async () => {
       try {
         setLoadingFaqs(true);
         const res = await fetch("/api/faqs-fetch-activity");
         const data = await res.json();
-        if (res.ok) {
-          setFaqs(data.data || []);
-        }
+        if (res.ok) setFaqs(data.data || []);
       } catch (err) {
-        console.error("Failed to fetch FAQs:", err);
+        console.error(err);
       } finally {
         setLoadingFaqs(false);
       }
@@ -160,17 +157,14 @@ function HelpContent() {
               Click a question below to view its answer.
             </p>
 
-            {/* ADD FAQs BUTTON */}
+            {/* ACTIONS */}
             <div className="flex justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setOpenAddFaqs(true)}
-              >
+              <Button variant="outline" onClick={() => setOpenAddFaqs(true)}>
                 Add FAQs
               </Button>
             </div>
 
-            {/* FAQ ACCORDION */}
+            {/* FAQ LIST */}
             {loadingFaqs ? (
               <p className="text-sm text-muted-foreground">Loading FAQs...</p>
             ) : faqs.length === 0 ? (
@@ -180,16 +174,10 @@ function HelpContent() {
             ) : (
               <Accordion type="single" collapsible className="w-full">
                 {faqs.map((faq) => {
-                  /**
-                   * ✅ FIXED LOGIC
-                   * Properly pairs subtitle_X with description_X
-                   */
                   const items = Object.keys(faq)
                     .filter((key) => key.startsWith("description_"))
                     .map((key) => {
-                      const index = Number(
-                        key.replace("description_", "")
-                      );
+                      const index = Number(key.replace("description_", ""));
                       return {
                         index,
                         description: faq[key],
@@ -201,15 +189,29 @@ function HelpContent() {
                   return (
                     <AccordionItem key={faq._id} value={faq._id}>
                       <AccordionTrigger>
-                        {faq.title}
+                        <div className="flex w-full justify-between items-center pr-2">
+                          <span>{faq.title}</span>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFaq(faq);
+                              setOpenEditFaqs(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </div>
                       </AccordionTrigger>
 
                       <AccordionContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {items.map((item, idx) => {
-                            const isFullWidth =
-                              idx === items.length - 1 ||
-                              (idx + 1) % 5 === 0;
+                            const isLastItem = idx === items.length - 1;
+                            const isOddCount = items.length % 2 === 1;
+                            const isFullWidth = isLastItem && isOddCount;
 
                             return (
                               <div
@@ -244,18 +246,29 @@ function HelpContent() {
       <SidebarRight
         userId={userId ?? undefined}
         dateCreatedFilterRange={dateCreatedFilterRange}
-        setDateCreatedFilterRangeAction={
-          setDateCreatedFilterRangeAction
-        }
+        setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
       />
 
-      {/* ADD FAQS MODAL */}
+      {/* ADD MODAL */}
       <AddFaqsModal
         open={openAddFaqs}
         onClose={() => setOpenAddFaqs(false)}
         referenceid={userDetails.referenceid}
-        onSave={(newFaq: FaqItem) =>
-          setFaqs((prev) => [newFaq, ...prev])
+        onSave={(newFaq) => setFaqs((prev) => [newFaq, ...prev])}
+      />
+
+      {/* EDIT MODAL */}
+      <EditFaqsModal
+        open={openEditFaqs}
+        faq={selectedFaq}
+        onClose={() => {
+          setOpenEditFaqs(false);
+          setSelectedFaq(null);
+        }}
+        onUpdated={(updatedFaq) =>
+          setFaqs((prev) =>
+            prev.map((f) => (f._id === updatedFaq._id ? updatedFaq : f))
+          )
         }
       />
     </>

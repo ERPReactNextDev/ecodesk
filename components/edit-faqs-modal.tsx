@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,25 +25,61 @@ interface DescriptionItem {
   showSubtitle: boolean;
 }
 
-interface AddFaqsModalProps {
+interface EditFaqsModalProps {
   open: boolean;
   onClose: () => void;
-  referenceid: string;
-  onSave: (faq: any) => void;
+  faq: any | null; // full FAQ object from DB
+  onUpdated: (updatedFaq: any) => void;
 }
 
-export function AddFaqsModal({
+export function EditFaqsModal({
   open,
   onClose,
-  referenceid,
-  onSave,
-}: AddFaqsModalProps) {
+  faq,
+  onUpdated,
+}: EditFaqsModalProps) {
   const [title, setTitle] = useState("");
   const [items, setItems] = useState<DescriptionItem[]>([
     { subtitle: "", description: "", showSubtitle: false },
   ]);
   const [saving, setSaving] = useState(false);
 
+  /* ------------------------------
+   🔁 Load FAQ from DB into modal
+  ------------------------------ */
+  useEffect(() => {
+    if (!faq) return;
+
+    setTitle(faq.title || "");
+
+    const parsedItems = Object.keys(faq)
+      .filter((key) => key.startsWith("description_"))
+      .map((key) => {
+        const index = Number(key.replace("description_", ""));
+        return {
+          index,
+          subtitle: faq[`subtitle_${index}`] || "",
+          description: faq[key] || "",
+          showSubtitle: Boolean(faq[`subtitle_${index}`]),
+        };
+      })
+      .sort((a, b) => a.index - b.index)
+      .map(({ subtitle, description, showSubtitle }) => ({
+        subtitle,
+        description,
+        showSubtitle,
+      }));
+
+    setItems(
+      parsedItems.length
+        ? parsedItems
+        : [{ subtitle: "", description: "", showSubtitle: false }]
+    );
+  }, [faq]);
+
+  /* ------------------------------
+   🧩 Helpers
+  ------------------------------ */
   const addItem = () => {
     setItems((prev) => [
       ...prev,
@@ -52,6 +88,7 @@ export function AddFaqsModal({
   };
 
   const removeItem = (index: number) => {
+    if (items.length === 1) return; // 🔒 minimum 1
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -67,6 +104,9 @@ export function AddFaqsModal({
     );
   };
 
+  /* ------------------------------
+   💾 Save Changes
+  ------------------------------ */
   const handleSave = async () => {
     if (!title.trim()) {
       toast.error("Title is required");
@@ -74,18 +114,18 @@ export function AddFaqsModal({
     }
 
     if (items.some((i) => !i.description.trim())) {
-      toast.error("All description fields must be filled");
+      toast.error("All descriptions are required");
       return;
     }
 
     try {
       setSaving(true);
 
-      const res = await fetch("/api/faqs-save-activity", {
+      const res = await fetch("/api/faqs-edit-activity", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          referenceid,
+          _id: faq._id,
           title,
           items,
         }),
@@ -94,36 +134,37 @@ export function AddFaqsModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      toast.success("FAQ saved successfully");
+      toast.success("FAQ updated successfully");
 
-      onSave({
-        _id: crypto.randomUUID(),
-        referenceid,
+      // rebuild updated FAQ for instant UI update
+      const updatedFaq = {
+        ...faq,
         title,
         ...items.reduce((acc, item, i) => {
           acc[`subtitle_${i + 1}`] = item.subtitle || "";
           acc[`description_${i + 1}`] = item.description;
           return acc;
         }, {} as any),
-      });
+      };
 
-      setTitle("");
-      setItems([{ subtitle: "", description: "", showSubtitle: false }]);
+      onUpdated(updatedFaq);
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Error saving FAQ");
+      toast.error(err.message || "Failed to update FAQ");
     } finally {
       setSaving(false);
     }
   };
 
+  if (!faq) return null;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Add FAQs</DialogTitle>
+          <DialogTitle>Edit FAQ</DialogTitle>
           <DialogDescription>
-            This will be saved directly to the database.
+            Update the selected FAQ details.
           </DialogDescription>
         </DialogHeader>
 
@@ -133,7 +174,6 @@ export function AddFaqsModal({
             <FieldLabel>Title</FieldLabel>
             <FieldContent>
               <Input
-                placeholder="Enter FAQ title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
@@ -145,46 +185,47 @@ export function AddFaqsModal({
             <Field key={index}>
               <div className="flex items-center justify-between">
                 <FieldLabel>
-                  {index === 0 ? "Description" : `Description ${index + 1}`}
+                  Description {index + 1}
                 </FieldLabel>
 
-              <div className="flex gap-1">
-                {/* TOGGLE SUBTITLE */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    updateItem(index, "showSubtitle", !item.showSubtitle)
-                  }
-                  title="Toggle Subtitle"
-                >
-                  <Type className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  {/* TOGGLE SUBTITLE */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      updateItem(
+                        index,
+                        "showSubtitle",
+                        !item.showSubtitle
+                      )
+                    }
+                  >
+                    <Type className="h-4 w-4" />
+                  </Button>
 
-                {/* ADD DESCRIPTION */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={addItem}
-                  title="Add Description"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+                  {/* ADD */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={addItem}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
 
-                {/* REMOVE DESCRIPTION (MINIMUM = 1) */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeItem(index)}
-                  disabled={items.length === 1}
-                  title="Remove Description"
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </div>
+                  {/* REMOVE (MIN 1) */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeItem(index)}
+                    disabled={items.length === 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               {item.showSubtitle && (
@@ -202,7 +243,6 @@ export function AddFaqsModal({
               <FieldContent>
                 <Textarea
                   rows={4}
-                  placeholder="Enter FAQ description"
                   value={item.description}
                   onChange={(e) =>
                     updateItem(index, "description", e.target.value)
@@ -218,7 +258,7 @@ export function AddFaqsModal({
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Confirm"}
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </DialogContent>
