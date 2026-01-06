@@ -164,11 +164,16 @@ function HelpContent() {
             </p>
 
             {/* ACTIONS */}
-            <div className="flex justify-end">
-              <Button variant="outline" onClick={() => setOpenAddFaqs(true)}>
-                Add FAQs
-              </Button>
-            </div>
+            {userDetails.role === "Admin" && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setOpenAddFaqs(true)}
+                >
+                  Add FAQs
+                </Button>
+              </div>
+            )}
 
           {/* FAQ LIST */}
           {loadingFaqs ? (
@@ -179,15 +184,15 @@ function HelpContent() {
             </p>
           ) : (
             <Accordion type="single" collapsible className="w-full">
-              {faqs
-                .filter((faq) => faq.isActive !== false)
-                // 🔥 NEWEST ADDED FAQ ON TOP (EDIT DOES NOT AFFECT ORDER)
-                .sort((a, b) => {
-                  const aDate = new Date(a.date_created || 0).getTime();
-                  const bDate = new Date(b.date_created || 0).getTime();
-                  return bDate - aDate;
-                })
-                .map((faq) => {
+{faqs
+  .filter((faq) => faq.isActive !== false)
+  // 🔥 OLDEST FIRST → NEWEST LAST (DEFAULT, ALL ROLES)
+  .sort((a, b) => {
+    const aDate = new Date(a.date_created || 0).getTime();
+    const bDate = new Date(b.date_created || 0).getTime();
+    return aDate - bDate;
+  })
+  .map((faq) => {
                   const items = Object.keys(faq)
                     .filter((key) => key.startsWith("description_"))
                     .map((key) => {
@@ -202,10 +207,11 @@ function HelpContent() {
 
                   return (
                     <AccordionItem key={faq._id} value={faq._id}>
-                      <AccordionTrigger>
-                        <div className="flex w-full justify-between items-center pr-2">
-                          <span>{faq.title}</span>
+                    <AccordionTrigger>
+                      <div className="flex w-full justify-between items-center pr-2">
+                        <span>{faq.title}</span>
 
+                        {userDetails.role === "Admin" && (
                           <div className="flex gap-2">
                             <Button
                               size="sm"
@@ -231,38 +237,39 @@ function HelpContent() {
                               Delete
                             </Button>
                           </div>
-                        </div>
-                      </AccordionTrigger>
+                        )}
+                      </div>
+                    </AccordionTrigger>
 
-                      <AccordionContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {items.map((item, idx) => {
-                            const isLastItem = idx === items.length - 1;
-                            const isOddCount = items.length % 2 === 1;
-                            const isFullWidth = isLastItem && isOddCount;
+                    <AccordionContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {items.map((item, idx) => {
+                          const isLastItem = idx === items.length - 1;
+                          const isOddCount = items.length % 2 === 1;
+                          const isFullWidth = isLastItem && isOddCount;
 
-                            return (
-                              <div
-                                key={idx}
-                                className={`rounded-lg border p-4 space-y-2 ${
-                                  isFullWidth ? "md:col-span-2" : ""
-                                }`}
-                              >
-                                {item.subtitle && (
-                                  <div className="font-semibold text-sm">
-                                    {item.subtitle}
-                                  </div>
-                                )}
-
-                                <div className="text-sm text-muted-foreground whitespace-pre-line">
-                                  {item.description}
+                          return (
+                            <div
+                              key={idx}
+                              className={`rounded-lg border p-4 space-y-2 ${
+                                isFullWidth ? "md:col-span-2" : ""
+                              }`}
+                            >
+                              {item.subtitle && (
+                                <div className="font-semibold text-sm">
+                                  {item.subtitle}
                                 </div>
+                              )}
+
+                              <div className="text-sm text-muted-foreground whitespace-pre-line">
+                                {item.description}
                               </div>
-                            );
-                          })}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                   );
                 })}
             </Accordion>
@@ -282,8 +289,11 @@ function HelpContent() {
         open={openAddFaqs}
         onClose={() => setOpenAddFaqs(false)}
         referenceid={userDetails.referenceid}
-        onSave={(newFaq) => setFaqs((prev) => [newFaq, ...prev])}
+        onSave={(newFaq) =>
+          setFaqs((prev) => [...prev, newFaq]) // ✅ ALWAYS APPEND
+        }
       />
+
 
       {/* EDIT MODAL */}
       <EditFaqsModal
