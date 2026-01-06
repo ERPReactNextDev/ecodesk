@@ -10,6 +10,7 @@ import { SidebarLeft } from "@/components/sidebar-left";
 import { SidebarRight } from "@/components/sidebar-right";
 import { AddFaqsModal } from "@/components/add-faqs-modal";
 import { EditFaqsModal } from "@/components/edit-faqs-modal";
+import { DeleteFaqsModal } from "@/components/delete-faqs-modal";
 
 import {
   Breadcrumb,
@@ -42,12 +43,12 @@ interface UserDetails {
 interface FaqItem {
   _id: string;
   title: string;
+  isActive?: boolean;
   [key: string]: any;
 }
 
 function HelpContent() {
   const searchParams = useSearchParams();
-
   const { userId, setUserId } = useUser();
 
   const [userDetails, setUserDetails] = useState<UserDetails>({
@@ -61,6 +62,8 @@ function HelpContent() {
 
   const [openAddFaqs, setOpenAddFaqs] = useState(false);
   const [openEditFaqs, setOpenEditFaqs] = useState(false);
+  const [openDeleteFaqs, setOpenDeleteFaqs] = useState(false);
+
   const [selectedFaq, setSelectedFaq] = useState<FaqItem | null>(null);
 
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
@@ -154,7 +157,8 @@ function HelpContent() {
             </h1>
 
             <p className="text-sm text-muted-foreground">
-              Click a question below to view its answer.
+              This section displays the CSR FAQs (Customer Service Representative
+              Frequently Asked Questions).
             </p>
 
             {/* ACTIONS */}
@@ -167,76 +171,94 @@ function HelpContent() {
             {/* FAQ LIST */}
             {loadingFaqs ? (
               <p className="text-sm text-muted-foreground">Loading FAQs...</p>
-            ) : faqs.length === 0 ? (
+            ) : faqs.filter((f) => f.isActive !== false).length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No FAQs available.
               </p>
             ) : (
               <Accordion type="single" collapsible className="w-full">
-                {faqs.map((faq) => {
-                  const items = Object.keys(faq)
-                    .filter((key) => key.startsWith("description_"))
-                    .map((key) => {
-                      const index = Number(key.replace("description_", ""));
-                      return {
-                        index,
-                        description: faq[key],
-                        subtitle: faq[`subtitle_${index}`] || "",
-                      };
-                    })
-                    .sort((a, b) => a.index - b.index);
+                {faqs
+                  .filter((faq) => faq.isActive !== false)
+                  .map((faq) => {
+                    const items = Object.keys(faq)
+                      .filter((key) => key.startsWith("description_"))
+                      .map((key) => {
+                        const index = Number(
+                          key.replace("description_", "")
+                        );
+                        return {
+                          index,
+                          description: faq[key],
+                          subtitle: faq[`subtitle_${index}`] || "",
+                        };
+                      })
+                      .sort((a, b) => a.index - b.index);
 
-                  return (
-                    <AccordionItem key={faq._id} value={faq._id}>
-                      <AccordionTrigger>
-                        <div className="flex w-full justify-between items-center pr-2">
-                          <span>{faq.title}</span>
+                    return (
+                      <AccordionItem key={faq._id} value={faq._id}>
+                        <AccordionTrigger>
+                          <div className="flex w-full justify-between items-center pr-2">
+                            <span>{faq.title}</span>
 
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedFaq(faq);
-                              setOpenEditFaqs(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        </div>
-                      </AccordionTrigger>
-
-                      <AccordionContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {items.map((item, idx) => {
-                            const isLastItem = idx === items.length - 1;
-                            const isOddCount = items.length % 2 === 1;
-                            const isFullWidth = isLastItem && isOddCount;
-
-                            return (
-                              <div
-                                key={idx}
-                                className={`rounded-lg border p-4 space-y-2 ${
-                                  isFullWidth ? "md:col-span-2" : ""
-                                }`}
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedFaq(faq);
+                                  setOpenEditFaqs(true);
+                                }}
                               >
-                                {item.subtitle && (
-                                  <div className="font-semibold text-sm">
-                                    {item.subtitle}
-                                  </div>
-                                )}
+                                Edit
+                              </Button>
 
-                                <div className="text-sm text-muted-foreground whitespace-pre-line">
-                                  {item.description}
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedFaq(faq);
+                                  setOpenDeleteFaqs(true);
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {items.map((item, idx) => {
+                              const isLastItem = idx === items.length - 1;
+                              const isOddCount = items.length % 2 === 1;
+                              const isFullWidth = isLastItem && isOddCount;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`rounded-lg border p-4 space-y-2 ${
+                                    isFullWidth ? "md:col-span-2" : ""
+                                  }`}
+                                >
+                                  {item.subtitle && (
+                                    <div className="font-semibold text-sm">
+                                      {item.subtitle}
+                                    </div>
+                                  )}
+
+                                  <div className="text-sm text-muted-foreground whitespace-pre-line">
+                                    {item.description}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
+                              );
+                            })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
               </Accordion>
             )}
           </div>
@@ -267,15 +289,29 @@ function HelpContent() {
         }}
         onUpdated={(updatedFaq) => {
           setFaqs((prev) =>
-            prev.map((f) => {
-              if (f._id !== updatedFaq._id) return f;
-
-              // 🔥 FULL REPLACEMENT (NO STALE KEYS)
-              return { ...updatedFaq };
-            })
+            prev.map((f) => (f._id === updatedFaq._id ? updatedFaq : f))
           );
         }}
       />
+
+      {/* DELETE MODAL */}
+      {selectedFaq && (
+        <DeleteFaqsModal
+          open={openDeleteFaqs}
+          faqId={selectedFaq._id}
+          onClose={() => {
+            setOpenDeleteFaqs(false);
+            setSelectedFaq(null);
+          }}
+          onDeleted={(id) => {
+            setFaqs((prev) =>
+              prev.map((f) =>
+                f._id === id ? { ...f, isActive: false } : f
+              )
+            );
+          }}
+        />
+      )}
     </>
   );
 }

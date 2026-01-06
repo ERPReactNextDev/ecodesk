@@ -201,6 +201,11 @@ export function EditFaqsModal({
                     type="button"
                     variant="ghost"
                     size="icon"
+                    className={
+                      item.showSubtitle
+                        ? "bg-muted text-primary hover:bg-muted"
+                        : ""
+                    }
                     onClick={() => {
                       const willShow = !item.showSubtitle;
 

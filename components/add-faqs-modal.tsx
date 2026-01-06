@@ -150,17 +150,28 @@ export function AddFaqsModal({
 
               <div className="flex gap-1">
                 {/* TOGGLE SUBTITLE */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    updateItem(index, "showSubtitle", !item.showSubtitle)
-                  }
-                  title="Toggle Subtitle"
-                >
-                  <Type className="h-4 w-4" />
-                </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={
+                      item.showSubtitle
+                        ? "bg-muted text-primary hover:bg-muted"
+                        : ""
+                    }
+                    onClick={() => {
+                      const willShow = !item.showSubtitle;
+
+                      updateItem(index, "showSubtitle", willShow);
+
+                      if (!willShow) {
+                        // 🔥 HIDE = DELETE subtitle
+                        updateItem(index, "subtitle", "");
+                      }
+                    }}
+                  >
+                    <Type className="h-4 w-4" />
+                  </Button>
 
                 {/* ADD DESCRIPTION */}
                 <Button

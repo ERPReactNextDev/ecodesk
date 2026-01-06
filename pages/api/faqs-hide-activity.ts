@@ -1,5 +1,6 @@
+// pages/api/faqs-hide-activity.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB = process.env.MONGODB_DB;
@@ -47,61 +48,37 @@ export default async function handler(
   }
 
   try {
-    const { referenceid, title, items } = req.body;
+    const { id } = req.body;
 
-    if (!referenceid) {
-      return res.status(400).json({ error: "Missing referenceid" });
-    }
-
-    if (!title) {
-      return res.status(400).json({ error: "Missing title" });
-    }
-
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Items are required" });
+    if (!id) {
+      return res.status(400).json({ error: "Missing FAQ id" });
     }
 
     const { db } = await connectToDatabase();
     const collection = db.collection("faqs");
 
-    /**
-     * Convert items into:
-     * subtitle_1, description_1
-     * subtitle_2, description_2
-     */
-    const fields: Record<string, string> = {};
-
-    items.forEach((item: any, index: number) => {
-      if (!item.description?.trim()) {
-        throw new Error(`Description ${index + 1} is empty`);
+    const result = await collection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          isActive: false,
+          date_updated: new Date().toISOString(),
+        },
       }
+    );
 
-      if (item.subtitle?.trim()) {
-        fields[`subtitle_${index + 1}`] = item.subtitle.trim();
-      }
-
-      fields[`description_${index + 1}`] = item.description.trim();
-    });
-
-    const payload = {
-      referenceid,
-      title,
-      ...fields,
-      isActive: true,
-      date_created: new Date().toISOString(),
-      date_updated: new Date().toISOString(),
-    };
-
-    await collection.insertOne(payload);
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "FAQ not found" });
+    }
 
     return res.status(200).json({
       success: true,
-      message: "FAQ saved successfully",
+      message: "FAQ hidden successfully",
     });
   } catch (error: any) {
-    console.error("MongoDB insert error:", error);
+    console.error("MongoDB update error:", error);
     return res.status(500).json({
-      error: error.message || "Failed to save FAQ activity",
+      error: error.message || "Failed to hide FAQ",
     });
   }
 }
