@@ -72,12 +72,23 @@ interface Ticket {
     payment_date?: string;
     delivery_date?: string;
 
+    // ✅ ADD THESE EXACTLY HERE
+    close_reason?: string;
+    counter_offer?: string;
+    client_specs?: string;
+
+    tsm_acknowledge_date?: string;
+    tsa_acknowledge_date?: string;
+    tsm_handling_time?: string;
+    tsa_handling_time?: string;
+
     referenceid: string;
     activity_reference_number: string;
     account_reference_number: string;
     date_updated: string;
     date_created: string;
 }
+
 
 interface TicketProps {
     referenceid: string;
@@ -701,50 +712,61 @@ export const SKU: React.FC<TicketProps> = ({
             <ReportsSkuTicketDialog item={item} />
 
             {/* UPDATE */}
-            <UpdateTicketDialog
-              {...{
-                _id: item._id,
-                ticket_reference_number: item.ticket_reference_number,
-                ticket_received: item.ticket_received,
-                ticket_endorsed: item.ticket_endorsed,
-                traffic: item.traffic,
-                gender: item.gender,
-                source_company: item.source_company,
-                channel: item.channel,
-                wrap_up: item.wrap_up,
-                source: item.source,
-                customer_type: item.customer_type,
-                customer_status: item.customer_status,
-                status: item.status,
-                department: item.department,
-                manager: item.manager,
-                agent: item.agent,
-                remarks: item.remarks,
-                inquiry: item.inquiry,
-                item_code: item.item_code,
-                item_description: item.item_description,
-                po_number: item.po_number,
-                so_date: item.so_date,
-                so_number: item.so_number,
-                so_amount: item.so_amount,
-                qty_sold: item.qty_sold,
-                quotation_number: item.quotation_number,
-                quotation_amount: item.quotation_amount,
-                payment_terms: item.payment_terms,
-                po_source: item.po_source,
-                payment_date: item.payment_date,
-                delivery_date: item.delivery_date,
-                referenceid: item.referenceid,
-                type_client: item.type_client,
-                contact_number: item.contact_number,
-                email_address: item.email_address,
-                company_name: item.company_name,
-                contact_person: item.contact_person,
-                address: item.address,
-                account_reference_number: item.account_reference_number,
-              }}
-              onCreated={() => fetchActivities()}
-            />
+<UpdateTicketDialog
+  {...{
+    _id: item._id,
+    ticket_reference_number: item.ticket_reference_number,
+    ticket_received: item.ticket_received,
+    ticket_endorsed: item.ticket_endorsed,
+    traffic: item.traffic,
+    gender: item.gender,
+    source_company: item.source_company,
+    channel: item.channel,
+    wrap_up: item.wrap_up,
+    source: item.source,
+    customer_type: item.customer_type,
+    customer_status: item.customer_status,
+    status: item.status,
+    department: item.department,
+    manager: item.manager,
+    agent: item.agent,
+    remarks: item.remarks,
+    inquiry: item.inquiry,
+    item_code: item.item_code,
+    item_description: item.item_description,
+    po_number: item.po_number,
+    so_date: item.so_date,
+    so_number: item.so_number,
+    so_amount: item.so_amount,
+    qty_sold: item.qty_sold,
+    quotation_number: item.quotation_number,
+    quotation_amount: item.quotation_amount,
+    payment_terms: item.payment_terms,
+    po_source: item.po_source,
+    payment_date: item.payment_date,
+    delivery_date: item.delivery_date,
+
+    // ✅ ADD THESE (THIS FIXES THE BUG)
+    close_reason: item.close_reason,
+    counter_offer: item.counter_offer,
+    client_specs: item.client_specs,
+    tsm_acknowledge_date: item.tsm_acknowledge_date,
+    tsa_acknowledge_date: item.tsa_acknowledge_date,
+    tsm_handling_time: item.tsm_handling_time,
+    tsa_handling_time: item.tsa_handling_time,
+
+    referenceid: item.referenceid,
+    type_client: item.type_client,
+    contact_number: item.contact_number,
+    email_address: item.email_address,
+    company_name: item.company_name,
+    contact_person: item.contact_person,
+    address: item.address,
+    account_reference_number: item.account_reference_number,
+  }}
+  onCreated={() => fetchActivities()}
+/>
+
           </div>
         )}
       </div>

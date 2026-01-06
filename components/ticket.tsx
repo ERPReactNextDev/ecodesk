@@ -1010,18 +1010,18 @@ const selectedActivity = activities.find(
                             })}
                         </div>
 
-                            <div className="mt-1 flex items-center gap-1">
-                            <span
-                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-semibold
-                                ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
-                            >
-                                {item.status}
-                            </span>
-                            –{" "}
-                            <span className="capitalize font-bold">
-                                {getAgentNameByReferenceID(item.referenceid)}
-                            </span>
-                            </div>
+                        <div className="mt-1 flex items-center gap-1">
+                        <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-semibold
+                            ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
+                        >
+                            {item.status}
+                        </span>
+                        –{" "}
+                        <span className="capitalize font-bold">
+                            {getAgentNameByReferenceID(item.referenceid)}
+                        </span>
+                        </div>
 
                         </div>
 
