@@ -17,8 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -40,7 +38,7 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
     tsm: "",
     company_name: "",
     contact_person: "",
-    contact_number: "",
+    contact_number: "", // ← joined string
     email_address: "",
     address: "",
     industry: "",
@@ -51,6 +49,9 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
     company_group: null,
     status: "Active",
   });
+
+  // ✅ MULTIPLE CONTACT NUMBERS STATE
+  const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
 
   const [existingCompanies, setExistingCompanies] = useState<
     { company_name: string; contact_person: string }[]
@@ -78,7 +79,7 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
 
   const genders = ["Male", "Female"];
 
-  // Fetch existing companies when sheet opens
+  /* FETCH EXISTING COMPANIES */
   useEffect(() => {
     if (open) {
       fetch("/api/com-fetch-account")
@@ -96,7 +97,7 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
     }
   }, [open]);
 
-  // Duplicate checker
+  /* DUPLICATE CHECK */
   useEffect(() => {
     const name = formData.company_name.toLowerCase().trim();
     const person = formData.contact_person.toLowerCase().trim();
@@ -119,10 +120,12 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
 
     const allFilled = required.every((f) => formData[f]);
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
+    const hasContact = contactNumbers.some((n) => n.trim());
 
-    return allFilled && emailValid && !duplicate.contact;
+    return allFilled && emailValid && hasContact && !duplicate.contact;
   };
 
+  /* ACCOUNT REFERENCE GENERATOR */
   const generateAccountReferenceNumber = async (companyName: string) => {
     const prefix = companyName.trim().substring(0, 2).toUpperCase();
     const res = await fetch(`/api/get-account-references?prefix=${prefix}-CSR`);
@@ -137,6 +140,24 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
     return `${prefix}-CSR-${String(max + 1).padStart(8, "0")}`;
   };
 
+  /* CONTACT NUMBER HANDLERS */
+  const handleContactChange = (index: number, value: string) => {
+    const updated = [...contactNumbers];
+    updated[index] = value;
+    setContactNumbers(updated);
+  };
+
+  const addContactField = () => {
+    setContactNumbers((prev) => [...prev, ""]);
+  };
+
+  const removeContactField = (index: number) => {
+    if (contactNumbers.length === 1) return;
+    const updated = [...contactNumbers];
+    updated.splice(index, 1);
+    setContactNumbers(updated);
+  };
+
   const handleSave = async () => {
     if (!isFormValid()) {
       toast.error("Please complete required fields and avoid duplicates.");
@@ -147,6 +168,11 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
       const account_reference_number =
         await generateAccountReferenceNumber(formData.company_name);
 
+      const joinedContacts = contactNumbers
+        .map((n) => n.trim())
+        .filter(Boolean)
+        .join(" / ");
+
       await fetch("/api/com-save-company", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,6 +180,7 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
           referenceid,
           account_reference_number,
           ...formData,
+          contact_number: joinedContacts, // ✅ JOINED HERE
           date_created: new Date().toISOString(),
         }),
       });
@@ -173,7 +200,7 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
       setOpen(false);
       resetForm();
       await onCreated();
-    } catch (e) {
+    } catch {
       toast.error("Saving failed");
     }
   };
@@ -194,164 +221,149 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
       company_group: null,
       status: "Active",
     });
+    setContactNumbers([""]);
     setDuplicate({ contact: false });
   };
 
   return (
-  <Sheet open={open} onOpenChange={setOpen}>
-    <SheetTrigger asChild>
-      <Button>Add Account</Button>
-    </SheetTrigger>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button>Add Account</Button>
+      </SheetTrigger>
 
-    <SheetContent
-      side="right"
-      className="w-[420px] sm:w-[480px] p-0 flex flex-col"
-    >
-      {/* HEADER */}
-      <SheetHeader className="px-6 py-4 border-b">
-        <SheetTitle className="text-lg font-semibold">
-          Add New Account
-        </SheetTitle>
-        <p className="text-sm text-muted-foreground">
-          Update the details of the record below.
-        </p>
-      </SheetHeader>
+      <SheetContent side="right" className="w-[420px] sm:w-[480px] p-0 flex flex-col">
+        <SheetHeader className="px-6 py-4 border-b">
+          <SheetTitle>Add New Account</SheetTitle>
+        </SheetHeader>
 
-      {/* BODY */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        <FieldGroup className="space-y-5">
-          {/* Company Name */}
-          <Field>
-            <FieldLabel>Company *</FieldLabel>
-            <Input
-              value={formData.company_name}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  company_name: e.target.value.toUpperCase(),
-                })
-              }
-              className={duplicate.contact ? "border-red-500" : ""}
-            />
-            {duplicate.contact && (
-              <p className="text-xs text-red-600 mt-1">
-                Duplicate company with same contact person
-              </p>
-            )}
-          </Field>
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <FieldGroup className="space-y-5">
+            <Field>
+              <FieldLabel>Company *</FieldLabel>
+              <Input
+                value={formData.company_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, company_name: e.target.value.toUpperCase() })
+                }
+                className={duplicate.contact ? "border-red-500" : ""}
+              />
+              {duplicate.contact && (
+                <p className="text-xs text-red-600 mt-1">
+                  Duplicate company with same contact person
+                </p>
+              )}
+            </Field>
 
-          {/* Customer Name */}
-          <Field>
-            <FieldLabel>Customer Name *</FieldLabel>
-            <Input
-              value={formData.contact_person}
-              onChange={(e) =>
-                setFormData({ ...formData, contact_person: e.target.value })
-              }
-            />
-          </Field>
+            <Field>
+              <FieldLabel>Customer Name *</FieldLabel>
+              <Input
+                value={formData.contact_person}
+                onChange={(e) =>
+                  setFormData({ ...formData, contact_person: e.target.value })
+                }
+              />
+            </Field>
 
-          {/* Contact Number */}
-          <Field>
-            <FieldLabel>Contact Number *</FieldLabel>
-            <PhoneInput
-              country="ph"
-              value={formData.contact_number}
-              onChange={(v) =>
-                setFormData({ ...formData, contact_number: v })
-              }
-              inputStyle={{ width: "100%", height: "40px" }}
-            />
-          </Field>
-
-          {/* Email */}
-          <Field>
-            <FieldLabel>Email Address *</FieldLabel>
-            <Input
-              type="email"
-              value={formData.email_address}
-              onChange={(e) =>
-                setFormData({ ...formData, email_address: e.target.value })
-              }
-            />
-          </Field>
-
-          {/* Gender */}
-          <Field>
-            <FieldLabel>Gender *</FieldLabel>
-            <Select
-              value={formData.gender}
-              onValueChange={(v) =>
-                setFormData({ ...formData, gender: v })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {genders.map((g) => (
-                  <SelectItem key={g} value={g}>
-                    {g}
-                  </SelectItem>
+            {/* ✅ MULTIPLE CONTACT NUMBERS */}
+            <Field>
+              <FieldLabel>Contact Number *</FieldLabel>
+              <div className="space-y-2">
+                {contactNumbers.map((num, idx) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <Input
+                      type="tel"
+                      value={num}
+                      onChange={(e) => handleContactChange(idx, e.target.value)}
+                      placeholder="+63 9123456789"
+                      className="flex-grow"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => removeContactField(idx)}
+                    >
+                      −
+                    </Button>
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-          </Field>
+                <Button type="button" variant="secondary" onClick={addContactField}>
+                  + Add another number
+                </Button>
+              </div>
+            </Field>
 
-          {/* Address */}
-          <Field>
-            <FieldLabel>Address *</FieldLabel>
-            <Input
-              value={formData.address}
-              onChange={(e) =>
-                setFormData({ ...formData, address: e.target.value })
-              }
-            />
-          </Field>
+            <Field>
+              <FieldLabel>Email Address *</FieldLabel>
+              <Input
+                type="email"
+                value={formData.email_address}
+                onChange={(e) =>
+                  setFormData({ ...formData, email_address: e.target.value })
+                }
+              />
+            </Field>
 
-          {/* Client Segment */}
-          <Field>
-            <FieldLabel>Client Segment *</FieldLabel>
-            <Select
-              value={formData.industry}
-              onValueChange={(v) =>
-                setFormData({ ...formData, industry: v })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {clientSegments.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </FieldGroup>
-      </div>
+            <Field>
+              <FieldLabel>Gender *</FieldLabel>
+              <Select
+                value={formData.gender}
+                onValueChange={(v) => setFormData({ ...formData, gender: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {genders.map((g) => (
+                    <SelectItem key={g} value={g}>
+                      {g}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
 
-      {/* FOOTER */}
-      <div className="px-6 py-4 border-t flex gap-2">
-        <Button
-          className="flex-1"
-          onClick={handleSave}
-          disabled={!isFormValid()}
-        >
-          Save
-        </Button>
-        <Button
-          className="flex-1"
-          variant="outline"
-          onClick={() => setOpen(false)}
-        >
-          Cancel
-        </Button>
-      </div>
-    </SheetContent>
-  </Sheet>
-);
+            <Field>
+              <FieldLabel>Address *</FieldLabel>
+              <Input
+                value={formData.address}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
+              />
+            </Field>
 
+            <Field>
+              <FieldLabel>Client Segment *</FieldLabel>
+              <Select
+                value={formData.industry}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, industry: v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {clientSegments.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </FieldGroup>
+        </div>
+
+        <div className="px-6 py-4 border-t flex gap-2">
+          <Button className="flex-1" onClick={handleSave} disabled={!isFormValid()}>
+            Save
+          </Button>
+          <Button className="flex-1" variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
 }

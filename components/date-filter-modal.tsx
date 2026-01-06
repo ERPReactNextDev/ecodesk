@@ -53,7 +53,6 @@ export function DateFilterModal({
   const [yearFrom, setYearFrom] = React.useState<number | null>(null);
   const [yearTo, setYearTo] = React.useState<number | null>(null);
 
-  /* ================= SYNC WITH SIDEBAR CLEAR ================= */
   React.useEffect(() => {
     if (!dateCreatedFilterRange) {
       setFromMonth(null);
@@ -67,7 +66,6 @@ export function DateFilterModal({
     }
   }, [dateCreatedFilterRange, setDateFilterFlag]);
 
-  /* ================= CONFIRM MONTH + YEAR ================= */
   function confirmMonthYearRange() {
     if (
       fromMonth === null ||
@@ -100,7 +98,6 @@ export function DateFilterModal({
     setFilterKey((k) => k + 1);
   }
 
-  /* ================= CONFIRM YEAR ================= */
   function confirmYearRange() {
     if (yearFrom === null || yearTo === null) return;
 
@@ -151,16 +148,16 @@ export function DateFilterModal({
         </DialogHeader>
 
         {/* ================= MONTH + YEAR ================= */}
-        <div key={`month-${filterKey}`} className="space-y-2">
+        <div key={`month-${filterKey}`} className="space-y-3">
           <div className="text-xs font-medium">Filter by Month & Year</div>
 
           <div className="text-xs">From</div>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Select
               value={fromMonth !== null ? String(fromMonth) : undefined}
               onValueChange={(v) => setFromMonth(Number(v))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full h-10">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent>
@@ -176,7 +173,7 @@ export function DateFilterModal({
               value={fromMonthYear !== null ? String(fromMonthYear) : undefined}
               onValueChange={(v) => setFromMonthYear(Number(v))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full h-10">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent>
@@ -190,12 +187,12 @@ export function DateFilterModal({
           </div>
 
           <div className="text-xs">To</div>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Select
               value={toMonth !== null ? String(toMonth) : undefined}
               onValueChange={(v) => setToMonth(Number(v))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full h-10">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent>
@@ -211,7 +208,7 @@ export function DateFilterModal({
               value={toMonthYear !== null ? String(toMonthYear) : undefined}
               onValueChange={(v) => setToMonthYear(Number(v))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full h-10">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent>
@@ -228,7 +225,7 @@ export function DateFilterModal({
 
           <Button
             size="sm"
-            className="w-full"
+            className="w-full h-10"
             disabled={
               fromMonth === null ||
               fromMonthYear === null ||
@@ -239,28 +236,17 @@ export function DateFilterModal({
           >
             Apply Month & Year Range
           </Button>
-
-          {(fromMonth !== null || toMonth !== null) && (
-            <Button
-              size="sm"
-              variant="destructive"
-              className="w-full"
-              onClick={clearMonthYearRange}
-            >
-              Clear Month & Year Filter
-            </Button>
-          )}
         </div>
 
         {/* ================= YEAR ================= */}
-        <div key={`year-${filterKey}`} className="space-y-2 pt-4">
+        <div key={`year-${filterKey}`} className="space-y-3 pt-4">
           <div className="text-xs font-medium">Filter by Year</div>
 
           <Select
             value={yearFrom !== null ? String(yearFrom) : undefined}
             onValueChange={(v) => setYearFrom(Number(v))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full h-10">
               <SelectValue placeholder="From Year" />
             </SelectTrigger>
             <SelectContent>
@@ -276,7 +262,7 @@ export function DateFilterModal({
             value={yearTo !== null ? String(yearTo) : undefined}
             onValueChange={(v) => setYearTo(Number(v))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full h-10">
               <SelectValue placeholder="To Year" />
             </SelectTrigger>
             <SelectContent>
@@ -292,30 +278,21 @@ export function DateFilterModal({
 
           <Button
             size="sm"
-            className="w-full"
+            className="w-full h-10"
             disabled={yearFrom === null || yearTo === null}
             onClick={confirmYearRange}
           >
             Apply Year Range
           </Button>
-
-          {(yearFrom !== null || yearTo !== null) && (
-            <Button
-              size="sm"
-              variant="destructive"
-              className="w-full"
-              onClick={clearYearRange}
-            >
-              Clear Year Filter
-            </Button>
-          )}
         </div>
 
         <DialogFooter className="flex gap-2 pt-4">
-          <Button variant="destructive" onClick={clearAll}>
+          <Button variant="destructive" className="flex-1" onClick={clearAll}>
             Clear All Filters
           </Button>
-          <Button onClick={onClose}>Close</Button>
+          <Button className="flex-1" onClick={onClose}>
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
