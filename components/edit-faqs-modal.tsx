@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import {
   Field,
   FieldContent,
@@ -45,10 +45,10 @@ export function EditFaqsModal({
   const [saving, setSaving] = useState(false);
 
   /* ------------------------------
-     Load FAQ from DB
+     Load FAQ ONLY when Sheet opens
   ------------------------------ */
   useEffect(() => {
-    if (!faq) return;
+    if (!open || !faq) return;
 
     setTitle(faq.title || "");
 
@@ -75,7 +75,7 @@ export function EditFaqsModal({
         ? parsedItems
         : [{ subtitle: "", description: "", showSubtitle: false }]
     );
-  }, [faq]);
+  }, [open, faq]);
 
   /* ------------------------------
      Helpers
@@ -108,6 +108,8 @@ export function EditFaqsModal({
      Save Changes
   ------------------------------ */
   const handleSave = async () => {
+    if (!faq) return;
+
     if (!title.trim()) {
       toast.error("Title is required");
       return;
@@ -136,10 +138,6 @@ export function EditFaqsModal({
 
       toast.success("FAQ updated successfully");
 
-      /* 🔥 Build CLEAN updated FAQ
-         - Hidden subtitles are NOT included
-         - Deleted descriptions stay deleted
-      */
       const updatedFaq = {
         _id: faq._id,
         title,
@@ -163,120 +161,113 @@ export function EditFaqsModal({
     }
   };
 
-  if (!faq) return null;
-
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Edit FAQ</DialogTitle>
-          <DialogDescription>
-            Update the selected FAQ details.
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" className="w-full sm:max-w-xl p-0">
+        <div className="flex flex-col h-full">
+          {/* HEADER */}
+          <SheetHeader className="p-6 border-b">
+            <SheetTitle>Edit FAQ</SheetTitle>
+            <SheetDescription>
+              Update the selected FAQ details.
+            </SheetDescription>
+          </SheetHeader>
 
-        <div className="space-y-4 overflow-y-auto pr-1 max-h-[55vh]">
-          {/* TITLE */}
-          <Field>
-            <FieldLabel>Title</FieldLabel>
-            <FieldContent>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </FieldContent>
-          </Field>
-
-          {/* DESCRIPTIONS */}
-          {items.map((item, index) => (
-            <Field key={index}>
-              <div className="flex items-center justify-between">
-                <FieldLabel>
-                  Description {index + 1}
-                </FieldLabel>
-
-                <div className="flex gap-1">
-                  {/* TOGGLE SUBTITLE */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={
-                      item.showSubtitle
-                        ? "bg-muted text-primary hover:bg-muted"
-                        : ""
-                    }
-                    onClick={() => {
-                      const willShow = !item.showSubtitle;
-
-                      updateItem(index, "showSubtitle", willShow);
-
-                      if (!willShow) {
-                        // 🔥 HIDE = DELETE subtitle
-                        updateItem(index, "subtitle", "");
-                      }
-                    }}
-                  >
-                    <Type className="h-4 w-4" />
-                  </Button>
-
-                  {/* ADD */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={addItem}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-
-                  {/* REMOVE */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItem(index)}
-                    disabled={items.length === 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {item.showSubtitle && (
-                <FieldContent className="mb-2">
-                  <Input
-                    placeholder="Optional subtitle"
-                    value={item.subtitle}
-                    onChange={(e) =>
-                      updateItem(index, "subtitle", e.target.value)
-                    }
-                  />
-                </FieldContent>
-              )}
-
+          {/* BODY */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <Field>
+              <FieldLabel>Title</FieldLabel>
               <FieldContent>
-                <Textarea
-                  rows={4}
-                  value={item.description}
-                  onChange={(e) =>
-                    updateItem(index, "description", e.target.value)
-                  }
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </FieldContent>
             </Field>
-          ))}
-        </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
+            {items.map((item, index) => (
+              <Field key={index}>
+                <div className="flex items-center justify-between">
+                  <FieldLabel>
+                    Description {index + 1}
+                  </FieldLabel>
+
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={
+                        item.showSubtitle
+                          ? "bg-muted text-primary hover:bg-muted"
+                          : ""
+                      }
+                      onClick={() => {
+                        const willShow = !item.showSubtitle;
+                        updateItem(index, "showSubtitle", willShow);
+                        if (!willShow) updateItem(index, "subtitle", "");
+                      }}
+                    >
+                      <Type className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={addItem}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(index)}
+                      disabled={items.length === 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {item.showSubtitle && (
+                  <FieldContent className="mb-2">
+                    <Input
+                      placeholder="Optional subtitle"
+                      value={item.subtitle}
+                      onChange={(e) =>
+                        updateItem(index, "subtitle", e.target.value)
+                      }
+                    />
+                  </FieldContent>
+                )}
+
+                <FieldContent>
+                  <Textarea
+                    rows={4}
+                    value={item.description}
+                    onChange={(e) =>
+                      updateItem(index, "description", e.target.value)
+                    }
+                  />
+                </FieldContent>
+              </Field>
+            ))}
+          </div>
+
+          {/* FOOTER */}
+          <div className="border-t p-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

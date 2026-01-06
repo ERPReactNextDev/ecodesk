@@ -157,8 +157,10 @@ function HelpContent() {
             </h1>
 
             <p className="text-sm text-muted-foreground">
-              This section displays the CSR FAQs (Customer Service Representative
-              Frequently Asked Questions).
+              This section displays the CSR FAQs (Customer Service Representative Frequently Asked Questions). 
+              It provides answers to common inquiries related to CSR processes, ensuring quick access to essential information. 
+              If an error occurs, a message will be shown in red. 
+              The CSRFaqs component is responsible for rendering the list of frequently asked questions.
             </p>
 
             {/* ACTIONS */}

@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import {
   Field,
   FieldContent,
@@ -44,6 +44,9 @@ export function AddFaqsModal({
   ]);
   const [saving, setSaving] = useState(false);
 
+  /* ------------------------------
+     Helpers
+  ------------------------------ */
   const addItem = () => {
     setItems((prev) => [
       ...prev,
@@ -52,6 +55,7 @@ export function AddFaqsModal({
   };
 
   const removeItem = (index: number) => {
+    if (items.length === 1) return;
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -67,6 +71,9 @@ export function AddFaqsModal({
     );
   };
 
+  /* ------------------------------
+     Save FAQ
+  ------------------------------ */
   const handleSave = async () => {
     if (!title.trim()) {
       toast.error("Title is required");
@@ -118,121 +125,124 @@ export function AddFaqsModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Add FAQs</DialogTitle>
-          <DialogDescription>
-            This will be saved directly to the database.
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" className="w-full sm:max-w-xl p-0">
+        <div className="flex flex-col h-full">
+          {/* HEADER */}
+          <SheetHeader className="p-6 border-b">
+            <SheetTitle>Add FAQs</SheetTitle>
+            <SheetDescription>
+              This will be saved directly to the database.
+            </SheetDescription>
+          </SheetHeader>
 
-        <div className="space-y-4 overflow-y-auto pr-1 max-h-[55vh]">
-          {/* TITLE */}
-          <Field>
-            <FieldLabel>Title</FieldLabel>
-            <FieldContent>
-              <Input
-                placeholder="Enter FAQ title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </FieldContent>
-          </Field>
-
-          {/* DESCRIPTIONS */}
-          {items.map((item, index) => (
-            <Field key={index}>
-              <div className="flex items-center justify-between">
-                <FieldLabel>
-                  {index === 0 ? "Description" : `Description ${index + 1}`}
-                </FieldLabel>
-
-              <div className="flex gap-1">
-                {/* TOGGLE SUBTITLE */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={
-                      item.showSubtitle
-                        ? "bg-muted text-primary hover:bg-muted"
-                        : ""
-                    }
-                    onClick={() => {
-                      const willShow = !item.showSubtitle;
-
-                      updateItem(index, "showSubtitle", willShow);
-
-                      if (!willShow) {
-                        // 🔥 HIDE = DELETE subtitle
-                        updateItem(index, "subtitle", "");
-                      }
-                    }}
-                  >
-                    <Type className="h-4 w-4" />
-                  </Button>
-
-                {/* ADD DESCRIPTION */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={addItem}
-                  title="Add Description"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-
-                {/* REMOVE DESCRIPTION (MINIMUM = 1) */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeItem(index)}
-                  disabled={items.length === 1}
-                  title="Remove Description"
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </div>
-              </div>
-
-              {item.showSubtitle && (
-                <FieldContent className="mb-2">
-                  <Input
-                    placeholder="Optional subtitle"
-                    value={item.subtitle}
-                    onChange={(e) =>
-                      updateItem(index, "subtitle", e.target.value)
-                    }
-                  />
-                </FieldContent>
-              )}
-
+          {/* BODY */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {/* TITLE */}
+            <Field>
+              <FieldLabel>Title</FieldLabel>
               <FieldContent>
-                <Textarea
-                  rows={4}
-                  placeholder="Enter FAQ description"
-                  value={item.description}
-                  onChange={(e) =>
-                    updateItem(index, "description", e.target.value)
-                  }
+                <Input
+                  placeholder="Enter FAQ title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </FieldContent>
             </Field>
-          ))}
-        </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Confirm"}
-          </Button>
+            {/* DESCRIPTIONS */}
+            {items.map((item, index) => (
+              <Field key={index}>
+                <div className="flex items-center justify-between">
+                  <FieldLabel>
+                    {index === 0 ? "Description" : `Description ${index + 1}`}
+                  </FieldLabel>
+
+                  <div className="flex gap-1">
+                    {/* TOGGLE SUBTITLE */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={
+                        item.showSubtitle
+                          ? "bg-muted text-primary hover:bg-muted"
+                          : ""
+                      }
+                      onClick={() => {
+                        const willShow = !item.showSubtitle;
+                        updateItem(index, "showSubtitle", willShow);
+
+                        if (!willShow) {
+                          updateItem(index, "subtitle", "");
+                        }
+                      }}
+                    >
+                      <Type className="h-4 w-4" />
+                    </Button>
+
+                    {/* ADD */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={addItem}
+                      title="Add Description"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+
+                    {/* REMOVE */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(index)}
+                      disabled={items.length === 1}
+                      title="Remove Description"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {item.showSubtitle && (
+                  <FieldContent className="mb-2">
+                    <Input
+                      placeholder="Optional subtitle"
+                      value={item.subtitle}
+                      onChange={(e) =>
+                        updateItem(index, "subtitle", e.target.value)
+                      }
+                    />
+                  </FieldContent>
+                )}
+
+                <FieldContent>
+                  <Textarea
+                    rows={4}
+                    placeholder="Enter FAQ description"
+                    value={item.description}
+                    onChange={(e) =>
+                      updateItem(index, "description", e.target.value)
+                    }
+                  />
+                </FieldContent>
+              </Field>
+            ))}
+          </div>
+
+          {/* FOOTER */}
+          <div className="border-t p-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Confirm"}
+            </Button>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
