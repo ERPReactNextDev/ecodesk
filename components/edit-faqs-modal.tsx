@@ -40,7 +40,7 @@ export function EditFaqsModal({
 }: EditFaqsModalProps) {
   const [title, setTitle] = useState("");
   const [items, setItems] = useState<DescriptionItem[]>([
-    { subtitle: "", description: "", showSubtitle: false },
+    { subtitle: "", description: "", showSubtitle: true },
   ]);
   const [saving, setSaving] = useState(false);
 
@@ -83,7 +83,7 @@ export function EditFaqsModal({
   const addItem = () => {
     setItems((prev) => [
       ...prev,
-      { subtitle: "", description: "", showSubtitle: false },
+      { subtitle: "", description: "", showSubtitle: true },
     ]);
   };
 

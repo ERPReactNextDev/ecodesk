@@ -72,7 +72,7 @@ export function AddFaqsModal({
   };
 
   /* ------------------------------
-     Save FAQ
+     Save FAQ (FIXED)
   ------------------------------ */
   const handleSave = async () => {
     if (!title.trim()) {
@@ -103,19 +103,22 @@ export function AddFaqsModal({
 
       toast.success("FAQ saved successfully");
 
+      // ✅ USE REAL MONGO OBJECT ID
       onSave({
-        _id: crypto.randomUUID(),
+        _id: data.insertedId, // 🔥 FIX
         referenceid,
         title,
         ...items.reduce((acc, item, i) => {
-          acc[`subtitle_${i + 1}`] = item.subtitle || "";
+          if (item.subtitle?.trim()) {
+            acc[`subtitle_${i + 1}`] = item.subtitle.trim();
+          }
           acc[`description_${i + 1}`] = item.description;
           return acc;
         }, {} as any),
       });
 
       setTitle("");
-      setItems([{ subtitle: "", description: "", showSubtitle: false }]);
+      setItems([{ subtitle: "", description: "", showSubtitle: true }]);
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Error saving FAQ");
@@ -159,7 +162,6 @@ export function AddFaqsModal({
                   </FieldLabel>
 
                   <div className="flex gap-1">
-                    {/* TOGGLE SUBTITLE */}
                     <Button
                       type="button"
                       variant="ghost"
@@ -172,34 +174,27 @@ export function AddFaqsModal({
                       onClick={() => {
                         const willShow = !item.showSubtitle;
                         updateItem(index, "showSubtitle", willShow);
-
-                        if (!willShow) {
-                          updateItem(index, "subtitle", "");
-                        }
+                        if (!willShow) updateItem(index, "subtitle", "");
                       }}
                     >
                       <Type className="h-4 w-4" />
                     </Button>
 
-                    {/* ADD */}
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={addItem}
-                      title="Add Description"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
 
-                    {/* REMOVE */}
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => removeItem(index)}
                       disabled={items.length === 1}
-                      title="Remove Description"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>

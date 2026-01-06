@@ -49,11 +49,14 @@ export default async function handler(
   try {
     const { referenceid, title, items } = req.body;
 
+    /* ------------------------------
+       VALIDATION
+    ------------------------------ */
     if (!referenceid) {
       return res.status(400).json({ error: "Missing referenceid" });
     }
 
-    if (!title) {
+    if (!title?.trim()) {
       return res.status(400).json({ error: "Missing title" });
     }
 
@@ -64,11 +67,9 @@ export default async function handler(
     const { db } = await connectToDatabase();
     const collection = db.collection("faqs");
 
-    /**
-     * Convert items into:
-     * subtitle_1, description_1
-     * subtitle_2, description_2
-     */
+    /* ------------------------------
+       BUILD FIELDS
+    ------------------------------ */
     const fields: Record<string, string> = {};
 
     items.forEach((item: any, index: number) => {
@@ -92,11 +93,15 @@ export default async function handler(
       date_updated: new Date().toISOString(),
     };
 
-    await collection.insertOne(payload);
+    /* ------------------------------
+       INSERT + RETURN ID ✅ FIX
+    ------------------------------ */
+    const result = await collection.insertOne(payload);
 
     return res.status(200).json({
       success: true,
       message: "FAQ saved successfully",
+      insertedId: result.insertedId, // 🔥 REQUIRED FOR EDIT
     });
   } catch (error: any) {
     console.error("MongoDB insert error:", error);

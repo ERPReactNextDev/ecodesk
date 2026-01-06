@@ -50,10 +50,15 @@ export default async function handler(
     const { _id, title, items } = req.body;
 
     /* ------------------------------
-       Validation
+       VALIDATION
     ------------------------------ */
     if (!_id) {
       return res.status(400).json({ error: "Missing FAQ _id" });
+    }
+
+    // ✅ IMPORTANT FIX
+    if (!ObjectId.isValid(_id)) {
+      return res.status(400).json({ error: "Invalid FAQ ID" });
     }
 
     if (!title?.trim()) {
@@ -64,14 +69,16 @@ export default async function handler(
       return res.status(400).json({ error: "Items are required" });
     }
 
+    const faqObjectId = new ObjectId(_id);
+
     const { db } = await connectToDatabase();
     const collection = db.collection("faqs");
 
     /* ------------------------------
-       Fetch existing FAQ
+       FETCH EXISTING FAQ
     ------------------------------ */
     const existingFaq = await collection.findOne({
-      _id: new ObjectId(_id),
+      _id: faqObjectId,
     });
 
     if (!existingFaq) {
@@ -79,7 +86,7 @@ export default async function handler(
     }
 
     /* ------------------------------
-       Build SET + UNSET fields
+       BUILD SET + UNSET
     ------------------------------ */
     const setFields: Record<string, string> = {};
     const unsetFields: Record<string, string> = {};
@@ -92,20 +99,17 @@ export default async function handler(
         throw new Error(`Description ${i} is empty`);
       }
 
-      // ALWAYS set description
       setFields[`description_${i}`] = item.description.trim();
 
-      // Subtitle logic
       if (item.subtitle?.trim()) {
         setFields[`subtitle_${i}`] = item.subtitle.trim();
       } else {
-        // 🔥 subtitle hidden = DELETE FIELD
         unsetFields[`subtitle_${i}`] = "";
       }
     });
 
     /* ------------------------------
-       Delete excess old fields
+       REMOVE EXTRA OLD FIELDS
     ------------------------------ */
     Object.keys(existingFaq).forEach((key) => {
       const match = key.match(/^(description|subtitle)_(\d+)$/);
@@ -118,10 +122,10 @@ export default async function handler(
     });
 
     /* ------------------------------
-       Update FAQ (NO CONFLICT)
+       UPDATE
     ------------------------------ */
     await collection.updateOne(
-      { _id: new ObjectId(_id) },
+      { _id: faqObjectId },
       {
         ...(Object.keys(unsetFields).length > 0
           ? { $unset: unsetFields }
