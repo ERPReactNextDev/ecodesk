@@ -146,6 +146,13 @@ export const SKU: React.FC<TicketProps> = ({
     const [exporting, setExporting] = useState(false);
     const [progress, setProgress] = useState(0);
 
+    const STATUS_STYLES: Record<string, string> = {
+    "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
+    "Closed": "bg-gray-200 text-gray-700 border-gray-300",
+    "Endorsed": "bg-purple-100 text-purple-700 border-purple-300",
+    "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
+    };
+
     useEffect(() => {
         if (!exporting) {
             setProgress(0);
@@ -675,9 +682,12 @@ export const SKU: React.FC<TicketProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge variant={badgeColor} className="text-[9px]">
-              {item.status.replace("-", " ")}
-            </Badge>
+            <span
+            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold
+                ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
+            >
+            {item.status}
+            </span>
             <span className="text-[10px] text-muted-foreground uppercase">
               {item.ticket_reference_number}
             </span>

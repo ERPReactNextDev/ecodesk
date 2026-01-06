@@ -153,6 +153,13 @@ export const Ticket: React.FC<TicketProps> = ({
         status?: string;
     }>({});
 
+    const STATUS_STYLES: Record<string, string> = {
+    "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
+    "Closed": "bg-gray-200 text-gray-700 border-gray-300",
+    "Endorsed": "bg-purple-100 text-purple-700 border-purple-300",
+    "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
+    };
+
     // Sorting field and order
     const sortableFields = [
         "source_company",
@@ -1003,15 +1010,19 @@ const selectedActivity = activities.find(
                             })}
                         </div>
 
-                        <div className="mt-1">
-                            <Badge variant={badgeColor} className="text-[8px]">
-                            {item.status.replace("-", " ")}
-                            </Badge>
-                            {" "}–{" "}
-                            <span className="capitalize font-bold">
-                            {getAgentNameByReferenceID(item.referenceid)}
+                            <div className="mt-1 flex items-center gap-1">
+                            <span
+                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-semibold
+                                ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
+                            >
+                                {item.status}
                             </span>
-                        </div>
+                            –{" "}
+                            <span className="capitalize font-bold">
+                                {getAgentNameByReferenceID(item.referenceid)}
+                            </span>
+                            </div>
+
                         </div>
 
                         {/* RIGHT ACTIONS */}

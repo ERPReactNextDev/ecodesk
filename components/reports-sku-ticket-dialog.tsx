@@ -65,6 +65,13 @@ const formatDateTime = (value?: string) => {
   return isNaN(d.getTime()) ? "-" : d.toLocaleString();
 };
 
+const STATUS_STYLES: Record<string, string> = {
+  "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
+  "Closed": "bg-gray-200 text-gray-700 border-gray-300",
+  "Endorsed": "bg-purple-100 text-purple-700 border-purple-300",
+  "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
+};
+
 export function ReportsSkuTicketDialog({ item }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -84,7 +91,13 @@ export function ReportsSkuTicketDialog({ item }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>SKU Ticket Details</span>
-              <Badge variant="secondary">{item.status || "N/A"}</Badge>
+
+              <span
+                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold
+                  ${STATUS_STYLES[item.status ?? ""] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
+              >
+                {item.status || "N/A"}
+              </span>
             </DialogTitle>
           </DialogHeader>
 
