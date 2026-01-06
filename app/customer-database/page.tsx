@@ -177,7 +177,8 @@ export function CustomerDatabaseContent() {
   }, []);
 
   // Filter and search accounts logic
-  const filteredAccounts = accounts.filter((acc) => {
+const filteredAccounts = accounts
+  .filter((acc) => {
     if (["Removed", "Deletion", "Transferred"].includes(acc.status)) {
       return false;
     }
@@ -200,7 +201,14 @@ export function CustomerDatabaseContent() {
     const matchesAccountOwner = filterAccountOwner ? acc.referenceid === filterAccountOwner : true;
 
     return matchesSearch && matchesTypeClient && matchesIndustry && matchesAccountOwner;
+  })
+  .sort((a, b) => {
+    // ✅ PRIORITY: CSR Client ALWAYS ON TOP
+    if (a.type_client === "CSR Client" && b.type_client !== "CSR Client") return -1;
+    if (a.type_client !== "CSR Client" && b.type_client === "CSR Client") return 1;
+    return 0;
   });
+
 
   const totalPages = Math.ceil(filteredAccounts.length / accountsPerPage);
   const indexOfLast = currentPage * accountsPerPage;

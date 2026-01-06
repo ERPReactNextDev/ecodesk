@@ -10,12 +10,29 @@ const Xchire_sql = neon(Xchire_databaseUrl);
 export async function GET(req: Request) {
   try {
     // Fetch all CSR Client accounts excluding those with status 'Removed', including all fields used in page.tsx, sorted alphabetically by company_name
-    const Xchire_fetch = await Xchire_sql`
-      SELECT id, account_reference_number, referenceid, company_name, contact_person, contact_number, email_address, address, region, industry, type_client
-      FROM accounts
-      WHERE status IS DISTINCT FROM 'Removed'
-      ORDER BY company_name ASC;
-    `;
+const Xchire_fetch = await Xchire_sql`
+  SELECT 
+    id,
+    account_reference_number,
+    referenceid,
+    company_name,
+    contact_person,
+    contact_number,
+    email_address,
+    address,
+    region,
+    industry,
+    type_client,
+    status
+  FROM accounts
+  WHERE status IS DISTINCT FROM 'Removed'
+  ORDER BY 
+    CASE 
+      WHEN type_client = 'CSR Client' THEN 0
+      ELSE 1
+    END,
+    company_name ASC;
+`;
 
     if (Xchire_fetch.length === 0) {
       return NextResponse.json(
