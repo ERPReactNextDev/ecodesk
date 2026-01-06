@@ -1,14 +1,14 @@
-// app/help/page.tsx
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { UserProvider, useUser } from "@/contexts/UserContext";
+import { useUser } from "@/contexts/UserContext";
 import { FormatProvider } from "@/contexts/FormatContext";
 
 import { SidebarLeft } from "@/components/sidebar-left";
 import { SidebarRight } from "@/components/sidebar-right";
+import { AddFaqsModal } from "@/components/add-faqs-modal";
 
 import {
   Breadcrumb,
@@ -23,6 +23,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+import { Button } from "@/components/ui/button";
+import { type DateRange } from "react-day-picker";
+
 import {
   Accordion,
   AccordionContent,
@@ -30,32 +33,106 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-import { type DateRange } from "react-day-picker";
+interface UserDetails {
+  referenceid: string;
+  role: string;
+}
+
+interface FaqItem {
+  _id: string;
+  title: string;
+  [key: string]: any; // subtitle_1, description_1, etc.
+}
 
 function HelpContent() {
   const searchParams = useSearchParams();
+  const [userDetails, setUserDetails] = useState<UserDetails>({
+    referenceid: "",
+    role: "",
+  });
+
   const { userId, setUserId } = useUser();
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const queryUserId = searchParams?.get("id") ?? "";
   const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
     useState<DateRange | undefined>(undefined);
 
+  const [openAddFaqs, setOpenAddFaqs] = useState(false);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [loadingFaqs, setLoadingFaqs] = useState(true);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // Sync URL query param with userId context
   useEffect(() => {
     if (queryUserId && queryUserId !== userId) {
       setUserId(queryUserId);
     }
   }, [queryUserId, userId, setUserId]);
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // Fetch user data
+  useEffect(() => {
+    if (!userId) {
+      setError("User ID is missing.");
+      setLoadingUser(false);
+      return;
+    }
 
-  if (!mounted) return <></>;
+    const fetchUserData = async () => {
+      setError(null);
+      setLoadingUser(true);
+      try {
+        const response = await fetch(
+          `/api/user?id=${encodeURIComponent(userId)}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch user data");
+        const data = await response.json();
+
+        setUserDetails({
+          referenceid: data.ReferenceID || "",
+          role: data.Role || "",
+        });
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    fetchUserData();
+  }, [userId]);
+
+  // Initial Fetch FAQs
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        setLoadingFaqs(true);
+        const res = await fetch("/api/faqs-fetch-activity");
+        const data = await res.json();
+        if (res.ok) {
+          setFaqs(data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch FAQs:", err);
+      } finally {
+        setLoadingFaqs(false);
+      }
+    };
+
+    fetchFaqs();
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <>
       <SidebarLeft />
+
       <SidebarInset>
-        {/* Header */}
+        {/* HEADER */}
         <header className="bg-background sticky top-0 flex h-14 items-center gap-2 border-b">
           <div className="flex flex-1 items-center gap-2 px-3">
             <SidebarTrigger />
@@ -72,306 +149,94 @@ function HelpContent() {
           </div>
         </header>
 
-        {/* Content */}
+        {/* CONTENT */}
         <div className="flex flex-1 flex-col gap-6 p-4">
           <div className="mx-auto w-full max-w-4xl space-y-4">
             <h1 className="text-xl font-semibold">
               CSR Frequently Asked Questions
             </h1>
+
             <p className="text-sm text-muted-foreground">
-              This section displays the CSR FAQs (Customer Service Representative Frequently Asked Questions). 
-              It provides answers to common inquiries related to CSR processes, ensuring quick access to essential information. 
-              If an error occurs, a message will be shown in red. 
-              The CSRFaqs component is responsible for rendering the list of frequently asked questions.
+              Click a question below to view its answer.
             </p>
 
-            <Accordion type="multiple" className="space-y-2">
-              {/* 1 */}
-              <AccordionItem value="accreditation">
-                <AccordionTrigger>
-                  1. Accreditation Requirements
-                </AccordionTrigger>
-                <AccordionContent>
-                  <ul className="list-disc pl-6 space-y-1 text-sm">
-                    <li>Current SEC/DTI Registration</li>
-                    <li>Mayor&apos;s Permit</li>
-                    <li>BIR Registration (Form 2303)</li>
-                    <li>Latest Financial Statement</li>
-                    <li>General Information Sheet</li>
-                    <li>2 Valid Government IDs (colored)</li>
-                    <li>Credit Terms Agreement</li>
-                  </ul>
-                  <p className="mt-2 text-sm text-red-500 font-medium">
-                    Incomplete applications will not be approved.
-                  </p>
-                </AccordionContent>
-              </AccordionItem>
+            {/* ADD FAQs BUTTON */}
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setOpenAddFaqs(true)}
+              >
+                Add FAQs
+              </Button>
+            </div>
 
-              {/* 2 */}
-              <AccordionItem value="admin-sheets">
-                <AccordionTrigger>
-                  2. Accreditation Request (Admin Sheets)
-                </AccordionTrigger>
-                <AccordionContent>
-                  <ul className="list-disc pl-6 text-sm space-y-1">
-                    <li>Mayor&apos;s Permit</li>
-                    <li>SEC Registration</li>
-                    <li>BIR Registration</li>
-                    <li>Tax Clearance</li>
-                    <li>PHILGEPS Registration</li>
-                    <li>GIS</li>
-                    <li>Google Maps (Office & Warehouse)</li>
-                    <li>DOLE Registration</li>
-                    <li>Secretary Certificate</li>
-                    <li>Bank Details</li>
-                    <li>List of Projects</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
+            {/* FAQ ACCORDION */}
+            {loadingFaqs ? (
+              <p className="text-sm text-muted-foreground">Loading FAQs...</p>
+            ) : faqs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No FAQs available.
+              </p>
+            ) : (
+              <Accordion type="single" collapsible className="w-full">
+                {faqs.map((faq) => {
+                  /**
+                   * ✅ FIXED LOGIC
+                   * Properly pairs subtitle_X with description_X
+                   */
+                  const items = Object.keys(faq)
+                    .filter((key) => key.startsWith("description_"))
+                    .map((key) => {
+                      const index = Number(
+                        key.replace("description_", "")
+                      );
+                      return {
+                        index,
+                        description: faq[key],
+                        subtitle: faq[`subtitle_${index}`] || "",
+                      };
+                    })
+                    .sort((a, b) => a.index - b.index);
 
-            {/* 3 */}
-            <AccordionItem value="refund">
-            <AccordionTrigger>
-                3. Refund Request / Sales & Accounting Concerns
-            </AccordionTrigger>
+                  return (
+                    <AccordionItem key={faq._id} value={faq._id}>
+                      <AccordionTrigger>
+                        {faq.title}
+                      </AccordionTrigger>
 
-            <AccordionContent className="space-y-6 text-sm">
-                <p className="text-muted-foreground">
-                Please review the applicable scenario below and prepare the corresponding
-                requirements.
-                </p>
+                      <AccordionContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {items.map((item, idx) => {
+                            const isFullWidth =
+                              idx === items.length - 1 ||
+                              (idx + 1) % 5 === 0;
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 1 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">1. Details Needed</p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Reason for refund</li>
-                    <li>Total AMT. of refund</li>
-                    <li>Passbook</li>
-                    <li>Sales Head approval</li>
-                    </ul>
-                </div>
+                            return (
+                              <div
+                                key={idx}
+                                className={`rounded-lg border p-4 space-y-2 ${
+                                  isFullWidth ? "md:col-span-2" : ""
+                                }`}
+                              >
+                                {item.subtitle && (
+                                  <div className="font-semibold text-sm">
+                                    {item.subtitle}
+                                  </div>
+                                )}
 
-                {/* 2 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">
-                    2. Documents Needed — Reason: Wrong Deposit
-                    </p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Copy of Proof of Payment</li>
-                    <li>Collection / Acknowledgement Receipt</li>
-                    <li>Copy of 2307 (if applicable)</li>
-                    </ul>
-                </div>
-
-                {/* 3 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">3. Reason: Double Payment</p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Copy of Proof of Payment</li>
-                    <li>Collection / Acknowledgement Receipt</li>
-                    <li>Copy of Sales Order</li>
-                    <li>Copy of Delivery Receipt</li>
-                    <li>Copy of Sales Invoice</li>
-                    <li>Copy of 2307 (if applicable)</li>
-                    </ul>
-                </div>
-
-                {/* 4 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">
-                    4. Return Items With Re-Stocking Fee — Details Needed
-                    </p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Reason for refund</li>
-                    <li>Total AMT. of refund</li>
-                    <li>Passbook</li>
-                    <li>Sales Head approval</li>
-                    </ul>
-                </div>
-
-                {/* 5 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">
-                    5. Documents Needed — Cancel Order / Wrong Item Delivered
-                    </p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Copy of Sales Order</li>
-                    <li>Copy of Delivery Receipt</li>
-                    <li>Copy of Sales Invoice</li>
-                    <li>Copy of Replacement / Pull-Out Slip</li>
-                    <li>
-                        Copy of Another SO with Re-Stocking Cancellation Charge
-                    </li>
-                    <li>Copy of 2307 (if applicable)</li>
-                    </ul>
-                </div>
-
-                {/* 6 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">
-                    6. Reason: Deposit in Advance / Unavailability of Stocks
-                    </p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Copy of Sales Order</li>
-                    <li>Copy of Proof of Payment</li>
-                    <li>Collection / Acknowledgement Receipt</li>
-                    <li>Copy of 2307 (if applicable)</li>
-                    </ul>
-                </div>
-
-                {/* 7 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">
-                    7. Reason: Unserved Items / Excess Amount Deposited
-                    </p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Copy of Sales Order</li>
-                    <li>Copy of Delivery Receipt</li>
-                    <li>Copy of Sales Invoice</li>
-                    <li>Collection / Acknowledgement Receipt</li>
-                    </ul>
-                </div>
-
-                {/* 8 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">
-                    8. E-Commerce — Busted Items / Cancel Order
-                    </p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Summary of Excel Report</li>
-                    <li>Copy of Replacement / Pull-Out Slip</li>
-                    </ul>
-                </div>
-
-                {/* 9 — FULL WIDTH */}
-                <div className="rounded-lg border p-4 space-y-3 md:col-span-2">
-                    <p className="font-semibold">9. Regular Sales Order (SO)</p>
-
-                    <p className="font-medium">Customer Details</p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Company / Customer Name</li>
-                    <li>Registered Address</li>
-                    <li>TIN / Business Style</li>
-                    <li>PO / Quotation Reference</li>
-                    <li>Shipping Address</li>
-                    <li>Contact Information</li>
-                    <li>Delivery Address & Date</li>
-                    <li>Payment Terms / Special Instructions</li>
-                    </ul>
-
-                    <p className="font-medium mt-2">Product Details</p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Item Code / Image / Specifications</li>
-                    <li>Quantity</li>
-                    <li>Unit Price</li>
-                    <li>Total Amount</li>
-                    </ul>
-
-                    <p className="font-medium mt-2">Signatories</p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Agent Signature</li>
-                    <li>Sales Manager Signature</li>
-                    <li>
-                        Sales Head Signature — Email to{" "}
-                        <strong>orders@ecoshiftcorp.com</strong>
-                    </li>
-                    </ul>
-                </div>
-
-                {/* 10 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">10. Documents Needed</p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Purchase Order / Notice to Proceed / NTA</li>
-                    <li>Signed Quotation / Client Email Quotation</li>
-                    <li>Sample Slip / Job Request Form (if applicable)</li>
-                    <li>Copy of Deposit Slip</li>
-                    <li>Form 251 & Special Approvals (if applicable)</li>
-                    <li>PEZA / VAT Exempt Certificate (if applicable)</li>
-                    </ul>
-                </div>
-
-                {/* 11 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">11. SO Cancellation</p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Company Name</li>
-                    <li>Sales Order Reference Number</li>
-                    <li>Reason for cancellation</li>
-                    <li>Sales Manager approval</li>
-                    <li>Sales Head approval (with fees)</li>
-                    <li>Proof of cancellation</li>
-                    </ul>
-                    <p className="text-xs text-muted-foreground">
-                    Email to: <strong>orders@ecoshiftcorp.com</strong> <br />
-                    CC: Sales Head
-                    </p>
-                </div>
-
-                {/* 12 */}
-                <div className="rounded-lg border p-4 space-y-2">
-                    <p className="font-semibold">
-                    12. Request for Advance / Proforma Invoice
-                    </p>
-                    <ul className="list-disc pl-6 space-y-1">
-                    <li>Company Name</li>
-                    <li>SO Number</li>
-                    <li>VAT Type</li>
-                    <li>Payment Terms</li>
-                    <li>Processing Days</li>
-                    <li>Proof of Client Request</li>
-                    <li>Purpose</li>
-                    </ul>
-                    <p className="text-xs text-muted-foreground">
-                    Email to: <strong>j.bellen@ecoshiftcorp.com</strong>,{" "}
-                    <strong>billings@ecoshiftcorp.com</strong> <br />
-                    CC: Sales Head
-                    </p>
-                </div>
-                </div>
-            </AccordionContent>
-            </AccordionItem>
-
-              {/* 4 */}
-              <AccordionItem value="branches">
-                <AccordionTrigger>4. Branches</AccordionTrigger>
-                <AccordionContent>
-                  <ul className="list-disc pl-6 text-sm space-y-1">
-                    <li>Mandaluyong – J&amp;L Building, EDSA</li>
-                    <li>Cebu – Zuellig Ave., Mandaue</li>
-                    <li>Davao – Matina Aplaya</li>
-                    <li>CDO – Alwana Business Park</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* 5 */}
-              <AccordionItem value="delivery">
-                <AccordionTrigger>5. Delivery Options</AccordionTrigger>
-                <AccordionContent>
-                  <ul className="list-disc pl-6 text-sm space-y-1">
-                    <li>Company Truck</li>
-                    <li>Free Delivery (Metro / Provincial)</li>
-                    <li>Third-Party Couriers</li>
-                    <li>Customer Pickup</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* 6 */}
-              <AccordionItem value="payment">
-                <AccordionTrigger>6. Payment Options</AccordionTrigger>
-                <AccordionContent>
-                  <ul className="list-disc pl-6 text-sm space-y-1">
-                    <li>Bank Deposit</li>
-                    <li>GCash</li>
-                    <li>Credit Card (Head Office)</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                                <div className="text-sm text-muted-foreground whitespace-pre-line">
+                                  {item.description}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            )}
           </div>
         </div>
       </SidebarInset>
@@ -379,7 +244,19 @@ function HelpContent() {
       <SidebarRight
         userId={userId ?? undefined}
         dateCreatedFilterRange={dateCreatedFilterRange}
-        setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+        setDateCreatedFilterRangeAction={
+          setDateCreatedFilterRangeAction
+        }
+      />
+
+      {/* ADD FAQS MODAL */}
+      <AddFaqsModal
+        open={openAddFaqs}
+        onClose={() => setOpenAddFaqs(false)}
+        referenceid={userDetails.referenceid}
+        onSave={(newFaq: FaqItem) =>
+          setFaqs((prev) => [newFaq, ...prev])
+        }
       />
     </>
   );
