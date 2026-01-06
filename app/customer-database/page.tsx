@@ -495,8 +495,11 @@ const filteredAccounts = accounts
                       <TableCell>
                         {acc.type_client ? (
                           <Badge
-                            variant={acc.type_client === "CSR Client" ? "destructive" : "default"}
-                            className="capitalize"
+                            className={
+                              acc.type_client === "CSR Client"
+                                ? "bg-green-100 text-green-800 border border-green-300 capitalize"
+                                : "bg-gray-100 text-gray-800 border border-gray-200 capitalize"
+                            }
                           >
                             {acc.type_client}
                           </Badge>
