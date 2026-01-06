@@ -157,123 +157,115 @@ function HelpContent() {
             </h1>
 
             <p className="text-sm text-muted-foreground">
-              This section displays the CSR FAQs (Customer Service Representative Frequently Asked Questions). 
-              It provides answers to common inquiries related to CSR processes, ensuring quick access to essential information. 
-              If an error occurs, a message will be shown in red. 
-              The CSRFaqs component is responsible for rendering the list of frequently asked questions.
+              This section displays the CSR FAQs (Customer Service Representative Frequently Asked Questions).
+              It provides answers to common inquiries related to CSR processes, ensuring quick access to essential information.
             </p>
 
             {/* ACTIONS */}
             {userDetails.role === "Admin" && (
               <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setOpenAddFaqs(true)}
-                >
+                <Button variant="outline" onClick={() => setOpenAddFaqs(true)}>
                   Add FAQs
                 </Button>
               </div>
             )}
 
-          {/* FAQ LIST */}
-          {loadingFaqs ? (
-            <p className="text-sm text-muted-foreground">Loading FAQs...</p>
-          ) : faqs.filter((f) => f.isActive !== false).length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No FAQs available.
-            </p>
-          ) : (
-            <Accordion type="single" collapsible className="w-full">
-{faqs
-  .filter((faq) => faq.isActive !== false)
-  // 🔥 OLDEST FIRST → NEWEST LAST (DEFAULT, ALL ROLES)
-  .sort((a, b) => {
-    const aDate = new Date(a.date_created || 0).getTime();
-    const bDate = new Date(b.date_created || 0).getTime();
-    return aDate - bDate;
-  })
-  .map((faq) => {
-                  const items = Object.keys(faq)
-                    .filter((key) => key.startsWith("description_"))
-                    .map((key) => {
-                      const index = Number(key.replace("description_", ""));
-                      return {
-                        index,
-                        description: faq[key],
-                        subtitle: faq[`subtitle_${index}`] || "",
-                      };
-                    })
-                    .sort((a, b) => a.index - b.index);
+            {/* FAQ LIST */}
+            {loadingFaqs ? (
+              <p className="text-sm text-muted-foreground">Loading FAQs...</p>
+            ) : faqs.filter((f) => f.isActive !== false).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No FAQs available.</p>
+            ) : (
+              <Accordion type="single" collapsible className="w-full">
+                {faqs
+                  .filter((faq) => faq.isActive !== false)
+                  .sort((a, b) => {
+                    const aDate = new Date(a.date_created || 0).getTime();
+                    const bDate = new Date(b.date_created || 0).getTime();
+                    return aDate - bDate;
+                  })
+                  .map((faq) => {
+                    const items = Object.keys(faq)
+                      .filter((key) => key.startsWith("description_"))
+                      .map((key) => {
+                        const index = Number(key.replace("description_", ""));
+                        return {
+                          index,
+                          description: faq[key],
+                          subtitle: faq[`subtitle_${index}`] || "",
+                        };
+                      })
+                      .sort((a, b) => a.index - b.index);
 
-                  return (
-                    <AccordionItem key={faq._id} value={faq._id}>
-                    <AccordionTrigger>
-                      <div className="flex w-full justify-between items-center pr-2">
-                        <span>{faq.title}</span>
+                    return (
+                      <AccordionItem key={faq._id} value={faq._id}>
+                        <AccordionTrigger>
+                          <div className="flex w-full justify-between items-center pr-2">
+                            <span>{faq.title}</span>
 
-                        {userDetails.role === "Admin" && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedFaq(faq);
-                                setOpenEditFaqs(true);
-                              }}
-                            >
-                              Edit
-                            </Button>
+                            {userDetails.role === "Admin" && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedFaq(faq);
+                                    setOpenEditFaqs(true);
+                                  }}
+                                >
+                                  Edit
+                                </Button>
 
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedFaq(faq);
-                                setOpenDeleteFaqs(true);
-                              }}
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </AccordionTrigger>
-
-                    <AccordionContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {items.map((item, idx) => {
-                          const isLastItem = idx === items.length - 1;
-                          const isOddCount = items.length % 2 === 1;
-                          const isFullWidth = isLastItem && isOddCount;
-
-                          return (
-                            <div
-                              key={idx}
-                              className={`rounded-lg border p-4 space-y-2 ${
-                                isFullWidth ? "md:col-span-2" : ""
-                              }`}
-                            >
-                              {item.subtitle && (
-                                <div className="font-semibold text-sm">
-                                  {item.subtitle}
-                                </div>
-                              )}
-
-                              <div className="text-sm text-muted-foreground whitespace-pre-line">
-                                {item.description}
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedFaq(faq);
+                                    setOpenDeleteFaqs(true);
+                                  }}
+                                >
+                                  Delete
+                                </Button>
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                  );
-                })}
-            </Accordion>
-          )}
+                            )}
+                          </div>
+                        </AccordionTrigger>
+
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {items.map((item, idx) => {
+                              const isLongContent =
+                                item.description?.length >= 300 ||
+                                item.description?.split("\n").length >= 6;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`rounded-lg border p-4 space-y-2 ${
+                                    isLongContent ? "md:col-span-2" : ""
+                                  }`}
+                                >
+                                  {item.subtitle && (
+                                    <div className="font-semibold text-sm">
+                                      {item.subtitle}
+                                    </div>
+                                  )}
+
+                                  <div className="text-sm text-muted-foreground whitespace-pre-line">
+                                    {item.description}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+              </Accordion>
+            )}
           </div>
         </div>
       </SidebarInset>
@@ -284,18 +276,15 @@ function HelpContent() {
         setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
       />
 
-      {/* ADD MODAL */}
+      {/* ADD */}
       <AddFaqsModal
         open={openAddFaqs}
         onClose={() => setOpenAddFaqs(false)}
         referenceid={userDetails.referenceid}
-        onSave={(newFaq) =>
-          setFaqs((prev) => [...prev, newFaq]) // ✅ ALWAYS APPEND
-        }
+        onSave={(newFaq) => setFaqs((prev) => [...prev, newFaq])}
       />
 
-
-      {/* EDIT MODAL */}
+      {/* EDIT */}
       <EditFaqsModal
         open={openEditFaqs}
         faq={selectedFaq}
@@ -310,7 +299,7 @@ function HelpContent() {
         }}
       />
 
-      {/* DELETE MODAL */}
+      {/* DELETE */}
       {selectedFaq && (
         <DeleteFaqsModal
           open={openDeleteFaqs}
