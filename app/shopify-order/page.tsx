@@ -153,17 +153,24 @@ const handleAdd = async (order: any) => {
     return;
   }
 
+  const fullName = order.customer
+    ? `${order.customer.first_name ?? ""} ${order.customer.last_name ?? ""}`.trim()
+    : "Shopify Customer";
+
   try {
     const payload = {
-      // 🔑 THIS IS THE KEY PART
-      referenceid: userReferenceId, // ← galing sa SidebarRight
+      referenceid: userReferenceId,
 
       status: "On-Progress",
       channel: "Shopify",
       wrap_up: "Customer Order",
       source: "Shopify",
 
-      inquiry: `Shopify Order ${order.name}`,
+      // ✅ NOW STORED IN MONGODB
+      contact_person: fullName,
+
+      inquiry: `Shopify Order - ${fullName} (${order.name})`,
+
       ticket_received: order.created_at,
       ticket_endorsed: order.created_at,
 
@@ -194,6 +201,7 @@ const handleAdd = async (order: any) => {
     toast.error("Error adding Shopify order");
   }
 };
+
 
   /* =======================
      MOUNT CHECK

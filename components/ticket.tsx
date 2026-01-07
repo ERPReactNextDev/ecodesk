@@ -67,6 +67,7 @@ interface Ticket {
   // ✅ ADD THESE TWO LINES (THIS FIXES YOUR ERROR)
   contact_number?: string;
   email_address?: string;
+  contact_person?: string;
 
   item_code?: string;
   item_description?: string;
@@ -363,10 +364,7 @@ const mergedData = React.useMemo(() => {
         company_name:
         company?.company_name ??
         (isShopify
-            ? activity.inquiry ??
-            activity.activity_reference_number ??
-            activity.account_reference_number ??
-            "Shopify Order"
+            ? activity.contact_person || "Shopify Customer"
             : "Unknown Company"),
 
 
