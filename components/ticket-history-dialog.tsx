@@ -127,7 +127,13 @@ export function TicketHistoryDialog({ item }: Props) {
               <p><strong>Contact Person:</strong> {item.contact_person || "-"}</p>
               <p><strong>Contact Number:</strong> {item.contact_number || "-"}</p>
               <p><strong>Email Address:</strong> {item.email_address || "-"}</p>
-              <p><strong>Company:</strong> {item.company_name || "-"}</p>
+              <p>
+  <strong>Company:</strong>{" "}
+  {item.company_name &&
+  item.company_name !== item.contact_person
+    ? item.company_name
+    : "-"}
+</p>
             </div>
           </section>
 

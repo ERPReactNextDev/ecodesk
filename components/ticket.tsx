@@ -355,18 +355,18 @@ const mergedData = React.useMemo(() => {
         (c) => c.account_reference_number === activity.account_reference_number
       );
 
-      const isShopify = activity.account_reference_number?.startsWith("SHOPIFY-");
+      const isShopify =
+        activity.account_reference_number?.startsWith("SHOPIFY-");
 
       return {
         ...activity,
 
-        // ✅ ALWAYS string — NO TypeScript error
+        // ✅ DISPLAY NAME RULE (FIX)
         company_name:
-        company?.company_name ??
-        (isShopify
+          company?.company_name ??
+          (isShopify
             ? activity.contact_person || "Shopify Customer"
             : "Unknown Company"),
-
 
         contact_number:
           company?.contact_number ??
@@ -374,15 +374,17 @@ const mergedData = React.useMemo(() => {
 
         type_client: company?.type_client ?? "",
 
+        // ✅ ENSURE CONTACT PERSON FLOWS EVERYWHERE
         contact_person:
-          company?.contact_person ?? "",
+          activity.contact_person ??
+          company?.contact_person ??
+          "",
 
         email_address:
           company?.email_address ??
           (isShopify ? activity.email_address ?? "" : ""),
 
-        address:
-          company?.address ?? "",
+        address: company?.address ?? "",
       };
     })
     .sort(
