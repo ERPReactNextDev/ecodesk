@@ -63,6 +63,11 @@ interface Ticket {
   agent?: string;
   remarks?: string;
   inquiry?: string;
+
+  // ✅ ADD THESE TWO LINES (THIS FIXES YOUR ERROR)
+  contact_number?: string;
+  email_address?: string;
+
   item_code?: string;
   item_description?: string;
   po_number?: string;
@@ -83,7 +88,6 @@ interface Ticket {
   date_updated: string;
   date_created: string;
 
-  // ✅ ADD THESE (CAUSE OF ERROR)
   close_reason?: string;
   counter_offer?: string;
   client_specs?: string;
@@ -339,31 +343,57 @@ const isNewCompany = (dateCreated?: string) => {
     const allowedStatuses = ["On-Progress", "Closed", "Endorsed", "Converted into Sales"];
 
     // Merge activity with company info, filter by status and date range
-    const mergedData = React.useMemo(() => {
-        if (companies.length === 0) return [];
+const mergedData = React.useMemo(() => {
+  if (companies.length === 0) return [];
 
-        return activities
-            .filter((a) => allowedStatuses.includes(a.status))
-            .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
-            .map((activity) => {
-                const company = companies.find(
-                    (c) => c.account_reference_number === activity.account_reference_number
-                );
-                return {
-                    ...activity,
-                    company_name: company?.company_name ?? "Unknown Company",
-                    contact_number: company?.contact_number ?? "-",
-                    type_client: company?.type_client ?? "",
-                    contact_person: company?.contact_person ?? "",
-                    email_address: company?.email_address ?? "",
-                    address: company?.address ?? "",
-                };
-            })
-            .sort(
-                (a, b) =>
-                    new Date(b.date_updated).getTime() - new Date(a.date_updated).getTime()
-            );
-    }, [activities, companies, dateCreatedFilterRange]);
+  return activities
+    .filter((a) => allowedStatuses.includes(a.status))
+    .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
+    .map((activity) => {
+      const company = companies.find(
+        (c) => c.account_reference_number === activity.account_reference_number
+      );
+
+      const isShopify = activity.account_reference_number?.startsWith("SHOPIFY-");
+
+      return {
+        ...activity,
+
+        // ✅ ALWAYS string — NO TypeScript error
+        company_name:
+        company?.company_name ??
+        (isShopify
+            ? activity.inquiry ??
+            activity.activity_reference_number ??
+            activity.account_reference_number ??
+            "Shopify Order"
+            : "Unknown Company"),
+
+
+        contact_number:
+          company?.contact_number ??
+          (isShopify ? activity.contact_number ?? "-" : "-"),
+
+        type_client: company?.type_client ?? "",
+
+        contact_person:
+          company?.contact_person ?? "",
+
+        email_address:
+          company?.email_address ??
+          (isShopify ? activity.email_address ?? "" : ""),
+
+        address:
+          company?.address ?? "",
+      };
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.date_updated).getTime() -
+        new Date(a.date_updated).getTime()
+    );
+}, [activities, companies, dateCreatedFilterRange]);
+
 
     const filteredAndSortedData = useMemo(() => {
         let data = mergedData;
