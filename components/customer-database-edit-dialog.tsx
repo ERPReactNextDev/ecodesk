@@ -6,19 +6,15 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 import {
   Field,
   FieldContent,
-  FieldDescription,
-  FieldGroup,
   FieldLabel,
   FieldSet,
 } from "@/components/ui/field";
@@ -56,10 +52,8 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
   }, [account, isOpen]);
 
   const handleSave = async () => {
-    if (!account?.id) {
-      alert("Account id is missing. Cannot save.");
-      return;
-    }
+    if (!account?.id) return;
+
     setLoading(true);
     try {
       const res = await fetch("/api/com-edit-account", {
@@ -72,8 +66,8 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
           contact_person: contactPerson,
           contact_number: contactNumber,
           email_address: emailAddress,
-          address: address,
-          industry: industry,
+          address,
+          industry,
           type_client: account.type_client,
           status: account.status,
           company_group: account.company_group,
@@ -82,14 +76,13 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
       });
 
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || "Failed to update");
+      if (!data.success) throw new Error(data.error);
 
       onSave(data.data);
       onClose();
-      toast.success("Account successfully updated!");
+      toast.success("Account successfully updated");
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Something went wrong.");
+      toast.error(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -98,123 +91,127 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
   if (!isOpen || !account) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !loading && !open && onClose()}>
-      <DialogContent
-        style={{ maxWidth: "60vw", width: "50vw" }}
-        className="mx-auto rounded-lg p-6"
-        onClick={(e) => e.stopPropagation()}
+    <Sheet open={isOpen} onOpenChange={(o) => !o && !loading && onClose()}>
+      <SheetContent
+        side="right"
+        className="w-[420px] max-w-full flex flex-col p-0"
       >
-        <DialogHeader>
-          <DialogTitle>Edit Account</DialogTitle>
-          <DialogDescription>
-            Update the information below and click save.
-          </DialogDescription>
-        </DialogHeader>
+        {/* HEADER */}
+        <SheetHeader className="px-6 py-4 border-b">
+          <SheetTitle className="text-lg font-semibold">
+            Edit Account
+          </SheetTitle>
+        </SheetHeader>
 
+        {/* FORM (SCROLLABLE) */}
         <form
-          className="flex flex-col gap-6"
           onSubmit={(e) => {
             e.preventDefault();
             handleSave();
           }}
+          className="flex-1 overflow-y-auto px-6 py-5 space-y-6"
         >
-          <FieldSet disabled={loading}>
-            <FieldGroup className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <Field>
-                <FieldLabel htmlFor="companyName">Company Name</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="companyName"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    required
-                  />
-                </FieldContent>
-                <FieldDescription>
-                  Enter the company or business name.
-                </FieldDescription>
-              </Field>
+          <FieldSet disabled={loading} className="space-y-5">
+            <Field>
+              <FieldLabel>
+                Company <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required
+                />
+              </FieldContent>
+            </Field>
 
-              <Field>
-                <FieldLabel htmlFor="contactPerson">Contact Person</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="contactPerson"
-                    value={contactPerson}
-                    onChange={(e) => setContactPerson(e.target.value)}
-                  />
-                </FieldContent>
-                <FieldDescription>
-                  Name of the main contact person.
-                </FieldDescription>
-              </Field>
+            <Field>
+              <FieldLabel>
+                Customer Name <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  value={contactPerson}
+                  onChange={(e) => setContactPerson(e.target.value)}
+                  required
+                />
+              </FieldContent>
+            </Field>
 
-              <Field>
-                <FieldLabel htmlFor="contactNumber">Contact Number</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="contactNumber"
-                    value={contactNumber}
-                    onChange={(e) => setContactNumber(e.target.value)}
-                  />
-                </FieldContent>
-                <FieldDescription>Phone or mobile number.</FieldDescription>
-              </Field>
+            <Field>
+              <FieldLabel>
+                Contact Number <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  required
+                />
+              </FieldContent>
+            </Field>
 
-              <Field>
-                <FieldLabel htmlFor="emailAddress">Email Address</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="emailAddress"
-                    type="email"
-                    value={emailAddress}
-                    onChange={(e) => setEmailAddress(e.target.value)}
-                  />
-                </FieldContent>
-                <FieldDescription>Contact email address.</FieldDescription>
-              </Field>
+            <Field>
+              <FieldLabel>
+                Email Address <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  type="email"
+                  value={emailAddress}
+                  onChange={(e) => setEmailAddress(e.target.value)}
+                  required
+                />
+              </FieldContent>
+            </Field>
 
-              <Field>
-                <FieldLabel htmlFor="address">Address</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </FieldContent>
-                <FieldDescription>Physical address or location.</FieldDescription>
-              </Field>
+            <Field>
+              <FieldLabel>
+                Address <span className="text-red-500">*</span>
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  required
+                />
+              </FieldContent>
+            </Field>
 
-              <Field>
-                <FieldLabel htmlFor="industry">Industry</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="industry"
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                  />
-                </FieldContent>
-                <FieldDescription>Industry classification.</FieldDescription>
-              </Field>
-            </FieldGroup>
+            <Field>
+              <FieldLabel>Client Segment</FieldLabel>
+              <FieldContent>
+                <Input
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                />
+              </FieldContent>
+            </Field>
           </FieldSet>
-
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => !loading && onClose()}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : "Save"}
-            </Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+
+        {/* FOOTER (FIXED) */}
+        <div className="border-t bg-white px-6 py-4 flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-1/2 cursor-pointer"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            type="submit"
+            className="w-1/2 cursor-pointer"
+            onClick={handleSave}
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save"}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };

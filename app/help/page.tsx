@@ -164,7 +164,7 @@ function HelpContent() {
             {/* ACTIONS */}
             {userDetails.role === "Admin" && (
               <div className="flex justify-end">
-                <Button variant="outline" onClick={() => setOpenAddFaqs(true)}>
+                <Button variant="outline" onClick={() => setOpenAddFaqs(true)} className="cursor-pointer">
                   Add FAQs
                 </Button>
               </div>
@@ -201,13 +201,14 @@ function HelpContent() {
                       <AccordionItem key={faq._id} value={faq._id}>
                         <AccordionTrigger>
                           <div className="flex w-full justify-between items-center pr-2">
-                            <span>{faq.title}</span>
+                            <span className="cursor-pointer">{faq.title}</span>
 
                             {userDetails.role === "Admin" && (
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  className="cursor-pointer"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedFaq(faq);
@@ -220,6 +221,7 @@ function HelpContent() {
                                 <Button
                                   size="sm"
                                   variant="destructive"
+                                  className="cursor-pointer"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedFaq(faq);

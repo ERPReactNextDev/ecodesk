@@ -473,6 +473,7 @@ const filteredAccounts = accounts
                         {acc.type_client === "CSR Client" && (
                           <>
                             <Button
+                            className="cursor-pointer"
                               size="sm"
                               variant="outline"
                               onClick={() => {
@@ -483,6 +484,7 @@ const filteredAccounts = accounts
                               Edit
                             </Button>
                             <Button
+                            className="cursor-pointer"
                               size="sm"
                               variant="destructive"
                               onClick={() => handleDelete(acc)}

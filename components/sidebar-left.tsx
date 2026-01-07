@@ -24,6 +24,7 @@ import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavWorkspaces } from "@/components/nav-workspaces";
 import { TeamSwitcher } from "@/components/team-switcher";
+import { Package } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -52,6 +53,7 @@ const data = {
   favorites: [
     { name: "Inquiries", url: "/inquiries", icon: BarChart2 },
     { name: "Customer Database", url: "/customer-database", icon: Phone },
+    { name: "Shopify Order", url: "/shopify-order", icon: Package },
   ],
   workspaces: [
     {
