@@ -52,6 +52,7 @@ function ShopifyOrderContent() {
   const queryUserId = searchParams?.get("id") ?? "";
   const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
     useState<DateRange | undefined>(undefined);
+    const [userReferenceId, setUserReferenceId] = useState<string>("");
 
   /* =======================
      USER ID SYNC
@@ -82,6 +83,19 @@ function ShopifyOrderContent() {
       }
     })();
   }, []);
+
+    useEffect(() => {
+    if (!userId) return;
+
+    fetch(`/api/user?id=${encodeURIComponent(userId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setUserReferenceId(data.ReferenceID || "");
+      })
+      .catch(() => {
+        setUserReferenceId("");
+      });
+  }, [userId]);
 
   /* =======================
      FILTERED DATA
@@ -133,14 +147,53 @@ function ShopifyOrderContent() {
   /* =======================
      ADD HANDLER
   ======================= */
-  const handleAdd = (order: any) => {
-    console.log("ADD ORDER:", order);
-    toast.success("Order added");
-    // dito mo ilalagay later:
-    // - open modal
-    // - save to DB
-    // - redirect
-  };
+const handleAdd = async (order: any) => {
+  if (!userId) {
+    toast.error("User session missing");
+    return;
+  }
+
+  try {
+    const payload = {
+      // 🔑 THIS IS THE KEY PART
+      referenceid: userReferenceId, // ← galing sa SidebarRight
+
+      status: "On-Progress",
+      channel: "Shopify",
+      wrap_up: "Customer Order",
+      source: "Shopify",
+
+      inquiry: `Shopify Order ${order.name}`,
+      ticket_received: order.created_at,
+      ticket_endorsed: order.created_at,
+
+      email_address: order.customer?.email ?? "",
+      contact_number: order.customer?.phone ?? "",
+
+      activity_reference_number: `SHOPIFY-${order.id}`,
+      account_reference_number: `SHOPIFY-${order.id}`,
+    };
+
+    const res = await fetch("/api/act-save-account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+      toast.error(json.error || "Failed to add Shopify inquiry");
+      return;
+    }
+
+    toast.success("Shopify order added to Inquiries");
+  } catch (err) {
+    console.error(err);
+    toast.error("Error adding Shopify order");
+  }
+};
 
   /* =======================
      MOUNT CHECK
