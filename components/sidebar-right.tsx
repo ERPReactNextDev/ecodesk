@@ -199,7 +199,7 @@ export function SidebarRight({
             }}
           />
 
-<div classname="p-2">
+<div className="p-2">
           {dateFilterFlag === 1 && (
             <Button
               variant="destructive"
