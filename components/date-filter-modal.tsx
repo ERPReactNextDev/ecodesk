@@ -287,7 +287,7 @@ export function DateFilterModal({
         </div>
 
         <DialogFooter className="flex gap-2 pt-4">
-          <Button variant="destructive" className="flex-1" onClick={clearAll}>
+          <Button variant="destructive" className="flex-1 cursor-pointer" onClick={clearAll}>
             Clear All Filters
           </Button>
           <Button className="flex-1" onClick={onClose}>
