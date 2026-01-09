@@ -1048,7 +1048,7 @@ const selectedActivity = activities.find(
                                 setShowCheckboxes(true);
                             }
                         }}
-                        className="whitespace-nowrap"
+                        className="whitespace-nowrap cursor-pointer"
                     >
                         {showCheckboxes ? "Cancel" : "Delete"}
                     </Button>
