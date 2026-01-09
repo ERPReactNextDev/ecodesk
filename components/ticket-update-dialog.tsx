@@ -514,7 +514,7 @@ const newActivity: Activity & {
 
         <SheetContent
           side="right"
-          style={{ width: "500px", maxWidth: "none" }}
+          style={{ width: "60vh", maxWidth: "none" }}
           className="overflow-auto custom-scrollbar"
         >
           <SheetHeader>
