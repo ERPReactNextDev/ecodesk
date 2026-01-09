@@ -199,6 +199,7 @@ export function SidebarRight({
             }}
           />
 
+<div className="p-2">
           {dateFilterFlag === 1 && (
             <Button
               variant="destructive"
@@ -218,6 +219,7 @@ export function SidebarRight({
           >
             Advanced Date Filter
           </Button>
+</div>
 
           <SidebarSeparator />
 
