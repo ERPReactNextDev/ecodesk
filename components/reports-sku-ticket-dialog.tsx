@@ -81,7 +81,7 @@ export function ReportsSkuTicketDialog({ item }: Props) {
       <Button
         variant="outline"
         onClick={() => setOpen(true)}
-        className="border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+        className="border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
       >
         View SKU Ticket
       </Button>

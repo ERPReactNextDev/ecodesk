@@ -948,7 +948,7 @@ const selectedActivity = activities.find(
                                         <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
                                         <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
                                             <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
-                                                <span className="break-words whitespace-normal">
+                                                <span className="break-words whitespace-normal cap">
                                                     {c.company_name}
                                                 </span>
 
@@ -995,7 +995,8 @@ const selectedActivity = activities.find(
                                                 <strong>Type Client:</strong> {c.type_client || "-"}
                                             </p>
                                             <p className="uppercase">
-                                                <strong>Current Handler:</strong> {fullName}
+                                                
+                                                <strong>Current Handler: <Badge>{fullName} </Badge></strong> 
                                             </p>
                                         </AccordionContent>
                                     </AccordionItem>
@@ -1092,7 +1093,7 @@ const selectedActivity = activities.find(
                             />
                             )}
 
-                            <span className="font-semibold">
+                            <span className="font-semibold capitalize">
                             {item.company_name}
                             </span>
                         </div>

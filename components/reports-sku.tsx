@@ -49,6 +49,10 @@ interface Ticket {
     channel?: string;
     wrap_up?: string;
     source?: string;
+    company_name?: string;
+    contact_person?: string;
+    contact_number?: string;
+    email_address?: string;
     customer_type?: string;
     customer_status?: string;
     status: string;
@@ -71,6 +75,7 @@ interface Ticket {
     po_source?: string;
     payment_date?: string;
     delivery_date?: string;
+
 
     // ✅ ADD THESE EXACTLY HERE
     close_reason?: string;
@@ -288,20 +293,46 @@ export const SKU: React.FC<TicketProps> = ({
         return activities
             .filter((a) => allowedRemarks.includes(a.remarks))
             .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
-            .map((activity) => {
-                const company = companies.find(
-                    (c) => c.account_reference_number === activity.account_reference_number
-                );
-                return {
-                    ...activity,
-                    company_name: company?.company_name ?? "Unknown Company",
-                    contact_number: company?.contact_number ?? "-",
-                    type_client: company?.type_client ?? "",
-                    contact_person: company?.contact_person ?? "",
-                    email_address: company?.email_address ?? "",
-                    address: company?.address ?? "",
-                };
-            })
+        .map((activity) => {
+            const company = companies.find(
+                (c) => c.account_reference_number === activity.account_reference_number
+            );
+
+            const isShopify =
+                activity.account_reference_number?.startsWith("SHOPIFY-");
+
+            return {
+                ...activity,
+
+                // ✅ FIX: gamitin activity data kung walang company
+                company_name:
+                    company?.company_name ??
+                    activity.company_name ??
+                    activity.contact_person ??
+                    (isShopify ? "Shopify Customer" : "Unknown Company"),
+
+                contact_number:
+                    company?.contact_number ??
+                    activity.contact_number ??
+                    "-",
+
+                type_client:
+                    company?.type_client ?? "",
+
+                contact_person:
+                    activity.contact_person ??
+                    company?.contact_person ??
+                    "",
+
+                email_address:
+                    company?.email_address ??
+                    activity.email_address ??
+                    "",
+
+                address:
+                    company?.address ?? "",
+            };
+        })
             .sort(
                 (a, b) =>
                     new Date(b.date_updated).getTime() - new Date(a.date_updated).getTime()
