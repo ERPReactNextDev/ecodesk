@@ -100,13 +100,13 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
                     )
                   }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full cursor-pointer">
                     <SelectValue placeholder="-- All --" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__all__">-- All --</SelectItem>
+                    <SelectItem value="__all__" className="cursor-pointer">-- All --</SelectItem>
                     {options.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
+                      <SelectItem key={opt} value={opt} className="cursor-pointer">
                         {opt}
                       </SelectItem>
                     ))}
@@ -127,7 +127,7 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
               value={sortField}
               onValueChange={(value) => setSortField(value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full cursor-pointer">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -156,11 +156,11 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
               className="flex gap-6 mt-2"
             >
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="asc" id="asc" />
+                <RadioGroupItem value="asc" id="asc" className="cursor-pointer"/>
                 <label htmlFor="asc">Ascending</label>
               </div>
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="desc" id="desc" />
+                <RadioGroupItem value="desc" id="desc" className="cursor-pointer"/>
                 <label htmlFor="desc">Descending</label>
               </div>
             </RadioGroup>
@@ -172,10 +172,11 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
           <Button
             variant="secondary"
             onClick={() => setFilterDialogOpen(false)}
+            className="cursor-pointer"
           >
             Cancel
           </Button>
-          <Button onClick={() => setFilterDialogOpen(false)}>
+          <Button onClick={() => setFilterDialogOpen(false)} className="cursor-pointer">
             Apply
           </Button>
         </DialogFooter>
