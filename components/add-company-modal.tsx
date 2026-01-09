@@ -228,7 +228,7 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button>Add Account</Button>
+        <Button className="cursor-pointer">Add Account</Button>
       </SheetTrigger>
 
       <SheetContent side="right" className="w-[420px] sm:w-[480px] p-0 flex flex-col">

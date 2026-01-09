@@ -127,6 +127,40 @@ function ShopifyOrderContent() {
     })();
   }, []);
 
+  useEffect(() => {
+  const handleRealtimeUpdate = async () => {
+    try {
+      const res = await fetch("/api/act-fetch-activity", {
+        cache: "no-store",
+      });
+      const json = await res.json();
+
+      if (!json?.data) return;
+
+      const shopifyIds = json.data
+        .filter(
+          (a: any) =>
+            a.status === "On-Progress" &&
+            a.account_reference_number?.startsWith("SHOPIFY-")
+        )
+        .map((a: any) =>
+          a.account_reference_number.replace("SHOPIFY-", "")
+        );
+
+      setOnProgressShopifyIds(shopifyIds);
+    } catch (err) {
+      console.error("Realtime update failed", err);
+    }
+  };
+
+  window.addEventListener("activity-updated", handleRealtimeUpdate);
+
+  return () => {
+    window.removeEventListener("activity-updated", handleRealtimeUpdate);
+  };
+}, []);
+
+
   /* =======================
      FILTERED DATA
      🔥 HIDE IF ON-PROGRESS
@@ -222,6 +256,8 @@ function ShopifyOrderContent() {
       }
 
       toast.success("Shopify order added to Inquiries");
+
+      window.dispatchEvent(new Event("activity-updated"));
 
       // ✅ IMMEDIATE HIDE (SYNC WITH ON-PROGRESS)
       setOnProgressShopifyIds((prev) => [...prev, String(order.id)]);

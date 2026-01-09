@@ -226,6 +226,8 @@ const isNewCompany = (dateCreated?: string) => {
         fetchAgents();
     }, []);
 
+    
+
     useEffect(() => {
         if (!exporting) {
             setProgress(0);
@@ -319,6 +321,20 @@ const isNewCompany = (dateCreated?: string) => {
     useEffect(() => {
         fetchActivities();
     }, [referenceid, fetchActivities]);
+
+    // 🔥 REAL-TIME LISTENER (Shopify → Ticket)
+useEffect(() => {
+  const handleRealtimeUpdate = () => {
+    fetchActivities(); // re-fetch MongoDB instantly
+  };
+
+  window.addEventListener("activity-updated", handleRealtimeUpdate);
+
+  return () => {
+    window.removeEventListener("activity-updated", handleRealtimeUpdate);
+  };
+}, [fetchActivities]);
+
 
     const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
         if (!range) return true;
@@ -1008,7 +1024,7 @@ const selectedActivity = activities.find(
                         className="flex-grow px-3 py-2 border rounded-md text-sm"
                     />
 
-                    <Button onClick={() => setFilterDialogOpen(true)}>Filter</Button>
+                    <Button className = "cursor-pointer" onClick={() => setFilterDialogOpen(true)}>Filter</Button>
 
                     <Button
                         variant="outline"

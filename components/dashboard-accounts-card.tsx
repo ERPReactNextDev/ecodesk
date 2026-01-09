@@ -122,11 +122,11 @@ export function AccountsCard() {
 
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" className="cursor-pointer">
                 Show Breakdown
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-96">
+            <SheetContent side="right" className="w-96 [&_button]:cursor-pointer [&_button]:hover:opacity-80">
               <SheetHeader>
                 <SheetTitle>Client Type Breakdown</SheetTitle>
                 <SheetDescription>

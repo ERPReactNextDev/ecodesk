@@ -213,7 +213,7 @@ export function SidebarRight({
           <Button
             variant="outline"
             size="sm"
-            className="w-full"
+            className="w-full cursor-pointer"
             onClick={() => setDateFilterOpen(true)}
           >
             Advanced Date Filter
