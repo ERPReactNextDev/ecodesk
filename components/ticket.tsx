@@ -1031,7 +1031,7 @@ const selectedActivity = activities.find(
                         variant="outline"
                         disabled={filteredActivities.length === 0}
                         onClick={() => handleExportCsv(filteredActivities)}
-                        className="bg-green-500 text-white hover:bg-green-600"
+                        className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
                     >
                         Download CSV
                     </Button>

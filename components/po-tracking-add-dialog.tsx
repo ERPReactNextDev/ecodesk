@@ -256,7 +256,7 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map((company) => (
-                      <SelectItem key={company.id} value={company.company_name}>
+                      <SelectItem key={company.id} value={company.company_name} className="cursor-pointer">
                         {company.company_name}
                       </SelectItem>
                     ))}
@@ -286,12 +286,13 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
                       type="button"
                       onClick={() => removeContactField(idx)}
                       aria-label="Remove contact number"
+                      className="cursor-pointer"
                     >
                       −
                     </Button>
                   </div>
                 ))}
-                <Button variant="secondary" type="button" onClick={addContactField}>
+                <Button variant="secondary" type="button" onClick={addContactField} className="cursor-pointer">
                   + Add another number
                 </Button>
               </div>
@@ -339,6 +340,7 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
                 type="date"
                 value={form.so_date}
                 onChange={(e) => handleChange("so_date", e.target.value)}
+                className="cursor-pointer"
               />
             </FieldContent>
           </Field>
@@ -350,7 +352,7 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
                 value={form.sales_agent}
                 onValueChange={(v) => handleChange("sales_agent", v)}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full cursor-pointer">
                   <SelectValue placeholder="Select Agent" />
                 </SelectTrigger>
                 <SelectContent>
@@ -443,10 +445,10 @@ export const POTrackingAddDialog: React.FC<POTrackingAddDialogProps> = ({
           </Field>
 
           <div className="pt-4 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="cursor-pointer">
               Cancel
             </Button>
-            <Button type="submit">Save Record</Button>
+            <Button type="submit" className="cursor-pointer">Save Record</Button>
           </div>
         </form>
       </SheetContent>

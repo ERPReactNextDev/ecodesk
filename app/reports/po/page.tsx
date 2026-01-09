@@ -432,9 +432,9 @@ function POContent() {
                 className="w-80"
               />
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setFilterDialogOpen(true)}><Filter /> Filter</Button>
-                <Button onClick={() => setOpenAdd(true)}>Add Record</Button>
-                <Button className="bg-green-500 text-white hover:bg-green-600" onClick={handleDownloadCSV}>Download CSV</Button>
+                <Button variant="outline" onClick={() => setFilterDialogOpen(true)} className="cursor-pointer"><Filter /> Filter</Button>
+                <Button onClick={() => setOpenAdd(true)} className="cursor-pointer">Add Record</Button>
+                <Button className="bg-green-500 text-white hover:bg-green-600 cursor-pointer" onClick={handleDownloadCSV}>Download CSV</Button>
               </div>
             </div>
 
