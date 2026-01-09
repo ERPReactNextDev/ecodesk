@@ -225,7 +225,7 @@ export function DateFilterModal({
 
           <Button
             size="sm"
-            className="w-full h-10"
+            className="w-full h-10 cursor-pointer"
             disabled={
               fromMonth === null ||
               fromMonthYear === null ||
@@ -278,7 +278,7 @@ export function DateFilterModal({
 
           <Button
             size="sm"
-            className="w-full h-10"
+            className="w-full h-10 cursor-pointer"
             disabled={yearFrom === null || yearTo === null}
             onClick={confirmYearRange}
           >
