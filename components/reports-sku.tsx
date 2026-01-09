@@ -747,6 +747,7 @@ export const SKU: React.FC<TicketProps> = ({
             {...{
                 _id: item._id,
                 ticket_reference_number: item.ticket_reference_number,
+                date_created: item.date_created,
                 ticket_received: item.ticket_received,
                 ticket_endorsed: item.ticket_endorsed,
                 traffic: item.traffic,

@@ -165,6 +165,7 @@ export function ReportsSkuTicketDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Acknowledge & Handling</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
+              <p><strong>Date Created:</strong> {formatDateTime(item.date_created)}</p>
               <p><strong>TSM Acknowledge Date:</strong> {formatDateTime(item.tsm_acknowledge_date)}</p>
               <p><strong>TSA Acknowledge Date:</strong> {formatDateTime(item.tsa_acknowledge_date)}</p>
               <p><strong>TSM Handling Time:</strong> {formatDateTime(item.tsm_handling_time)}</p>

@@ -307,6 +307,8 @@ export function UpdateTicketDialog({
     setTsaAcknowledgeDate(toDatetimeLocal(tsa_acknowledge_date));
     setTsmHandlingTime(toDatetimeLocal(tsm_handling_time));
     setTsaHandlingTime(toDatetimeLocal(tsa_handling_time));
+
+    setDateCreated(toDatetimeLocal(date_created));
   }, [
     _id,
     type_client,

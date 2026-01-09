@@ -1131,6 +1131,7 @@ const selectedActivity = activities.find(
                             <UpdateTicketDialog
                             {...{
                                 _id: item._id,
+                                date_created: item.date_created,
                                 ticket_reference_number: item.ticket_reference_number,
                                 ticket_received: item.ticket_received,
                                 ticket_endorsed: item.ticket_endorsed,

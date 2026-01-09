@@ -68,7 +68,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const updateData = { ...body };
     delete updateData._id;
 
-    updateData.date_created = existingDoc.date_created || new Date().toISOString();
+    // Respect incoming date_created if provided, otherwise keep existing
+    if (!updateData.date_created) {
+      updateData.date_created = existingDoc.date_created;
+    }
+
+    // Always update date_updated
+    updateData.date_updated = new Date().toISOString();
+
     updateData.date_updated = new Date().toISOString();
 
     const result = await collection.updateOne(filter, { $set: updateData });

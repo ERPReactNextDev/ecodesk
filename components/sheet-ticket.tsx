@@ -365,6 +365,8 @@ export function TicketSheet(props: TicketSheetProps) {
         setStep,
         department,
         setDepartment,
+        dateCreated,
+        setDateCreated,
         ticketReceived,
         setTicketReceived,
         ticketEndorsed,
@@ -646,6 +648,17 @@ export function TicketSheet(props: TicketSheetProps) {
                     <h2 className="text-sm font-semibold mt-3">Step 3 — Ticket Details</h2>
                     <FieldGroup>
                         <FieldSet>
+                            <Field>
+                            <FieldLabel>Date Created</FieldLabel>
+                            <FieldDescription>
+                                Manually set the original date and time this ticket was created.
+                            </FieldDescription>
+                            <InputField
+                                type="datetime-local"
+                                value={dateCreated}
+                                onChange={(e) => setDateCreated(e.target.value)}
+                            />
+                            </Field>
                             <Field>
                                 <FieldLabel>Ticket Received</FieldLabel>
                                 <FieldDescription>
