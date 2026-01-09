@@ -338,12 +338,12 @@ export function OBCalls({
                 />
 
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setFilterDialogOpen(true)}>
+                    <Button variant="outline" onClick={() => setFilterDialogOpen(true)} className="cursor-pointer">
                         Filters
                     </Button>
 
                     <Button
-                        className="bg-green-500 text-white hover:bg-green-600"
+                        className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
                         onClick={handleDownloadCSV}
                     >
                         Download CSV
@@ -414,6 +414,7 @@ export function OBCalls({
                                 variant="outline"
                                 disabled={page === 1}
                                 onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                className="cursor-pointer"
                             >
                                 Prev
                             </Button>
@@ -427,6 +428,7 @@ export function OBCalls({
                                 variant="outline"
                                 disabled={page === totalPages}
                                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                className="cursor-pointer"
                             >
                                 Next
                             </Button>

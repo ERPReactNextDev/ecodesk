@@ -157,12 +157,12 @@ export function DateFilterModal({
               value={fromMonth !== null ? String(fromMonth) : undefined}
               onValueChange={(v) => setFromMonth(Number(v))}
             >
-              <SelectTrigger className="w-full h-10">
+              <SelectTrigger className="w-full h-10 cursor-pointer">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent>
                 {months.map((m, i) => (
-                  <SelectItem key={m} value={String(i)}>
+                  <SelectItem key={m} value={String(i)} className="cursor-pointer"> 
                     {m}
                   </SelectItem>
                 ))}
@@ -173,12 +173,12 @@ export function DateFilterModal({
               value={fromMonthYear !== null ? String(fromMonthYear) : undefined}
               onValueChange={(v) => setFromMonthYear(Number(v))}
             >
-              <SelectTrigger className="w-full h-10">
+              <SelectTrigger className="w-full h-10 cursor-pointer">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent>
                 {years.map((y) => (
-                  <SelectItem key={y} value={String(y)}>
+                  <SelectItem key={y} value={String(y)} className="cursor-pointer">
                     {y}
                   </SelectItem>
                 ))}
@@ -192,12 +192,12 @@ export function DateFilterModal({
               value={toMonth !== null ? String(toMonth) : undefined}
               onValueChange={(v) => setToMonth(Number(v))}
             >
-              <SelectTrigger className="w-full h-10">
+              <SelectTrigger className="w-full h-10 cursor-pointer">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent>
                 {months.map((m, i) => (
-                  <SelectItem key={m} value={String(i)}>
+                  <SelectItem key={m} value={String(i)} className="cursor-pointer">
                     {m}
                   </SelectItem>
                 ))}
@@ -208,14 +208,14 @@ export function DateFilterModal({
               value={toMonthYear !== null ? String(toMonthYear) : undefined}
               onValueChange={(v) => setToMonthYear(Number(v))}
             >
-              <SelectTrigger className="w-full h-10">
+              <SelectTrigger className="w-full h-10 cursor-pointer">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent>
                 {years
                   .filter((y) => fromMonthYear === null || y >= fromMonthYear)
                   .map((y) => (
-                    <SelectItem key={y} value={String(y)}>
+                    <SelectItem key={y} value={String(y)} className="cursor-pointer">
                       {y}
                     </SelectItem>
                   ))}
@@ -246,12 +246,12 @@ export function DateFilterModal({
             value={yearFrom !== null ? String(yearFrom) : undefined}
             onValueChange={(v) => setYearFrom(Number(v))}
           >
-            <SelectTrigger className="w-full h-10">
+            <SelectTrigger className="w-full h-10 cursor-pointer">
               <SelectValue placeholder="From Year" />
             </SelectTrigger>
             <SelectContent>
               {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
+                <SelectItem key={y} value={String(y)} className="cursor-pointer">
                   {y}
                 </SelectItem>
               ))}
@@ -262,14 +262,14 @@ export function DateFilterModal({
             value={yearTo !== null ? String(yearTo) : undefined}
             onValueChange={(v) => setYearTo(Number(v))}
           >
-            <SelectTrigger className="w-full h-10">
+            <SelectTrigger className="w-full h-10 cursor-pointer">
               <SelectValue placeholder="To Year" />
             </SelectTrigger>
             <SelectContent>
               {years
                 .filter((y) => yearFrom === null || y >= yearFrom)
                 .map((y) => (
-                  <SelectItem key={y} value={String(y)}>
+                  <SelectItem key={y} value={String(y)} className="cursor-pointer">
                     {y}
                   </SelectItem>
                 ))}

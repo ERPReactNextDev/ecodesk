@@ -503,7 +503,7 @@ export const DCT: React.FC<TicketProps> = ({
                                 variant="outline"
                                 onClick={downloadAllCSV}
                                 disabled={filteredGroupedData.length === 0 || exporting}
-                                className="bg-green-500 text-white hover:bg-green-600"
+                                className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
                             >
                                 Download CSV
                             </Button>
@@ -539,7 +539,7 @@ export const DCT: React.FC<TicketProps> = ({
                                                 {new Date(latestActivity.date_updated).toLocaleString()}
                                             </td>
                                             <td className="p-2">
-                                                <Button
+                                                <Button className="cursor-pointer"
                                                     size="sm"
                                                     onClick={() => setViewTimelineTicket(group.ticket_reference_number)}
                                                 >
@@ -589,6 +589,7 @@ export const DCT: React.FC<TicketProps> = ({
                                 maxHeight: "90vh",
                                 overflowY: "auto",
                             }}
+                            className="[&>button]:cursor-pointer"
                         >
                             <DialogHeader>
                                 <DialogTitle>Timeline Activities</DialogTitle>

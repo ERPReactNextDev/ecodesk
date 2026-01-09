@@ -590,10 +590,10 @@ export function TicketSheet(props: TicketSheetProps) {
     // Helper: common buttons with validation on Next
     const Navigation = () => (
         <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={handleBack}>
+            <Button variant="outline" onClick={handleBack} className="cursor-pointer">
                 Back
             </Button>
-            <Button onClick={onNext}>Next</Button>
+            <Button onClick={onNext} className="cursor-pointer">Next</Button>
         </div>
     );
 
@@ -610,7 +610,7 @@ export function TicketSheet(props: TicketSheetProps) {
                                     onValueChange={setDepartment}
                                 >
                                     {departmentOptions.map((item) => (
-                                        <FieldLabel key={item.value}>
+                                        <FieldLabel key={item.value} className="cursor-pointer">
                                             <Field orientation="horizontal" className="w-full items-start">
                                                 <FieldContent className="flex-1">
                                                     <FieldTitle>{item.title}</FieldTitle>
@@ -618,10 +618,10 @@ export function TicketSheet(props: TicketSheetProps) {
 
                                                     {department === item.value && (
                                                         <div className="mt-4 flex gap-2">
-                                                            <Button variant="outline" onClick={handleBack}>
+                                                            <Button variant="outline" onClick={handleBack} className="cursor-pointer">
                                                                 Back
                                                             </Button>
-                                                            <Button onClick={onNext}>Next</Button>
+                                                            <Button onClick={onNext} className="cursor-pointer">Next</Button>
                                                         </div>
                                                     )}
                                                 </FieldContent>
@@ -1226,7 +1226,7 @@ export function TicketSheet(props: TicketSheetProps) {
 
                                             {/* BUTTON — bottom right */}
                                             <div className="absolute bottom-0 right-0">
-                                                <Button size="sm" onClick={handleApplySO}>
+                                                <Button size="sm" onClick={handleApplySO} className="cursor-pointer">
                                                     Apply
                                                 </Button>
                                             </div>
@@ -1262,8 +1262,8 @@ export function TicketSheet(props: TicketSheetProps) {
                         </>
                     )}
 
-                    <Button variant="outline" onClick={handleBack} disabled={loadingSave || loadingLoad}>Back</Button>
-                    <Button onClick={onUpdate} disabled={loadingSave || loadingLoad}>
+                    <Button variant="outline" onClick={handleBack} disabled={loadingSave || loadingLoad} className="cursor-pointer">Back</Button>
+                    <Button onClick={onUpdate} disabled={loadingSave || loadingLoad} className="cursor-pointer">
                         {loadingSave ? "Saving..." : "Save"}
                     </Button>
                 </>

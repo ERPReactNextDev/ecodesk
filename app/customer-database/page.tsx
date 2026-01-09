@@ -532,8 +532,9 @@ const filteredAccounts = accounts
                 onClick={() => goToPage(currentPage - 1)}
                 disabled={currentPage === 1}
                 variant="outline"
+                className="cursor-pointer"
               >
-                Previous
+                Prev
               </Button>
               <span>
                 Page {currentPage} / {totalPages || 1}
@@ -543,6 +544,7 @@ const filteredAccounts = accounts
                 onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 variant="outline"
+                className="cursor-pointer"
               >
                 Next
               </Button>

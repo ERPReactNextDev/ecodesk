@@ -48,7 +48,7 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto [&>button]:cursor-pointer">
         <DialogHeader>
           <DialogTitle>Filter Outbound Calls</DialogTitle>
         </DialogHeader>
@@ -63,7 +63,7 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                 setFilters({ ...filters, type_client: v })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full cursor-pointer">
                 <SelectValue placeholder="Select type client" />
               </SelectTrigger>
               <SelectContent className="w-full">
@@ -75,7 +75,7 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                   "Next 30",
                   "CSR Client",
                 ]).map((i) => (
-                  <SelectItem key={i} value={i}>
+                  <SelectItem key={i} value={i} className="cursor-pointer">
                     {i}
                   </SelectItem>
                 ))}
@@ -92,7 +92,7 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                 setFilters({ ...filters, source: v })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full cursor-pointer">
                 <SelectValue placeholder="Select source" />
               </SelectTrigger>
               <SelectContent className="w-full">
@@ -101,7 +101,7 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                   "Outbound - Touchbase",
                   "Outbound - Follow-up",
                 ]).map((i) => (
-                  <SelectItem key={i} value={i}>
+                  <SelectItem key={i} value={i} className="cursor-pointer">
                     {i}
                   </SelectItem>
                 ))}
@@ -118,13 +118,13 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                 setFilters({ ...filters, call_status: v })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full cursor-pointer">
                 <SelectValue placeholder="Select call status" />
               </SelectTrigger>
               <SelectContent className="w-full">
                 {sortOptions(["All", "Successful", "Unsuccessful"]).map(
                   (i) => (
-                    <SelectItem key={i} value={i}>
+                    <SelectItem key={i} value={i} className="cursor-pointer">
                       {i}
                     </SelectItem>
                   )
@@ -142,7 +142,7 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                 setFilters({ ...filters, call_type: v })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full cursor-pointer">
                 <SelectValue placeholder="Select call type" />
               </SelectTrigger>
               <SelectContent className="w-full">
@@ -155,7 +155,7 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                   "With RFQ",
                   "Cannot Be Reached",
                 ]).map((i) => (
-                  <SelectItem key={i} value={i}>
+                  <SelectItem key={i} value={i} className="cursor-pointer">
                     {i}
                   </SelectItem>
                 ))}
@@ -172,13 +172,13 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
                 setFilters({ ...filters, status: v })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full cursor-pointer">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent className="w-full">
                 {sortOptions(["All", "Assisted", "Not Assisted"]).map(
                   (i) => (
-                    <SelectItem key={i} value={i}>
+                    <SelectItem key={i} value={i} className="cursor-pointer">
                       {i}
                     </SelectItem>
                   )
@@ -190,11 +190,11 @@ export const ObcCallsFilterDialog: React.FC<Props> = ({
 
         {/* ACTION BUTTONS */}
         <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={resetFilters}>
+          <Button variant="outline" onClick={resetFilters} className="cursor-pointer">
             Clear Filters
           </Button>
 
-          <Button onClick={onClose}>Apply Filters</Button>
+          <Button onClick={onClose} className="cursor-pointer">Apply Filters</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -279,7 +279,7 @@ export const SKU: React.FC<TicketProps> = ({
         return true;
     };
 
-    const allowedRemarks = ["No Stocks / Insufficient Stocks", "Item Not Carried", "Non-Standard Item"];
+    const allowedRemarks = ["No Stocks / Insufficient Stocks", "Item Not Carried", "Non Standard Item"];
 
     // Merge activity with company info, filter by status and date range
     const mergedData = React.useMemo(() => {
@@ -608,13 +608,13 @@ export const SKU: React.FC<TicketProps> = ({
                         className="flex-grow px-3 py-2 border rounded-md text-sm"
                     />
 
-                    <Button onClick={() => setFilterDialogOpen(true)}>Filter</Button>
+                    <Button onClick={() => setFilterDialogOpen(true)} className="cursor-pointer">Filter</Button>
 
                     <Button
                         variant="outline"
                         disabled={filteredActivities.length === 0}
                         onClick={() => handleExportCsv(filteredActivities)}
-                        className="bg-green-500 text-white hover:bg-green-600"
+                        className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
                     >
                         Download CSV
                     </Button>

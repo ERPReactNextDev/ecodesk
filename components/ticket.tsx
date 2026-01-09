@@ -975,7 +975,7 @@ const selectedActivity = activities.find(
                                                     e.stopPropagation();
                                                     handleAddActivity(c);
                                                 }}
-                                                className="text-xs px-3 py-1"
+                                                className="text-xs px-3 py-1 cursor-pointer"
                                             >
                                                 {addingAccount === c.account_reference_number ? "Adding..." : "Add"}
                                             </Button>
@@ -1186,6 +1186,7 @@ const selectedActivity = activities.find(
                             <Button
                             type="button"
                             variant="secondary"
+                            className="cursor-pointer"
                             disabled={updatingId === item._id}
                             onClick={() => openDoneDialog(item._id)}
                             >

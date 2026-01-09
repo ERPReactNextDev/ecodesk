@@ -88,7 +88,7 @@ export function TicketHistoryDialog({ item }: Props) {
       <Button
         variant="outline"
         onClick={() => setOpen(true)}
-        className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+        className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer"
       >
         View Ticket History
       </Button>

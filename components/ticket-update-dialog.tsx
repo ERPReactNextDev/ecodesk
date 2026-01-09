@@ -505,7 +505,7 @@ const newActivity: Activity & {
     <>
       <Sheet open={sheetOpen} onOpenChange={onSheetOpenChange}>
         <SheetTrigger asChild>
-          <Button type="button" variant="outline" onClick={() => setSheetOpen(true)}>
+          <Button type="button" variant="outline" onClick={() => setSheetOpen(true)} className="cursor-pointer">
             Update
           </Button>
         </SheetTrigger>
@@ -595,7 +595,7 @@ const newActivity: Activity & {
                           setStartDate(new Date().toISOString());
                         }}
                       >
-                        <FieldLabel>
+                        <FieldLabel className="cursor-pointer">
                           <Field orientation="horizontal">
                             <FieldContent>
                               <FieldTitle>Sales</FieldTitle>
@@ -605,7 +605,7 @@ const newActivity: Activity & {
                           </Field>
                         </FieldLabel>
 
-                        <FieldLabel>
+                        <FieldLabel className="cursor-pointer">
                           <Field orientation="horizontal">
                             <FieldContent>
                               <FieldTitle>Non-Sales</FieldTitle>
@@ -628,7 +628,7 @@ const newActivity: Activity & {
                           setStartDate(new Date().toISOString());
                         }}
                       >
-                        <FieldLabel>
+                        <FieldLabel className="cursor-pointer">
                           <Field orientation="horizontal">
                             <FieldContent>
                               <FieldTitle>Ecoshift Corporation</FieldTitle>
@@ -640,7 +640,7 @@ const newActivity: Activity & {
                           </Field>
                         </FieldLabel>
 
-                        <FieldLabel>
+                        <FieldLabel className="cursor-pointer">
                           <Field orientation="horizontal">
                             <FieldContent>
                               <FieldTitle>Disruptive Solutions Inc</FieldTitle>
@@ -652,7 +652,7 @@ const newActivity: Activity & {
                           </Field>
                         </FieldLabel>
 
-                        <FieldLabel>
+                        <FieldLabel className="cursor-pointer">
                           <Field orientation="horizontal">
                             <FieldContent>
                               <FieldTitle>Buildchem Solutions</FieldTitle>
@@ -667,7 +667,7 @@ const newActivity: Activity & {
                     </FieldSet>
                   </FieldGroup>
 
-                  <Button className="mt-4 w-full" onClick={() => setStep(2)}>
+                  <Button className="mt-4 w-full cursor-pointer" onClick={() => setStep(2)}>
                     Next
                   </Button>
                 </div>
