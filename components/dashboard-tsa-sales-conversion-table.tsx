@@ -200,13 +200,16 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
         > = {};
 
         activities
-            .filter(
-                (a) =>
-                    isDateInRange(a.date_created, dateCreatedFilterRange) &&
-                    a.agent &&
-                    a.agent.trim() !== "" &&
-                    (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
-            )
+        .filter(
+            (a) =>
+            isDateInRange(
+                a.ticket_received || a.ticket_endorsed || a.date_updated || a.date_created,
+                dateCreatedFilterRange
+            ) &&
+            a.agent &&
+            a.agent.trim() !== ""
+        )
+
 .forEach((a) => {
   const agent = a.agent!.trim();
   const soAmount = Number(a.so_amount ?? 0);
@@ -217,27 +220,54 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
 
     const tsaResponseTime = diffMinutes(a.ticket_received, a.ticket_endorsed);
 
-    const isNonQuotation =
-    status === "closed" &&
-    NON_QUOTATION_WRAPUPS.includes(a.wrap_up?.toLowerCase() || "");
+const remark = a.remarks?.toLowerCase().trim() || "";
 
-    const tsaNonQuotationTime = isNonQuotation
-    ? diffMinutes(a.ticket_received, a.date_updated)
-    : 0;
+// ---- NON-QUOTATION ----
+const NON_QUOTATION_REMARKS = [
+  "no stocks / insufficient stocks",
+  "item not carried",
+  "non standard item",
+  "for site visit",
+  "for occular inspection",
+  "not converted to sales",
+  "no response for client",
+  "assisted",
+  "customer request cancellation",
+  "accreditation / partnership",
+];
 
-    const tsaQuotationTime =
-    status === "closed" && !isNonQuotation
-        ? diffMinutes(a.ticket_received, a.date_updated)
-        : 0;
+// ---- QUOTATION ----
+const QUOTATION_REMARKS = [
+  "quotation for approval",
+  "disapproved quotation",
+];
 
-    const isSPF =
-    a.remarks?.toLowerCase() === "spf" &&
-    status === "closed" &&
-    NON_QUOTATION_WRAPUPS.includes(a.wrap_up?.toLowerCase() || "");
+const isNonQuotation =
+  status === "closed" &&
+  NON_QUOTATION_REMARKS.includes(remark);
 
-    const spfTime = isSPF
-    ? diffMinutes(a.ticket_received, a.date_updated)
-    : 0;
+const isQuotation =
+  status === "closed" &&
+  QUOTATION_REMARKS.includes(remark);
+
+// ---- TIME COMPUTATION ----
+const tsaNonQuotationTime = isNonQuotation
+  ? diffMinutes(a.ticket_received, a.date_updated)
+  : 0;
+
+const tsaQuotationTime = isQuotation
+  ? diffMinutes(a.ticket_received, a.date_updated)
+  : 0;
+
+// ---- SPF ----
+const isSPF =
+  remark === "for spf" &&
+  status === "closed";
+
+const spfTime = isSPF
+  ? diffMinutes(a.ticket_received, a.date_updated)
+  : 0;
+
 
 
   // ✅ INIT FIRST
