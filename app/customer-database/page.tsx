@@ -209,7 +209,6 @@ const filteredAccounts = accounts
     return 0;
   });
 
-
   const totalPages = Math.ceil(filteredAccounts.length / accountsPerPage);
   const indexOfLast = currentPage * accountsPerPage;
   const indexOfFirst = indexOfLast - accountsPerPage;

@@ -124,6 +124,7 @@ interface TicketSheetProps {
     handleUpdate: () => void;
 }
 
+
 const MANAGER_AGENT_MAP: Record<string, string[]> = {
   "AB-NCR-288130": [
     "JP-NCR-321488", // Jeff Puying
@@ -466,6 +467,24 @@ export function TicketSheet(props: TicketSheetProps) {
         fetchActivities();
     }, [fetchActivities]);
 
+    useEffect(() => {
+  if (!ticketReceived || !ticketEndorsed) {
+    setTimeError(null);
+    return;
+  }
+
+  const received = new Date(ticketReceived);
+  const endorsed = new Date(ticketEndorsed);
+
+  if (!isNaN(received.getTime()) && !isNaN(endorsed.getTime())) {
+    if (endorsed < received) {
+      setTimeError("Ticket Endorsed cannot be earlier than Ticket Received.");
+    } else {
+      setTimeError(null);
+    }
+  }
+}, [ticketReceived, ticketEndorsed]);
+
     const groupedActivities = activities.filter(
         (act) => act.ticket_reference_number === ticketReferenceNumber
     );
@@ -500,6 +519,8 @@ export function TicketSheet(props: TicketSheetProps) {
         wrapUp?: string;
         status?: string;
     }>({});
+
+    const [timeError, setTimeError] = useState<string | null>(null);
 
     // Options
     const departmentOptions: Option[] = [
@@ -568,16 +589,17 @@ export function TicketSheet(props: TicketSheetProps) {
     return Object.keys(newErrors).length === 0;
     };
     // Override handleNext to add validation on step 3 and 6
-    const onNext = () => {
-        if (step === 3) {
-            if (!validateStep3()) return;
-        }
-        if (step === 6) {
-            if (!validateStep6()) return;
-        }
-        setErrors({});
-        handleNext();
-    };
+        const onNext = () => {
+            if (step === 3) {
+                if (timeError) return;          // 🔥 BLOCK kapag red
+                if (!validateStep3()) return;
+            }
+            if (step === 6) {
+                if (!validateStep6()) return;
+            }
+            setErrors({});
+            handleNext();
+        };
 
     const [loadingSave, setLoadingSave] = useState(false);
     const [loadingLoad, setLoadingLoad] = useState(false);
@@ -664,24 +686,25 @@ export function TicketSheet(props: TicketSheetProps) {
                                 <FieldDescription>
                                     Date and time when the ticket was initially received or logged.
                                 </FieldDescription>
-                                <InputField
-                                    type="datetime-local"
-                                    value={ticketReceived}
-                                    onChange={(e) => setTicketReceived(e.target.value)}
-                                    error={errors.ticketReceived}
-                                />
+                                    <InputField
+                                        type="datetime-local"
+                                        value={ticketReceived}
+                                        onChange={(e) => setTicketReceived(e.target.value)}
+                                        error={errors.ticketReceived || timeError || undefined}
+                                    />
                             </Field>
                             <Field>
                                 <FieldLabel>Ticket Endorsed</FieldLabel>
                                 <FieldDescription>
                                     Date and time when the ticket was endorsed to the assigned department.
                                 </FieldDescription>
-                                <InputField
-                                    type="datetime-local"
-                                    value={ticketEndorsed}
-                                    onChange={(e) => setTicketEndorsed(e.target.value)}
-                                    error={errors.ticketEndorsed}
-                                />
+                                    <InputField
+                                        type="datetime-local"
+                                        value={ticketEndorsed}
+                                        onChange={(e) => setTicketEndorsed(e.target.value)}
+                                        error={errors.ticketEndorsed || timeError || undefined}
+                                    />
+
                             </Field>
 
                             <Field>
@@ -789,7 +812,7 @@ export function TicketSheet(props: TicketSheetProps) {
                             </Field>
 
                             <Field>
-                            <FieldLabel>TSM Acknowledge Date</FieldLabel>
+                            <FieldLabel>TSM Acknowledgement Date</FieldLabel>
                             <InputField
                                 type="datetime-local"
                                 value={tsmAcknowledgeDate}
@@ -798,7 +821,7 @@ export function TicketSheet(props: TicketSheetProps) {
                             </Field>
 
                             <Field>
-                            <FieldLabel>TSA Acknowledge Date</FieldLabel>
+                            <FieldLabel>TSA Acknowledgement Date</FieldLabel>
                             <InputField
                                 type="datetime-local"
                                 value={tsaAcknowledgeDate}
