@@ -459,11 +459,13 @@ useEffect(() => {
           <Separator />
 
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-            <AgentSalesTableCard
-              ref={agentSalesCardRef}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-            />
+          <AgentSalesTableCard
+            ref={agentSalesCardRef}
+            dateCreatedFilterRange={dateCreatedFilterRange}
+            setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            userReferenceId={userDetails.referenceid}
+            role={userDetails.role}
+          />
 
             <AgentSalesTableWeeklyCard
               ref={agentSalesWeeklyCardRef}

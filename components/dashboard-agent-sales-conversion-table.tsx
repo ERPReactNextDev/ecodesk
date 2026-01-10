@@ -56,18 +56,20 @@ interface Agent {
 }
 
 interface AgentSalesConversionCardProps {
-    dateCreatedFilterRange: DateRange | undefined;
-    setDateCreatedFilterRangeAction: React.Dispatch<
-        React.SetStateAction<DateRange | undefined>
-    >;
+  dateCreatedFilterRange: DateRange | undefined;
+  setDateCreatedFilterRangeAction: React.Dispatch<
+    React.SetStateAction<DateRange | undefined>
+  >;
+  userReferenceId: string;
+  role: string;
 }
 
 export interface AgentSalesConversionCardRef { }
 
 const AgentSalesTableCard: ForwardRefRenderFunction<
-    AgentSalesConversionCardRef,
-    AgentSalesConversionCardProps
-> = ({ dateCreatedFilterRange }, ref) => {
+  AgentSalesConversionCardRef,
+  AgentSalesConversionCardProps
+> = ({ dateCreatedFilterRange, userReferenceId, role }, ref) => {
     const [showTooltip, setShowTooltip] = useState(false);
 
     const [activities, setActivities] = useState<Activity[]>([]);
@@ -144,14 +146,19 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             { referenceid: string; salesCount: number; nonSalesCount: number; convertedCount: number; amount: number; qtySold: number }
         > = {};
 
-        activities
-            .filter(
-                (a) =>
-                    isDateInRange(a.date_created, dateCreatedFilterRange) &&
-                    a.referenceid &&
-                    a.referenceid.trim() !== "" &&
-                    (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
-            )
+                    activities
+                    .filter((a) => {
+                        if (!isDateInRange(a.date_created, dateCreatedFilterRange)) return false;
+                        if (!a.referenceid || a.referenceid.trim() === "") return false;
+                        if (a.remarks && a.remarks.toLowerCase() === "po received") return false;
+
+                        // 🔐 if not Admin → only own data
+                        if (role !== "Admin") {
+                        return a.referenceid === userReferenceId;
+                        }
+
+                        return true; // Admin sees all
+                    })
             .forEach((a) => {
                 const referenceid = a.referenceid!.trim();
                 const soAmount = Number(a.so_amount ?? 0);
@@ -178,7 +185,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             });
 
         return Object.values(map);
-    }, [activities, dateCreatedFilterRange]);
+    }, [activities, dateCreatedFilterRange, role, userReferenceId]);
 
     const totalSoAmount = groupedData.reduce((sum, row) => sum + row.amount, 0);
 
