@@ -109,21 +109,31 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
     });
   }, [formData.company_name, formData.contact_person, existingCompanies]);
 
-  const isFormValid = () => {
-    const required: Array<keyof typeof formData> = [
-      "company_name",
-      "contact_person",
-      "industry",
-      "gender",
-      "address",
-    ];
+const isFormValid = () => {
+  const required: Array<keyof typeof formData> = [
+    "company_name",
+    "contact_person",
+    "industry",
+    "gender",
+    "address",
+  ];
 
-    const allFilled = required.every((f) => formData[f]);
-    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
-    const hasContact = contactNumbers.some((n) => n.trim());
+  const allFilled = required.every((f) => formData[f]);
 
-    return allFilled && emailValid && hasContact && !duplicate.contact;
-  };
+  // email is OPTIONAL — only validate if user typed something
+  const emailValid =
+    !formData.email_address ||
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
+
+  // contact number is OPTIONAL — allow empty
+  const hasContact = contactNumbers.some((n) => n.trim());
+  const contactValid = contactNumbers.length === 1
+    ? true        // allow blank
+    : hasContact; // if multiple fields exist, at least one must be filled
+
+  return allFilled && emailValid && contactValid && !duplicate.contact;
+};
+
 
   /* ACCOUNT REFERENCE GENERATOR */
   const generateAccountReferenceNumber = async (companyName: string) => {
