@@ -154,6 +154,17 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
 
     return Math.max(0, Math.round((e.getTime() - s.getTime()) / 60000));
 }
+
+function formatHHMMSS(totalMinutes: number): string {
+  if (!totalMinutes || totalMinutes <= 0) return "0:00:00";
+
+  const seconds = Math.round(totalMinutes * 60);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+
+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
     const NON_QUOTATION_WRAPUPS = [
         "no stocks",
         "insufficient stocks",
@@ -661,10 +672,10 @@ const spfTime = isSPF
                                                         maximumFractionDigits: 2,
                                                     })}
                                                 </TableCell>
-                                                <TableCell>{avgResponse === "-" ? "-" : `${avgResponse} min`}</TableCell>
-                                                <TableCell>{avgQuotation === "-" ? "-" : `${avgQuotation} min`}</TableCell>
-                                                <TableCell>{avgNonQuotation === "-" ? "-" : `${avgNonQuotation} min`}</TableCell>
-                                                <TableCell>{avgSPF === "-" ? "-" : `${avgSPF} min`}</TableCell>
+                                                <TableCell>{avgResponse === "-" ? "-" : formatHHMMSS(avgResponse)}</TableCell>
+                                                <TableCell>{avgQuotation === "-" ? "-" : formatHHMMSS(avgQuotation)}</TableCell>
+                                                <TableCell>{avgNonQuotation === "-" ? "-" : formatHHMMSS(avgNonQuotation)}</TableCell>
+                                                <TableCell>{avgSPF === "-" ? "-" : formatHHMMSS(avgSPF)}</TableCell>
                                             </TableRow>
                                         );
                                     })}
