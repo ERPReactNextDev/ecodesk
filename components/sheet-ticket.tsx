@@ -473,6 +473,20 @@ export function TicketSheet(props: TicketSheetProps) {
     return;
   }
 
+  useEffect(() => {
+  const channelsWithSource = [
+    "Viber",
+    "Text Message",
+    "Website",
+    "Voice Call",
+    "Whatsapp",
+  ];
+
+  if (!channelsWithSource.includes(channel)) {
+    setSource("-"); // force dash when hidden
+  }
+}, [channel, setSource]);
+
   const received = new Date(ticketReceived);
   const endorsed = new Date(ticketEndorsed);
 
@@ -778,38 +792,43 @@ export function TicketSheet(props: TicketSheetProps) {
                                     error={errors.wrapUp}
                                 />
                             </Field>
-                            <Field>
-                                <FieldLabel>Source</FieldLabel>
-                                <FieldDescription>
+                                {/* SHOW SOURCE ONLY FOR CERTAIN CHANNELS */}
+                                {["Viber", "Text Message", "Website", "Voice Call", "Whatsapp"].includes(channel) && (
+                                <Field>
+                                    <FieldLabel>Source</FieldLabel>
+                                    <FieldDescription>
                                     Origin or reference indicating how the lead or concern was generated.
-                                </FieldDescription>
-                                <SelectField
+                                    </FieldDescription>
+
+                                    <SelectField
                                     value={source}
                                     onChange={setSource}
                                     placeholder="Select a source"
-                                options={[
-                                { value: "FB Ads", label: "FB Ads" },
-                                { value: "LNB", label: "LNB" }, // ← added
-                                { value: "Viber", label: "Viber Community" },
-                                { value: "Whatsapp", label: "Whatsapp Community" },
-                                { value: "SMS", label: "SMS" },
-                                { value: "Website", label: "Website" },
-                                { value: "Word of Mouth", label: "Word of Mouth" },
-                                { value: "Quotation Docs", label: "Quotation Docs" },
-                                { value: "Google Search", label: "Google Search" },
-                                { value: "Site Visit", label: "Site Visit" },
-                                { value: "Agent Call", label: "Agent Call" },
-                                { value: "Catalogue", label: "Catalogue" },
-                                { value: "Shopee", label: "Shopee" },
-                                { value: "Lazada", label: "Lazada" },
-                                { value: "Tiktok", label: "Tiktok" },
-                                { value: "Worldbex", label: "Worldbex" },
-                                { value: "PhilConstruct", label: "PhilConstruct" },
-                                { value: "Conex", label: "Conex" },
-                                { value: "Product Demo", label: "Product Demo" },
-                                ]}
-                                />
-                            </Field>
+                                    options={[
+                                        { value: "FB Ads", label: "FB Ads" },
+                                        { value: "LNB", label: "LNB" },
+                                        { value: "Viber", label: "Viber Community" },
+                                        { value: "Whatsapp", label: "Whatsapp Community" },
+                                        { value: "SMS", label: "SMS" },
+                                        { value: "Website", label: "Website" },
+                                        { value: "Word of Mouth", label: "Word of Mouth" },
+                                        { value: "Quotation Docs", label: "Quotation Docs" },
+                                        { value: "Google Search", label: "Google Search" },
+                                        { value: "Site Visit", label: "Site Visit" },
+                                        { value: "Agent Call", label: "Agent Call" },
+                                        { value: "Catalogue", label: "Catalogue" },
+                                        { value: "Shopee", label: "Shopee" },
+                                        { value: "Lazada", label: "Lazada" },
+                                        { value: "Tiktok", label: "Tiktok" },
+                                        { value: "Worldbex", label: "Worldbex" },
+                                        { value: "PhilConstruct", label: "PhilConstruct" },
+                                        { value: "Conex", label: "Conex" },
+                                        { value: "Product Demo", label: "Product Demo" },
+                                    ]}
+                                    />
+                                </Field>
+                                )}
+
 
                             <Field>
                             <FieldLabel>TSM Acknowledgement Date</FieldLabel>
