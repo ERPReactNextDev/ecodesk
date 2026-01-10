@@ -463,29 +463,17 @@ export function TicketSheet(props: TicketSheetProps) {
             .finally(() => setLoadingActivities(false));
     }, []);
 
-    useEffect(() => {
+        useEffect(() => {
         fetchActivities();
-    }, [fetchActivities]);
+        }, [fetchActivities]);
 
-    useEffect(() => {
+
+// 1️⃣ Ticket Received vs Ticket Endorsed validation
+useEffect(() => {
   if (!ticketReceived || !ticketEndorsed) {
     setTimeError(null);
     return;
   }
-
-  useEffect(() => {
-  const channelsWithSource = [
-    "Viber",
-    "Text Message",
-    "Website",
-    "Voice Call",
-    "Whatsapp",
-  ];
-
-  if (!channelsWithSource.includes(channel)) {
-    setSource("-"); // force dash when hidden
-  }
-}, [channel, setSource]);
 
   const received = new Date(ticketReceived);
   const endorsed = new Date(ticketEndorsed);
@@ -498,6 +486,35 @@ export function TicketSheet(props: TicketSheetProps) {
     }
   }
 }, [ticketReceived, ticketEndorsed]);
+
+
+// 2️⃣ Close Reason → Auto dash logic
+useEffect(() => {
+  if (closeReason === "Same Specs Provided") {
+    setCounterOffer("-");
+    setClientSpecs("-");
+  } else {
+    if (counterOffer === "-") setCounterOffer("");
+    if (clientSpecs === "-") setClientSpecs("");
+  }
+}, [closeReason]);
+
+
+// 3️⃣ Channel → Source auto dash logic
+useEffect(() => {
+  const channelsWithSource = [
+    "Viber",
+    "Text Message",
+    "Website",
+    "Voice Call",
+    "Whatsapp",
+  ];
+
+  if (!channelsWithSource.includes(channel)) {
+    setSource("-");
+  }
+}, [channel]);
+
 
     const groupedActivities = activities.filter(
         (act) => act.ticket_reference_number === ticketReferenceNumber
@@ -626,14 +643,21 @@ export function TicketSheet(props: TicketSheetProps) {
     };
 
     // Helper: common buttons with validation on Next
-    const Navigation = () => (
+        const Navigation = () => (
         <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={handleBack} className="cursor-pointer">
-                Back
+            Back
             </Button>
-            <Button onClick={onNext} className="cursor-pointer">Next</Button>
+
+            <Button
+            onClick={onNext}
+            className="cursor-pointer"
+            disabled={step === 3 && !!timeError}
+            >
+            Next
+            </Button>
         </div>
-    );
+        );
 
     return (
         <>
@@ -1205,40 +1229,54 @@ export function TicketSheet(props: TicketSheetProps) {
                         />
                     </Field>
 
-                    {status === "Closed" && (
-                    <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
-                        <h4 className="font-semibold text-sm text-red-700">
-                        On Closing of Ticket (Required)
-                        </h4>
+                            {status === "Closed" && (
+                            <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
+                                <h4 className="font-semibold text-sm text-red-700">
+                                On Closing of Ticket (Required)
+                                </h4>
 
-                        <Field>
-                        <FieldLabel>1. Add Reason *</FieldLabel>
-                        <Textarea
-                            value={closeReason}
-                            onChange={(e) => setCloseReason(e.target.value)}
-                            placeholder="Enter reason for closing..."
-                        />
-                        </Field>
+                                {/* 1. CLOSE REASON (DROPDOWN) */}
+                                <Field>
+                                <FieldLabel>1. Close Reason *</FieldLabel>
+                                <select
+                                    value={closeReason}
+                                    onChange={(e) => setCloseReason(e.target.value)}
+                                    className="w-full border rounded-md px-3 py-2 text-sm"
+                                >
+                                    <option value="">Select a reason</option>
+                                    <option value="Same Specs Provided">Same Specs Provided</option>
+                                    <option value="Counter Offer">Counter Offer</option>
+                                    <option value="Out of Stock">Out of Stock</option>
+                                    <option value="Client Declined">Client Declined</option>
+                                    <option value="Not Interested">Not Interested</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                                </Field>
 
-                        <Field>
-                        <FieldLabel>2. Add Counter Offer *</FieldLabel>
-                        <Textarea
-                            value={counterOffer}
-                            onChange={(e) => setCounterOffer(e.target.value)}
-                            placeholder="Enter counter offer..."
-                        />
-                        </Field>
+                                {/* 2 & 3 — ONLY IF NOT "SAME SPECS PROVIDED" */}
+                                {closeReason !== "Same Specs Provided" && (
+                                <>
+                                    <Field>
+                                    <FieldLabel>2. Add Counter Offer *</FieldLabel>
+                                    <Textarea
+                                        value={counterOffer}
+                                        onChange={(e) => setCounterOffer(e.target.value)}
+                                        placeholder="Enter counter offer..."
+                                    />
+                                    </Field>
 
-                        <Field>
-                        <FieldLabel>3. Client Specs *</FieldLabel>
-                        <Textarea
-                            value={clientSpecs}
-                            onChange={(e) => setClientSpecs(e.target.value)}
-                            placeholder="Enter client specifications..."
-                        />
-                        </Field>
-                    </div>
-                    )}
+                                    <Field>
+                                    <FieldLabel>3. Client Specs *</FieldLabel>
+                                    <Textarea
+                                        value={clientSpecs}
+                                        onChange={(e) => setClientSpecs(e.target.value)}
+                                        placeholder="Enter client specifications..."
+                                    />
+                                    </Field>
+                                </>
+                                )}
+                            </div>
+                            )}
 
                     {status === "Converted into Sales" && (
                         <>
@@ -1318,9 +1356,13 @@ export function TicketSheet(props: TicketSheetProps) {
                     )}
 
                     <Button variant="outline" onClick={handleBack} disabled={loadingSave || loadingLoad} className="cursor-pointer">Back</Button>
-                    <Button onClick={onUpdate} disabled={loadingSave || loadingLoad} className="cursor-pointer">
+                        <Button
+                        onClick={onUpdate}
+                        disabled={loadingSave || loadingLoad || !!timeError}
+                        className="cursor-pointer"
+                        >
                         {loadingSave ? "Saving..." : "Save"}
-                    </Button>
+                        </Button>
                 </>
             )}
         </>

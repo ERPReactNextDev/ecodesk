@@ -1,4 +1,3 @@
-// components/activity-done-dialog.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -24,7 +23,7 @@ interface DoneDialogProps {
   }) => void;
   loading?: boolean;
 
-  // ✅ autofill sources
+  // Autofill
   close_reason?: string;
   counter_offer?: string;
   client_specs?: string;
@@ -35,7 +34,6 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
   onOpenChange,
   onConfirm,
   loading = false,
-
   close_reason,
   counter_offer,
   client_specs,
@@ -44,7 +42,7 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
   const [counterOffer, setCounterOffer] = useState("");
   const [clientSpecs, setClientSpecs] = useState("");
 
-  // ✅ AUTOFILL WHEN DIALOG OPENS
+  // Autofill when dialog opens
   useEffect(() => {
     if (open) {
       setCloseReason(close_reason || "");
@@ -53,10 +51,22 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
     }
   }, [open, close_reason, counter_offer, client_specs]);
 
+  // Auto logic for "Same Specs Provided"
+  useEffect(() => {
+    if (closeReason === "Same Specs Provided") {
+      setCounterOffer("-");
+      setClientSpecs("-");
+    } else {
+      if (counterOffer === "-") setCounterOffer("");
+      if (clientSpecs === "-") setClientSpecs("");
+    }
+  }, [closeReason]);
+  
+
   const isValid =
     closeReason.trim() !== "" &&
-    counterOffer.trim() !== "" &&
-    clientSpecs.trim() !== "";
+    (closeReason === "Same Specs Provided" ||
+      (counterOffer.trim() !== "" && clientSpecs.trim() !== ""));
 
   const handleConfirm = () => {
     if (!isValid) return;
@@ -67,7 +77,7 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
       client_specs: clientSpecs.trim(),
     });
 
-    // reset after submit
+    // Reset after submit
     setCloseReason("");
     setCounterOffer("");
     setClientSpecs("");
@@ -85,32 +95,46 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
               the ticket later if needed.
             </p>
 
+            {/* Close Reason */}
             <div className="space-y-1">
-              <Label>1. Add reason *</Label>
-              <Textarea
+              <Label>1. Close Reason *</Label>
+              <select
                 value={closeReason}
                 onChange={(e) => setCloseReason(e.target.value)}
-                placeholder="Enter reason for closing..."
-              />
+                className="w-full border rounded-md px-3 py-2 text-sm"
+              >
+                <option value="">Select a reason</option>
+                <option value="Same Specs Provided">Same Specs Provided</option>
+                <option value="Counter Offer">Counter Offer</option>
+                <option value="Out of Stock">Out of Stock</option>
+                <option value="Client Declined">Client Declined</option>
+                <option value="Not Interested">Not Interested</option>
+                <option value="Others">Others</option>
+              </select>
             </div>
 
-            <div className="space-y-1">
-              <Label>2. Add counter offer *</Label>
-              <Textarea
-                value={counterOffer}
-                onChange={(e) => setCounterOffer(e.target.value)}
-                placeholder="Enter counter offer..."
-              />
-            </div>
+            {/* Counter Offer & Client Specs */}
+            {closeReason !== "Same Specs Provided" && (
+              <>
+                <div className="space-y-1">
+                  <Label>2. Add Counter Offer *</Label>
+                  <Textarea
+                    value={counterOffer}
+                    onChange={(e) => setCounterOffer(e.target.value)}
+                    placeholder="Enter counter offer..."
+                  />
+                </div>
 
-            <div className="space-y-1">
-              <Label>3. Client Specs *</Label>
-              <Textarea
-                value={clientSpecs}
-                onChange={(e) => setClientSpecs(e.target.value)}
-                placeholder="Enter client specifications..."
-              />
-            </div>
+                <div className="space-y-1">
+                  <Label>3. Client Specs *</Label>
+                  <Textarea
+                    value={clientSpecs}
+                    onChange={(e) => setClientSpecs(e.target.value)}
+                    placeholder="Enter client specifications..."
+                  />
+                </div>
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
