@@ -188,12 +188,14 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                 newNonBuyingConvertedAmount: number;
                 newExistingActiveConvertedAmount: number;
                 newExistingInactiveConvertedAmount: number;
-                csrAckTotal: number;
-                csrAckCount: number;
-                csrHandlingTotal: number;
-                csrHandlingCount: number;
-                csrNonQuotationTotal: number;
-                csrNonQuotationCount: number;
+                tsaResponseTotal: number;
+                tsaResponseCount: number;
+                tsaQuotationTotal: number;
+                tsaQuotationCount: number;
+                tsaNonQuotationTotal: number;
+                tsaNonQuotationCount: number;
+                spfTotal: 0,
+                spfCount: 0,
             }
         > = {};
 
@@ -213,18 +215,30 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
   const status = a.status?.toLowerCase() ?? "";
   const customerStatus = a.customer_status?.toLowerCase() ?? "";
 
-  const csrAckTime = diffMinutes(a.ticket_received, a.ticket_endorsed);
+    const tsaResponseTime = diffMinutes(a.ticket_received, a.ticket_endorsed);
 
-  const csrHandlingTime =
-    status === "closed"
-      ? diffMinutes(a.ticket_received, a.date_updated)
-      : 0;
-
-  const csrNonQuotationTime =
+    const isNonQuotation =
     status === "closed" &&
-    NON_QUOTATION_WRAPUPS.includes(a.wrap_up?.toLowerCase() || "")
-      ? diffMinutes(a.ticket_received, a.date_updated)
-      : 0;
+    NON_QUOTATION_WRAPUPS.includes(a.wrap_up?.toLowerCase() || "");
+
+    const tsaNonQuotationTime = isNonQuotation
+    ? diffMinutes(a.ticket_received, a.date_updated)
+    : 0;
+
+    const tsaQuotationTime =
+    status === "closed" && !isNonQuotation
+        ? diffMinutes(a.ticket_received, a.date_updated)
+        : 0;
+
+    const isSPF =
+    a.remarks?.toLowerCase() === "spf" &&
+    status === "closed" &&
+    NON_QUOTATION_WRAPUPS.includes(a.wrap_up?.toLowerCase() || "");
+
+    const spfTime = isSPF
+    ? diffMinutes(a.ticket_received, a.date_updated)
+    : 0;
+
 
   // ✅ INIT FIRST
   if (!map[agent]) {
@@ -244,30 +258,39 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
       newExistingActiveConvertedAmount: 0,
       newExistingInactiveConvertedAmount: 0,
 
-      csrAckTotal: 0,
-      csrAckCount: 0,
-      csrHandlingTotal: 0,
-      csrHandlingCount: 0,
-      csrNonQuotationTotal: 0,
-      csrNonQuotationCount: 0,
+    tsaResponseTotal: 0,
+    tsaResponseCount: 0,
+    tsaQuotationTotal: 0,
+    tsaQuotationCount: 0,
+    tsaNonQuotationTotal: 0,
+    tsaNonQuotationCount: 0,
+
+        spfTotal: 0,
+        spfCount: 0,
     };
   }
 
   // ✅ CSR ACCUMULATION (SAFE)
-  if (csrAckTime > 0) {
-    map[agent].csrAckTotal += csrAckTime;
-    map[agent].csrAckCount += 1;
-  }
+    if (tsaResponseTime > 0) {
+    map[agent].tsaResponseTotal += tsaResponseTime;
+    map[agent].tsaResponseCount += 1;
+    }
 
-  if (csrHandlingTime > 0) {
-    map[agent].csrHandlingTotal += csrHandlingTime;
-    map[agent].csrHandlingCount += 1;
-  }
+    if (tsaQuotationTime > 0) {
+    map[agent].tsaQuotationTotal += tsaQuotationTime;
+    map[agent].tsaQuotationCount += 1;
+    }
 
-  if (csrNonQuotationTime > 0) {
-    map[agent].csrNonQuotationTotal += csrNonQuotationTime;
-    map[agent].csrNonQuotationCount += 1;
-  }
+    if (tsaNonQuotationTime > 0) {
+    map[agent].tsaNonQuotationTotal += tsaNonQuotationTime;
+    map[agent].tsaNonQuotationCount += 1;
+    }
+
+    if (spfTime > 0) {
+    map[agent].spfTotal += spfTime;
+    map[agent].spfCount += 1;
+    }
+
 
   // existing logic
   if (traffic === "sales") map[agent].salesCount += 1;
@@ -508,9 +531,10 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                                     <TableHead className="text-right">New Non-Buying (Converted To Sales)</TableHead>
                                     <TableHead className="text-right">Existing Active (Converted To Sales)</TableHead>
                                     <TableHead className="text-right">Existing Inactive (Converted To Sales)</TableHead>
-                                    <TableHead className="text-right">CSR Ack (mins)</TableHead>
-                                    <TableHead className="text-right">CSR Handling (mins)</TableHead>
-                                    <TableHead className="text-right">CSR Non-Quotation (mins)</TableHead>
+                                <TableHead className="text-right">TSAs Response Time</TableHead>
+                                <TableHead className="text-right">Quotation HT</TableHead>
+                                <TableHead className="text-right">Non Quotation HT</TableHead>
+                                <TableHead className="text-right">SPF HD</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -533,26 +557,32 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                                     newExistingActiveConvertedAmount,
                                     newExistingInactiveConvertedAmount,
 
-                                    // ✅ CSR FIELDS (THIS WAS MISSING)
-                                    csrAckTotal,
-                                    csrAckCount,
-                                    csrHandlingTotal,
-                                    csrHandlingCount,
-                                    csrNonQuotationTotal,
-                                    csrNonQuotationCount,
+                                        tsaResponseTotal,
+                                        tsaResponseCount,
+                                        tsaQuotationTotal,
+                                        tsaQuotationCount,
+                                        tsaNonQuotationTotal,
+                                        tsaNonQuotationCount,
+                                        spfTotal,
+                                        spfCount,
                                     }, index) => {
 
                                         const agentDetails = agents.find((a) => a.ReferenceID === agent);
                                         const fullName = agentDetails ? `${agentDetails.Firstname} ${agentDetails.Lastname}` : "(Unknown Agent)";
                                         const rank = index + 1;
-                                        const avgAck =
-                                            csrAckCount === 0 ? "-" : Math.round(csrAckTotal / csrAckCount);
+                                        const avgResponse =
+                                        tsaResponseCount === 0 ? "-" : Math.round(tsaResponseTotal / tsaResponseCount);
 
-                                        const avgHandling =
-                                            csrHandlingCount === 0 ? "-" : Math.round(csrHandlingTotal / csrHandlingCount);
+                                        const avgQuotation =
+                                        tsaQuotationCount === 0 ? "-" : Math.round(tsaQuotationTotal / tsaQuotationCount);
 
                                         const avgNonQuotation =
-                                            csrNonQuotationCount === 0 ? "-" : Math.round(csrNonQuotationTotal / csrNonQuotationCount);
+                                        tsaNonQuotationCount === 0 ? "-" : Math.round(tsaNonQuotationTotal / tsaNonQuotationCount);
+
+                                        const avgSPF =
+                                        spfCount === 0 ? "-" : Math.round(spfTotal / spfCount);
+
+
 
                                         return (
                                             <TableRow key={agent} className="hover:bg-muted/50">
@@ -601,17 +631,10 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                                                         maximumFractionDigits: 2,
                                                     })}
                                                 </TableCell>
-                                            <TableCell className="text-right font-mono">
-                                                {avgAck === "-" ? "-" : `${avgAck} min`}
-                                            </TableCell>
-
-                                            <TableCell className="text-right font-mono">
-                                                {avgHandling === "-" ? "-" : `${avgHandling} min`}
-                                            </TableCell>
-
-                                            <TableCell className="text-right font-mono">
-                                                {avgNonQuotation === "-" ? "-" : `${avgNonQuotation} min`}
-                                            </TableCell>
+                                                <TableCell>{avgResponse === "-" ? "-" : `${avgResponse} min`}</TableCell>
+                                                <TableCell>{avgQuotation === "-" ? "-" : `${avgQuotation} min`}</TableCell>
+                                                <TableCell>{avgNonQuotation === "-" ? "-" : `${avgNonQuotation} min`}</TableCell>
+                                                <TableCell>{avgSPF === "-" ? "-" : `${avgSPF} min`}</TableCell>
                                             </TableRow>
                                         );
                                     })}
