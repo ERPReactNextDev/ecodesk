@@ -72,12 +72,12 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     }
   };
 
-  const isLoginAllowed = () => {
-    const now = new Date();
-    const phTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-    const hour = phTime.getHours();
-    return hour >= 7 && hour < 19;
-  };
+  // const isLoginAllowed = () => {
+  //   const now = new Date();
+  //   const phTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+  //   const hour = phTime.getHours();
+  //   return hour >= 7 && hour < 19;
+  // };
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
@@ -88,10 +88,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         return;
       }
 
-      if (!isLoginAllowed()) {
-        toast.error("⏰ Login is only allowed between 7:00 AM and 7:00 PM (Philippine time).");
-        return;
-      }
+      // if (!isLoginAllowed()) {
+      //   toast.error("⏰ Login is only allowed between 7:00 AM and 7:00 PM (Philippine time).");
+      //   return;
+      // }
 
       setLoading(true);
       try {

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/contexts/UserContext";
+import { Button } from "@/components/ui/button";
+import { DepartmentalAddSheet } from "@/components/departmental-add-sheet";
 
 export default function CsrSummaryPage() {
   const { userId } = useUser();
@@ -14,6 +16,9 @@ export default function CsrSummaryPage() {
     Email: "",
     profilePicture: "",
   });
+
+  const [openSheet, setOpenSheet] = useState(false);
+  const [records, setRecords] = useState<any[]>([]);
 
   // SAME fetch logic as SidebarRight
   useEffect(() => {
@@ -35,6 +40,7 @@ export default function CsrSummaryPage() {
 
   return (
     <div className="space-y-4">
+      {/* CSR CARD */}
       <div className="rounded-lg border p-4 bg-muted/40">
         <div className="text-lg font-semibold">
           {userDetails.Firstname} {userDetails.Lastname}
@@ -46,12 +52,34 @@ export default function CsrSummaryPage() {
         <div className="text-sm">{userDetails.Email}</div>
       </div>
 
-      <div className="rounded-lg border p-4">
-        <h2 className="font-semibold">CSR Summary</h2>
-        <p className="text-sm text-muted-foreground">
-          This page is now correctly bound to the logged-in CSR.
-        </p>
+      {/* SUMMARY + ACTION */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="font-semibold">CSR Summary</h2>
+          <p className="text-sm text-muted-foreground">
+            This page is now correctly bound to the logged-in CSR.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={() => setOpenSheet(true)}
+        >
+          Action
+        </Button>
       </div>
+
+      {/* DEPARTMENTAL ADD SHEET */}
+      <DepartmentalAddSheet
+        open={openSheet}
+        onClose={() => setOpenSheet(false)}
+        referenceid={userDetails.ReferenceID}
+        onSave={(record) => {
+          setRecords((prev) => [record, ...prev]);
+        }}
+      />
     </div>
   );
 }
