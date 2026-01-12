@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
+
 import { DepartmentalAddSheet } from "@/components/departmental-csr-add-sheet";
+import { DepartmentalEditSheet } from "@/components/departmental-csr-edit-sheet";
 import { DepartmentalCsrFetchSheet } from "@/components/departmental-csr-fetch-sheet";
 
 export default function CsrSummaryPage() {
@@ -18,8 +20,16 @@ export default function CsrSummaryPage() {
     profilePicture: "",
   });
 
-  const [openSheet, setOpenSheet] = useState(false);
-  const [records, setRecords] = useState<any[]>([]);
+  // ADD
+  const [openAdd, setOpenAdd] = useState(false);
+
+  // EDIT
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState<any>(null);
+
+  // realtime table updates
+  const [newRecord, setNewRecord] = useState<any>(null);
+  const [updatedRecord, setUpdatedRecord] = useState<any>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -38,9 +48,15 @@ export default function CsrSummaryPage() {
       });
   }, [userId]);
 
+  // called by table Edit button
+  const handleEdit = (row: any) => {
+    setEditingRow(row);
+    setEditOpen(true);
+  };
+
   return (
     <div className="flex flex-col h-full gap-3">
-      {/* HEADER BLOCK */}
+      {/* HEADER */}
       <div className="rounded-lg border p-4 bg-muted/40 shrink-0">
         <div className="text-lg font-semibold">
           {userDetails.Firstname} {userDetails.Lastname}
@@ -52,40 +68,53 @@ export default function CsrSummaryPage() {
         <div className="text-sm">{userDetails.Email}</div>
       </div>
 
-      {/* SUMMARY + ACTION */}
+      {/* ACTION BAR */}
       <div className="flex items-center justify-between shrink-0">
         <div>
           <h2 className="font-semibold">CSR Summary</h2>
           <p className="text-sm text-muted-foreground">
-            This page is now correctly bound to the logged-in CSR.
+            This page is bound to the logged-in CSR.
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setOpenSheet(true)}
-        >
+        <Button variant="outline" size="sm" onClick={() => setOpenAdd(true)}>
           Action
         </Button>
       </div>
 
-      {/* TABLE AREA – this is what fills the screen */}
+      {/* TABLE */}
       <div className="flex-1 min-h-0">
         <DepartmentalCsrFetchSheet
-  referenceid={userDetails.ReferenceID}
-  newRecord={records[0]}
-/>
+          referenceid={userDetails.ReferenceID}
+          newRecord={newRecord}
+          updatedRecord={updatedRecord}
+          onEdit={handleEdit}
+        />
       </div>
 
-      {/* Floating Sheet (does not affect layout) */}
-      {openSheet && (
+      {/* ADD SHEET */}
+      {openAdd && (
         <DepartmentalAddSheet
-          open={openSheet}
-          onClose={() => setOpenSheet(false)}
+          open={openAdd}
+          onClose={() => setOpenAdd(false)}
           referenceid={userDetails.ReferenceID}
-          onSave={(record) => {
-            setRecords((prev) => [record, ...prev]);
+          onSave={(r) => {
+            setNewRecord(r);   // instantly prepend
+            setOpenAdd(false);
+          }}
+        />
+      )}
+
+      {/* EDIT SHEET */}
+      {editOpen && editingRow && (
+        <DepartmentalEditSheet
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          referenceid={userDetails.ReferenceID}
+          record={editingRow}
+          onSave={(r) => {
+            setUpdatedRecord(r);   // instantly replace row
+            setEditOpen(false);
           }}
         />
       )}

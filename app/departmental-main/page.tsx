@@ -1,4 +1,4 @@
-// app/help/page.tsx
+// app/departmental-main/page.tsx
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
@@ -26,7 +26,7 @@ import {
 import { type DateRange } from "react-day-picker";
 import CsrSummaryPage from "./csr-summary/page";
 
-function HelpContent() {
+function DepartmentalContent() {
   const searchParams = useSearchParams();
   const { userId, setUserId } = useUser();
 
@@ -42,43 +42,39 @@ function HelpContent() {
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
   if (!mounted) return null;
 
   return (
     <>
       <SidebarLeft />
 
+      {/* CENTER AREA */}
       <SidebarInset className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="bg-background sticky top-0 flex h-14 items-center gap-2 border-b">
-          <div className="flex flex-1 items-center gap-2 px-3">
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="text-base font-semibold">
-                    Departmental
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
+        {/* HEADER */}
+        <header className="bg-background sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b px-3">
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-base font-semibold">
+                  Departmental
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </header>
 
-        {/* Content */}
-        <div className="flex flex-1 flex-col gap-6 p-4 min-w-0 overflow-hidden">
-          <div className="w-full flex-1 min-w-0 space-y-4">
-            <h1 className="text-xl font-semibold">
-              <div>Departmental Summary</div>
-            </h1>
+        {/* CONTENT — only this scrolls */}
+        <main className="flex-1 min-w-0 overflow-auto p-4">
+          <div className="min-w-0 space-y-4">
+            <h1 className="text-xl font-semibold">Departmental Summary</h1>
             <CsrSummaryPage />
           </div>
-
-        </div>
+        </main>
       </SidebarInset>
 
+      {/* RIGHT SIDEBAR ALWAYS VISIBLE */}
       <SidebarRight
         userId={userId ?? undefined}
         dateCreatedFilterRange={dateCreatedFilterRange}
@@ -88,14 +84,16 @@ function HelpContent() {
   );
 }
 
-export default function HelpPage() {
+export default function Page() {
   return (
-    <FormatProvider>
-      <SidebarProvider>
-        <Suspense fallback={<div>Loading...</div>}>
-          <HelpContent />
-        </Suspense>
-      </SidebarProvider>
-    </FormatProvider>
+    <UserProvider>
+      <FormatProvider>
+        <SidebarProvider>
+          <Suspense fallback={<div>Loading...</div>}>
+            <DepartmentalContent />
+          </Suspense>
+        </SidebarProvider>
+      </FormatProvider>
+    </UserProvider>
   );
 }

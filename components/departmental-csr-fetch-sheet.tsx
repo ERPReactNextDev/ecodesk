@@ -2,17 +2,21 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   referenceid: string;
   newRecord?: any;
+  updatedRecord?: any;
+  onEdit: (row: any) => void;   // 👈 REQUIRED
 }
+
+
 
 function formatDT(v?: string) {
   if (!v) return "";
   const d = new Date(v);
   if (isNaN(d.getTime())) return v;
-
   return d.toLocaleString("en-US", {
     month: "2-digit",
     day: "2-digit",
@@ -26,6 +30,8 @@ function formatDT(v?: string) {
 export function DepartmentalCsrFetchSheet({
   referenceid,
   newRecord,
+  updatedRecord,
+  onEdit,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
@@ -47,12 +53,25 @@ export function DepartmentalCsrFetchSheet({
     setRows((prev) => [newRecord, ...prev]);
   }, [newRecord]);
 
+  useEffect(() => {
+  if (!updatedRecord) return;
+
+  setRows((prev) =>
+    prev.map((r) =>
+      r._id === updatedRecord._id ? updatedRecord : r
+    )
+  );
+}, [updatedRecord]);
+
   if (!referenceid) return null;
 
   return (
     <div className="rounded-lg border mt-4 flex flex-col min-w-0">
-      <div className="p-4 border-b font-semibold shrink-0">
-        Departmental CSR Records
+      <div className="p-4 border-b font-semibold shrink-0 flex items-center gap-3">
+        <span>Departmental CSR Records</span>
+        <span className="text-sm text-muted-foreground">
+          Ref: {referenceid}
+        </span>
       </div>
 
       {loading && (
@@ -67,9 +86,12 @@ export function DepartmentalCsrFetchSheet({
 
       {!loading && rows.length > 0 && (
         <div className="flex-1 min-w-0 overflow-auto">
-          <table className="min-w-[2400px] w-full text-sm border-collapse">
+          <table className="min-w-[2500px] w-full text-sm border-collapse">
             <thead className="bg-muted sticky top-0 z-10">
               <tr>
+                <th className="p-2 text-left border-b whitespace-nowrap">
+                Actions
+                </th>
                 {[
                   "Ticket Received",
                   "Ticket Endorsed",
@@ -104,7 +126,10 @@ export function DepartmentalCsrFetchSheet({
                   "Acknowledged",
                   "Closed",
                 ].map((h) => (
-                  <th key={h} className="p-2 text-left whitespace-nowrap border-b">
+                  <th
+                    key={h}
+                    className="p-2 text-left whitespace-nowrap border-b"
+                  >
                     {h}
                   </th>
                 ))}
@@ -114,6 +139,22 @@ export function DepartmentalCsrFetchSheet({
             <tbody>
               {rows.map((r) => (
                 <tr key={r._id} className="border-t hover:bg-muted/40">
+                    <td className="p-2 whitespace-nowrap text-center">
+                    <div className="flex justify-center gap-2">
+                        <Button
+  size="sm"
+  variant="outline"
+  className="cursor-pointer"
+  onClick={() => onEdit(r)}
+>
+  Edit
+</Button>
+
+                        <Button size="sm" variant="destructive" className="cursor-pointer">Delete</Button>
+                    </div>
+                    </td>
+
+
                   <td className="p-2 whitespace-nowrap">
                     {formatDT(r.ticket_received_date_and_time)}
                   </td>
