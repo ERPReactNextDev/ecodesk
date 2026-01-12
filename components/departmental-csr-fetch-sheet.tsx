@@ -2,7 +2,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { DepartmentalCsrDeleteModal } from "@/components/departmental-csr-delete-modal";
 import { Button } from "@/components/ui/button";
+
 
 interface Props {
   referenceid: string;
@@ -123,6 +125,9 @@ export function DepartmentalCsrFetchSheet({
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
 
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingRow, setDeletingRow] = useState<any>(null);
+
   useEffect(() => {
     if (!referenceid) return;
     setLoading(true);
@@ -236,12 +241,21 @@ export function DepartmentalCsrFetchSheet({
                 <tr key={r._id} className="border-t hover:bg-muted/40">
                   <td className="p-2 text-center">
                     <div className="flex gap-2 justify-center">
-                      <Button size="sm" variant="outline" onClick={() => onEdit(r)}>
+                      <Button size="sm" variant="outline" onClick={() => onEdit(r)} className="cursor-pointer">
                         Edit
                       </Button>
-                      <Button size="sm" variant="destructive">
-                        Delete
-                      </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setDeletingRow(r);
+                        setDeleteOpen(true);
+                      }}
+                    >
+                      Delete
+                    </Button>
+
                     </div>
                   </td>
 
@@ -358,6 +372,18 @@ export function DepartmentalCsrFetchSheet({
           </table>
         </div>
       )}
+
+      {deleteOpen && deletingRow && (
+        <DepartmentalCsrDeleteModal
+          open={deleteOpen}
+          recordId={deletingRow._id}
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={(id) => {
+            setRows((prev) => prev.filter((r) => r._id !== id));
+          }}
+        />
+      )}
     </div>
   );
 }
+

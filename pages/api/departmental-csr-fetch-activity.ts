@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const data = await db
       .collection("departmental-csr")
-      .find({ referenceid })
+      .find({  })
       .sort({ date_created: -1 })
       .toArray();
 
