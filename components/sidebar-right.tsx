@@ -46,8 +46,10 @@ export function SidebarRight({
     Lastname: "",
     Position: "",
     Email: "",
-    profilePicture: "",
-  });
+  Role: "",   // 👈 add
+  profilePicture: "",
+});
+
 
   /* ================= HELPERS ================= */
   function isSameDay(a: Date, b: Date) {
@@ -165,8 +167,10 @@ export function SidebarRight({
           Lastname: data.Lastname || "",
           Position: data.Position || "",
           Email: data.Email || "",
-          profilePicture: data.profilePicture || "",
-        });
+        Role: data.Role || "",     // 👈 add
+        profilePicture: data.profilePicture || "",
+      });
+
       });
   }, [userId]);
 

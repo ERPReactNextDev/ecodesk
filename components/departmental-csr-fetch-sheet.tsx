@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { DepartmentalCsrDeleteModal } from "@/components/departmental-csr-delete-modal";
 import { Button } from "@/components/ui/button";
+import { useUser } from "@/contexts/UserContext";
 
 
 interface Props {
@@ -122,6 +123,13 @@ export function DepartmentalCsrFetchSheet({
   updatedRecord,
   onEdit,
 }: Props) {
+
+  const { userId } = useUser();
+  const [userDetails, setUserDetails] = useState({
+    ReferenceID: "",
+    Role: "",
+  });
+
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
 
@@ -140,6 +148,20 @@ export function DepartmentalCsrFetchSheet({
   }, [referenceid]);
 
   useEffect(() => {
+    if (!userId) return;
+
+    fetch(`/api/user?id=${encodeURIComponent(userId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setUserDetails({
+          ReferenceID: data.ReferenceID || "",
+          Role: data.Role || "",
+        });
+      });
+  }, [userId]);
+
+
+  useEffect(() => {
     if (!newRecord) return;
     setRows((prev) => [newRecord, ...prev]);
   }, [newRecord]);
@@ -152,6 +174,14 @@ export function DepartmentalCsrFetchSheet({
   }, [updatedRecord]);
 
   if (!referenceid) return null;
+
+  const filteredRows =
+    userDetails.Role === "Admin"
+      ? rows
+      : rows.filter(
+        (r) => r.referenceid === userDetails.ReferenceID
+      );
+
 
   return (
     <div className="rounded-lg border mt-4 flex flex-col min-w-0">
@@ -166,13 +196,13 @@ export function DepartmentalCsrFetchSheet({
         <div className="p-4 text-sm text-muted-foreground">Loading…</div>
       )}
 
-      {!loading && rows.length === 0 && (
+      {!loading && filteredRows.length === 0 && (
         <div className="p-4 text-sm text-muted-foreground">
           No records found.
         </div>
       )}
 
-      {!loading && rows.length > 0 && (
+      {!loading && filteredRows.length > 0 && (
         <div className="flex-1 min-w-0 overflow-auto">
           <table className="min-w-[3800px] w-full text-sm border-collapse">
             <thead className="bg-muted sticky top-0 z-10">
@@ -237,7 +267,7 @@ export function DepartmentalCsrFetchSheet({
             </thead>
 
             <tbody>
-              {rows.map((r) => (
+              {filteredRows.map((r) => (
                 <tr key={r._id} className="border-t hover:bg-muted/40">
                   <td className="p-2 text-center">
                     <div className="flex gap-2 justify-center">
