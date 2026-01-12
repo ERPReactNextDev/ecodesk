@@ -8,10 +8,12 @@ interface Props {
   referenceid: string;
   newRecord?: any;
   updatedRecord?: any;
-  onEdit: (row: any) => void;   // 👈 REQUIRED
+  onEdit: (row: any) => void;
 }
 
-
+/* =========================
+   FORMATTERS
+========================= */
 
 function formatDT(v?: string) {
   if (!v) return "";
@@ -27,6 +29,91 @@ function formatDT(v?: string) {
   });
 }
 
+function msToTime(ms: number) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+/* =========================
+   EXCEL-ALIGNED LOGIC
+========================= */
+
+/** DAYS COLUMNS (DATE ONLY, Excel style)
+ * - ignores time
+ * - negative → 0
+ * - never INVALID
+ */
+function excelDays(start?: string, end?: string) {
+  if (!start || !end) return "";
+  const s = new Date(start);
+  const e = new Date(end);
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return "";
+
+  const sd = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  const ed = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+
+  if (ed < sd) return 0;
+  return Math.floor((ed.getTime() - sd.getTime()) / 86400000);
+}
+
+/** HANDLING TIME (DATE + TIME)
+ * Validation order:
+ * 1. Earlier DATE → INVALID DATE
+ * 2. Same DATE, earlier TIME → INVALID TIME
+ * 3. Else → diff
+ */
+function excelHT(start?: string, end?: string) {
+  if (!start || !end) return "";
+  const s = new Date(start);
+  const e = new Date(end);
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return "";
+
+  if (
+    e.getFullYear() < s.getFullYear() ||
+    (e.getFullYear() === s.getFullYear() && e.getMonth() < s.getMonth()) ||
+    (e.getFullYear() === s.getFullYear() &&
+      e.getMonth() === s.getMonth() &&
+      e.getDate() < s.getDate())
+  ) {
+    return "INVALID DATE";
+  }
+
+  if (e.toDateString() === s.toDateString() && e.getTime() < s.getTime()) {
+    return "INVALID TIME";
+  }
+
+  return msToTime(e.getTime() - s.getTime());
+}
+
+/** DEPARTMENT HANDLING TIME
+ * Excel shows #ERROR! instead of INVALID
+ */
+function excelDeptHandling(start?: string, end?: string) {
+  const r = excelHT(start, end);
+  if (r === "INVALID DATE" || r === "INVALID TIME") return "#ERROR!";
+  return r;
+}
+
+/** RAW HANDLING TIME (Excel behavior)
+ * - no validation
+ * - allows huge / negative values
+ * - used ONLY for JR COSTING
+ */
+function excelRawHT(start?: string, end?: string) {
+  if (!start || !end) return "";
+  const s = new Date(start);
+  const e = new Date(end);
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return "";
+  return msToTime(e.getTime() - s.getTime());
+}
+
+/* =========================
+   COMPONENT
+========================= */
+
 export function DepartmentalCsrFetchSheet({
   referenceid,
   newRecord,
@@ -38,7 +125,6 @@ export function DepartmentalCsrFetchSheet({
 
   useEffect(() => {
     if (!referenceid) return;
-
     setLoading(true);
     fetch(`/api/departmental-csr-fetch-activity?referenceid=${referenceid}`)
       .then((res) => res.json())
@@ -54,20 +140,17 @@ export function DepartmentalCsrFetchSheet({
   }, [newRecord]);
 
   useEffect(() => {
-  if (!updatedRecord) return;
-
-  setRows((prev) =>
-    prev.map((r) =>
-      r._id === updatedRecord._id ? updatedRecord : r
-    )
-  );
-}, [updatedRecord]);
+    if (!updatedRecord) return;
+    setRows((prev) =>
+      prev.map((r) => (r._id === updatedRecord._id ? updatedRecord : r))
+    );
+  }, [updatedRecord]);
 
   if (!referenceid) return null;
 
   return (
     <div className="rounded-lg border mt-4 flex flex-col min-w-0">
-      <div className="p-4 border-b font-semibold shrink-0 flex items-center gap-3">
+      <div className="p-4 border-b font-semibold flex items-center gap-3">
         <span>Departmental CSR Records</span>
         <span className="text-sm text-muted-foreground">
           Ref: {referenceid}
@@ -86,12 +169,10 @@ export function DepartmentalCsrFetchSheet({
 
       {!loading && rows.length > 0 && (
         <div className="flex-1 min-w-0 overflow-auto">
-          <table className="min-w-[2500px] w-full text-sm border-collapse">
+          <table className="min-w-[3800px] w-full text-sm border-collapse">
             <thead className="bg-muted sticky top-0 z-10">
               <tr>
-                <th className="p-2 text-left border-b whitespace-nowrap">
-                Actions
-                </th>
+                <th className="p-2 border-b">Actions</th>
                 {[
                   "Ticket Received",
                   "Ticket Endorsed",
@@ -125,11 +206,25 @@ export function DepartmentalCsrFetchSheet({
                   "JR Costing",
                   "Acknowledged",
                   "Closed",
+
+                  "Dept Response Time",
+                  "Dept Handling Time",
+
+                  "Pull-Out → Logistics (Days)",
+                  "Pulled-Out / Returned (Days)",
+                  "Date Repaired (Days)",
+                  "Dispatch (Days)",
+                  "Delivered (Days)",
+
+                  "Pull-Out → Logistics (HT)",
+                  "Pulled-Out / Returned (HT)",
+                  "Date Repaired (HT)",
+                  "Dispatch (HT)",
+                  "Delivered (HT)",
+
+                  "JR Costing Handling Time",
                 ].map((h) => (
-                  <th
-                    key={h}
-                    className="p-2 text-left whitespace-nowrap border-b"
-                  >
+                  <th key={h} className="p-2 border-b whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -139,28 +234,19 @@ export function DepartmentalCsrFetchSheet({
             <tbody>
               {rows.map((r) => (
                 <tr key={r._id} className="border-t hover:bg-muted/40">
-                    <td className="p-2 whitespace-nowrap text-center">
-                    <div className="flex justify-center gap-2">
-                        <Button
-  size="sm"
-  variant="outline"
-  className="cursor-pointer"
-  onClick={() => onEdit(r)}
->
-  Edit
-</Button>
-
-                        <Button size="sm" variant="destructive" className="cursor-pointer">Delete</Button>
+                  <td className="p-2 text-center">
+                    <div className="flex gap-2 justify-center">
+                      <Button size="sm" variant="outline" onClick={() => onEdit(r)}>
+                        Edit
+                      </Button>
+                      <Button size="sm" variant="destructive">
+                        Delete
+                      </Button>
                     </div>
-                    </td>
-
-
-                  <td className="p-2 whitespace-nowrap">
-                    {formatDT(r.ticket_received_date_and_time)}
                   </td>
-                  <td className="p-2 whitespace-nowrap">
-                    {formatDT(r.ticket_endorsed_date_and_time)}
-                  </td>
+
+                  <td className="p-2">{formatDT(r.ticket_received_date_and_time)}</td>
+                  <td className="p-2">{formatDT(r.ticket_endorsed_date_and_time)}</td>
                   <td className="p-2">{r.company_name}</td>
                   <td className="p-2">{r.customer_name}</td>
                   <td className="p-2">{r.type_of_concern}</td>
@@ -183,25 +269,88 @@ export function DepartmentalCsrFetchSheet({
                   <td className="p-2">{r.technical_assessment}</td>
                   <td className="p-2">{r.processed_by}</td>
                   <td className="p-2">{r.replacement_status}</td>
-                  <td className="p-2">
-                    {formatDT(r.date_and_time_repaired)}
-                  </td>
+                  <td className="p-2">{formatDT(r.date_and_time_repaired)}</td>
                   <td className="p-2">{r.replacement_slip_no}</td>
-                  <td className="p-2">
-                    {formatDT(r.date_forwarded_to_dispatch)}
-                  </td>
+                  <td className="p-2">{formatDT(r.date_forwarded_to_dispatch)}</td>
                   <td className="p-2">{formatDT(r.date_delivered)}</td>
                   <td className="p-2">{r.pending_days}</td>
                   <td className="p-2 font-semibold">{r.status}</td>
                   <td className="p-2">{r.replacement_remarks}</td>
+                  <td className="p-2">{formatDT(r.jr_costing_date_and_time)}</td>
+                  <td className="p-2">{formatDT(r.confirmed_acknowledged_date_and_time)}</td>
+                  <td className="p-2">{formatDT(r.ticket_closed_date_and_time)}</td>
+
+                  {/* Dept Response Time */}
                   <td className="p-2">
-                    {formatDT(r.jr_costing_date_and_time)}
+                    {excelHT(
+                      r.ticket_endorsed_date_and_time,
+                      r.confirmed_acknowledged_date_and_time
+                    )}
+                  </td>
+
+                  {/* Dept Handling Time */}
+                  <td className="p-2">
+                    {excelDeptHandling(
+                      r.ticket_received_date_and_time,
+                      r.confirmed_acknowledged_date_and_time
+                    )}
+                  </td>
+
+                  {/* DAYS */}
+                  <td className="p-2">
+                    {excelDays(r.ticket_endorsed_date_and_time, r.logistics_date)}
                   </td>
                   <td className="p-2">
-                    {formatDT(r.confirmed_acknowledged_date_and_time)}
+                    {excelDays(r.logistics_date, r.replacement_date)}
                   </td>
                   <td className="p-2">
-                    {formatDT(r.ticket_closed_date_and_time)}
+                    {excelDays(r.replacement_date, r.date_and_time_repaired)}
+                  </td>
+                  <td className="p-2">
+                    {excelDays(r.date_and_time_repaired, r.date_forwarded_to_dispatch)}
+                  </td>
+                  <td className="p-2">
+                    {excelDays(r.date_forwarded_to_dispatch, r.date_delivered)}
+                  </td>
+
+                  {/* HANDLING TIME */}
+                  <td className="p-2">
+                    {excelHT(
+                      r.ticket_endorsed_date_and_time,
+                      r.logistics_date
+                    )}
+                  </td>
+                  <td className="p-2">
+                    {excelHT(
+                      r.logistics_date,
+                      r.replacement_date
+                    )}
+                  </td>
+                  <td className="p-2">
+                    {excelHT(
+                      r.replacement_date,
+                      r.date_and_time_repaired
+                    )}
+                  </td>
+                  <td className="p-2">
+                    {excelHT(
+                      r.date_and_time_repaired,
+                      r.date_forwarded_to_dispatch
+                    )}
+                  </td>
+                  <td className="p-2">
+                    {excelHT(
+                      r.date_forwarded_to_dispatch,
+                      r.date_delivered
+                    )}
+                  </td>
+
+                  {/* JR COSTING HANDLING TIME (RAW Excel) */}
+                  <td className="p-2 font-semibold">
+                    {excelRawHT(
+                      r.confirmed_acknowledged_date_and_time,
+                      r.jr_costing_date_and_time
+                    )}
                   </td>
                 </tr>
               ))}
