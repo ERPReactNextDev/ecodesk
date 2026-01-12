@@ -131,6 +131,7 @@ export const Ticket: React.FC<TicketProps> = ({
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
 
+    const [addingLock, setAddingLock] = useState<Set<string>>(new Set());
     const [addingAccount, setAddingAccount] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
@@ -650,12 +651,19 @@ const filteredCompanies = companies
     };
 
 const handleAddActivity = async (company: Company) => {
+    const key = company.account_reference_number;
+
+    // 🔒 HARD BLOCK double click
+    if (addingLock.has(key)) return;
+
   if (!referenceid) {
     toast.error("Missing reference ID");
     return;
   }
 
-  setAddingAccount(company.account_reference_number);
+    // 🔒 lock immediately
+    setAddingLock(prev => new Set(prev).add(key));
+    setAddingAccount(key);
 
   const newActivityReferenceNumber = generateActivityReferenceNumber(company.company_name);
 
@@ -677,8 +685,7 @@ const handleAddActivity = async (company: Company) => {
     const json = await res.json();
 
     if (!res.ok) {
-      toast.error(`Failed to save activity: ${json.error || "Unknown error"}`);
-      setAddingAccount(null);
+        toast.error(`Failed to save activity: ${json.error || "Unknown error"}`);
       return;
     }
 
@@ -687,9 +694,16 @@ const handleAddActivity = async (company: Company) => {
   } catch (error) {
     toast.error("Error saving activity");
   } finally {
+      // 🔓 unlock after request ends
+      setAddingLock(prev => {
+          const copy = new Set(prev);
+          copy.delete(key);
+          return copy;
+      });
     setAddingAccount(null);
   }
 };
+
 
 // 👇👇👇 PUT THIS RIGHT HERE 👇👇👇
 const selectedActivity = activities.find(
@@ -970,13 +984,17 @@ const selectedActivity = activities.find(
 
                                             <Button
                                                 variant="outline"
-                                                disabled={addingAccount === c.account_reference_number}
+                                                disabled={
+                                                    addingAccount === c.account_reference_number ||
+                                                    addingLock.has(c.account_reference_number)
+                                                }
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleAddActivity(c);
                                                 }}
                                                 className="text-xs px-3 py-1 cursor-pointer"
                                             >
+
                                                 {addingAccount === c.account_reference_number ? "Adding..." : "Add"}
                                             </Button>
                                         </div>

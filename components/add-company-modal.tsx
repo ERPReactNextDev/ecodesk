@@ -32,6 +32,7 @@ interface AddCompanyModalProps {
 }
 
 export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps) {
+  const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -169,51 +170,52 @@ const isFormValid = () => {
   };
 
   const handleSave = async () => {
-    if (!isFormValid()) {
-      toast.error("Please complete required fields and avoid duplicates.");
-      return;
+  if (saving) return; // 🔒 stop double click
+  if (!isFormValid()) {
+    toast.error("Please complete required fields and avoid duplicates.");
+    return;
+  }
+
+  try {
+    setSaving(true); // 🔒 lock button
+
+    const account_reference_number =
+      await generateAccountReferenceNumber(formData.company_name);
+
+    const joinedContacts = contactNumbers
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .join(" / ");
+
+    const res = await fetch("/api/com-save-company", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        referenceid,
+        account_reference_number,
+        ...formData,
+        contact_number: joinedContacts,
+        date_created: new Date().toISOString(),
+      }),
+    });
+
+    if (!res.ok) {
+      const j = await res.json();
+      throw new Error(j.error || "Failed to save");
     }
 
-    try {
-      const account_reference_number =
-        await generateAccountReferenceNumber(formData.company_name);
+    toast.success("Company saved");
+    setOpen(false);
+    resetForm();
+    await onCreated();
+  } catch (err) {
+    console.error(err);
+    toast.error("Saving failed");
+  } finally {
+    setSaving(false); // 🔓 unlock
+  }
+};
 
-      const joinedContacts = contactNumbers
-        .map((n) => n.trim())
-        .filter(Boolean)
-        .join(" / ");
-
-      await fetch("/api/com-save-company", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          referenceid,
-          account_reference_number,
-          ...formData,
-          contact_number: joinedContacts, // ✅ JOINED HERE
-          date_created: new Date().toISOString(),
-        }),
-      });
-
-      await fetch("/api/act-save-ticket", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          referenceid,
-          account_reference_number,
-          status: "On-Progress",
-          date_created: new Date().toISOString(),
-        }),
-      });
-
-      toast.success("Company and activity saved");
-      setOpen(false);
-      resetForm();
-      await onCreated();
-    } catch {
-      toast.error("Saving failed");
-    }
-  };
 
   const resetForm = () => {
     setFormData({
@@ -366,9 +368,14 @@ const isFormValid = () => {
         </div>
 
         <div className="px-6 py-4 border-t flex gap-2">
-          <Button className="flex-1" onClick={handleSave} disabled={!isFormValid()}>
-            Save
+          <Button
+            className="flex-1"
+            onClick={handleSave}
+            disabled={!isFormValid() || saving}
+          >
+            {saving ? "Saving..." : "Save"}
           </Button>
+
           <Button className="flex-1" variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
