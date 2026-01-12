@@ -53,7 +53,7 @@ export default async function handler(
       date_updated: new Date(),
     };
 
-    const result = await db.collection("departmental").insertOne(insertData);
+    const result = await db.collection("departmental-csr").insertOne(insertData);
 
     return res.status(200).json({
       success: true,

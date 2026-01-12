@@ -49,7 +49,7 @@ function HelpContent() {
     <>
       <SidebarLeft />
 
-      <SidebarInset>
+      <SidebarInset className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Header */}
         <header className="bg-background sticky top-0 flex h-14 items-center gap-2 border-b">
           <div className="flex flex-1 items-center gap-2 px-3">
@@ -68,13 +68,14 @@ function HelpContent() {
         </header>
 
         {/* Content */}
-        <div className="flex flex-1 flex-col gap-6 p-4">
-          <div className="mx-auto w-full max-w-4xl space-y-4">
+        <div className="flex flex-1 flex-col gap-6 p-4 min-w-0 overflow-hidden">
+          <div className="w-full flex-1 min-w-0 space-y-4">
             <h1 className="text-xl font-semibold">
               <div>Departmental Summary</div>
             </h1>
-              <CsrSummaryPage />
+            <CsrSummaryPage />
           </div>
+
         </div>
       </SidebarInset>
 
