@@ -68,8 +68,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const updateData = { ...body };
     delete updateData._id;
 
+    // 🔒 NEVER overwrite original Date Created
     updateData.date_created = existingDoc.date_created || new Date().toISOString();
+
+    // 🔒 Protect historical timestamps from being erased
+    const protectedFields = [
+      "ticket_received",
+      "ticket_endorsed",
+      "tsm_acknowledge_date",
+      "tsa_acknowledge_date",
+      "tsm_handling_time",
+      "tsa_handling_time",
+    ];
+
+    // If frontend sends "" or null, do NOT overwrite existing values
+    protectedFields.forEach((field) => {
+      if (
+        updateData[field] === "" ||
+        updateData[field] === null ||
+        updateData[field] === undefined
+      ) {
+        updateData[field] = existingDoc[field] || undefined;
+      }
+    });
+
+    // Always update modified timestamp
     updateData.date_updated = new Date().toISOString();
+
 
     const result = await collection.updateOne(filter, { $set: updateData });
 
