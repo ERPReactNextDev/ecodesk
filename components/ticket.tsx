@@ -284,34 +284,34 @@ const isNewCompany = (dateCreated?: string) => {
     }, []);
 
         // Fetch activities when referenceid changes
-    const fetchActivities = useCallback(async () => {
-            setLoadingActivities(true);
-            setErrorActivities(null);
+   const fetchActivities = useCallback(async () => {
+        setLoadingActivities(true);
+        setErrorActivities(null);
 
-            try {
-                const res = await fetch("/api/act-fetch-activity", {
-                    method: "GET",
-                    cache: "no-store",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-user-role": role,
-                        "x-reference-id": referenceid,
-                    },
-                });
+        try {
+            const res = await fetch("/api/act-fetch-activity-role", {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-user-role": role,
+                    "x-reference-id": referenceid,
+                },
+            });
 
-                if (!res.ok) {
-                    const json = await res.json();
-                    throw new Error(json.error || "Failed to fetch activities");
-                }
-
+            if (!res.ok) {
                 const json = await res.json();
-                setActivities(json.data || []);
-            } catch (error: any) {
-                setErrorActivities(error.message || "Error fetching activities");
-            } finally {
-                setLoadingActivities(false);
+                throw new Error(json.error || "Failed to fetch activities");
             }
-        }, [role, referenceid]);
+
+            const json = await res.json();
+            setActivities(json.data || []);
+        } catch (error: any) {
+            setErrorActivities(error.message || "Error fetching activities");
+        } finally {
+            setLoadingActivities(false);
+        }
+    }, [role, referenceid]);
 
     useEffect(() => {
         fetchActivities();
