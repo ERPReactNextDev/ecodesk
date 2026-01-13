@@ -146,43 +146,59 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             { referenceid: string; salesCount: number; nonSalesCount: number; convertedCount: number; amount: number; qtySold: number }
         > = {};
 
-                    activities
-                    .filter((a) => {
-                        if (!isDateInRange(a.date_created, dateCreatedFilterRange)) return false;
-                        if (!a.referenceid || a.referenceid.trim() === "") return false;
-                        if (a.remarks && a.remarks.toLowerCase() === "po received") return false;
+        activities
+        .filter((a) => {
+            if (!isDateInRange(a.date_created, dateCreatedFilterRange)) return false;
+            if (!a.referenceid || a.referenceid.trim() === "") return false;
 
-                        // 🔐 if not Admin → only own data
-                        if (role !== "Admin") {
-                        return a.referenceid === userReferenceId;
-                        }
+            // 🔐 if not Admin → only own data
+            if (role !== "Admin") {
+            return a.referenceid === userReferenceId;
+            }
 
-                        return true; // Admin sees all
-                    })
-            .forEach((a) => {
-                const referenceid = a.referenceid!.trim();
-                const soAmount = Number(a.so_amount ?? 0);
-                const traffic = a.traffic?.toLowerCase() ?? "";
-                const qtySold = Number(a.qty_sold ?? 0);
-                const status = a.status?.toLowerCase() ?? "";
+            return true;
+        })
+        .forEach((a) => {
+            const referenceid = a.referenceid!.trim();
+            const soAmount = Number(a.so_amount ?? 0);
+            const traffic = a.traffic?.toLowerCase() ?? "";
+            const qtySold = Number(a.qty_sold ?? 0);
+            const status = a.status?.toLowerCase() ?? "";
+            const remarks = a.remarks?.toLowerCase() ?? "";
 
-                if (!map[referenceid]) {
-                    map[referenceid] = { referenceid, salesCount: 0, nonSalesCount: 0, convertedCount: 0, amount: 0, qtySold: 0 };
-                }
+            if (!map[referenceid]) {
+            map[referenceid] = {
+                referenceid,
+                salesCount: 0,
+                nonSalesCount: 0,
+                convertedCount: 0,
+                amount: 0,
+                qtySold: 0,
+            };
+            }
 
-                if (traffic === "sales") {
-                    map[referenceid].salesCount += 1;
-                } else if (traffic === "non-sales") {
-                    map[referenceid].nonSalesCount += 1;
-                }
+            // 🔥 PO RECEIVED RULE
+            if (remarks === "po received") {
+            // count ONLY as Non-Sales inquiry
+            map[referenceid].nonSalesCount += 1;
+            return; // 🚫 block from all revenue & conversion
+            }
 
-                if (status === "converted into sales") {
-                    map[referenceid].convertedCount += 1;
-                }
+            // Normal traffic counting
+            if (traffic === "sales") {
+            map[referenceid].salesCount += 1;
+            } else if (traffic === "non-sales") {
+            map[referenceid].nonSalesCount += 1;
+            }
 
-                map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
-                map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
-            });
+            // Only real conversions count
+            if (status === "converted into sales") {
+            map[referenceid].convertedCount += 1;
+            map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
+            map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
+            }
+        });
+
 
         return Object.values(map);
     }, [activities, dateCreatedFilterRange, role, userReferenceId]);

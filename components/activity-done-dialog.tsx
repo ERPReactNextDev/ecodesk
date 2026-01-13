@@ -51,7 +51,7 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
     }
   }, [open, close_reason, counter_offer, client_specs]);
 
-  // Auto logic for "Same Specs Provided"
+  // Auto dash logic for "Same Specs Provided"
   useEffect(() => {
     if (closeReason === "Same Specs Provided") {
       setCounterOffer("-");
@@ -61,11 +61,12 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
       if (clientSpecs === "-") setClientSpecs("");
     }
   }, [closeReason]);
-  
 
+  // Validation — same as Sheet Ticket
   const isValid =
     closeReason.trim() !== "" &&
     (closeReason === "Same Specs Provided" ||
+      closeReason !== "Counter Offer" ||
       (counterOffer.trim() !== "" && clientSpecs.trim() !== ""));
 
   const handleConfirm = () => {
@@ -77,7 +78,6 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
       client_specs: clientSpecs.trim(),
     });
 
-    // Reset after submit
     setCloseReason("");
     setCounterOffer("");
     setClientSpecs("");
@@ -95,46 +95,57 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
               the ticket later if needed.
             </p>
 
-            {/* Close Reason */}
-            <div className="space-y-1">
-              <Label>1. Close Reason *</Label>
-              <select
-                value={closeReason}
-                onChange={(e) => setCloseReason(e.target.value)}
-                className="w-full border rounded-md px-3 py-2 text-sm"
-              >
-                <option value="">Select a reason</option>
-                <option value="Same Specs Provided">Same Specs Provided</option>
-                <option value="Counter Offer">Counter Offer</option>
-                <option value="Out of Stock">Out of Stock</option>
-                <option value="Client Declined">Client Declined</option>
-                <option value="Not Interested">Not Interested</option>
-                <option value="Others">Others</option>
-              </select>
+            {/* 🔴 RED CLOSING PANEL */}
+            <div className="w-full border border-red-300 rounded-md px-3 py-2 text-sm !bg-[#fff5f5]">
+              <h4 className="font-semibold text-sm text-red-600">
+                On Closing of Ticket (Required)
+              </h4>
+
+              {/* 1. Close Reason */}
+              <div className="space-y-1">
+                <Label className="text-red-700">1. Close Reason *</Label>
+                <select
+                  value={closeReason}
+                  onChange={(e) => setCloseReason(e.target.value)}
+                  className="w-full border border-red-300 rounded-md px-3 py-2 text-sm bg-[#fffafa]"
+                >
+                  <option value="">Select a reason</option>
+                  <option value="Same Specs Provided">Same Specs Provided</option>
+                  <option value="Counter Offer">Counter Offer</option>
+                  <option value="Out of Stock">Out of Stock</option>
+                  <option value="Client Declined">Client Declined</option>
+                  <option value="Not Interested">Not Interested</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+
+              {/* 2 & 3 — ONLY for Counter Offer */}
+              {closeReason === "Counter Offer" && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-red-700">
+                      2. Add Counter Offer *
+                    </Label>
+                    <Textarea
+                      value={counterOffer}
+                      onChange={(e) => setCounterOffer(e.target.value)}
+                      placeholder="Enter counter offer..."
+                      className="border-red-300 focus:ring-red-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-red-700">3. Client Specs *</Label>
+                    <Textarea
+                      value={clientSpecs}
+                      onChange={(e) => setClientSpecs(e.target.value)}
+                      placeholder="Enter client specifications..."
+                      className="border-red-300 focus:ring-red-300 bg-[#fff5f5]"
+                    />
+                  </div>
+                </>
+              )}
             </div>
-
-            {/* Counter Offer & Client Specs */}
-            {closeReason !== "Same Specs Provided" && (
-              <>
-                <div className="space-y-1">
-                  <Label>2. Add Counter Offer *</Label>
-                  <Textarea
-                    value={counterOffer}
-                    onChange={(e) => setCounterOffer(e.target.value)}
-                    placeholder="Enter counter offer..."
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label>3. Client Specs *</Label>
-                  <Textarea
-                    value={clientSpecs}
-                    onChange={(e) => setClientSpecs(e.target.value)}
-                    placeholder="Enter client specifications..."
-                  />
-                </div>
-              </>
-            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -147,7 +158,11 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
             Cancel
           </Button>
 
-          <Button onClick={handleConfirm} disabled={!isValid || loading}>
+          <Button
+            onClick={handleConfirm}
+            disabled={!isValid || loading}
+            className="bg-red-600 hover:bg-red-700"
+          >
             {loading ? "Updating..." : "Confirm"}
           </Button>
         </DialogFooter>

@@ -605,9 +605,11 @@ useEffect(() => {
     }
 
     if (status === "Closed") {
-        if (!closeReason.trim()) {
+    if (!closeReason.trim()) {
         newErrors.status = "Close reason is required.";
-        }
+    }
+
+    if (closeReason === "Counter Offer") {
         if (!counterOffer.trim()) {
         newErrors.status = "Counter offer is required.";
         }
@@ -615,6 +617,8 @@ useEffect(() => {
         newErrors.status = "Client specs are required.";
         }
     }
+    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -852,43 +856,42 @@ useEffect(() => {
                                     />
                                 </Field>
                                 )}
+                                    <Field>
+                                    <FieldLabel>TSM Acknowledgement Date</FieldLabel>
+                                    <InputField
+                                        type="datetime-local"
+                                        value={tsmAcknowledgeDate}
+                                        onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
+                                    />
+                                    </Field>
 
+                                    <Field>
+                                    <FieldLabel>TSM Handling Time</FieldLabel>
+                                    <InputField
+                                        type="datetime-local"
+                                        value={tsmHandlingTime}
+                                        onChange={(e) => setTsmHandlingTime(e.target.value)}
+                                    />
+                                    </Field>
 
-                            <Field>
-                            <FieldLabel>TSM Acknowledgement Date</FieldLabel>
-                            <InputField
-                                type="datetime-local"
-                                value={tsmAcknowledgeDate}
-                                onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
-                            />
-                            </Field>
+                                    <Field>
+                                    <FieldLabel>TSA Acknowledgement Date</FieldLabel>
+                                    <InputField
+                                        type="datetime-local"
+                                        value={tsaAcknowledgeDate}
+                                        onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
+                                    />
+                                    </Field>
 
-                            <Field>
-                            <FieldLabel>TSA Acknowledgement Date</FieldLabel>
-                            <InputField
-                                type="datetime-local"
-                                value={tsaAcknowledgeDate}
-                                onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
-                            />
-                            </Field>
+                                    <Field>
+                                    <FieldLabel>TSA Handling Time</FieldLabel>
+                                    <InputField
+                                        type="datetime-local"
+                                        value={tsaHandlingTime}
+                                        onChange={(e) => setTsaHandlingTime(e.target.value)}
+                                    />
+                                    </Field>
 
-                            <Field>
-                            <FieldLabel>TSM Handling Time</FieldLabel>
-                            <InputField
-                                type="datetime-local"
-                                value={tsmHandlingTime}
-                                onChange={(e) => setTsmHandlingTime(e.target.value)}
-                            />
-                            </Field>
-
-                            <Field>
-                            <FieldLabel>TSA Handling Time</FieldLabel>
-                            <InputField
-                                type="datetime-local"
-                                value={tsaHandlingTime}
-                                onChange={(e) => setTsaHandlingTime(e.target.value)}
-                            />
-                            </Field>
                         </FieldSet>
                     </FieldGroup>
                     <Navigation />
@@ -1254,7 +1257,7 @@ useEffect(() => {
                                 </Field>
 
                                 {/* 2 & 3 — ONLY IF NOT "SAME SPECS PROVIDED" */}
-                                {closeReason !== "Same Specs Provided" && (
+                                {closeReason === "Counter Offer" && (
                                 <>
                                     <Field>
                                     <FieldLabel>2. Add Counter Offer *</FieldLabel>

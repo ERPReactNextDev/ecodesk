@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/card";
 
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
 
 interface Activity {
   status: string;
   date_created?: string;
   so_amount: number | string;
+  remarks?: string; // 🔥 required for PO Received rule
 }
 
 interface EndorsedProps {
@@ -63,77 +64,87 @@ export function ConvertedSalesCard({
     return true;
   };
 
-  // Filtered activities with status "converted into sales" and date range
+  // 🔥 FILTER: Converted Into Sales BUT NOT PO Received
   const filteredActivities = useMemo(() => {
-    return activities.filter(
-      (a) =>
-        a.status &&
-        a.status.toLowerCase() === "converted into sales" &&
-        isDateInRange(a.date_created, dateCreatedFilterRange)
-    );
+    return activities.filter((a) => {
+      if (!a.status) return false;
+      if (a.status.toLowerCase() !== "converted into sales") return false;
+      if (a.remarks?.toLowerCase() === "po received") return false; // 🚫 block PO Received
+      return isDateInRange(a.date_created, dateCreatedFilterRange);
+    });
   }, [activities, dateCreatedFilterRange]);
 
-  // Count total activities
-  const endorsedCount = filteredActivities.length;
+  // Count converted tickets
+  const convertedCount = filteredActivities.length;
 
-  // Sum so_amount (convert string to number safely)
+  // Sum SO Amount (safe)
   const totalSoAmount = useMemo(() => {
     return filteredActivities.reduce((sum, a) => {
-      const amount = typeof a.so_amount === "string" ? parseFloat(a.so_amount) : a.so_amount;
+      const amount =
+        typeof a.so_amount === "string"
+          ? parseFloat(a.so_amount)
+          : a.so_amount;
       return sum + (isNaN(amount) ? 0 : amount);
     }, 0);
   }, [filteredActivities]);
 
   return (
-    <>
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <CardTitle>Converted Into Sales Tickets</CardTitle>
-          <div
-            className="relative cursor-pointer text-muted-foreground hover:text-foreground"
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            aria-label="Endorsed activities count explanation"
-          >
-            <Info size={18} />
-            {showTooltip && (
-              <div className="absolute top-full mt-1 w-64 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
-                This shows the total number of activities with status "Converted into Sales" within the selected date range,
-                and the sum of their SO Amounts.
-              </div>
-            )}
-          </div>
-        </CardHeader>
+    <Card>
+      <CardHeader className="flex justify-between items-center">
+        <CardTitle>Converted Into Sales Tickets</CardTitle>
 
-        <CardContent>
-          {loading && <p>Loading activities...</p>}
-          {error && <p className="text-destructive">{error}</p>}
-          {!loading && !error && (
-            <div className="flex flex-col gap-4">
-              <p className="flex justify-between items-center">
-                <span>Total Converted activities:</span>
-                <strong>
-                  <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                    {endorsedCount}
-                  </Badge>
-                </strong>
-              </p>
-              <Separator />
-              {totalSoAmount > 0 && (
-                <p className="flex justify-between items-center">
-                  <span>Total SO Amount:</span>
-                  <strong>
-                    <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                      ₱{totalSoAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </Badge>
-                  </strong>
-                </p>
-              )}
-
+        <div
+          className="relative cursor-pointer text-muted-foreground hover:text-foreground"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <Info size={18} />
+          {showTooltip && (
+            <div className="absolute top-full mt-1 w-64 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
+              Shows tickets with status <strong>Converted into Sales</strong>{" "}
+              within the selected date range. <br />
+              <br />
+              Tickets tagged as <strong>PO Received</strong> are excluded from
+              conversion and revenue.
             </div>
           )}
-        </CardContent>
-      </Card>
-    </>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        {loading && <p>Loading activities...</p>}
+        {error && <p className="text-destructive">{error}</p>}
+
+        {!loading && !error && (
+          <div className="flex flex-col gap-4">
+            <p className="flex justify-between items-center">
+              <span>Total Converted Tickets:</span>
+              <strong>
+                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+                  {convertedCount}
+                </Badge>
+              </strong>
+            </p>
+
+            <Separator />
+
+            <p className="flex justify-between items-center">
+              <span>Total SO Amount:</span>
+              <strong>
+                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+                  ₱
+                  {totalSoAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </Badge>
+              </strong>
+            </p>
+          </div>
+        )}
+      </CardContent>
+
+      <CardFooter />
+    </Card>
   );
 }

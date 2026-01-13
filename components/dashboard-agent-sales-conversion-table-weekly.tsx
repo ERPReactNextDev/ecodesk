@@ -164,47 +164,54 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                 (a) =>
                     isDateInRange(a.date_created, dateCreatedFilterRange) &&
                     a.referenceid &&
-                    a.date_updated &&
-                    (!a.remarks ||
-                        !["po received"].includes(a.remarks.toLowerCase()))
+                    a.date_updated 
             )
             .forEach((a) => {
-                const ref = a.referenceid!.trim();
-                const amount = Number(a.so_amount ?? 0);
-                const qty = Number(a.qty_sold ?? 0);
-                const traffic = a.traffic?.toLowerCase() ?? "";
-                const status = a.status?.toLowerCase() ?? "";
-                const updatedDate = new Date(a.date_updated!);
-                if (isNaN(updatedDate.getTime())) return;
+            const ref = a.referenceid!.trim();
+            const amount = Number(a.so_amount ?? 0);
+            const qty = Number(a.qty_sold ?? 0);
+            const traffic = a.traffic?.toLowerCase() ?? "";
+            const status = a.status?.toLowerCase() ?? "";
+            const remarks = a.remarks?.toLowerCase() ?? "";
+            const updatedDate = new Date(a.date_updated!);
+            if (isNaN(updatedDate.getTime())) return;
 
-                const week = getWeekNumber(updatedDate);
+            const week = getWeekNumber(updatedDate);
 
-                if (!map[ref]) {
-                    map[ref] = {
-                        referenceid: ref,
-                        salesCount: 0,
-                        nonSalesCount: 0,
-                        convertedCount: 0,
-                        qtySold: 0,
-                        week1: 0,
-                        week2: 0,
-                        week3: 0,
-                        week4: 0,
-                    };
-                }
+            if (!map[ref]) {
+                map[ref] = {
+                referenceid: ref,
+                salesCount: 0,
+                nonSalesCount: 0,
+                convertedCount: 0,
+                qtySold: 0,
+                week1: 0,
+                week2: 0,
+                week3: 0,
+                week4: 0,
+                };
+            }
 
-                if (traffic === "sales") map[ref].salesCount++;
-                if (traffic === "non-sales") map[ref].nonSalesCount++;
-                if (status === "converted into sales") map[ref].convertedCount++;
+            // 🔥 PO RECEIVED → NON-SALES ONLY
+            if (remarks === "po received") {
+                map[ref].nonSalesCount++;
+                return; // 🚫 no weekly revenue
+            }
 
+            if (traffic === "sales") map[ref].salesCount++;
+            if (traffic === "non-sales") map[ref].nonSalesCount++;
+
+            if (status === "converted into sales") {
+                map[ref].convertedCount++;
                 map[ref].qtySold += isNaN(qty) ? 0 : qty;
 
                 if (!isNaN(amount)) {
-                    if (week === 1) map[ref].week1 += amount;
-                    if (week === 2) map[ref].week2 += amount;
-                    if (week === 3) map[ref].week3 += amount;
-                    if (week === 4) map[ref].week4 += amount;
+                if (week === 1) map[ref].week1 += amount;
+                if (week === 2) map[ref].week2 += amount;
+                if (week === 3) map[ref].week3 += amount;
+                if (week === 4) map[ref].week4 += amount;
                 }
+            }
             });
 
         return Object.values(map);
