@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge"
 interface Activity {
   status: string;
   date_created?: string;
+  date_updated?: string;   // ← add this
 }
 
 interface ClosedProps {
@@ -63,14 +64,13 @@ export function ClosedCard({
   };
 
   // Count total activities with status "closed" (case-insensitive) AND within date range
-  const closedCount = useMemo(() => {
-    return activities.filter(
-      (a) =>
-        a.status &&
-        a.status.toLowerCase() === "closed" &&
-        isDateInRange(a.date_created, dateCreatedFilterRange)
-    ).length;
-  }, [activities, dateCreatedFilterRange]);
+const closedCount = useMemo(() => {
+  return activities.filter(
+    (a) =>
+      a.status?.toLowerCase() === "closed" &&
+      isDateInRange(a.date_updated ?? a.date_created, dateCreatedFilterRange)
+  ).length;
+}, [activities, dateCreatedFilterRange]);
 
   return (
     <>
