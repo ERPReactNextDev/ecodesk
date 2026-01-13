@@ -283,41 +283,35 @@ const isNewCompany = (dateCreated?: string) => {
         fetchCompanies();
     }, []);
 
-    // Fetch activities when referenceid changes
+        // Fetch activities when referenceid changes
     const fetchActivities = useCallback(async () => {
-        setLoadingActivities(true);
-        setErrorActivities(null);
+            setLoadingActivities(true);
+            setErrorActivities(null);
 
-        try {
-            // Determine the query param: kung admin, walang filter referenceid
-            // otherwise gamitin referenceid para sa filter
-            const queryParam = role === "Admin" ? "" : `?referenceid=${encodeURIComponent(referenceid)}`;
-
-            const res = await fetch(
-                `/api/act-fetch-activity${queryParam}`,
-                {
+            try {
+                const res = await fetch("/api/act-fetch-activity", {
+                    method: "GET",
                     cache: "no-store",
                     headers: {
-                        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-                        Pragma: "no-cache",
-                        Expires: "0",
+                        "Content-Type": "application/json",
+                        "x-user-role": role,
+                        "x-reference-id": referenceid,
                     },
+                });
+
+                if (!res.ok) {
+                    const json = await res.json();
+                    throw new Error(json.error || "Failed to fetch activities");
                 }
-            );
 
-            if (!res.ok) {
                 const json = await res.json();
-                throw new Error(json.error || "Failed to fetch activities");
+                setActivities(json.data || []);
+            } catch (error: any) {
+                setErrorActivities(error.message || "Error fetching activities");
+            } finally {
+                setLoadingActivities(false);
             }
-
-            const json = await res.json();
-            setActivities(json.data || []);
-        } catch (error: any) {
-            setErrorActivities(error.message || "Error fetching activities");
-        } finally {
-            setLoadingActivities(false);
-        }
-    }, [referenceid, role]);
+        }, [role, referenceid]);
 
     useEffect(() => {
         fetchActivities();
@@ -624,12 +618,16 @@ const filteredCompanies = companies
             date_updated: new Date().toISOString(),
             };
 
-            const res = await fetch("/api/act-update-status", {
+            const res = await fetch(
+            "/api/act-update-status?role=" + encodeURIComponent(role),
+            {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updatedActivity),
                 cache: "no-store",
-            });
+            }
+            );
+
 
             const result = await res.json();
 
