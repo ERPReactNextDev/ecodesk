@@ -39,15 +39,21 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
     );
 }
 
-interface Activity {
-    referenceid?: string;
-    date_created?: string;
-    so_amount?: number | string;
-    remarks?: string;
-    traffic: string;
-    qty_sold: number | string;
-    status: string;
-}
+    interface Activity {
+        referenceid?: string;
+        date_created?: string;
+        so_amount?: number | string;
+        remarks?: string;
+        traffic: string;
+        qty_sold: number | string;
+        status: string;
+
+        // from Sheet Ticket
+        customer_status?: string;
+        ticket_received?: string;
+        ticket_endorsed?: string;
+    }
+
 
 interface Agent {
     ReferenceID: string;
@@ -141,10 +147,26 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     };
 
     const groupedData = useMemo(() => {
-        const map: Record<
-            string,
-            { referenceid: string; salesCount: number; nonSalesCount: number; convertedCount: number; amount: number; qtySold: number }
-        > = {};
+    const map: Record<
+    string,
+    {
+        referenceid: string;
+        salesCount: number;
+        nonSalesCount: number;
+        convertedCount: number;
+        amount: number;
+        qtySold: number;
+
+        newClientSales: number;
+        newNonBuyingSales: number;
+        existingActiveSales: number;
+        existingInactiveSales: number;
+
+        responseTimeTotal: number;
+        responseCount: number;
+    }
+    > = {};
+
 
         activities
         .filter((a) => {
@@ -165,19 +187,64 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             const qtySold = Number(a.qty_sold ?? 0);
             const status = a.status?.toLowerCase() ?? "";
             const remarks = a.remarks?.toLowerCase() ?? "";
+            const customerStatus = a.customer_status;
+            const received = a.ticket_received;
+            const endorsed = a.ticket_endorsed;
+
 
             if (!map[referenceid]) {
-            map[referenceid] = {
+                map[referenceid] = {
                 referenceid,
                 salesCount: 0,
                 nonSalesCount: 0,
                 convertedCount: 0,
                 amount: 0,
                 qtySold: 0,
-            };
+
+                newClientSales: 0,
+                newNonBuyingSales: 0,
+                existingActiveSales: 0,
+                existingInactiveSales: 0,
+
+                responseTimeTotal: 0,
+                responseCount: 0,
+                };
+
             }
 
+                // 🔥 SALES PER CUSTOMER STATUS (from Sheet Ticket)
+                if (status === "converted into sales" && remarks !== "po received") {
+                if (customerStatus === "New Client") {
+                    map[referenceid].newClientSales += isNaN(soAmount) ? 0 : soAmount;
+                }
+
+                if (customerStatus === "New Non-Buying") {
+                    map[referenceid].newNonBuyingSales += isNaN(soAmount) ? 0 : soAmount;
+                }
+
+                if (customerStatus === "Existing Active") {
+                    map[referenceid].existingActiveSales += isNaN(soAmount) ? 0 : soAmount;
+                }
+
+                if (customerStatus === "Existing Inactive") {
+                    map[referenceid].existingInactiveSales += isNaN(soAmount) ? 0 : soAmount;
+                }
+                }
+
+                // ⏱ CSR RESPONSE TIME
+                if (received && endorsed) {
+                const r = new Date(received);
+                const e = new Date(endorsed);
+
+                if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
+                    map[referenceid].responseTimeTotal += e.getTime() - r.getTime();
+                    map[referenceid].responseCount += 1;
+                }
+                }
+
+
             // 🔥 PO RECEIVED RULE
+
             if (remarks === "po received") {
             // count ONLY as Non-Sales inquiry
             map[referenceid].nonSalesCount += 1;
@@ -204,11 +271,20 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     }, [activities, dateCreatedFilterRange, role, userReferenceId]);
 
     const totalSoAmount = groupedData.reduce((sum, row) => sum + row.amount, 0);
+    
+    const formatMs = (ms: number) => {
+    const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+    };
+
 
     return (
         <Card>
             <CardHeader className="flex justify-between items-center">
-                <CardTitle>Agent Sales Conversion Table</CardTitle>
+                <CardTitle>CSR Sales Conversion Table</CardTitle>
 
                 <div
                     className="relative cursor-pointer text-muted-foreground hover:text-foreground"
@@ -267,138 +343,136 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                 </div>
             </CardHeader>
 
-            <CardContent>
-                {(loading || agentsLoading) && <p>Loading data...</p>}
-                {error && <p className="text-destructive">{error}</p>}
+<CardContent>
+  {(loading || agentsLoading) && <p>Loading data...</p>}
+  {error && <p className="text-destructive">{error}</p>}
 
-                {!loading && !agentsLoading && !error && groupedData.length === 0 && (
-                    <p className="text-muted-foreground">No data available.</p>
-                )}
+  {!loading && !agentsLoading && !error && groupedData.length === 0 && (
+    <p className="text-muted-foreground">No data available.</p>
+  )}
 
-                {!loading && !agentsLoading && !error && groupedData.length > 0 && (
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]">Rank</TableHead>
-                                    <TableHead>Agent Name</TableHead>
-                                    <TableHead className="text-right">Sales</TableHead>
-                                    <TableHead className="text-right">Non-Sales</TableHead>
-                                    <TableHead className="text-right">QTY Sold</TableHead>
-                                    <TableHead className="text-right">Converted Sales</TableHead>
-                                    <TableHead className="text-right">% Conversion Inquiry to Sales</TableHead>
-                                    <TableHead className="text-right">Avg Transaction Unit</TableHead>
-                                    <TableHead className="text-right">Avg Transaction Value</TableHead>
-                                    <TableHead className="text-right">Total Amount</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {groupedData
-                                    .slice()
-                                    .sort((a, b) => b.amount - a.amount)
-                                    .map(({ referenceid, salesCount, nonSalesCount, convertedCount, amount, qtySold }, index) => {
-                                        const agent = agents.find((a) => a.ReferenceID === referenceid);
-                                        const fullName = agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown Agent)";
-                                        const rank = index + 1;
+  {!loading && !agentsLoading && !error && groupedData.length > 0 && (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[50px]">Rank</TableHead>
+            <TableHead>CSR</TableHead>
+            <TableHead className="text-right">Sales</TableHead>
+            <TableHead className="text-right">Non-Sales</TableHead>
+            <TableHead className="text-right">Sales</TableHead>
+            <TableHead className="text-right">Qty Sold</TableHead>
+            <TableHead className="text-right">Converted to Sale</TableHead>
+            <TableHead className="text-right">% Conversion</TableHead>
+            <TableHead className="text-right">Ave. Unit</TableHead>
+            <TableHead className="text-right">Ave. Value</TableHead>
+            <TableHead className="text-right">New Client</TableHead>
+            <TableHead className="text-right">New-Non Buying</TableHead>
+            <TableHead className="text-right">Existing Active</TableHead>
+            <TableHead className="text-right">Existing Inactive</TableHead>
+            <TableHead className="text-right">CSR Response Time</TableHead>
+          </TableRow>
+        </TableHeader>
 
-                                        return (
-                                            <TableRow key={referenceid} className="hover:bg-muted/50">
-                                                <TableCell className="font-medium text-center"><Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">{rank}</Badge></TableCell>
-                                                <TableCell className="capitalize">{fullName}</TableCell>
-                                                <TableCell className="font-mono tabular-nums text-right">{salesCount.toLocaleString()}</TableCell>
-                                                <TableCell className="font-mono tabular-nums text-right">{nonSalesCount.toLocaleString()}</TableCell>
-                                                <TableCell className="font-mono tabular-nums text-right">{qtySold.toLocaleString()}</TableCell>
-                                                <TableCell className="font-mono tabular-nums text-right">{convertedCount.toLocaleString()}</TableCell>
-                                                <TableCell className="font-mono tabular-nums text-right">
-                                                    {salesCount === 0
-                                                        ? "0.00%"
-                                                        : ((convertedCount / salesCount) * 100).toFixed(2) + "%"}
-                                                </TableCell>
-                                                <TableCell className="font-mono tabular-nums text-right">
-                                                    {convertedCount === 0
-                                                        ? "0.00%"
-                                                        : ((qtySold / convertedCount) * 100).toFixed(2) + "%"}
-                                                </TableCell>
-                                                <TableCell className="font-mono tabular-nums text-right">
-                                                    {convertedCount === 0
-                                                        ? "0.00"
-                                                        : (amount / convertedCount).toLocaleString(undefined, {
-                                                            minimumFractionDigits: 2,
-                                                            maximumFractionDigits: 2,
-                                                        })}
-                                                </TableCell>
+        <TableBody>
+          {groupedData
+            .slice()
+            .sort((a, b) => b.amount - a.amount)
+            .map((row, index) => {
+              const agent = agents.find(a => a.ReferenceID === row.referenceid);
+              const fullName = agent
+                ? `${agent.Firstname} ${agent.Lastname}`
+                : "(Unknown Agent)";
 
-                                                <TableCell className="font-mono tabular-nums text-right">
-                                                    ₱{amount.toLocaleString(undefined, {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                    })}
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                            </TableBody>
+              const avgResponse =
+                row.responseCount === 0
+                  ? 0
+                  : row.responseTimeTotal / row.responseCount;
 
-                            <tfoot>
-                                <TableRow className="bg-muted/30 font-semibold">
-                                    <TableCell className="text-center">-</TableCell>
-                                    <TableCell className="text-right">Total</TableCell>
-                                    <TableCell className="font-mono tabular-nums text-right">
-                                        {groupedData.reduce((sum, row) => sum + row.salesCount, 0).toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="font-mono tabular-nums text-right">
-                                        {groupedData.reduce((sum, row) => sum + row.nonSalesCount, 0).toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="font-mono tabular-nums text-right">
-                                        {groupedData.reduce((sum, row) => sum + row.qtySold, 0).toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="font-mono tabular-nums text-right">
-                                        {groupedData.reduce((sum, row) => sum + row.convertedCount, 0).toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="font-mono tabular-nums text-right">
-                                        {(() => {
-                                            const totalSales = groupedData.reduce((sum, row) => sum + row.salesCount, 0);
-                                            const totalConverted = groupedData.reduce((sum, row) => sum + row.convertedCount, 0);
-                                            if (totalSales === 0) return "0.00%";
-                                            return ((totalConverted / totalSales) * 100).toFixed(2) + "%";
-                                        })()}
-                                    </TableCell>
-                                    <TableCell className="font-mono tabular-nums text-right">
-                                        {(() => {
-                                            const totalQtySold = groupedData.reduce((sum, row) => sum + row.qtySold, 0);
-                                            const totalConverted = groupedData.reduce((sum, row) => sum + row.convertedCount, 0);
+              return (
+                <TableRow key={row.referenceid}>
+                  <TableCell className="text-center">
+                    <Badge>{index + 1}</Badge>
+                  </TableCell>
 
-                                            if (totalConverted === 0) return "0.00%";
-                                            return ((totalQtySold / totalConverted) * 100).toFixed(2) + "%";
-                                        })()}
-                                    </TableCell>
-                                    <TableCell className="font-mono tabular-nums text-right">
-                                        {(() => {
-                                            const totalAmount = groupedData.reduce((sum, row) => sum + row.amount, 0);
-                                            const totalConverted = groupedData.reduce((sum, row) => sum + row.convertedCount, 0);
+                  <TableCell>{fullName}</TableCell>
 
-                                            if (totalConverted === 0) return "₱0.00";
+                  <TableCell className="text-right">{row.salesCount}</TableCell>
+                  <TableCell className="text-right">{row.nonSalesCount}</TableCell>
 
-                                            return (totalAmount / totalConverted).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            });
-                                        })()}
-                                    </TableCell>
-                                    <TableCell className="font-mono tabular-nums text-right">
-                                        ₱{totalSoAmount.toLocaleString(undefined, {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                        })}
-                                    </TableCell>
-                                </TableRow>
-                            </tfoot>
+                  <TableCell className="text-right">
+                    ₱{row.amount.toLocaleString()}
+                  </TableCell>
 
+                  <TableCell className="text-right">{row.qtySold}</TableCell>
+                  <TableCell className="text-right">{row.convertedCount}</TableCell>
 
-                        </Table>
-                    </div>
-                )}
-            </CardContent>
+                  <TableCell className="text-right">
+                    {row.salesCount === 0
+                      ? "0.00%"
+                      : ((row.convertedCount / row.salesCount) * 100).toFixed(2) + "%"}
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    {row.convertedCount === 0
+                      ? "0"
+                      : (row.qtySold / row.convertedCount).toFixed(0)}
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    {row.convertedCount === 0
+                      ? "0"
+                      : (row.amount / row.convertedCount).toLocaleString()}
+                  </TableCell>
+
+                  <TableCell className="text-right">₱{row.newClientSales.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{row.newNonBuyingSales.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{row.existingActiveSales.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{row.existingInactiveSales.toLocaleString()}</TableCell>
+
+                  <TableCell className="text-right">{formatMs(avgResponse)}</TableCell>
+                </TableRow>
+              );
+            })}
+        </TableBody>
+
+        <tfoot>
+          <TableRow className="font-semibold bg-muted/40">
+            <TableCell />
+            <TableCell>Total</TableCell>
+
+            <TableCell className="text-right">
+              {groupedData.reduce((s, r) => s + r.salesCount, 0)}
+            </TableCell>
+            <TableCell className="text-right">
+              {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
+            </TableCell>
+            <TableCell className="text-right">
+              ₱{groupedData.reduce((s, r) => s + r.amount, 0).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              {groupedData.reduce((s, r) => s + r.qtySold, 0)}
+            </TableCell>
+            <TableCell className="text-right">
+              {groupedData.reduce((s, r) => s + r.convertedCount, 0)}
+            </TableCell>
+
+            <TableCell />
+            <TableCell />
+            <TableCell />
+
+            <TableCell />
+            <TableCell />
+            <TableCell />
+            <TableCell />
+            <TableCell />
+          </TableRow>
+        </tfoot>
+      </Table>
+    </div>
+  )}
+</CardContent>
+
 
             <Separator />
 
