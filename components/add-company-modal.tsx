@@ -51,7 +51,12 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   });
 
   // ✅ MULTIPLE CONTACT NUMBERS STATE
+  // numbers
   const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
+
+  // names
+  const [contactPersons, setContactPersons] = useState<string[]>([""]);
+
 
   const [existingCompanies, setExistingCompanies] = useState<
     { company_name: string; contact_person: string }[]
@@ -100,7 +105,10 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   /* DUPLICATE CHECK */
   useEffect(() => {
     const name = formData.company_name.toLowerCase().trim();
-    const person = formData.contact_person.toLowerCase().trim();
+    const person = contactPersons
+      .map((p) => p.toLowerCase().trim())
+      .filter(Boolean)
+      .join(" / ");
 
     setDuplicate({
       contact: existingCompanies.some(
@@ -112,12 +120,14 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
 const isFormValid = () => {
   const required: Array<keyof typeof formData> = [
     "company_name",
-    "contact_person",
     "industry",
     "address",
   ];
 
   const allFilled = required.every((f) => formData[f]);
+  const hasContactPerson = contactPersons.some(n => n.trim());
+
+  
 
   // email is OPTIONAL — only validate if user typed something
   const emailValid =
@@ -130,7 +140,8 @@ const isFormValid = () => {
     ? true        // allow blank
     : hasContact; // if multiple fields exist, at least one must be filled
 
-  return allFilled && emailValid && contactValid && !duplicate.contact;
+return allFilled && emailValid && contactValid && hasContactPerson && !duplicate.contact;
+
 };
 
 
@@ -185,17 +196,24 @@ const isFormValid = () => {
       .filter(Boolean)
       .join(" / ");
 
-    const res = await fetch("/api/com-save-company", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        referenceid,
-        account_reference_number,
-        ...formData,
-        contact_number: joinedContacts,
-        date_created: new Date().toISOString(),
-      }),
-    });
+      const joinedPersons = contactPersons
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .join(" / ");
+
+      const res = await fetch("/api/com-save-company", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          referenceid,
+          account_reference_number,
+          ...formData,
+          contact_person: joinedPersons,   // 🔥 joined names
+          contact_number: joinedContacts,
+          date_created: new Date().toISOString(),
+        }),
+      });
+
 
     if (!res.ok) {
       const j = await res.json();
@@ -232,6 +250,7 @@ const isFormValid = () => {
     });
     setContactNumbers([""]);
     setDuplicate({ contact: false });
+    setContactPersons([""]);
   };
 
   return (
@@ -263,15 +282,48 @@ const isFormValid = () => {
               )}
             </Field>
 
-            <Field>
-              <FieldLabel>Customer Name *</FieldLabel>
-              <Input
-                value={formData.contact_person}
-                onChange={(e) =>
-                  setFormData({ ...formData, contact_person: e.target.value })
-                }
-              />
-            </Field>
+              <Field>
+                <FieldLabel>Customer Name *</FieldLabel>
+
+                <div className="space-y-2">
+                  {contactPersons.map((name, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <Input
+                        value={name}
+                        onChange={(e) => {
+                          const updated = [...contactPersons];
+                          updated[idx] = e.target.value;
+                          setContactPersons(updated);
+                        }}
+                        placeholder="Customer Name"
+                        className="flex-grow"
+                      />
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          if (contactPersons.length === 1) return;
+                          const updated = [...contactPersons];
+                          updated.splice(idx, 1);
+                          setContactPersons(updated);
+                        }}
+                      >
+                        −
+                      </Button>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setContactPersons((prev) => [...prev, ""])}
+                  >
+                    + Add another name
+                  </Button>
+                </div>
+              </Field>
+
 
             {/* ✅ MULTIPLE CONTACT NUMBERS */}
             <Field>
