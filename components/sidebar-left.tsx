@@ -65,7 +65,7 @@ const data = {
         { name: "SKU Listing", url: "/reports/sku", icon: ClipboardList },
         { name: "Received PO", url: "/reports/po", icon: ShoppingCart },
         { name: "D-Tracking", url: "/reports/dtr", icon: Compass },
-        { name: "Departmental", url: "/departmental-main", icon: Building2 },
+        // { name: "Departmental", url: "/departmental-main", icon: Building2 },
       ],
     },
     {

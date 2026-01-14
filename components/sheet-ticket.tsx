@@ -199,6 +199,10 @@ const MANAGER_AGENT_MAP: Record<string, string[]> = {
     // ⚠️ NOT IN YOUR LIST YET
     // Add only when confirmed IDs exist
   ],
+
+    "TT-PH-500404": [
+    "AE-NCR-555756"
+    ],
 };
 
 const AGENTS = [
@@ -254,6 +258,7 @@ const AGENTS = [
   { id: "JD-NCR-296929", name: "Jennifer, Dela Cruz" },
   { id: "RB-PH-765029", name: "Rafael, Bayani" },
   { id: "JG-NCR-920587", name: "Test Leroux" },
+  { id: "AE-NCR-555756", name: "Test Agent" }
 ];
 
 

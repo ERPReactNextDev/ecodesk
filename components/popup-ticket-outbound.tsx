@@ -385,14 +385,18 @@ export function TicketHistory() {
             {/* Main Dialog */}
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent style={{ width: "40vw", maxWidth: "none" }}>
-                    <DialogHeader>
-                        {receivedTickets.map((t) => (
-                            <DialogTitle key={t.id} className="flex items-center gap-2 capitalize">
-                                Your ticket status has been updated -
-                                <span className="uppercase">{t.ticket_reference_number}</span>
+                            <DialogHeader>
+                            <DialogTitle className="flex flex-col gap-1">
+                                <span>Your Ticket Status Has Been Updated</span>
+                                {receivedTickets.length > 1 && (
+                                <span className="text-sm text-muted-foreground">
+                                    {receivedTickets.length} tickets updated
+                                </span>
+                                )}
                             </DialogTitle>
-                        ))}
-                        <DialogDescription>
+
+                            <DialogDescription>
+
                             {receivedTickets.length > 0 ? (
                                 <div className="max-h-[320px] overflow-y-auto mt-4 space-y-6 pr-2">
                                     {receivedTickets.map((t, i) => {
@@ -408,12 +412,19 @@ export function TicketHistory() {
                                             >
                                                 {/* Header with main status */}
                                                 <div className="flex flex-wrap justify-between items-center mb-3">
-                                                    <h3 className="text-lg font-semibold text-gray-900 capitalize">
+                                                    <div className="mb-3">
+                                                    <div className="text-sm font-semibold text-muted-foreground">
+                                                        Ticket #: {t.ticket_reference_number}
+                                                    </div>
+
+                                                    <div className="text-lg font-semibold capitalize mt-1">
+                                                        <h3 className="text-lg font-semibold capitalize">
                                                         {t.type_activity || "Ticket Update"}
-                                                    </h3>
-                                                    {t.status && (
+                                                        </h3>
                                                         <Badge>{t.status}</Badge>
-                                                    )}
+                                                    </div>
+                                                    </div>
+
                                                 </div>
 
                                                 {/* Details Grid */}
