@@ -43,7 +43,6 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
     email_address: "",
     address: "",
     industry: "",
-    gender: "Male",
     type_client: "CSR Client",
     manager: null,
     region: null,
@@ -115,7 +114,6 @@ const isFormValid = () => {
     "company_name",
     "contact_person",
     "industry",
-    "gender",
     "address",
   ];
 
@@ -226,7 +224,6 @@ const isFormValid = () => {
       email_address: "",
       address: "",
       industry: "",
-      gender: "Male",
       type_client: "CSR Client",
       manager: null,
       region: null,
@@ -313,25 +310,6 @@ const isFormValid = () => {
                   setFormData({ ...formData, email_address: e.target.value })
                 }
               />
-            </Field>
-
-            <Field>
-              <FieldLabel>Gender *</FieldLabel>
-              <Select
-                value={formData.gender}
-                onValueChange={(v) => setFormData({ ...formData, gender: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {genders.map((g) => (
-                    <SelectItem key={g} value={g}>
-                      {g}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </Field>
 
             <Field>
