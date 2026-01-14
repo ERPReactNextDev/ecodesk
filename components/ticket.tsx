@@ -610,13 +610,13 @@ const filteredCompanies = companies
 
             // Prepare updated activity data
             const updatedActivity = {
-            ...activityToUpdate,
+            _id: selectedActivityId,
             status: "Closed",
             close_reason: payload.close_reason,
             counter_offer: payload.counter_offer,
             client_specs: payload.client_specs,
-            date_updated: new Date().toISOString(),
             };
+
 
             const res = await fetch(
             "/api/act-update-status?role=" + encodeURIComponent(role),

@@ -36,10 +36,17 @@ import { TicketSheet } from "./sheet-ticket";
 
 const toDatetimeLocal = (value?: string) => {
   if (!value) return "";
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return "";
-  return d.toISOString().slice(0, 16);
+
+  // MongoDB gives local PH time string
+  // We must NOT convert to UTC
+  if (value.includes("T")) {
+    return value.slice(0, 16); // "2026-01-14T16:04"
+  }
+
+  // fallback for "YYYY-MM-DD HH:mm"
+  return value.replace(" ", "T").slice(0, 16);
 };
+
 
 interface Activity {
   _id: string;

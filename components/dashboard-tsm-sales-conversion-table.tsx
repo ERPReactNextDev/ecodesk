@@ -520,9 +520,9 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                                     <TableHead className="text-right">New Non-Buying (Converted To Sales)</TableHead>
                                     <TableHead className="text-right">Existing Active (Converted To Sales)</TableHead>
                                     <TableHead className="text-right">Existing Inactive (Converted To Sales)</TableHead>
-                                    <TableHead className="text-right">TSM Ack (mins)</TableHead>
-                                    <TableHead className="text-right">TSM Handling (mins)</TableHead>
-                                    <TableHead className="text-right">TSM Non-Quotation (mins)</TableHead>
+                                    <TableHead className="text-right">TSA Response Time</TableHead>
+                                    <TableHead className="text-right">TSA Handling Time</TableHead>
+                                    <TableHead className="text-right">TSA Non-Quotation</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

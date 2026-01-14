@@ -141,81 +141,94 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
         return true;
     };
+    function getSalesDate(a: any): Date | null {
+    const raw =
+        a.tsmHandlingTime ||
+        a.tsm_handling_time ||
+        a.ticketEndorsed ||
+        a.ticket_endorsed ||
+        a.date_updated;
 
+    if (!raw) return null;
+
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return null;
+
+    return d;
+    }
     /* -------- Grouped Data -------- */
-    const groupedData = useMemo(() => {
-        const map: Record<
-            string,
-            {
-                referenceid: string;
-                salesCount: number;
-                nonSalesCount: number;
-                convertedCount: number;
-                qtySold: number;
-                week1: number;
-                week2: number;
-                week3: number;
-                week4: number;
-            }
-        > = {};
+const groupedData = useMemo(() => {
+  const map: Record<
+    string,
+    {
+      referenceid: string;
+      salesCount: number;
+      nonSalesCount: number;
+      convertedCount: number;
+      qtySold: number;
+      week1: number;
+      week2: number;
+      week3: number;
+      week4: number;
+    }
+  > = {};
 
-        activities
-            .filter(
-                (a) =>
-                    isDateInRange(a.date_created, dateCreatedFilterRange) &&
-                    a.referenceid &&
-                    a.date_updated 
-            )
-            .forEach((a) => {
-            const ref = a.referenceid!.trim();
-            const amount = Number(a.so_amount ?? 0);
-            const qty = Number(a.qty_sold ?? 0);
-            const traffic = a.traffic?.toLowerCase() ?? "";
-            const status = a.status?.toLowerCase() ?? "";
-            const remarks = a.remarks?.toLowerCase() ?? "";
-            const updatedDate = new Date(a.date_updated!);
-            if (isNaN(updatedDate.getTime())) return;
+  activities
+    .map(a => ({ a, salesDate: getSalesDate(a) }))
+    .filter(({ a, salesDate }) =>
+      salesDate &&
+      isDateInRange(salesDate.toISOString(), dateCreatedFilterRange) &&
+      a.referenceid
+    )
+    .forEach(({ a, salesDate }) => {
+      const ref = a.referenceid!.trim();
+      const amount = Number(a.so_amount ?? 0);
+      const qty = Number(a.qty_sold ?? 0);
+      const traffic = a.traffic?.toLowerCase() ?? "";
+      const status = a.status?.toLowerCase() ?? "";
+      const remarks = a.remarks?.toLowerCase() ?? "";
 
-            const week = getWeekNumber(updatedDate);
+      const week = getWeekNumber(salesDate!);
 
-            if (!map[ref]) {
-                map[ref] = {
-                referenceid: ref,
-                salesCount: 0,
-                nonSalesCount: 0,
-                convertedCount: 0,
-                qtySold: 0,
-                week1: 0,
-                week2: 0,
-                week3: 0,
-                week4: 0,
-                };
-            }
+      if (!map[ref]) {
+        map[ref] = {
+          referenceid: ref,
+          salesCount: 0,
+          nonSalesCount: 0,
+          convertedCount: 0,
+          qtySold: 0,
+          week1: 0,
+          week2: 0,
+          week3: 0,
+          week4: 0,
+        };
+      }
 
-            // 🔥 PO RECEIVED → NON-SALES ONLY
-            if (remarks === "po received") {
-                map[ref].nonSalesCount++;
-                return; // 🚫 no weekly revenue
-            }
+      // PO RECEIVED → NON-SALES ONLY
+      if (remarks === "po received") {
+        map[ref].nonSalesCount++;
+        return;
+      }
 
-            if (traffic === "sales") map[ref].salesCount++;
-            if (traffic === "non-sales") map[ref].nonSalesCount++;
+      if (traffic === "sales") map[ref].salesCount++;
+      if (traffic === "non-sales") map[ref].nonSalesCount++;
 
-            if (status === "converted into sales") {
-                map[ref].convertedCount++;
-                map[ref].qtySold += isNaN(qty) ? 0 : qty;
+      if (status === "converted into sales") {
+        map[ref].convertedCount++;
+        map[ref].qtySold += isNaN(qty) ? 0 : qty;
 
-                if (!isNaN(amount)) {
-                if (week === 1) map[ref].week1 += amount;
-                if (week === 2) map[ref].week2 += amount;
-                if (week === 3) map[ref].week3 += amount;
-                if (week === 4) map[ref].week4 += amount;
-                }
-            }
-            });
+        if (!isNaN(amount)) {
+          if (week === 1) map[ref].week1 += amount;
+          if (week === 2) map[ref].week2 += amount;
+          if (week === 3) map[ref].week3 += amount;
+          if (week === 4) map[ref].week4 += amount;
+        }
+      }
+    });
 
-        return Object.values(map);
-    }, [activities, dateCreatedFilterRange]);
+  return Object.values(map);
+}, [activities, dateCreatedFilterRange]);
+
 
     const totalSoAmount = groupedData.reduce(
         (sum, r) => sum + r.week1 + r.week2 + r.week3 + r.week4,
