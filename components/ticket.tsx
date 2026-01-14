@@ -373,11 +373,13 @@ const mergedData = React.useMemo(() => {
         ...activity,
 
         // ✅ DISPLAY NAME RULE (FIX)
-        company_name:
-          company?.company_name ??
-          (isShopify
+          company_name:
+              company?.company_name?.trim()
+                  ? company.company_name
+                  : isShopify
             ? activity.contact_person || "Shopify Customer"
-            : "Unknown Company"),
+                      : activity.contact_person || "Unknown Company",
+
 
         contact_number:
           company?.contact_number ??
@@ -960,9 +962,12 @@ const selectedActivity = activities.find(
                                         <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
                                         <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
                                             <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
-                                                <span className="break-words whitespace-normal cap">
-                                                    {c.company_name}
-                                                </span>
+                                                    <span className="break-words whitespace-normal cap">
+                                                        {c.company_name?.trim()
+                                                            ? c.company_name
+                                                            : c.contact_person}
+                                                    </span>
+
 
                                                     {isNewCompany(c.date_created) && (
                                                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full
@@ -1004,9 +1009,11 @@ const selectedActivity = activities.find(
                                             <p>
                                                 <strong>Email Address:</strong> {c.email_address || "-"}
                                             </p>
+                                            {!c.company_name?.trim() && c.contact_person?.trim() ? null : (
                                             <p className="capitalize">
                                                 <strong>Contact Person:</strong> {c.contact_person || "-"}
                                             </p>
+                                            )}
                                             <p className="mb-2">
                                                 <strong>Type Client:</strong> {c.type_client || "-"}
                                             </p>
@@ -1109,9 +1116,11 @@ const selectedActivity = activities.find(
                             />
                             )}
 
-                            <span className="font-semibold capitalize">
-                            {item.company_name}
-                            </span>
+                                    <span className="font-semibold capitalize">
+                                        {item.company_name === "Unknown Company"
+                                            ? item.contact_person || "Unknown Company"
+                                            : item.company_name}
+                                    </span>
                         </div>
 
                         <div className="text-muted-foreground mt-1">
