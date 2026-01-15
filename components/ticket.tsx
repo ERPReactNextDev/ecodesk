@@ -45,58 +45,61 @@ interface MergedActivity extends Ticket {
 }
 
 interface Ticket {
-  _id: string;
-  ticket_reference_number: string;
-  ticket_received?: string;
-  ticket_endorsed?: string;
-  traffic?: string;
-  source_company?: string;
-  gender: string;
-  channel?: string;
-  wrap_up?: string;
-  source?: string;
-  customer_type?: string;
-  customer_status?: string;
-  status: string;
-  department?: string;
-  manager?: string;
-  agent?: string;
-  remarks?: string;
-  inquiry?: string;
+    _id: string;
+    ticket_reference_number: string;
+    ticket_received?: string;
+    ticket_endorsed?: string;
+    traffic?: string;
+    source_company?: string;
+    gender: string;
+    channel?: string;
+    wrap_up?: string;
+    source?: string;
+    customer_type?: string;
+    customer_status?: string;
+    status: string;
+    department?: string;
+    manager?: string;
+    agent?: string;
+    remarks?: string;
+    inquiry?: string;
 
-  // ✅ ADD THESE TWO LINES (THIS FIXES YOUR ERROR)
-  contact_number?: string;
-  email_address?: string;
-  contact_person?: string;
+    // ✅ ADD THESE TWO LINES (THIS FIXES YOUR ERROR)
+    company_name: string;
+    contact_number?: string;
+    type_client?: string;
+    email_address: string;
+    contact_person: string;
+    address: string;
 
-  item_code?: string;
-  item_description?: string;
-  po_number?: string;
-  so_date?: string;
-  so_number?: string;
-  so_amount?: string;
-  qty_sold?: string;
-  quotation_number?: string;
-  quotation_amount?: string;
-  payment_terms?: string;
-  po_source?: string;
-  payment_date?: string;
-  delivery_date?: string;
+    item_code?: string;
+    item_description?: string;
+    po_number?: string;
+    so_date?: string;
+    so_number?: string;
+    so_amount?: string;
+    qty_sold?: string;
+    quotation_number?: string;
+    quotation_amount?: string;
+    payment_terms?: string;
+    po_source?: string;
+    payment_date?: string;
+    delivery_date?: string;
 
-  referenceid: string;
-  activity_reference_number: string;
-  account_reference_number: string;
-  date_updated: string;
-  date_created: string;
+    referenceid: string;
+    activity_reference_number: string;
+    account_reference_number: string;
+    date_updated: string;
+    date_created: string;
 
-  close_reason?: string;
-  counter_offer?: string;
-  client_specs?: string;
+    close_reason?: string;
+    counter_offer?: string;
+    client_specs?: string;
 
-  tsm_acknowledge_date?: string;
-  tsa_acknowledge_date?: string;
-  tsm_handling_time?: string;
-  tsa_handling_time?: string;
+    tsm_acknowledge_date?: string;
+    tsa_acknowledge_date?: string;
+    tsm_handling_time?: string;
+    tsa_handling_time?: string;
 }
 
 interface TicketProps {
@@ -161,29 +164,29 @@ export const Ticket: React.FC<TicketProps> = ({
     }>({});
 
     const STATUS_STYLES: Record<string, string> = {
-    "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
-    "Closed": "bg-gray-200 text-gray-700 border-gray-300",
-    "Endorsed": "bg-purple-100 text-purple-700 border-purple-300",
-    "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
+        "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
+        "Closed": "bg-gray-200 text-gray-700 border-gray-300",
+        "Endorsed": "bg-purple-100 text-purple-700 border-purple-300",
+        "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
     };
 
-const isNewCompany = (dateCreated?: string) => {
-  if (!dateCreated) return false;
+    const isNewCompany = (dateCreated?: string) => {
+        if (!dateCreated) return false;
 
-  // Convert "YYYY-MM-DD HH:mm:ss.SSS" → local Date
-  const created = new Date(dateCreated.replace(" ", "T"));
-  if (isNaN(created.getTime())) return false;
+        // Convert "YYYY-MM-DD HH:mm:ss.SSS" → local Date
+        const created = new Date(dateCreated.replace(" ", "T"));
+        if (isNaN(created.getTime())) return false;
 
-  const now = new Date();
+        const now = new Date();
 
-  // Difference in milliseconds
-  const diffMs = now.getTime() - created.getTime();
+        // Difference in milliseconds
+        const diffMs = now.getTime() - created.getTime();
 
-  // 1 day = 24 hours
-  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        // 1 day = 24 hours
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-  return diffMs <= ONE_DAY_MS;
-};
+        return diffMs <= ONE_DAY_MS;
+    };
 
     // Sorting field and order
     const sortableFields = [
@@ -227,7 +230,7 @@ const isNewCompany = (dateCreated?: string) => {
         fetchAgents();
     }, []);
 
-    
+
 
     useEffect(() => {
         if (!exporting) {
@@ -283,8 +286,8 @@ const isNewCompany = (dateCreated?: string) => {
         fetchCompanies();
     }, []);
 
-        // Fetch activities when referenceid changes
-   const fetchActivities = useCallback(async () => {
+    // Fetch activities when referenceid changes
+    const fetchActivities = useCallback(async () => {
         setLoadingActivities(true);
         setErrorActivities(null);
 
@@ -318,17 +321,17 @@ const isNewCompany = (dateCreated?: string) => {
     }, [referenceid, fetchActivities]);
 
     // 🔥 REAL-TIME LISTENER (Shopify → Ticket)
-useEffect(() => {
-  const handleRealtimeUpdate = () => {
-    fetchActivities(); // re-fetch MongoDB instantly
-  };
+    useEffect(() => {
+        const handleRealtimeUpdate = () => {
+            fetchActivities(); // re-fetch MongoDB instantly
+        };
 
-  window.addEventListener("activity-updated", handleRealtimeUpdate);
+        window.addEventListener("activity-updated", handleRealtimeUpdate);
 
-  return () => {
-    window.removeEventListener("activity-updated", handleRealtimeUpdate);
-  };
-}, [fetchActivities]);
+        return () => {
+            window.removeEventListener("activity-updated", handleRealtimeUpdate);
+        };
+    }, [fetchActivities]);
 
 
     const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
@@ -355,57 +358,57 @@ useEffect(() => {
     const allowedStatuses = ["On-Progress", "Closed", "Endorsed", "Converted into Sales"];
 
     // Merge activity with company info, filter by status and date range
-const mergedData = React.useMemo(() => {
-  if (companies.length === 0) return [];
+    const mergedData = React.useMemo(() => {
+        if (companies.length === 0) return [];
 
-  return activities
-    .filter((a) => allowedStatuses.includes(a.status))
-    .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
-    .map((activity) => {
-      const company = companies.find(
-        (c) => c.account_reference_number === activity.account_reference_number
-      );
+        return activities
+            .filter((a) => allowedStatuses.includes(a.status))
+            .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
+            .map((activity) => {
+                const company = companies.find(
+                    (c) => c.account_reference_number === activity.account_reference_number
+                );
 
-      const isShopify =
-        activity.account_reference_number?.startsWith("SHOPIFY-");
+                const isShopify =
+                    activity.account_reference_number?.startsWith("SHOPIFY-");
 
-      return {
-        ...activity,
+                return {
+                    ...activity,
 
-        // ✅ DISPLAY NAME RULE (FIX)
-          company_name:
-              company?.company_name?.trim()
-                  ? company.company_name
-                  : isShopify
-            ? activity.contact_person || "Shopify Customer"
-                      : activity.contact_person || "Unknown Company",
+                    // ✅ DISPLAY NAME RULE (FIX)
+                    company_name:
+                        company?.company_name?.trim()
+                            ? company.company_name
+                            : isShopify
+                                ? activity.contact_person || "Shopify Customer"
+                                : activity.contact_person || "Unknown Company",
 
 
-        contact_number:
-          company?.contact_number ??
-          (isShopify ? activity.contact_number ?? "-" : "-"),
+                    contact_number:
+                        company?.contact_number ??
+                        (isShopify ? activity.contact_number ?? "-" : "-"),
 
-        type_client: company?.type_client ?? "",
+                    type_client: company?.type_client ?? "",
 
-        // ✅ ENSURE CONTACT PERSON FLOWS EVERYWHERE
-        contact_person:
-          activity.contact_person ??
-          company?.contact_person ??
-          "",
+                    // ✅ ENSURE CONTACT PERSON FLOWS EVERYWHERE
+                    contact_person:
+                        activity.contact_person ??
+                        company?.contact_person ??
+                        "",
 
-        email_address:
-          company?.email_address ??
-          (isShopify ? activity.email_address ?? "" : ""),
+                    email_address:
+                        company?.email_address ??
+                        (isShopify ? activity.email_address ?? "" : ""),
 
-        address: company?.address ?? "",
-      };
-    })
-    .sort(
-      (a, b) =>
-        new Date(b.date_updated).getTime() -
-        new Date(a.date_updated).getTime()
-    );
-}, [activities, companies, dateCreatedFilterRange]);
+                    address: company?.address ?? "",
+                };
+            })
+            .sort(
+                (a, b) =>
+                    new Date(b.date_updated).getTime() -
+                    new Date(a.date_updated).getTime()
+            );
+    }, [activities, companies, dateCreatedFilterRange]);
 
 
     const filteredAndSortedData = useMemo(() => {
@@ -468,65 +471,65 @@ const mergedData = React.useMemo(() => {
             .replace(/[_\s]+/g, " ") // replace underscores and multiple spaces with single space
             .trim();
 
-const filteredCompanies = companies
-    .filter((c) => {
-        if (excludedCompanyStatuses.includes(c.status)) return false;
-        if (c.type_client !== "CSR Client") return false;
+    const filteredCompanies = companies
+        .filter((c) => {
+            if (excludedCompanyStatuses.includes(c.status)) return false;
+            if (c.type_client !== "CSR Client") return false;
 
-        const term = normalize(searchTerm);
-        if (!term) return true;
+            const term = normalize(searchTerm);
+            if (!term) return true;
 
-        const fields = [
-            normalize(c.company_name || ""),
-            normalize(c.email_address || ""),
-            normalize(c.contact_number || ""),
-            normalize(c.contact_person || ""),
-        ];
-
-        return fields.some((field) => field.includes(term));
-    })
-
-    // ✅ KEEP OLD SEARCH RELEVANCE SORT
-    .sort((a, b) => {
-        const term = normalize(searchTerm);
-        if (!term) return 0;
-
-        const score = (company: Company) => {
             const fields = [
-                normalize(company.company_name || ""),
-                normalize(company.email_address || ""),
-                normalize(company.contact_number || ""),
-                normalize(company.contact_person || ""),
+                normalize(c.company_name || ""),
+                normalize(c.email_address || ""),
+                normalize(c.contact_number || ""),
+                normalize(c.contact_person || ""),
             ];
 
-            let bestScore = 3;
-            fields.forEach((field) => {
-                if (field === term) bestScore = Math.min(bestScore, 0);
-                else if (field.startsWith(term)) bestScore = Math.min(bestScore, 1);
-                else if (field.includes(term)) bestScore = Math.min(bestScore, 2);
-            });
+            return fields.some((field) => field.includes(term));
+        })
 
-            return bestScore;
-        };
+        // ✅ KEEP OLD SEARCH RELEVANCE SORT
+        .sort((a, b) => {
+            const term = normalize(searchTerm);
+            if (!term) return 0;
 
-        return score(a) - score(b);
-    })
+            const score = (company: Company) => {
+                const fields = [
+                    normalize(company.company_name || ""),
+                    normalize(company.email_address || ""),
+                    normalize(company.contact_number || ""),
+                    normalize(company.contact_person || ""),
+                ];
 
-    // 🔥 NEW SORT: NEW + LATEST ON TOP
-    .sort((a, b) => {
-        const aIsNew = isNewCompany((a as any).date_created);
-        const bIsNew = isNewCompany((b as any).date_created);
+                let bestScore = 3;
+                fields.forEach((field) => {
+                    if (field === term) bestScore = Math.min(bestScore, 0);
+                    else if (field.startsWith(term)) bestScore = Math.min(bestScore, 1);
+                    else if (field.includes(term)) bestScore = Math.min(bestScore, 2);
+                });
 
-        // 1️⃣ NEW companies first
-        if (aIsNew && !bIsNew) return -1;
-        if (!aIsNew && bIsNew) return 1;
+                return bestScore;
+            };
 
-        // 2️⃣ Latest created first
-        const aTime = new Date((a as any).date_created ?? 0).getTime();
-        const bTime = new Date((b as any).date_created ?? 0).getTime();
+            return score(a) - score(b);
+        })
 
-        return bTime - aTime;
-    });
+        // 🔥 NEW SORT: NEW + LATEST ON TOP
+        .sort((a, b) => {
+            const aIsNew = isNewCompany((a as any).date_created);
+            const bIsNew = isNewCompany((b as any).date_created);
+
+            // 1️⃣ NEW companies first
+            if (aIsNew && !bIsNew) return -1;
+            if (!aIsNew && bIsNew) return 1;
+
+            // 2️⃣ Latest created first
+            const aTime = new Date((a as any).date_created ?? 0).getTime();
+            const bTime = new Date((b as any).date_created ?? 0).getTime();
+
+            return bTime - aTime;
+        });
 
     const MAX_DISPLAY = 20;
 
@@ -592,11 +595,11 @@ const filteredCompanies = companies
         setDialogOpen(true);
     };
 
-        const handleConfirmDone = async (payload: {
+    const handleConfirmDone = async (payload: {
         close_reason: string;
         counter_offer: string;
         client_specs: string;
-        }) => {
+    }) => {
 
         try {
             setUpdatingId(selectedActivityId);
@@ -612,22 +615,22 @@ const filteredCompanies = companies
 
             // Prepare updated activity data
             const updatedActivity = {
-            _id: selectedActivityId,
-            status: "Closed",
-            close_reason: payload.close_reason,
-            counter_offer: payload.counter_offer,
-            client_specs: payload.client_specs,
+                _id: selectedActivityId,
+                status: "Closed",
+                close_reason: payload.close_reason,
+                counter_offer: payload.counter_offer,
+                client_specs: payload.client_specs,
             };
 
 
             const res = await fetch(
-            "/api/act-update-status?role=" + encodeURIComponent(role),
-            {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedActivity),
-                cache: "no-store",
-            }
+                "/api/act-update-status?role=" + encodeURIComponent(role),
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(updatedActivity),
+                    cache: "no-store",
+                }
             );
 
 
@@ -650,65 +653,71 @@ const filteredCompanies = companies
         }
     };
 
-const handleAddActivity = async (company: Company) => {
-    const key = company.account_reference_number;
+    const handleAddActivity = async (company: Company) => {
+        const key = company.account_reference_number;
 
-    // 🔒 HARD BLOCK double click
-    if (addingLock.has(key)) return;
+        // 🔒 HARD BLOCK double click
+        if (addingLock.has(key)) return;
 
-  if (!referenceid) {
-    toast.error("Missing reference ID");
-    return;
-  }
+        if (!referenceid) {
+            toast.error("Missing reference ID");
+            return;
+        }
 
-    // 🔒 lock immediately
-    setAddingLock(prev => new Set(prev).add(key));
-    setAddingAccount(key);
+        // 🔒 lock immediately
+        setAddingLock(prev => new Set(prev).add(key));
+        setAddingAccount(key);
 
-  const newActivityReferenceNumber = generateActivityReferenceNumber(company.company_name);
+        const newActivityReferenceNumber = generateActivityReferenceNumber(company.company_name);
 
-  const payload = {
-    referenceid,
-    account_reference_number: company.account_reference_number,
-    status: "On-Progress",
-    activity_reference_number: newActivityReferenceNumber,
-  };
+        const payload = {
+            referenceid,
+            account_reference_number: company.account_reference_number,
+            status: "On-Progress",
+            company_name: company.company_name,
+            contact_person: company.contact_person,
+            contact_number: company.contact_number,
+            email_address: company.email_address,
+            type_client: company.type_client,
+            address: company.address,
+            activity_reference_number: newActivityReferenceNumber,
+        };
 
-  try {
-    const res = await fetch("/api/act-save-account", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
+        try {
+            const res = await fetch("/api/act-save-account", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+                cache: "no-store",
+            });
 
-    const json = await res.json();
+            const json = await res.json();
 
-    if (!res.ok) {
-        toast.error(`Failed to save activity: ${json.error || "Unknown error"}`);
-      return;
-    }
+            if (!res.ok) {
+                toast.error(`Failed to save activity: ${json.error || "Unknown error"}`);
+                return;
+            }
 
-    toast.success("Activity added.");
-    await fetchActivities();
-  } catch (error) {
-    toast.error("Error saving activity");
-  } finally {
-      // 🔓 unlock after request ends
-      setAddingLock(prev => {
-          const copy = new Set(prev);
-          copy.delete(key);
-          return copy;
-      });
-    setAddingAccount(null);
-  }
-};
+            toast.success("Activity added.");
+            await fetchActivities();
+        } catch (error) {
+            toast.error("Error saving activity");
+        } finally {
+            // 🔓 unlock after request ends
+            setAddingLock(prev => {
+                const copy = new Set(prev);
+                copy.delete(key);
+                return copy;
+            });
+            setAddingAccount(null);
+        }
+    };
 
 
-// 👇👇👇 PUT THIS RIGHT HERE 👇👇👇
-const selectedActivity = activities.find(
-  (a) => a._id === selectedActivityId
-);
+    // 👇👇👇 PUT THIS RIGHT HERE 👇👇👇
+    const selectedActivity = activities.find(
+        (a) => a._id === selectedActivityId
+    );
 
     if (isLoading) {
         return (
@@ -908,12 +917,12 @@ const selectedActivity = activities.find(
     }
 
     const getAgentNameByReferenceID = (
-    refId: string | null | undefined
-  ): string => {
-    if (!refId) return "-";
-    const agent = agents.find((a) => a.ReferenceID === refId);
-    return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
-  };
+        refId: string | null | undefined
+    ): string => {
+        if (!refId) return "-";
+        const agent = agents.find((a) => a.ReferenceID === refId);
+        return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
+    };
 
     return (
         <div className="flex flex-col md:flex-row gap-4">
@@ -960,8 +969,8 @@ const selectedActivity = activities.find(
                                         value={c.account_reference_number} // may kaparehas kasi bro
                                     >
                                         <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
-                                        <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
-                                            <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
+                                            <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
+                                                <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
                                                     <span className="break-words whitespace-normal cap">
                                                         {c.company_name?.trim()
                                                             ? c.company_name
@@ -970,20 +979,20 @@ const selectedActivity = activities.find(
 
 
                                                     {isNewCompany(c.date_created) && (
-                                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full
+                                                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full
                                                         bg-green-100 text-green-700 border border-green-300 text-[9px] font-semibold">
-                                                        
-                                                        {/* glowing dot */}
-                                                        <span className="relative flex h-2 w-2">
-                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
-                                                        </span>
 
-                                                        NEW
-                                                    </span>
+                                                            {/* glowing dot */}
+                                                            <span className="relative flex h-2 w-2">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
+                                                            </span>
+
+                                                            NEW
+                                                        </span>
                                                     )}
-                                            </span>
-                                        </AccordionTrigger>
+                                                </span>
+                                            </AccordionTrigger>
 
                                             <Button
                                                 variant="outline"
@@ -1010,16 +1019,16 @@ const selectedActivity = activities.find(
                                                 <strong>Email Address:</strong> {c.email_address || "-"}
                                             </p>
                                             {!c.company_name?.trim() && c.contact_person?.trim() ? null : (
-                                            <p className="capitalize">
-                                                <strong>Contact Person:</strong> {c.contact_person || "-"}
-                                            </p>
+                                                <p className="capitalize">
+                                                    <strong>Contact Person:</strong> {c.contact_person || "-"}
+                                                </p>
                                             )}
                                             <p className="mb-2">
                                                 <strong>Type Client:</strong> {c.type_client || "-"}
                                             </p>
                                             <p className="uppercase">
-                                                
-                                                <strong>Current Handler: <Badge>{fullName} </Badge></strong> 
+
+                                                <strong>Current Handler: <Badge>{fullName} </Badge></strong>
                                             </p>
                                         </AccordionContent>
                                     </AccordionItem>
@@ -1048,7 +1057,7 @@ const selectedActivity = activities.find(
                         className="flex-grow px-3 py-2 border rounded-md text-sm"
                     />
 
-                    <Button className = "cursor-pointer" onClick={() => setFilterDialogOpen(true)}>Filter</Button>
+                    <Button className="cursor-pointer" onClick={() => setFilterDialogOpen(true)}>Filter</Button>
 
                     <Button
                         variant="outline"
@@ -1088,155 +1097,155 @@ const selectedActivity = activities.find(
 
                 {/* ACTIVITIES LIST */}
                 <div className="max-h-[600px] overflow-auto space-y-3 custom-scrollbar flex-grow">
-                {paginatedActivities.map((item, index) => {
-                    let badgeColor: "default" | "secondary" | "outline" = "default";
+                    {paginatedActivities.map((item, index) => {
+                        let badgeColor: "default" | "secondary" | "outline" = "default";
 
-                    if (item.status === "Assisted" || item.status === "SO-Done") {
-                    badgeColor = "secondary";
-                    } else if (item.status === "Quote-Done") {
-                    badgeColor = "outline";
-                    }
+                        if (item.status === "Assisted" || item.status === "SO-Done") {
+                            badgeColor = "secondary";
+                        } else if (item.status === "Quote-Done") {
+                            badgeColor = "outline";
+                        }
 
-                    const isChecked = selectedToDelete.includes(item._id);
+                        const isChecked = selectedToDelete.includes(item._id);
 
-                    return (
-                    <div
-                        key={`${item._id}-${index}`}
-                        className="border rounded-lg p-3 flex items-start justify-between gap-3"
-                    >
-                        {/* LEFT INFO */}
-                        <div className="flex-1 text-xs">
-                        <div className="flex items-center gap-2">
-                            {showCheckboxes && (
-                            <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleSelect(item._id)}
-                                className="w-4 h-4 cursor-pointer"
-                            />
-                            )}
-
-                                    <span className="font-semibold capitalize">
-                                        {item.company_name === "Unknown Company"
-                                            ? item.contact_person || "Unknown Company"
-                                            : item.company_name}
-                                    </span>
-                        </div>
-
-                            <div className="text-muted-foreground mt-1 space-y-0.5">
-                            <div>
-                                Updated:{" "}
-                                {new Date(item.date_updated).toLocaleDateString()}{" "}
-                                {new Date(item.date_updated).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                })}
-                            </div>
-
-                            <div className="text-[10px] text-slate-500">
-                                Created:{" "}
-                                {new Date(item.date_created).toLocaleDateString()}{" "}
-                                {new Date(item.date_created).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                })}
-                            </div>
-                            </div>
-
-
-                        <div className="mt-1 flex items-center gap-1">
-                        <span
-                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-semibold
-                            ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
-                        >
-                            {item.status}
-                        </span>
-                        –{" "}
-                        <span className="capitalize font-bold">
-                            {getAgentNameByReferenceID(item.referenceid)}
-                        </span>
-                        </div>
-
-                        </div>
-
-                        {/* RIGHT ACTIONS */}
-                        {!showCheckboxes && (
-                        <div className="flex gap-2 flex-shrink-0">
-                            {/* VIEW HISTORY MODAL */}
-                            <TicketHistoryDialog item={item} />
-
-                            {/* UPDATE */}
-                            <UpdateTicketDialog
-                            {...{
-                                _id: item._id,
-                                date_created: item.date_created,
-                                ticket_reference_number: item.ticket_reference_number,
-                                ticket_received: item.ticket_received,
-                                ticket_endorsed: item.ticket_endorsed,
-                                traffic: item.traffic,
-                                source_company: item.source_company,
-                                gender: item.gender,
-                                channel: item.channel,
-                                wrap_up: item.wrap_up,
-                                source: item.source,
-                                customer_type: item.customer_type,
-                                customer_status: item.customer_status,
-                                status: item.status,
-                                department: item.department,
-                                manager: item.manager,
-                                agent: item.agent,
-                                remarks: item.remarks,
-                                inquiry: item.inquiry,
-                                item_code: item.item_code,
-                                item_description: item.item_description,
-                                po_number: item.po_number,
-                                so_date: item.so_date,
-                                so_number: item.so_number,
-                                so_amount: item.so_amount,
-                                qty_sold: item.qty_sold,
-                                quotation_number: item.quotation_number,
-                                quotation_amount: item.quotation_amount,
-                                payment_terms: item.payment_terms,
-                                po_source: item.po_source,
-                                payment_date: item.payment_date,
-                                delivery_date: item.delivery_date,
-
-                                // ✅ REQUIRED FOR AUTOFILL
-                                close_reason: item.close_reason,
-                                counter_offer: item.counter_offer,
-                                client_specs: item.client_specs,
-                                tsm_acknowledge_date: item.tsm_acknowledge_date,
-                                tsa_acknowledge_date: item.tsa_acknowledge_date,
-                                tsm_handling_time: item.tsm_handling_time,
-                                tsa_handling_time: item.tsa_handling_time,
-
-                                referenceid: item.referenceid,
-                                type_client: item.type_client,
-                                contact_number: item.contact_number,
-                                email_address: item.email_address,
-                                company_name: item.company_name,
-                                contact_person: item.contact_person,
-                                address: item.address,
-                                account_reference_number: item.account_reference_number,
-                            }}
-                            onCreated={() => fetchActivities()}
-                            />
-
-                            {/* CLOSE */}
-                            <Button
-                            type="button"
-                            variant="secondary"
-                            className="cursor-pointer"
-                            disabled={updatingId === item._id}
-                            onClick={() => openDoneDialog(item._id)}
+                        return (
+                            <div
+                                key={`${item._id}-${index}`}
+                                className="border rounded-lg p-3 flex items-start justify-between gap-3"
                             >
-                            {updatingId === item._id ? "Updating..." : "Closed"}
-                            </Button>
-                        </div>
-                        )}
-                    </div>
-                    );
-                })}
+                                {/* LEFT INFO */}
+                                <div className="flex-1 text-xs">
+                                    <div className="flex items-center gap-2">
+                                        {showCheckboxes && (
+                                            <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={() => toggleSelect(item._id)}
+                                                className="w-4 h-4 cursor-pointer"
+                                            />
+                                        )}
+
+                                        <span className="font-semibold capitalize">
+                                            {item.company_name === "Unknown Company"
+                                                ? item.contact_person || "Unknown Company"
+                                                : item.company_name}
+                                        </span>
+                                    </div>
+
+                                    <div className="text-muted-foreground mt-1 space-y-0.5">
+                                        <div>
+                                            Updated:{" "}
+                                            {new Date(item.date_updated).toLocaleDateString()}{" "}
+                                            {new Date(item.date_updated).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}
+                                        </div>
+
+                                        <div className="text-[10px] text-slate-500">
+                                            Created:{" "}
+                                            {new Date(item.date_created).toLocaleDateString()}{" "}
+                                            {new Date(item.date_created).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}
+                                        </div>
+                                    </div>
+
+
+                                    <div className="mt-1 flex items-center gap-1">
+                                        <span
+                                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-semibold
+                            ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
+                                        >
+                                            {item.status}
+                                        </span>
+                                        –{" "}
+                                        <span className="capitalize font-bold">
+                                            {getAgentNameByReferenceID(item.referenceid)}
+                                        </span>
+                                    </div>
+
+                                </div>
+
+                                {/* RIGHT ACTIONS */}
+                                {!showCheckboxes && (
+                                    <div className="flex gap-2 flex-shrink-0">
+                                        {/* VIEW HISTORY MODAL */}
+                                        <TicketHistoryDialog item={item} />
+
+                                        {/* UPDATE */}
+                                        <UpdateTicketDialog
+                                            {...{
+                                                _id: item._id,
+                                                date_created: item.date_created,
+                                                ticket_reference_number: item.ticket_reference_number,
+                                                ticket_received: item.ticket_received,
+                                                ticket_endorsed: item.ticket_endorsed,
+                                                traffic: item.traffic,
+                                                source_company: item.source_company,
+                                                gender: item.gender,
+                                                channel: item.channel,
+                                                wrap_up: item.wrap_up,
+                                                source: item.source,
+                                                customer_type: item.customer_type,
+                                                customer_status: item.customer_status,
+                                                status: item.status,
+                                                department: item.department,
+                                                manager: item.manager,
+                                                agent: item.agent,
+                                                remarks: item.remarks,
+                                                inquiry: item.inquiry,
+                                                item_code: item.item_code,
+                                                item_description: item.item_description,
+                                                po_number: item.po_number,
+                                                so_date: item.so_date,
+                                                so_number: item.so_number,
+                                                so_amount: item.so_amount,
+                                                qty_sold: item.qty_sold,
+                                                quotation_number: item.quotation_number,
+                                                quotation_amount: item.quotation_amount,
+                                                payment_terms: item.payment_terms,
+                                                po_source: item.po_source,
+                                                payment_date: item.payment_date,
+                                                delivery_date: item.delivery_date,
+
+                                                // ✅ REQUIRED FOR AUTOFILL
+                                                close_reason: item.close_reason,
+                                                counter_offer: item.counter_offer,
+                                                client_specs: item.client_specs,
+                                                tsm_acknowledge_date: item.tsm_acknowledge_date,
+                                                tsa_acknowledge_date: item.tsa_acknowledge_date,
+                                                tsm_handling_time: item.tsm_handling_time,
+                                                tsa_handling_time: item.tsa_handling_time,
+
+                                                referenceid: item.referenceid,
+                                                type_client: item.type_client,
+                                                contact_number: item.contact_number,
+                                                email_address: item.email_address,
+                                                company_name: item.company_name,
+                                                contact_person: item.contact_person,
+                                                address: item.address,
+                                                account_reference_number: item.account_reference_number,
+                                            }}
+                                            onCreated={() => fetchActivities()}
+                                        />
+
+                                        {/* CLOSE */}
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            className="cursor-pointer"
+                                            disabled={updatingId === item._id}
+                                            onClick={() => openDoneDialog(item._id)}
+                                        >
+                                            {updatingId === item._id ? "Updating..." : "Closed"}
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
 
 
@@ -1290,12 +1299,12 @@ const selectedActivity = activities.find(
             </Card>
 
             <DoneDialog
-            open={dialogOpen}
-            onOpenChange={setDialogOpen}
-            onConfirm={handleConfirmDone}
-            close_reason={selectedActivity?.close_reason}
-            counter_offer={selectedActivity?.counter_offer}
-            client_specs={selectedActivity?.client_specs}
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onConfirm={handleConfirmDone}
+                close_reason={selectedActivity?.close_reason}
+                counter_offer={selectedActivity?.counter_offer}
+                client_specs={selectedActivity?.client_specs}
             />
 
             {exporting && (

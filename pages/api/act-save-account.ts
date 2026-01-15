@@ -48,31 +48,49 @@ export default async function handler(
   try {
     const body = req.body;
 
+    // 👇 KASAMA LAHAT (as requested)
     const {
       referenceid,
       account_reference_number,
       status,
+      company_name,
+      contact_person,
+      contact_number,
+      email_address,
+      type_client,
+      address,
       activity_reference_number,
     } = body;
 
-    // ✅ REQUIRED FIELD VALIDATION (UNCHANGED LOGIC)
+    // ✅ REQUIRED FIELDS LANG ANG CHINE-CHECK
     if (
       !referenceid ||
       !account_reference_number ||
       !status ||
       !activity_reference_number
     ) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({
+        error: "Missing required fields",
+      });
     }
 
     const { db } = await connectToDatabase();
     const collection = db.collection("activity");
 
-    // ✅ FIX: SAVE EVERYTHING SENT FROM FRONTEND
+    // ✅ SAVE EVERYTHING (kasama optional fields)
     const insertResult = await collection.insertOne({
-      ...body, // 👈 THIS ENABLES SHOPIFY NAME, EMAIL, PHONE, ETC.
+      referenceid,
+      account_reference_number,
+      status,
+      company_name,
+      contact_person,
+      contact_number,
+      email_address,
+      type_client,
+      address,
+      activity_reference_number,
 
-      // 🔒 SERVER-CONTROLLED FIELDS
+      // 🔒 server-controlled
       date_created: new Date(),
       date_updated: new Date(),
     });
@@ -85,10 +103,11 @@ export default async function handler(
       success: true,
       data: insertedDoc,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("MongoDB insert error:", error);
     return res.status(500).json({
       error: "Failed to save activity",
     });
   }
 }
+
