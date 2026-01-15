@@ -611,14 +611,20 @@ const spfTime = isSPF
                                         const agentDetails = agents.find((a) => a.ReferenceID === agent);
                                         const fullName = agentDetails ? `${agentDetails.Firstname} ${agentDetails.Lastname}` : "(Unknown Agent)";
                                         const rank = index + 1;
+                                        const totalTsaCount =
+                                        tsaResponseCount +
+                                        tsaQuotationCount +
+                                        tsaNonQuotationCount;
+
                                         const avgResponse =
-                                        tsaResponseCount === 0 ? "-" : Math.round(tsaResponseTotal / tsaResponseCount);
+                                        totalTsaCount === 0 ? "-" : Math.round(tsaResponseTotal / totalTsaCount);
 
                                         const avgQuotation =
-                                        tsaQuotationCount === 0 ? "-" : Math.round(tsaQuotationTotal / tsaQuotationCount);
+                                        totalTsaCount === 0 ? "-" : Math.round(tsaQuotationTotal / totalTsaCount);
 
                                         const avgNonQuotation =
-                                        tsaNonQuotationCount === 0 ? "-" : Math.round(tsaNonQuotationTotal / tsaNonQuotationCount);
+                                        totalTsaCount === 0 ? "-" : Math.round(tsaNonQuotationTotal / totalTsaCount);
+
 
                                         const avgSPF =
                                         spfCount === 0 ? "-" : Math.round(spfTotal / spfCount);
