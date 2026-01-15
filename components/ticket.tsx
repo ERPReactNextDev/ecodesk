@@ -1123,13 +1123,26 @@ const selectedActivity = activities.find(
                                     </span>
                         </div>
 
-                        <div className="text-muted-foreground mt-1">
-                            {new Date(item.date_updated ?? item.date_created).toLocaleDateString()}{" "}
-                            {new Date(item.date_updated ?? item.date_created).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            })}
-                        </div>
+                            <div className="text-muted-foreground mt-1 space-y-0.5">
+                            <div>
+                                Updated:{" "}
+                                {new Date(item.date_updated).toLocaleDateString()}{" "}
+                                {new Date(item.date_updated).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                })}
+                            </div>
+
+                            <div className="text-[10px] text-slate-500">
+                                Created:{" "}
+                                {new Date(item.date_created).toLocaleDateString()}{" "}
+                                {new Date(item.date_created).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                })}
+                            </div>
+                            </div>
+
 
                         <div className="mt-1 flex items-center gap-1">
                         <span
