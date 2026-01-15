@@ -381,6 +381,7 @@ const mergedData = React.useMemo(() => {
                       : activity.contact_person || "Unknown Company",
 
 
+
         contact_number:
           company?.contact_number ??
           (isShopify ? activity.contact_number ?? "-" : "-"),

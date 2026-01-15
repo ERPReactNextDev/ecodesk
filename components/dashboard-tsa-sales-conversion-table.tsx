@@ -39,6 +39,25 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
     );
 }
 
+function safeDiffMinutes(start?: string, end?: string): number {
+    if (!start || !end) return 0;
+
+    const s = new Date(start);
+    const e = new Date(end);
+
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+
+    const diff = (e.getTime() - s.getTime()) / 60000;
+
+    // ❌ Reject negative or zero
+    if (diff <= 0) return 0;
+
+    // ❌ Reject insane values (more than 8 hours for a single ticket step)
+    if (diff > 480) return 0; // 480 minutes = 8 hours
+
+    return Math.round(diff);
+}
+
 interface Activity {
     agent?: string;
     date_created?: string;
@@ -229,7 +248,7 @@ function formatHHMMSS(totalMinutes: number): string {
   const status = a.status?.toLowerCase() ?? "";
   const customerStatus = a.customer_status?.toLowerCase() ?? "";
 
-    const tsaResponseTime = diffMinutes(a.ticket_received, a.ticket_endorsed);
+    const tsaResponseTime = safeDiffMinutes(a.ticket_received, a.ticket_endorsed);
 
 const remark = a.remarks?.toLowerCase().trim() || "";
 
@@ -262,22 +281,25 @@ const isQuotation =
   QUOTATION_REMARKS.includes(remark);
 
 // ---- TIME COMPUTATION ----
-const tsaNonQuotationTime = isNonQuotation
-  ? diffMinutes(a.ticket_received, a.date_updated)
-  : 0;
+    const tsaNonQuotationTime =
+        isNonQuotation && a.ticket_endorsed
+            ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
+            : 0;
 
-const tsaQuotationTime = isQuotation
-  ? diffMinutes(a.ticket_received, a.date_updated)
-  : 0;
+    const tsaQuotationTime =
+        isQuotation && a.ticket_endorsed
+            ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
+            : 0;
 
 // ---- SPF ----
 const isSPF =
   remark === "for spf" &&
   status === "closed";
 
-const spfTime = isSPF
-  ? diffMinutes(a.ticket_received, a.date_updated)
-  : 0;
+    const spfTime =
+        isSPF && a.ticket_endorsed
+            ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
+            : 0;
 
 
 
