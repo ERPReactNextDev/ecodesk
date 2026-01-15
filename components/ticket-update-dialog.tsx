@@ -37,15 +37,17 @@ import { TicketSheet } from "./sheet-ticket";
 const toDatetimeLocal = (value?: string) => {
   if (!value) return "";
 
-  // MongoDB gives local PH time string
-  // We must NOT convert to UTC
-  if (value.includes("T")) {
-    return value.slice(0, 16); // "2026-01-14T16:04"
-  }
+  const d = new Date(value);
 
-  // fallback for "YYYY-MM-DD HH:mm"
-  return value.replace(" ", "T").slice(0, 16);
+  if (isNaN(d.getTime())) return "";
+
+  // convert to local time string for datetime-local input
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+
+  return local.toISOString().slice(0, 16);
 };
+
 
 
 interface Activity {
@@ -81,7 +83,7 @@ interface Activity {
   po_source: string;
   payment_date: string;
   delivery_date: string;
-  date_created: string;
+  date_created?: string;
   date_updated: string;
   tsm_acknowledge_date?: string;
   tsa_acknowledge_date?: string;
@@ -413,7 +415,6 @@ const newActivity: Activity & {
   po_source: poSourceState,
   payment_date: paymentDateState,
   delivery_date: deliveryDateState,
-  date_created: dateCreatedState,
   date_updated: new Date().toISOString(),
 
   ...(statusState === "Closed" && {

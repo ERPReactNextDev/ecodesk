@@ -104,30 +104,25 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
 
   /* DUPLICATE CHECK */
   useEffect(() => {
-  const name =
-    (formData.company_name ||
-      contactPersons.filter(p => p.trim()).join(" / "))
-      .toLowerCase()
-      .trim();
+    const name = formData.company_name.toLowerCase().trim();
+    const person = contactPersons
+      .map((p) => p.toLowerCase().trim())
+      .filter(Boolean)
+      .join(" / ");
 
-  const person = contactPersons
-    .map((p) => p.toLowerCase().trim())
-    .filter(Boolean)
-    .join(" / ");
-
-  setDuplicate({
-    contact: existingCompanies.some(
-      (c) => c.company_name === name && c.contact_person === person
-    ),
-  });
-}, [formData.company_name, contactPersons, existingCompanies]);
-
+    setDuplicate({
+      contact: existingCompanies.some(
+        (c) => c.company_name === name && c.contact_person === person
+      ),
+    });
+  }, [formData.company_name, formData.contact_person, existingCompanies]);
 
 const isFormValid = () => {
   const required: Array<keyof typeof formData> = [
-  "industry",
-  "address",
-];
+    "company_name",
+    "industry",
+    "address",
+  ];
 
   const allFilled = required.every((f) => formData[f]);
   const hasContactPerson = contactPersons.some(n => n.trim());
