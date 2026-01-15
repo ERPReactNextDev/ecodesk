@@ -88,6 +88,11 @@ interface Activity {
   tsa_acknowledge_date?: string;
   tsm_handling_time?: string;
   tsa_handling_time?: string;
+
+  company_name: string;
+  contact_number: string;
+  contact_person: string;
+  email_address: string;
 }
 
 
@@ -97,11 +102,13 @@ interface UpdateActivityDialogProps {
   ticket_reference_number: string;
   referenceid: string;
   type_client?: string;
-  contact_number?: string;
-  email_address?: string;
-  contact_person?: string;
-  address?: string;
-  company_name?: string;
+
+  contact_number: string;
+  email_address: string;
+  contact_person: string;
+  address: string;
+  company_name: string;
+
   account_reference_number: string;
   ticket_received?: string;
   ticket_endorsed?: string;
@@ -229,7 +236,8 @@ export function UpdateTicketDialog({
 
   const [companyName, setCompanyName] = useState("");
   const [contactPerson, setContactPerson] = useState("");
-
+  const [contactNumber, setContactNumber] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
   const [clientSegment, setClientSegment] = useState("");
   const [trafficState, setTraffic] = useState("");
   const [sourceCompanyState, setSourceCompany] = useState("");
@@ -320,6 +328,11 @@ export function UpdateTicketDialog({
     setTsmHandlingTime(toDatetimeLocal(tsm_handling_time));
     setTsaHandlingTime(toDatetimeLocal(tsa_handling_time));
 
+    setCompanyName(company_name || "");
+    setContactPerson(contact_person || "");
+    setContactNumber(contact_number || "");
+    setEmailAddress(email_address || "");
+
     setDateCreated(toDatetimeLocal(date_created));
   }, [
     _id,
@@ -358,6 +371,10 @@ export function UpdateTicketDialog({
     tsa_acknowledge_date,
     tsm_handling_time,
     tsa_handling_time,
+    company_name,
+    contact_number,
+    contact_person,
+    email_address
   ]);
 
   useEffect(() => {
@@ -386,6 +403,11 @@ export function UpdateTicketDialog({
 
       ticket_received: ticketReceivedState,
       ticket_endorsed: ticketEndorsedState,
+
+      company_name: companyName,
+      contact_number: contactNumber,
+      contact_person: contactPerson,
+      email_address: emailAddress,
 
       // ✅ ADD THESE
       tsm_acknowledge_date: tsmAcknowledgeDate,
@@ -599,29 +621,55 @@ export function UpdateTicketDialog({
               {step === 1 && (
                 <div>
                   <FieldGroup>
-                    <Field>
-                      <FieldLabel>Company Name</FieldLabel>
-                      <Input
-                        type="text"
-                        value={company_name}
-                        onChange={(e) => setCompanyName(e.target.value)}
-
-                      />
-                    </Field>
-                  </FieldGroup>
-                  <FieldGroup>
-                    <Field>
-                      <FieldLabel>Contact Person</FieldLabel>
-                      <Input
-                        type="text"
-                        value={contact_person}
-                        onChange={(e) => setContactPerson(e.target.value)}
-
-                      />
-                    </Field>
-                  </FieldGroup>
-                  <FieldGroup>
                     <FieldSet>
+                      <FieldLabel className="font-semibold text-sm">Company Name</FieldLabel>
+                      <Input
+                        type="text"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="w-full"
+                      />
+                    </FieldSet>
+                  </FieldGroup>
+
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
+                      <FieldLabel className="font-semibold text-sm">Contact Person</FieldLabel>
+                      <Input
+                        type="text"
+                        value={contactPerson}
+                        onChange={(e) => setContactPerson(e.target.value)}
+                        className="w-full"
+                      />
+                    </FieldSet>
+                  </FieldGroup>
+
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
+                      <FieldLabel className="font-semibold text-sm">Contact Number</FieldLabel>
+                      <Input
+                        type="text"
+                        value={contactNumber}
+                        onChange={(e) => setContactNumber(e.target.value)}
+                        className="w-full"
+                      />
+                    </FieldSet>
+                  </FieldGroup>
+
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
+                      <FieldLabel className="font-semibold text-sm">Email Address</FieldLabel>
+                      <Input
+                        type="text"
+                        value={emailAddress}
+                        onChange={(e) => setEmailAddress(e.target.value)}
+                        className="w-full"
+                      />
+                    </FieldSet>
+                  </FieldGroup>
+
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
                       <FieldLabel>Choose Traffic</FieldLabel>
                       <RadioGroup
                         defaultValue={trafficState}

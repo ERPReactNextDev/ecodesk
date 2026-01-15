@@ -201,7 +201,8 @@ const MANAGER_AGENT_MAP: Record<string, string[]> = {
   ],
 
     "TT-PH-500404": [
-    "AE-NCR-555756"
+    "AE-NCR-555756",
+    "JG-NCR-920587"
     ],
 };
 
