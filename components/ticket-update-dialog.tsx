@@ -33,6 +33,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { CancelDialog } from "./activity-cancel-dialog";
 import { TicketSheet } from "./sheet-ticket";
+import { Input } from "@/components/ui/input";
 
 const toDatetimeLocal = (value?: string) => {
   if (!value) return "";
@@ -47,8 +48,6 @@ const toDatetimeLocal = (value?: string) => {
 
   return local.toISOString().slice(0, 16);
 };
-
-
 
 interface Activity {
   _id: string;
@@ -97,12 +96,12 @@ interface UpdateActivityDialogProps {
   _id: string;
   ticket_reference_number: string;
   referenceid: string;
-  type_client: string;
-  contact_number: string;
-  email_address: string;
-  contact_person: string;
-  address: string;
-  company_name: string;
+  type_client?: string;
+  contact_number?: string;
+  email_address?: string;
+  contact_person?: string;
+  address?: string;
+  company_name?: string;
   account_reference_number: string;
   ticket_received?: string;
   ticket_endorsed?: string;
@@ -227,6 +226,10 @@ export function UpdateTicketDialog({
 
   const [activityRef, setActivityRef] = useState(_id);
   const [ticketReferenceNumber, setTicketReferenceNumber] = useState("");
+
+  const [companyName, setCompanyName] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+
   const [clientSegment, setClientSegment] = useState("");
   const [trafficState, setTraffic] = useState("");
   const [sourceCompanyState, setSourceCompany] = useState("");
@@ -307,7 +310,7 @@ export function UpdateTicketDialog({
     setTsaAcknowledgeDate(tsa_acknowledge_date || "");
     setTsmHandlingTime(tsm_handling_time || "");
     setTsaHandlingTime(tsa_handling_time || "");
-  
+
     setCloseReason(close_reason || "");
     setCounterOffer(counter_offer || "");
     setClientSpecs(client_specs || "");
@@ -370,59 +373,59 @@ export function UpdateTicketDialog({
   const handleUpdate = async () => {
     setLoading(true);
 
-const newActivity: Activity & {
-  close_reason?: string;
-  counter_offer?: string;
-  client_specs?: string;
-} = {
-  _id: activityRef,
-  ticket_reference_number: ticketReferenceNumber,
-  client_segment: clientSegment,
-  traffic: trafficState,
-  source_company: sourceCompanyState,
+    const newActivity: Activity & {
+      close_reason?: string;
+      counter_offer?: string;
+      client_specs?: string;
+    } = {
+      _id: activityRef,
+      ticket_reference_number: ticketReferenceNumber,
+      client_segment: clientSegment,
+      traffic: trafficState,
+      source_company: sourceCompanyState,
 
-  ticket_received: ticketReceivedState,
-  ticket_endorsed: ticketEndorsedState,
+      ticket_received: ticketReceivedState,
+      ticket_endorsed: ticketEndorsedState,
 
-  // ✅ ADD THESE
-  tsm_acknowledge_date: tsmAcknowledgeDate,
-  tsa_acknowledge_date: tsaAcknowledgeDate,
-  tsm_handling_time: tsmHandlingTime,
-  tsa_handling_time: tsaHandlingTime,
+      // ✅ ADD THESE
+      tsm_acknowledge_date: tsmAcknowledgeDate,
+      tsa_acknowledge_date: tsaAcknowledgeDate,
+      tsm_handling_time: tsmHandlingTime,
+      tsa_handling_time: tsaHandlingTime,
 
-  gender: genderState,
-  channel: channelState,
-  wrap_up: wrapUpState,
-  source: sourceState,
-  customer_type: customerTypeState,
-  customer_status: customerStatusState,
-  status: statusState,
-  department: departmentState,
-  manager: managerState,
-  agent: agentState,
-  remarks: remarksState,
-  inquiry: inquiryState,
-  item_code: itemCodeState,
-  item_description: itemDescriptionState,
-  po_number: poNumberState,
-  so_date: soDateState,
-  so_number: soNumberState,
-  so_amount: soAmountState,
-  quotation_number: quotationNumberState,
-  quotation_amount: quotationAmountState,
-  qty_sold: qtySoldState,
-  payment_terms: paymentTermsState,
-  po_source: poSourceState,
-  payment_date: paymentDateState,
-  delivery_date: deliveryDateState,
-  date_updated: new Date().toISOString(),
+      gender: genderState,
+      channel: channelState,
+      wrap_up: wrapUpState,
+      source: sourceState,
+      customer_type: customerTypeState,
+      customer_status: customerStatusState,
+      status: statusState,
+      department: departmentState,
+      manager: managerState,
+      agent: agentState,
+      remarks: remarksState,
+      inquiry: inquiryState,
+      item_code: itemCodeState,
+      item_description: itemDescriptionState,
+      po_number: poNumberState,
+      so_date: soDateState,
+      so_number: soNumberState,
+      so_amount: soAmountState,
+      quotation_number: quotationNumberState,
+      quotation_amount: quotationAmountState,
+      qty_sold: qtySoldState,
+      payment_terms: paymentTermsState,
+      po_source: poSourceState,
+      payment_date: paymentDateState,
+      delivery_date: deliveryDateState,
+      date_updated: new Date().toISOString(),
 
-  ...(statusState === "Closed" && {
-    close_reason: closeReason,
-    counter_offer: counterOffer,
-    client_specs: clientSpecs,
-  }),
-};
+      ...(statusState === "Closed" && {
+        close_reason: closeReason,
+        counter_offer: counterOffer,
+        client_specs: clientSpecs,
+      }),
+    };
 
 
     try {
@@ -596,6 +599,28 @@ const newActivity: Activity & {
               {step === 1 && (
                 <div>
                   <FieldGroup>
+                    <Field>
+                      <FieldLabel>Company Name</FieldLabel>
+                      <Input
+                        type="text"
+                        value={company_name}
+                        onChange={(e) => setCompanyName(e.target.value)}
+
+                      />
+                    </Field>
+                  </FieldGroup>
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel>Contact Person</FieldLabel>
+                      <Input
+                        type="text"
+                        value={contact_person}
+                        onChange={(e) => setContactPerson(e.target.value)}
+
+                      />
+                    </Field>
+                  </FieldGroup>
+                  <FieldGroup>
                     <FieldSet>
                       <FieldLabel>Choose Traffic</FieldLabel>
                       <RadioGroup
@@ -750,23 +775,23 @@ const newActivity: Activity & {
                   handleBack={() => setStep((prev) => prev - 1)}
                   handleNext={() => setStep((prev) => prev + 1)}
                   handleUpdate={handleUpdate}
-                closeReason={closeReason}
-                setCloseReason={setCloseReason}
-                counterOffer={counterOffer}
-                setCounterOffer={setCounterOffer}
-                clientSpecs={clientSpecs}
-                setClientSpecs={setClientSpecs}
-                tsmAcknowledgeDate={tsmAcknowledgeDate}
-                setTsmAcknowledgeDate={setTsmAcknowledgeDate}
+                  closeReason={closeReason}
+                  setCloseReason={setCloseReason}
+                  counterOffer={counterOffer}
+                  setCounterOffer={setCounterOffer}
+                  clientSpecs={clientSpecs}
+                  setClientSpecs={setClientSpecs}
+                  tsmAcknowledgeDate={tsmAcknowledgeDate}
+                  setTsmAcknowledgeDate={setTsmAcknowledgeDate}
 
-                tsaAcknowledgeDate={tsaAcknowledgeDate}
-                setTsaAcknowledgeDate={setTsaAcknowledgeDate}
+                  tsaAcknowledgeDate={tsaAcknowledgeDate}
+                  setTsaAcknowledgeDate={setTsaAcknowledgeDate}
 
-                tsmHandlingTime={tsmHandlingTime}
-                setTsmHandlingTime={setTsmHandlingTime}
+                  tsmHandlingTime={tsmHandlingTime}
+                  setTsmHandlingTime={setTsmHandlingTime}
 
-                tsaHandlingTime={tsaHandlingTime}
-                setTsaHandlingTime={setTsaHandlingTime}
+                  tsaHandlingTime={tsaHandlingTime}
+                  setTsaHandlingTime={setTsaHandlingTime}
                 />
               )}
             </div>

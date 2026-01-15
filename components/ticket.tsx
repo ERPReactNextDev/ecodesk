@@ -357,79 +357,30 @@ export const Ticket: React.FC<TicketProps> = ({
 
     const allowedStatuses = ["On-Progress", "Closed", "Endorsed", "Converted into Sales"];
 
-    // Merge activity with company info, filter by status and date range
-    const mergedData = React.useMemo(() => {
-        if (companies.length === 0) return [];
-
-        return activities
-            .filter((a) => allowedStatuses.includes(a.status))
-            .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
-            .map((activity) => {
-                const company = companies.find(
-                    (c) => c.account_reference_number === activity.account_reference_number
-                );
-
-                const isShopify =
-                    activity.account_reference_number?.startsWith("SHOPIFY-");
-
-                return {
-                    ...activity,
-
-                    // ✅ DISPLAY NAME RULE (FIX)
-                    company_name:
-                        company?.company_name?.trim()
-                            ? company.company_name
-                            : isShopify
-                                ? activity.contact_person || "Shopify Customer"
-                                : activity.contact_person || "Unknown Company",
-
-
-                    contact_number:
-                        company?.contact_number ??
-                        (isShopify ? activity.contact_number ?? "-" : "-"),
-
-                    type_client: company?.type_client ?? "",
-
-                    // ✅ ENSURE CONTACT PERSON FLOWS EVERYWHERE
-                    contact_person:
-                        activity.contact_person ??
-                        company?.contact_person ??
-                        "",
-
-                    email_address:
-                        company?.email_address ??
-                        (isShopify ? activity.email_address ?? "" : ""),
-
-                    address: company?.address ?? "",
-                };
-            })
-            .sort(
-                (a, b) =>
-                    new Date(b.date_updated).getTime() -
-                    new Date(a.date_updated).getTime()
-            );
-    }, [activities, companies, dateCreatedFilterRange]);
-
-
     const filteredAndSortedData = useMemo(() => {
-        let data = mergedData;
+        let data = activities.filter((a) => allowedStatuses.includes(a.status))
+            .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange));
 
-        // Step 1: Search bar filter (activitySearchTerm)
+        // Search bar filter (activitySearchTerm)
         if (activitySearchTerm.trim() !== "") {
             const term = activitySearchTerm.toLowerCase();
 
             data = data.filter((item) => {
-                const companyName = (item.company_name ?? "").toString().toLowerCase();
-                const ticketRef = (item.ticket_reference_number ?? "").toString().toLowerCase();
+                const companyName = (item.company_name ?? "").toLowerCase();
+                const ticketRef = (item.ticket_reference_number ?? "").toLowerCase();
+
+                // Add more fields if needed, e.g. contact_person, contact_number
+                const contactPerson = (item.contact_person ?? "").toLowerCase();
 
                 return (
                     companyName.includes(term) ||
-                    ticketRef.includes(term)
+                    ticketRef.includes(term) ||
+                    contactPerson.includes(term)
                 );
             });
         }
 
-        // Step 2: UI filters from filters object
+        // UI filters
         Object.entries(filters).forEach(([key, val]) => {
             if (val && val.trim() !== "") {
                 data = data.filter((item) => {
@@ -439,7 +390,7 @@ export const Ticket: React.FC<TicketProps> = ({
             }
         });
 
-        // Step 3: Sort the filtered data
+        // Sort filtered data
         data = data.slice().sort((a, b) => {
             let aVal = (a as any)[sortField];
             let bVal = (b as any)[sortField];
@@ -458,7 +409,7 @@ export const Ticket: React.FC<TicketProps> = ({
         });
 
         return data;
-    }, [mergedData, activitySearchTerm, filters, sortField, sortOrder]);
+    }, [activities, activitySearchTerm, filters, sortField, sortOrder, dateCreatedFilterRange]);
 
     const isLoading = loadingCompanies || loadingActivities;
     const error = errorCompanies || errorActivities;
@@ -543,21 +494,6 @@ export const Ticket: React.FC<TicketProps> = ({
         return filtered.slice(0, MAX_DISPLAY);
     }, [filteredCompanies, addingAccount]); // added addingAccount as dependency
     // Filter activities by search term (right side)
-    const filteredActivities = useMemo(() => {
-        if (!activitySearchTerm.trim()) return mergedData;
-
-        const term = activitySearchTerm.toLowerCase();
-
-        return mergedData.filter((item) => {
-            const companyName = (item.company_name ?? "").toString().toLowerCase();
-            const ticketRef = (item.ticket_reference_number ?? "").toString().toLowerCase();
-
-            return (
-                companyName.includes(term) ||
-                ticketRef.includes(term)
-            );
-        });
-    }, [activitySearchTerm, mergedData]);
 
     const totalPages = Math.ceil(filteredAndSortedData.length / ITEMS_PER_PAGE);
 
@@ -1042,7 +978,7 @@ export const Ticket: React.FC<TicketProps> = ({
             {/* RIGHT SIDE — ACTIVITIES */}
             <Card className="w-full md:w-2/3 p-4 rounded-xl flex flex-col">
                 <div className="mb-2 text-xs font-bold">
-                    Total On-Progress Activities: {filteredActivities.length}
+                    Total On-Progress Activities: {filteredAndSortedData.length}
                 </div>
 
                 <div className="flex mb-3 space-x-2 items-center">
@@ -1060,17 +996,8 @@ export const Ticket: React.FC<TicketProps> = ({
                     <Button className="cursor-pointer" onClick={() => setFilterDialogOpen(true)}>Filter</Button>
 
                     <Button
-                        variant="outline"
-                        disabled={filteredActivities.length === 0}
-                        onClick={() => handleExportCsv(filteredActivities)}
-                        className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
-                    >
-                        Download CSV
-                    </Button>
-
-                    <Button
                         variant={showCheckboxes ? "secondary" : "outline"}
-                        disabled={filteredActivities.length === 0}
+                        disabled={filteredAndSortedData.length === 0}
                         onClick={() => {
                             if (showCheckboxes) {
                                 // Cancel delete mode
@@ -1292,7 +1219,7 @@ export const Ticket: React.FC<TicketProps> = ({
                     setSortField={setSortField}
                     sortOrder={sortOrder}
                     setSortOrder={setSortOrder}
-                    mergedData={mergedData}
+                    mergedData={filteredAndSortedData}
                     sortableFields={sortableFields}
                 />
 
