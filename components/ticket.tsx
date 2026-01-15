@@ -66,8 +66,8 @@ interface Ticket {
 
     // ✅ ADD THESE TWO LINES (THIS FIXES YOUR ERROR)
     company_name: string;
-    contact_number?: string;
-    type_client?: string;
+    contact_number: string;
+    type_client: string;
     email_address: string;
     contact_person: string;
     address: string;

@@ -493,6 +493,26 @@ useEffect(() => {
   }
 }, [ticketReceived, ticketEndorsed]);
 
+// 2️⃣ TSA Acknowledge vs TSA Handling validation
+useEffect(() => {
+  if (!tsaAcknowledgeDate || !tsaHandlingTime) {
+    setTsaTimeError(null);
+    return;
+  }
+
+  const ack = new Date(tsaAcknowledgeDate);
+  const handle = new Date(tsaHandlingTime);
+
+  if (!isNaN(ack.getTime()) && !isNaN(handle.getTime())) {
+    if (handle < ack) {
+      setTsaTimeError("TSA Handling Time cannot be earlier than TSA Acknowledgement Date.");
+    } else {
+      setTsaTimeError(null);
+    }
+  }
+}, [tsaAcknowledgeDate, tsaHandlingTime]);
+
+
 
 // 2️⃣ Close Reason → Auto dash logic
 useEffect(() => {
@@ -555,11 +575,11 @@ useEffect(() => {
         channel?: string;
         wrapUp?: string;
         status?: string;
-        customerStatus?: string;
-        customerType?: string;
     }>({});
 
     const [timeError, setTimeError] = useState<string | null>(null);
+    const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
+
 
     // Options
     const departmentOptions: Option[] = [
@@ -605,22 +625,6 @@ useEffect(() => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const validateStep4 = () => {
-    const newErrors: typeof errors = {};
-
-    if (!customerStatus) {
-        newErrors.customerStatus = "Customer Status is required.";
-    }
-
-    if (!customerType) {
-        newErrors.customerType = "Customer Type is required.";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-    };
-
-
     const validateStep6 = () => {
     const newErrors: typeof errors = {};
 
@@ -654,17 +658,15 @@ useEffect(() => {
         if (!validateStep3()) return;
     }
 
-    if (step === 4) {
-        if (!validateStep4()) return;
-    }
-
     if (step === 6) {
+        if (tsaTimeError) return;   // 🔥 BLOCK if TSA time invalid
         if (!validateStep6()) return;
     }
 
     setErrors({});
     handleNext();
     };
+
 
     const [loadingSave, setLoadingSave] = useState(false);
     const [loadingLoad, setLoadingLoad] = useState(false);
@@ -677,21 +679,25 @@ useEffect(() => {
     };
 
     // Helper: common buttons with validation on Next
-        const Navigation = () => (
-        <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={handleBack} className="cursor-pointer">
-            Back
-            </Button>
+const Navigation = () => (
+  <div className="flex justify-between mt-4">
+    <Button variant="outline" onClick={handleBack} className="cursor-pointer">
+      Back
+    </Button>
 
-            <Button
-            onClick={onNext}
-            className="cursor-pointer"
-            disabled={step === 3 && !!timeError}
-            >
-            Next
-            </Button>
-        </div>
-        );
+    <Button
+      onClick={onNext}
+      className="cursor-pointer"
+      disabled={
+        (step === 3 && !!timeError) ||
+        (step === 3 && !!tsaTimeError) // 🔥 TSA validation blocks Next in Step 3
+      }
+    >
+      Next
+    </Button>
+  </div>
+);
+
 
     return (
         <>
@@ -705,12 +711,6 @@ useEffect(() => {
                                     value={department}
                                     onValueChange={setDepartment}
                                 >
-
-                                    {errors.customerStatus && (
-                                    <p className="text-sm text-red-600 mt-2">
-                                        {errors.customerStatus}
-                                    </p>
-                                    )}
                                     {departmentOptions.map((item) => (
                                         <FieldLabel key={item.value} className="cursor-pointer">
                                             <Field orientation="horizontal" className="w-full items-start">
@@ -925,8 +925,10 @@ useEffect(() => {
                                         type="datetime-local"
                                         value={tsaHandlingTime}
                                         onChange={(e) => setTsaHandlingTime(e.target.value)}
+                                        error={tsaTimeError || undefined}
                                     />
                                     </Field>
+
 
                         </FieldSet>
                     </FieldGroup>
@@ -955,47 +957,34 @@ useEffect(() => {
                             </FieldLabel>
                         ))}
                     </RadioGroup>
-                        {errors.customerStatus && (
-                        <p className="text-sm text-red-600 mt-2">
-                            {errors.customerStatus}
-                        </p>
-                        )}
+
                     {/* Customer Type */}
-                    <div className={!customerStatus ? "opacity-50 pointer-events-none" : ""}>
                     <RadioGroup
                         value={customerType}
                         onValueChange={setCustomerType}
                     >
-                        {errors.customerType && (
-                        <p className="text-sm text-red-600 mt-2">
-                            {errors.customerType}
-                        </p>
-                        )}
-
                         {customerTypeOptions.map((item) => (
-                        <FieldLabel key={item.value}>
-                            <Field orientation="horizontal" className="w-full items-start">
-                            <FieldContent className="flex-1">
-                                <FieldTitle>{item.title}</FieldTitle>
-                                <FieldDescription>{item.description}</FieldDescription>
+                            <FieldLabel key={item.value}>
+                                <Field orientation="horizontal" className="w-full items-start">
+                                    <FieldContent className="flex-1">
+                                        <FieldTitle>{item.title}</FieldTitle>
+                                        <FieldDescription>{item.description}</FieldDescription>
 
-                                {customerType === item.value && (
-                                <div className="mt-4 flex gap-2">
-                                    <Button variant="outline" onClick={handleBack}>
-                                    Back
-                                    </Button>
-                                    <Button onClick={onNext}>Next</Button>
-                                </div>
-                                )}
-                            </FieldContent>
+                                        {customerType === item.value && (
+                                            <div className="mt-4 flex gap-2">
+                                                <Button variant="outline" onClick={handleBack}>
+                                                    Back
+                                                </Button>
+                                                <Button onClick={onNext}>Next</Button>
+                                            </div>
+                                        )}
+                                    </FieldContent>
 
-                            <RadioGroupItem value={item.value} />
-                            </Field>
-                        </FieldLabel>
+                                    <RadioGroupItem value={item.value} />
+                                </Field>
+                            </FieldLabel>
                         ))}
                     </RadioGroup>
-                    </div>
-
                 </>
             )}
 
@@ -1410,9 +1399,10 @@ useEffect(() => {
                     <Button variant="outline" onClick={handleBack} disabled={loadingSave || loadingLoad} className="cursor-pointer">Back</Button>
                         <Button
                         onClick={onUpdate}
-                        disabled={loadingSave || loadingLoad || !!timeError}
+                        disabled={loadingSave || loadingLoad || !!timeError || !!tsaTimeError}
                         className="cursor-pointer"
                         >
+
                         {loadingSave ? "Saving..." : "Save"}
                         </Button>
                 </>
