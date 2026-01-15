@@ -119,7 +119,6 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
 
 const isFormValid = () => {
   const required: Array<keyof typeof formData> = [
-    "company_name",
     "industry",
     "address",
   ];

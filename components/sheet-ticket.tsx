@@ -554,6 +554,8 @@ useEffect(() => {
         channel?: string;
         wrapUp?: string;
         status?: string;
+        customerStatus?: string;
+        customerType?: string;
     }>({});
 
     const [timeError, setTimeError] = useState<string | null>(null);
@@ -602,6 +604,22 @@ useEffect(() => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const validateStep4 = () => {
+    const newErrors: typeof errors = {};
+
+    if (!customerStatus) {
+        newErrors.customerStatus = "Customer Status is required.";
+    }
+
+    if (!customerType) {
+        newErrors.customerType = "Customer Type is required.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+    };
+
+
     const validateStep6 = () => {
     const newErrors: typeof errors = {};
 
@@ -629,17 +647,23 @@ useEffect(() => {
     return Object.keys(newErrors).length === 0;
     };
     // Override handleNext to add validation on step 3 and 6
-        const onNext = () => {
-            if (step === 3) {
-                if (timeError) return;          // 🔥 BLOCK kapag red
-                if (!validateStep3()) return;
-            }
-            if (step === 6) {
-                if (!validateStep6()) return;
-            }
-            setErrors({});
-            handleNext();
-        };
+    const onNext = () => {
+    if (step === 3) {
+        if (timeError) return;
+        if (!validateStep3()) return;
+    }
+
+    if (step === 4) {
+        if (!validateStep4()) return;
+    }
+
+    if (step === 6) {
+        if (!validateStep6()) return;
+    }
+
+    setErrors({});
+    handleNext();
+    };
 
     const [loadingSave, setLoadingSave] = useState(false);
     const [loadingLoad, setLoadingLoad] = useState(false);
@@ -680,6 +704,12 @@ useEffect(() => {
                                     value={department}
                                     onValueChange={setDepartment}
                                 >
+
+                                    {errors.customerStatus && (
+                                    <p className="text-sm text-red-600 mt-2">
+                                        {errors.customerStatus}
+                                    </p>
+                                    )}
                                     {departmentOptions.map((item) => (
                                         <FieldLabel key={item.value} className="cursor-pointer">
                                             <Field orientation="horizontal" className="w-full items-start">
@@ -924,34 +954,47 @@ useEffect(() => {
                             </FieldLabel>
                         ))}
                     </RadioGroup>
-
+                        {errors.customerStatus && (
+                        <p className="text-sm text-red-600 mt-2">
+                            {errors.customerStatus}
+                        </p>
+                        )}
                     {/* Customer Type */}
+                    <div className={!customerStatus ? "opacity-50 pointer-events-none" : ""}>
                     <RadioGroup
                         value={customerType}
                         onValueChange={setCustomerType}
                     >
+                        {errors.customerType && (
+                        <p className="text-sm text-red-600 mt-2">
+                            {errors.customerType}
+                        </p>
+                        )}
+
                         {customerTypeOptions.map((item) => (
-                            <FieldLabel key={item.value}>
-                                <Field orientation="horizontal" className="w-full items-start">
-                                    <FieldContent className="flex-1">
-                                        <FieldTitle>{item.title}</FieldTitle>
-                                        <FieldDescription>{item.description}</FieldDescription>
+                        <FieldLabel key={item.value}>
+                            <Field orientation="horizontal" className="w-full items-start">
+                            <FieldContent className="flex-1">
+                                <FieldTitle>{item.title}</FieldTitle>
+                                <FieldDescription>{item.description}</FieldDescription>
 
-                                        {customerType === item.value && (
-                                            <div className="mt-4 flex gap-2">
-                                                <Button variant="outline" onClick={handleBack}>
-                                                    Back
-                                                </Button>
-                                                <Button onClick={onNext}>Next</Button>
-                                            </div>
-                                        )}
-                                    </FieldContent>
+                                {customerType === item.value && (
+                                <div className="mt-4 flex gap-2">
+                                    <Button variant="outline" onClick={handleBack}>
+                                    Back
+                                    </Button>
+                                    <Button onClick={onNext}>Next</Button>
+                                </div>
+                                )}
+                            </FieldContent>
 
-                                    <RadioGroupItem value={item.value} />
-                                </Field>
-                            </FieldLabel>
+                            <RadioGroupItem value={item.value} />
+                            </Field>
+                        </FieldLabel>
                         ))}
                     </RadioGroup>
+                    </div>
+
                 </>
             )}
 

@@ -323,6 +323,18 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     )}:${String(sec).padStart(2, "0")}`;
   };
 
+  const totalRowResponseAverage = useMemo(() => {
+  const rowsWithTime = groupedData.filter(r => r.responseCount > 0);
+
+  if (rowsWithTime.length === 0) return 0;
+
+  const sumOfRowAverages = rowsWithTime.reduce((sum, r) => {
+    return sum + r.responseTimeTotal / r.responseCount;
+  }, 0);
+
+  return sumOfRowAverages / rowsWithTime.length;
+}, [groupedData]);
+
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
@@ -556,7 +568,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   </TableCell>
 
                   <TableCell className="text-right">
-                    {formatMs(totalAveResponse)}
+                  {formatMs(totalRowResponseAverage)}
+
                   </TableCell>
                 </TableRow>
               </tfoot>
