@@ -54,16 +54,22 @@ function formatHHMMSS(totalMinutes: number): string {
 interface Activity {
     manager?: string;
     date_created?: string;
+    date_updated?: string;
+
     so_amount?: number | string;
     remarks?: string;
     traffic: string;
     qty_sold: number | string;
     status: string;
     customer_status: string;
-    date_updated?: string;
+
     ticket_received?: string;
     ticket_endorsed?: string;
     wrap_up?: string;
+
+    // ✅ TSM timestamps
+    tsm_acknowledge_date?: string;
+    tsm_handling_time?: string;
 }
 
 interface Agent {
@@ -176,19 +182,21 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
     const NON_QUOTATION_WRAPUPS = [
         "no stocks",
         "insufficient stocks",
-        "unable to contact",
+        "unable to contact customer",
         "item not carried",
         "waiting for client confirmation",
-        "customer requested",
-        "cancellation",
+        "pending for payment",
+        "customer requested cancellation",
         "accreditation/partnership",
         "no response from client",
         "assisted",
         "for site visit",
         "non standard item",
         "po received",
+        "pending quotation",
         "for occular inspection",
     ];
+
     const groupedData = useMemo(() => {
         const map: Record<
             string,
@@ -219,36 +227,50 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
         activities
             .filter(
                 (a) =>
-                    isDateInRange(a.date_created, dateCreatedFilterRange) &&
+                    isDateInRange(a.ticket_received, dateCreatedFilterRange) &&
                     a.manager &&
                     a.manager.trim() !== "" &&
                     (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
             )
             .forEach((a) => {
+                const wrap = a.wrap_up?.toLowerCase().trim() || "";
+                const status = a.status?.toLowerCase() || "";
+
+                const isQuotation =
+                    status === "quotation for approval" ||
+                    status === "converted into sales";
+
+
+                const isConverted = status === "converted into sales";
+
                 // 1️⃣ TSM Acknowledge Time
-                const ackTime = safeDiffMinutes(a.ticket_received, a.ticket_endorsed);
+                const ackTime = safeDiffMinutes(
+                    a.ticket_received,
+                    a.tsm_acknowledge_date
+                );
 
-                // 2️⃣ TSM Handling Time
                 const handlingTime =
-                    a.status?.toLowerCase() === "closed" && a.ticket_endorsed
-                        ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
-                    : 0;
+    isQuotation
+        ? safeDiffMinutes(a.tsm_acknowledge_date, a.tsm_handling_time)
+        : 0;
 
-                // 3️⃣ TSM Non-Quotation Handling
+                const isNonQuotation =
+                    status === "closed" &&
+                    NON_QUOTATION_WRAPUPS.some(w => wrap.includes(w));
+
                 const nonQuotationTime =
-                a.status?.toLowerCase() === "closed" &&
-                        a.ticket_endorsed &&
-                NON_QUOTATION_WRAPUPS.includes(a.wrap_up?.toLowerCase() || "")
-                        ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
-                    : 0;
+    isNonQuotation
+        ? safeDiffMinutes(a.tsm_acknowledge_date, a.tsm_handling_time)
+        : 0;
+
 
                 const manager = a.manager!.trim();
                 const soAmount = Number(a.so_amount ?? 0);
                 const traffic = a.traffic?.toLowerCase() ?? "";
                 const qtySold = Number(a.qty_sold ?? 0);
-                const status = a.status?.toLowerCase() ?? "";
                 const customerStatus = a.customer_status?.toLowerCase() ?? "";
 
+                // Init
                 if (!map[manager]) {
                     map[manager] = {
                         manager,
@@ -274,50 +296,35 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                     };
                 }
 
-                if (traffic === "sales") {
-                    map[manager].salesCount += 1;
-                } else if (traffic === "non-sales") {
-                    map[manager].nonSalesCount += 1;
-                }
+                // Counts
+                if (traffic === "sales") map[manager].salesCount += 1;
+                else if (traffic === "non-sales") map[manager].nonSalesCount += 1;
 
-                if (status === "converted into sales") {
-                    map[manager].convertedCount += 1;
-                }
+                if (status === "converted into sales") map[manager].convertedCount += 1;
 
-                if (customerStatus === "new client") {
-                    map[manager].newClientCount += 1;
-                }
+                if (customerStatus === "new client") map[manager].newClientCount += 1;
+                if (customerStatus === "new non-buying") map[manager].newNonBuyingCount += 1;
+                if (customerStatus === "existing active") map[manager].ExistingActiveCount += 1;
+                if (customerStatus === "existing inactive") map[manager].ExistingInactive += 1;
 
-                if (customerStatus === "new non-buying") {
-                    map[manager].newNonBuyingCount += 1;
-                }
-
-                if (customerStatus === "existing active") {
-                    map[manager].ExistingActiveCount += 1;
-                }
-
-                if (customerStatus === "existing inactive") {
-                    map[manager].ExistingInactive += 1;
-                }
-
+                // Totals
                 map[manager].amount += isNaN(soAmount) ? 0 : soAmount;
                 map[manager].qtySold += isNaN(qtySold) ? 0 : qtySold;
 
-                if (customerStatus === "new client" && status === "converted into sales") {
-                    map[manager].newClientConvertedAmount += isNaN(soAmount) ? 0 : soAmount;
-                }
+                // Converted amounts
+                if (customerStatus === "new client" && status === "converted into sales")
+                    map[manager].newClientConvertedAmount += soAmount;
 
-                if (customerStatus === "new non-buying" && status === "converted into sales") {
-                    map[manager].newNonBuyingConvertedAmount += isNaN(soAmount) ? 0 : soAmount;
-                }
+                if (customerStatus === "new non-buying" && status === "converted into sales")
+                    map[manager].newNonBuyingConvertedAmount += soAmount;
 
-                if (customerStatus === "existing active" && status === "converted into sales") {
-                    map[manager].newExistingActiveConvertedAmount += isNaN(soAmount) ? 0 : soAmount;
-                }
+                if (customerStatus === "existing active" && status === "converted into sales")
+                    map[manager].newExistingActiveConvertedAmount += soAmount;
 
-                if (customerStatus === "existing inactive" && status === "converted into sales") {
-                    map[manager].newExistingInactiveConvertedAmount += isNaN(soAmount) ? 0 : soAmount;
-                }
+                if (customerStatus === "existing inactive" && status === "converted into sales")
+                    map[manager].newExistingInactiveConvertedAmount += soAmount;
+
+                // KPI accumulation
                 if (ackTime > 0) {
                     map[manager].tsmAckTotal += ackTime;
                     map[manager].tsmAckCount += 1;

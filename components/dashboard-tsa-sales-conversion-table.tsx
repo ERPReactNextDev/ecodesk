@@ -31,8 +31,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-const SLA_CELL = "bg-yellow-50 text-yellow-900 font-semibold";
-
 function TooltipInfo({ children }: { children: React.ReactNode }) {
     return (
         <div className="absolute top-full right-0 mt-1 w-180 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
@@ -41,39 +39,27 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
     );
 }
 
-function safeDiffMinutes(start?: string, end?: string): number {
-    if (!start || !end) return 0;
-
-    const s = new Date(start);
-    const e = new Date(end);
-
-    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
-
-    const diff = (e.getTime() - s.getTime()) / 60000;
-
-    // ❌ Reject negative or zero
-    if (diff <= 0) return 0;
-
-    // ❌ Reject insane values (more than 8 hours for a single ticket step)
-    if (diff > 480) return 0; // 480 minutes = 8 hours
-
-    return Math.round(diff);
-}
-
 interface Activity {
     agent?: string;
     date_created?: string;
+    date_updated?: string;
+
     so_amount?: number | string;
     remarks?: string;
     traffic: string;
     qty_sold: number | string;
     status: string;
     customer_status: string;
-    date_updated?: string; // ✅ ADD
-    ticket_received?: string; // ✅ ADD
-    ticket_endorsed?: string; // ✅ ADD
-    wrap_up?: string; // ✅ ADD
+
+    ticket_received?: string;
+    ticket_endorsed?: string;
+    wrap_up?: string;
+
+    // ✅ TSA timing fields (these already exist in DB)
+    tsa_acknowledge_date?: string;
+    tsa_handling_time?: string;
 }
+
 
 interface Agent {
     ReferenceID: string;
@@ -165,16 +151,25 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
         return true;
     };
 
-    function diffMinutes(start?: string, end?: string): number {
-    if (!start || !end) return 0;
+    function safeDiffMinutes(start?: string, end?: string): number {
+        if (!start || !end) return 0;
 
     const s = new Date(start);
     const e = new Date(end);
 
     if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
 
-    return Math.max(0, Math.round((e.getTime() - s.getTime()) / 60000));
+        const diff = (e.getTime() - s.getTime()) / 60000;
+
+        // ❌ Reject negative or zero
+        if (diff <= 0) return 0;
+
+        // ❌ Reject anything longer than 8 hours (corporate KPI rule)
+        if (diff > 480) return 0;
+
+        return Math.round(diff);
 }
+
 
 function formatHHMMSS(totalMinutes: number): string {
   if (!totalMinutes || totalMinutes <= 0) return "0:00:00";
@@ -186,22 +181,24 @@ function formatHHMMSS(totalMinutes: number): string {
 
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
-    const NON_QUOTATION_WRAPUPS = [
+    const NON_QUOTATION_REMARKS = [
         "no stocks",
         "insufficient stocks",
-        "unable to contact",
-        "item not carried",
-        "waiting for client confirmation",
-        "customer requested",
-        "cancellation",
-        "accreditation/partnership",
-        "no response from client",
-        "assisted",
-        "for site visit",
-        "non standard item",
-        "po received",
-        "for occular inspection",
-    ];
+    "unable to contact customer",
+    "item not carried",
+    "waiting for client confirmation",
+    "pending for payment",
+    "customer requested cancellation",
+    "accreditation/partnership",
+    "no response from client",
+    "assisted",
+    "for site visit",
+    "non standard item",
+    "po received",
+    "pending quotation",
+    "for occular inspection",
+];
+
     const groupedData = useMemo(() => {
         const map: Record<
             string,
@@ -250,22 +247,31 @@ function formatHHMMSS(totalMinutes: number): string {
   const status = a.status?.toLowerCase() ?? "";
   const customerStatus = a.customer_status?.toLowerCase() ?? "";
 
-    const tsaResponseTime = safeDiffMinutes(a.ticket_received, a.ticket_endorsed);
+    const tsaResponseTime = safeDiffMinutes(
+        a.ticket_received,
+        a.tsa_acknowledge_date
+    );
+
 
 const remark = a.remarks?.toLowerCase().trim() || "";
 
 // ---- NON-QUOTATION ----
 const NON_QUOTATION_REMARKS = [
-  "no stocks / insufficient stocks",
+    "no stocks",
+    "insufficient stocks",
+    "unable to contact customer",
   "item not carried",
+    "waiting for client confirmation",
+    "pending for payment",
+    "customer requested cancellation",
+    "accreditation/partnership",
+    "no response from client",
+    "assisted",
+    "for site visit",
   "non standard item",
-  "for site visit",
-  "for occular inspection",
-  "not converted to sales",
-  "no response for client",
-  "assisted",
-  "customer request cancellation",
-  "accreditation / partnership",
+    "po received",
+    "pending quotation",
+    "for occular inspection",
 ];
 
 // ---- QUOTATION ----
@@ -276,32 +282,35 @@ const QUOTATION_REMARKS = [
 
 const isNonQuotation =
   status === "closed" &&
-  NON_QUOTATION_REMARKS.includes(remark);
+    NON_QUOTATION_REMARKS.some(r => remark.includes(r));
 
 const isQuotation =
-  status === "closed" &&
-  QUOTATION_REMARKS.includes(remark);
+    status === "quotation for approval" ||
+    status === "converted into sales";
 
 // ---- TIME COMPUTATION ----
+    const isSPF =
+        remark.includes("spf") &&
+        status === "closed";
+
     const tsaNonQuotationTime =
-        isNonQuotation && a.ticket_endorsed
-            ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
+        isNonQuotation
+            ? safeDiffMinutes(a.tsa_acknowledge_date, a.tsa_handling_time)
             : 0;
 
     const tsaQuotationTime =
-        isQuotation && a.ticket_endorsed
-            ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
+        isQuotation
+            ? safeDiffMinutes(a.tsa_acknowledge_date, a.tsa_handling_time)
             : 0;
-
-// ---- SPF ----
-const isSPF =
-  remark === "for spf" &&
-  status === "closed";
 
     const spfTime =
-        isSPF && a.ticket_endorsed
-            ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
+        isSPF
+            ? safeDiffMinutes(a.tsa_acknowledge_date, a.tsa_handling_time)
             : 0;
+
+
+
+
 
 
 
@@ -596,10 +605,10 @@ const isSPF =
                                     <TableHead className="text-right">New Non-Buying (Converted To Sales)</TableHead>
                                     <TableHead className="text-right">Existing Active (Converted To Sales)</TableHead>
                                     <TableHead className="text-right">Existing Inactive (Converted To Sales)</TableHead>
-                                <TableHead className="text-right">TSAs Response Time</TableHead>
-                                <TableHead className="text-right">Quotation HT</TableHead>
-                                <TableHead className="text-right">Non Quotation HT</TableHead>
-                                <TableHead className="text-right">SPF HD</TableHead>
+                                    <TableHead className="text-right">TSAs Response Time</TableHead>
+                                    <TableHead className="text-right">Quotation HT</TableHead>
+                                    <TableHead className="text-right">Non Quotation HT</TableHead>
+                                    <TableHead className="text-right">SPF HD</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -635,20 +644,14 @@ const isSPF =
                                         const agentDetails = agents.find((a) => a.ReferenceID === agent);
                                         const fullName = agentDetails ? `${agentDetails.Firstname} ${agentDetails.Lastname}` : "(Unknown Agent)";
                                         const rank = index + 1;
-                                        const totalTsaCount =
-                                        tsaResponseCount +
-                                        tsaQuotationCount +
-                                        tsaNonQuotationCount;
-
                                         const avgResponse =
-                                        totalTsaCount === 0 ? "-" : Math.round(tsaResponseTotal / totalTsaCount);
+                                            tsaResponseCount === 0 ? "-" : Math.round(tsaResponseTotal / tsaResponseCount);
 
                                         const avgQuotation =
-                                        totalTsaCount === 0 ? "-" : Math.round(tsaQuotationTotal / totalTsaCount);
+                                            tsaQuotationCount === 0 ? "-" : Math.round(tsaQuotationTotal / tsaQuotationCount);
 
                                         const avgNonQuotation =
-                                        totalTsaCount === 0 ? "-" : Math.round(tsaNonQuotationTotal / totalTsaCount);
-
+                                            tsaNonQuotationCount === 0 ? "-" : Math.round(tsaNonQuotationTotal / tsaNonQuotationCount);
 
                                         const avgSPF =
                                         spfCount === 0 ? "-" : Math.round(spfTotal / spfCount);
@@ -702,10 +705,22 @@ const isSPF =
                                                         maximumFractionDigits: 2,
                                                     })}
                                                 </TableCell>
-                                                <TableCell>{avgResponse === "-" ? "-" : formatHHMMSS(avgResponse)}</TableCell>
-                                                <TableCell>{avgQuotation === "-" ? "-" : formatHHMMSS(avgQuotation)}</TableCell>
-                                                <TableCell>{avgNonQuotation === "-" ? "-" : formatHHMMSS(avgNonQuotation)}</TableCell>
-                                                <TableCell>{avgSPF === "-" ? "-" : formatHHMMSS(avgSPF)}</TableCell>
+                                                <TableCell className="text-right font-mono">
+                                                    {avgResponse === "-" ? "-" : formatHHMMSS(avgResponse)}
+                                                </TableCell>
+
+                                                <TableCell className="text-right font-mono">
+                                                    {avgQuotation === "-" ? "-" : formatHHMMSS(avgQuotation)}
+                                                </TableCell>
+
+                                                <TableCell className="text-right font-mono">
+                                                    {avgNonQuotation === "-" ? "-" : formatHHMMSS(avgNonQuotation)}
+                                                </TableCell>
+
+                                                <TableCell className="text-right font-mono">
+                                                    {avgSPF === "-" ? "-" : formatHHMMSS(avgSPF)}
+                                                </TableCell>
+
                                             </TableRow>
                                         );
                                     })}
