@@ -201,7 +201,8 @@ const MANAGER_AGENT_MAP: Record<string, string[]> = {
   ],
 
     "TT-PH-500404": [
-    "AE-NCR-555756"
+    "AE-NCR-555756",
+    "JG-NCR-920587"
     ],
 };
 
@@ -492,6 +493,26 @@ useEffect(() => {
   }
 }, [ticketReceived, ticketEndorsed]);
 
+// 2️⃣ TSA Acknowledge vs TSA Handling validation
+useEffect(() => {
+  if (!tsaAcknowledgeDate || !tsaHandlingTime) {
+    setTsaTimeError(null);
+    return;
+  }
+
+  const ack = new Date(tsaAcknowledgeDate);
+  const handle = new Date(tsaHandlingTime);
+
+  if (!isNaN(ack.getTime()) && !isNaN(handle.getTime())) {
+    if (handle < ack) {
+      setTsaTimeError("TSA Handling Time cannot be earlier than TSA Acknowledgement Date.");
+    } else {
+      setTsaTimeError(null);
+    }
+  }
+}, [tsaAcknowledgeDate, tsaHandlingTime]);
+
+
 
 // 2️⃣ Close Reason → Auto dash logic
 useEffect(() => {
@@ -557,6 +578,8 @@ useEffect(() => {
     }>({});
 
     const [timeError, setTimeError] = useState<string | null>(null);
+    const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
+
 
     // Options
     const departmentOptions: Option[] = [
@@ -629,17 +652,21 @@ useEffect(() => {
     return Object.keys(newErrors).length === 0;
     };
     // Override handleNext to add validation on step 3 and 6
-        const onNext = () => {
-            if (step === 3) {
-                if (timeError) return;          // 🔥 BLOCK kapag red
-                if (!validateStep3()) return;
-            }
-            if (step === 6) {
-                if (!validateStep6()) return;
-            }
-            setErrors({});
-            handleNext();
-        };
+    const onNext = () => {
+    if (step === 3) {
+        if (timeError) return;
+        if (!validateStep3()) return;
+    }
+
+    if (step === 6) {
+        if (tsaTimeError) return;   // 🔥 BLOCK if TSA time invalid
+        if (!validateStep6()) return;
+    }
+
+    setErrors({});
+    handleNext();
+    };
+
 
     const [loadingSave, setLoadingSave] = useState(false);
     const [loadingLoad, setLoadingLoad] = useState(false);
@@ -652,21 +679,25 @@ useEffect(() => {
     };
 
     // Helper: common buttons with validation on Next
-        const Navigation = () => (
-        <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={handleBack} className="cursor-pointer">
-            Back
-            </Button>
+const Navigation = () => (
+  <div className="flex justify-between mt-4">
+    <Button variant="outline" onClick={handleBack} className="cursor-pointer">
+      Back
+    </Button>
 
-            <Button
-            onClick={onNext}
-            className="cursor-pointer"
-            disabled={step === 3 && !!timeError}
-            >
-            Next
-            </Button>
-        </div>
-        );
+    <Button
+      onClick={onNext}
+      className="cursor-pointer"
+      disabled={
+        (step === 3 && !!timeError) ||
+        (step === 3 && !!tsaTimeError) // 🔥 TSA validation blocks Next in Step 3
+      }
+    >
+      Next
+    </Button>
+  </div>
+);
+
 
     return (
         <>
@@ -894,8 +925,10 @@ useEffect(() => {
                                         type="datetime-local"
                                         value={tsaHandlingTime}
                                         onChange={(e) => setTsaHandlingTime(e.target.value)}
+                                        error={tsaTimeError || undefined}
                                     />
                                     </Field>
+
 
                         </FieldSet>
                     </FieldGroup>
@@ -1366,9 +1399,10 @@ useEffect(() => {
                     <Button variant="outline" onClick={handleBack} disabled={loadingSave || loadingLoad} className="cursor-pointer">Back</Button>
                         <Button
                         onClick={onUpdate}
-                        disabled={loadingSave || loadingLoad || !!timeError}
+                        disabled={loadingSave || loadingLoad || !!timeError || !!tsaTimeError}
                         className="cursor-pointer"
                         >
+
                         {loadingSave ? "Saving..." : "Save"}
                         </Button>
                 </>

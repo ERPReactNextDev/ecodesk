@@ -33,20 +33,21 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { CancelDialog } from "./activity-cancel-dialog";
 import { TicketSheet } from "./sheet-ticket";
+import { Input } from "@/components/ui/input";
 
 const toDatetimeLocal = (value?: string) => {
   if (!value) return "";
 
-  // MongoDB gives local PH time string
-  // We must NOT convert to UTC
-  if (value.includes("T")) {
-    return value.slice(0, 16); // "2026-01-14T16:04"
-  }
+  const d = new Date(value);
 
-  // fallback for "YYYY-MM-DD HH:mm"
-  return value.replace(" ", "T").slice(0, 16);
+  if (isNaN(d.getTime())) return "";
+
+  // convert to local time string for datetime-local input
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+
+  return local.toISOString().slice(0, 16);
 };
-
 
 interface Activity {
   _id: string;
@@ -81,12 +82,17 @@ interface Activity {
   po_source: string;
   payment_date: string;
   delivery_date: string;
-  date_created: string;
+  date_created?: string;
   date_updated: string;
   tsm_acknowledge_date?: string;
   tsa_acknowledge_date?: string;
   tsm_handling_time?: string;
   tsa_handling_time?: string;
+
+  company_name: string;
+  contact_number: string;
+  contact_person: string;
+  email_address: string;
 }
 
 
@@ -95,12 +101,14 @@ interface UpdateActivityDialogProps {
   _id: string;
   ticket_reference_number: string;
   referenceid: string;
-  type_client: string;
+  type_client?: string;
+
   contact_number: string;
   email_address: string;
   contact_person: string;
   address: string;
   company_name: string;
+
   account_reference_number: string;
   ticket_received?: string;
   ticket_endorsed?: string;
@@ -225,6 +233,11 @@ export function UpdateTicketDialog({
 
   const [activityRef, setActivityRef] = useState(_id);
   const [ticketReferenceNumber, setTicketReferenceNumber] = useState("");
+
+  const [companyName, setCompanyName] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
   const [clientSegment, setClientSegment] = useState("");
   const [trafficState, setTraffic] = useState("");
   const [sourceCompanyState, setSourceCompany] = useState("");
@@ -305,7 +318,7 @@ export function UpdateTicketDialog({
     setTsaAcknowledgeDate(tsa_acknowledge_date || "");
     setTsmHandlingTime(tsm_handling_time || "");
     setTsaHandlingTime(tsa_handling_time || "");
-  
+
     setCloseReason(close_reason || "");
     setCounterOffer(counter_offer || "");
     setClientSpecs(client_specs || "");
@@ -314,6 +327,11 @@ export function UpdateTicketDialog({
     setTsaAcknowledgeDate(toDatetimeLocal(tsa_acknowledge_date));
     setTsmHandlingTime(toDatetimeLocal(tsm_handling_time));
     setTsaHandlingTime(toDatetimeLocal(tsa_handling_time));
+
+    setCompanyName(company_name || "");
+    setContactPerson(contact_person || "");
+    setContactNumber(contact_number || "");
+    setEmailAddress(email_address || "");
 
     setDateCreated(toDatetimeLocal(date_created));
   }, [
@@ -353,6 +371,10 @@ export function UpdateTicketDialog({
     tsa_acknowledge_date,
     tsm_handling_time,
     tsa_handling_time,
+    company_name,
+    contact_number,
+    contact_person,
+    email_address
   ]);
 
   useEffect(() => {
@@ -368,60 +390,64 @@ export function UpdateTicketDialog({
   const handleUpdate = async () => {
     setLoading(true);
 
-const newActivity: Activity & {
-  close_reason?: string;
-  counter_offer?: string;
-  client_specs?: string;
-} = {
-  _id: activityRef,
-  ticket_reference_number: ticketReferenceNumber,
-  client_segment: clientSegment,
-  traffic: trafficState,
-  source_company: sourceCompanyState,
+    const newActivity: Activity & {
+      close_reason?: string;
+      counter_offer?: string;
+      client_specs?: string;
+    } = {
+      _id: activityRef,
+      ticket_reference_number: ticketReferenceNumber,
+      client_segment: clientSegment,
+      traffic: trafficState,
+      source_company: sourceCompanyState,
 
-  ticket_received: ticketReceivedState,
-  ticket_endorsed: ticketEndorsedState,
+      ticket_received: ticketReceivedState,
+      ticket_endorsed: ticketEndorsedState,
 
-  // ✅ ADD THESE
-  tsm_acknowledge_date: tsmAcknowledgeDate,
-  tsa_acknowledge_date: tsaAcknowledgeDate,
-  tsm_handling_time: tsmHandlingTime,
-  tsa_handling_time: tsaHandlingTime,
+      company_name: companyName,
+      contact_number: contactNumber,
+      contact_person: contactPerson,
+      email_address: emailAddress,
 
-  gender: genderState,
-  channel: channelState,
-  wrap_up: wrapUpState,
-  source: sourceState,
-  customer_type: customerTypeState,
-  customer_status: customerStatusState,
-  status: statusState,
-  department: departmentState,
-  manager: managerState,
-  agent: agentState,
-  remarks: remarksState,
-  inquiry: inquiryState,
-  item_code: itemCodeState,
-  item_description: itemDescriptionState,
-  po_number: poNumberState,
-  so_date: soDateState,
-  so_number: soNumberState,
-  so_amount: soAmountState,
-  quotation_number: quotationNumberState,
-  quotation_amount: quotationAmountState,
-  qty_sold: qtySoldState,
-  payment_terms: paymentTermsState,
-  po_source: poSourceState,
-  payment_date: paymentDateState,
-  delivery_date: deliveryDateState,
-  date_created: dateCreatedState,
-  date_updated: new Date().toISOString(),
+      // ✅ ADD THESE
+      tsm_acknowledge_date: tsmAcknowledgeDate,
+      tsa_acknowledge_date: tsaAcknowledgeDate,
+      tsm_handling_time: tsmHandlingTime,
+      tsa_handling_time: tsaHandlingTime,
 
-  ...(statusState === "Closed" && {
-    close_reason: closeReason,
-    counter_offer: counterOffer,
-    client_specs: clientSpecs,
-  }),
-};
+      gender: genderState,
+      channel: channelState,
+      wrap_up: wrapUpState,
+      source: sourceState,
+      customer_type: customerTypeState,
+      customer_status: customerStatusState,
+      status: statusState,
+      department: departmentState,
+      manager: managerState,
+      agent: agentState,
+      remarks: remarksState,
+      inquiry: inquiryState,
+      item_code: itemCodeState,
+      item_description: itemDescriptionState,
+      po_number: poNumberState,
+      so_date: soDateState,
+      so_number: soNumberState,
+      so_amount: soAmountState,
+      quotation_number: quotationNumberState,
+      quotation_amount: quotationAmountState,
+      qty_sold: qtySoldState,
+      payment_terms: paymentTermsState,
+      po_source: poSourceState,
+      payment_date: paymentDateState,
+      delivery_date: deliveryDateState,
+      date_updated: new Date().toISOString(),
+
+      ...(statusState === "Closed" && {
+        close_reason: closeReason,
+        counter_offer: counterOffer,
+        client_specs: clientSpecs,
+      }),
+    };
 
 
     try {
@@ -596,6 +622,54 @@ const newActivity: Activity & {
                 <div>
                   <FieldGroup>
                     <FieldSet>
+                      <FieldLabel className="font-semibold text-sm">Company Name</FieldLabel>
+                      <Input
+                        type="text"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="w-full"
+                      />
+                    </FieldSet>
+                  </FieldGroup>
+
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
+                      <FieldLabel className="font-semibold text-sm">Contact Person</FieldLabel>
+                      <Input
+                        type="text"
+                        value={contactPerson}
+                        onChange={(e) => setContactPerson(e.target.value)}
+                        className="w-full"
+                      />
+                    </FieldSet>
+                  </FieldGroup>
+
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
+                      <FieldLabel className="font-semibold text-sm">Contact Number</FieldLabel>
+                      <Input
+                        type="text"
+                        value={contactNumber}
+                        onChange={(e) => setContactNumber(e.target.value)}
+                        className="w-full"
+                      />
+                    </FieldSet>
+                  </FieldGroup>
+
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
+                      <FieldLabel className="font-semibold text-sm">Email Address</FieldLabel>
+                      <Input
+                        type="text"
+                        value={emailAddress}
+                        onChange={(e) => setEmailAddress(e.target.value)}
+                        className="w-full"
+                      />
+                    </FieldSet>
+                  </FieldGroup>
+
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
                       <FieldLabel>Choose Traffic</FieldLabel>
                       <RadioGroup
                         defaultValue={trafficState}
@@ -749,23 +823,23 @@ const newActivity: Activity & {
                   handleBack={() => setStep((prev) => prev - 1)}
                   handleNext={() => setStep((prev) => prev + 1)}
                   handleUpdate={handleUpdate}
-                closeReason={closeReason}
-                setCloseReason={setCloseReason}
-                counterOffer={counterOffer}
-                setCounterOffer={setCounterOffer}
-                clientSpecs={clientSpecs}
-                setClientSpecs={setClientSpecs}
-                tsmAcknowledgeDate={tsmAcknowledgeDate}
-                setTsmAcknowledgeDate={setTsmAcknowledgeDate}
+                  closeReason={closeReason}
+                  setCloseReason={setCloseReason}
+                  counterOffer={counterOffer}
+                  setCounterOffer={setCounterOffer}
+                  clientSpecs={clientSpecs}
+                  setClientSpecs={setClientSpecs}
+                  tsmAcknowledgeDate={tsmAcknowledgeDate}
+                  setTsmAcknowledgeDate={setTsmAcknowledgeDate}
 
-                tsaAcknowledgeDate={tsaAcknowledgeDate}
-                setTsaAcknowledgeDate={setTsaAcknowledgeDate}
+                  tsaAcknowledgeDate={tsaAcknowledgeDate}
+                  setTsaAcknowledgeDate={setTsaAcknowledgeDate}
 
-                tsmHandlingTime={tsmHandlingTime}
-                setTsmHandlingTime={setTsmHandlingTime}
+                  tsmHandlingTime={tsmHandlingTime}
+                  setTsmHandlingTime={setTsmHandlingTime}
 
-                tsaHandlingTime={tsaHandlingTime}
-                setTsaHandlingTime={setTsaHandlingTime}
+                  tsaHandlingTime={tsaHandlingTime}
+                  setTsaHandlingTime={setTsaHandlingTime}
                 />
               )}
             </div>
