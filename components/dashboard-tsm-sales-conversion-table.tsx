@@ -39,6 +39,18 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
     );
 }
 
+function formatHHMMSS(totalMinutes: number): string {
+    if (!totalMinutes || totalMinutes <= 0) return "0:00:00";
+
+    const seconds = Math.round(totalMinutes * 60);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+
 interface Activity {
     manager?: string;
     date_created?: string;
@@ -145,7 +157,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
         return true;
     };
 
-    function diffMinutes(start?: string, end?: string): number {
+    function safeDiffMinutes(start?: string, end?: string): number {
         if (!start || !end) return 0;
 
         const s = new Date(start);
@@ -153,7 +165,12 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
 
         if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
 
-        return Math.max(0, Math.round((e.getTime() - s.getTime()) / 60000));
+        const diff = (e.getTime() - s.getTime()) / 60000;
+
+        if (diff <= 0) return 0;
+        if (diff > 480) return 0; // 8 hours max
+
+        return Math.round(diff);
     }
 
     const NON_QUOTATION_WRAPUPS = [
@@ -208,18 +225,23 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                     (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
             )
             .forEach((a) => {
-            const ackTime = diffMinutes(a.ticket_received, a.ticket_endorsed);
+                // 1️⃣ TSM Acknowledge Time
+                const ackTime = safeDiffMinutes(a.ticket_received, a.ticket_endorsed);
 
-            const handlingTime =
-                a.status?.toLowerCase() === "closed"
-                    ? diffMinutes(a.ticket_received, a.date_updated)
+                // 2️⃣ TSM Handling Time
+                const handlingTime =
+                    a.status?.toLowerCase() === "closed" && a.ticket_endorsed
+                        ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
                     : 0;
 
-            const nonQuotationTime =
+                // 3️⃣ TSM Non-Quotation Handling
+                const nonQuotationTime =
                 a.status?.toLowerCase() === "closed" &&
+                        a.ticket_endorsed &&
                 NON_QUOTATION_WRAPUPS.includes(a.wrap_up?.toLowerCase() || "")
-                    ? diffMinutes(a.ticket_received, a.date_updated)
+                        ? safeDiffMinutes(a.ticket_endorsed, a.date_updated)
                     : 0;
+
                 const manager = a.manager!.trim();
                 const soAmount = Number(a.so_amount ?? 0);
                 const traffic = a.traffic?.toLowerCase() ?? "";
@@ -615,16 +637,17 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                                                     })}
                                                 </TableCell>
                                                 <TableCell className="text-right font-mono">
-                                                    {avgAck === "-" ? "-" : `${avgAck} min`}
+                                                    {avgAck === "-" ? "-" : formatHHMMSS(avgAck)}
                                                 </TableCell>
 
                                                 <TableCell className="text-right font-mono">
-                                                    {avgHandling === "-" ? "-" : `${avgHandling} min`}
+                                                    {avgHandling === "-" ? "-" : formatHHMMSS(avgHandling)}
                                                 </TableCell>
 
                                                 <TableCell className="text-right font-mono">
-                                                    {avgNonQuotation === "-" ? "-" : `${avgNonQuotation} min`}
+                                                    {avgNonQuotation === "-" ? "-" : formatHHMMSS(avgNonQuotation)}
                                                 </TableCell>
+
 
                                             </TableRow>
                                         );

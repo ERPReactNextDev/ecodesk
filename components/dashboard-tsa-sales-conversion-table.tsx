@@ -31,6 +31,8 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
+const SLA_CELL = "bg-yellow-50 text-yellow-900 font-semibold";
+
 function TooltipInfo({ children }: { children: React.ReactNode }) {
     return (
         <div className="absolute top-full right-0 mt-1 w-180 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
