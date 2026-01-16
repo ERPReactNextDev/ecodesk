@@ -65,6 +65,7 @@ interface Ticket {
   inquiry?: string;
 
   // ✅ ADD THESE TWO LINES (THIS FIXES YOUR ERROR)
+  company_name: string;
   contact_number?: string;
   email_address?: string;
   contact_person?: string;
