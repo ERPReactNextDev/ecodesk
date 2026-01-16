@@ -742,7 +742,7 @@ export const Ticket: React.FC<TicketProps> = ({
             await new Promise((r) => setTimeout(r, 1000));
 
             const headers = [
-                "Activity Reference Number",
+                "Agent Name",
                 "Company Name",
                 "Status",
                 "Date Created",
@@ -786,7 +786,7 @@ export const Ticket: React.FC<TicketProps> = ({
             };
 
             const rows = data.map((item: MergedActivity) => [
-                item.activity_reference_number,
+                getAgentNameByReferenceID(item.referenceid),
                 item.company_name,
                 item.status,
                 formatDate(item.date_created),
@@ -804,8 +804,8 @@ export const Ticket: React.FC<TicketProps> = ({
                 item.customer_type || "-",
                 item.customer_status || "-",
                 item.department || "-",
-                item.manager || "-",
-                item.agent || "-",
+                getAgentNameByReferenceID(item.manager),
+                getAgentNameByReferenceID(item.agent),
                 item.remarks || "-",
                 item.inquiry || "-",
                 item.item_code || "-",
@@ -992,6 +992,15 @@ export const Ticket: React.FC<TicketProps> = ({
                         }}
                         className="flex-grow px-3 py-2 border rounded-md text-sm"
                     />
+
+                    <Button
+                        variant="outline"
+                        disabled={filteredAndSortedData.length === 0}
+                        onClick={() => handleExportCsv(filteredAndSortedData)}
+                        className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
+                    >
+                        Download CSV
+                    </Button>
 
                     <Button className="cursor-pointer" onClick={() => setFilterDialogOpen(true)}>Filter</Button>
 
