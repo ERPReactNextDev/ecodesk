@@ -28,372 +28,367 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-/* =========================
-   CONSTANTS (EXCEL-BASED)
-========================= */
+/* ===================== INTERFACES ===================== */
 
-const EXCLUDED_WRAPUPS = [
-  "customerfeedback/recommendation",
-  "job inquiry",
-  "job applicants",
-  "supplier/vendor product offer",
-  "internal whistle blower",
-  "threats / extortion / intimidation",
-  "prank call",
-];
+interface Activity {
+  agent?: string;
+  date_created?: string;
+  date_updated?: string;
+  so_amount?: number | string;
+  remarks?: string;
+  traffic: string;
+  qty_sold: number | string;
+  status: string;
+  customer_status: string;
 
-const NON_QUOTATION_REMARKS = [
-  "no stocks",
-  "insufficient stocks",
-  "unable to contact customer",
-  "item not carried",
-  "waiting for client confirmation",
-  "pending for payment",
-  "customer requested cancellation",
-  "accreditation/partnership",
-  "no response from client",
-  "assisted",
-  "for site visit",
-  "non standard item",
-  "po received",
-  "pending quotation",
-  "for occular inspection",
-];
+  ticket_received?: string;
+  ticket_endorsed?: string;
+  tsa_handling_time?: string;
+}
 
-const QUOTATION_REMARKS = [
-  "quotation for approval",
-  "converted to sale",
-  "disapproved quotation",
-];
+interface Agent {
+  ReferenceID: string;
+  Firstname: string;
+  Lastname: string;
+}
 
-/* =========================
-   HELPERS
-========================= */
+interface Props {
+  dateCreatedFilterRange: DateRange | undefined;
+}
 
-function diffMinutesExcel(start?: string, end?: string): number | null {
+export interface AgentSalesConversionCardRef {
+  downloadCSV: () => void;
+}
+
+/* ===================== HELPERS ===================== */
+
+// difference in seconds
+const diffSeconds = (start?: string, end?: string) => {
   if (!start || !end) return null;
-
   const s = new Date(start);
   const e = new Date(end);
-
   if (isNaN(s.getTime()) || isNaN(e.getTime())) return null;
-  if (e < s) return null; // INVALID DATE / TIME
+  if (e < s) return null;
+  return Math.round((e.getTime() - s.getTime()) / 1000);
+};
 
-  return Math.round((e.getTime() - s.getTime()) / 60000);
-}
-
-function formatHHMMSS(minutes?: number): string {
-  if (!minutes || minutes <= 0) return "-";
-
-  const sec = minutes * 60;
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-
+// ✅ EXCEL FORMAT: H:MM:SS (NO padded hour)
+const formatHMMSS = (totalSeconds: number) => {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
+};
 
-/* =========================
-   COMPONENT
-========================= */
+const NON_QUOTATION_REMARKS = [
+  "No Stocks",
+  "Insufficient Stocks",
+  "Unable to Contact Customer",
+  "Item Not Carried",
+  "Waiting for Client Confirmation",
+  "Customer Requested Cancellation",
+  "Accreditation/Partnership",
+  "No Response from Client",
+  "Assisted",
+  "For Site Visit",
+  "Non-Standard Item",
+  "PO Received",
+  "Pending Quotation",
+  "For Ocular Inspection",
+];
 
-const AgentSalesTableCard = forwardRef<any, any>(
-  ({ dateCreatedFilterRange }, ref) => {
-    const [activities, setActivities] = useState<any[]>([]);
-    const [agents, setAgents] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [agentsLoading, setAgentsLoading] = useState(false);
+/* ===================== COMPONENT ===================== */
 
-    useEffect(() => {
-      setLoading(true);
-      fetch("/api/act-fetch-agent-sales")
-        .then((r) => r.json())
-        .then((d) => setActivities(d.data || []))
-        .finally(() => setLoading(false));
+const AgentSalesTableCard = forwardRef<
+  AgentSalesConversionCardRef,
+  Props
+>(({ dateCreatedFilterRange }, ref) => {
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    async function fetchAgents() {
       setAgentsLoading(true);
-      fetch("/api/fetch-agent")
-        .then((r) => r.json())
-        .then(setAgents)
-        .finally(() => setAgentsLoading(false));
-    }, []);
+      try {
+        const res = await fetch("/api/fetch-agent");
+        const data = await res.json();
+        setAgents(data);
+      } catch {
+        setAgents([]);
+      } finally {
+        setAgentsLoading(false);
+      }
+    }
+    fetchAgents();
+  }, []);
 
-    const isDateInRange = (dateStr?: string, range?: DateRange) => {
-      if (!range) return true;
-      if (!dateStr) return false;
-
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return false;
-
-      const { from, to } = range;
-      if (from && d < new Date(from.setHours(0, 0, 0, 0))) return false;
-      if (to && d > new Date(to.setHours(23, 59, 59, 999))) return false;
-
-      return true;
-    };
-
-    const groupedData = useMemo(() => {
-      const map: any = {};
-
-      activities
-        .filter(
-          (a) =>
-            isDateInRange(a.ticket_received, dateCreatedFilterRange) &&
-            a.agent &&
-            a.agent.trim() !== ""
-        )
-        .forEach((a) => {
-          const agent = a.agent.trim();
-          const wrap = (a.wrap_up || "").toLowerCase();
-          if (EXCLUDED_WRAPUPS.includes(wrap)) return;
-
-          const remark = (a.remarks || "").toLowerCase().trim();
-
-          if (!map[agent]) {
-            map[agent] = {
-              agent,
-              salesCount: 0,
-              nonSalesCount: 0,
-              convertedCount: 0,
-              amount: 0,
-              qtySold: 0,
-
-              newClientCount: 0,
-              newNonBuyingCount: 0,
-              ExistingActiveCount: 0,
-              ExistingInactive: 0,
-
-              newClientConvertedAmount: 0,
-              newNonBuyingConvertedAmount: 0,
-              newExistingActiveConvertedAmount: 0,
-              newExistingInactiveConvertedAmount: 0,
-
-              tsaResponseTotal: 0,
-              tsaResponseCount: 0,
-              tsaQuotationTotal: 0,
-              tsaQuotationCount: 0,
-              tsaNonQuotationTotal: 0,
-              tsaNonQuotationCount: 0,
-              spfTotal: 0,
-              spfCount: 0,
-            };
-          }
-
-          /* TSA RESPONSE TIME */
-          const response = diffMinutesExcel(
-            a.ticket_received,
-            a.tsa_acknowledge_date
-          );
-          if (response !== null) {
-            map[agent].tsaResponseTotal += response;
-            map[agent].tsaResponseCount++;
-          }
-
-          /* TSA HANDLING TIME */
-          const handling = diffMinutesExcel(
-            a.ticket_endorsed,
-            a.tsa_handling_time
-          );
-
-          if (handling !== null) {
-            if (NON_QUOTATION_REMARKS.some((r) => remark.includes(r))) {
-              map[agent].tsaNonQuotationTotal += handling;
-              map[agent].tsaNonQuotationCount++;
-            } else if (QUOTATION_REMARKS.some((r) => remark.includes(r))) {
-              map[agent].tsaQuotationTotal += handling;
-              map[agent].tsaQuotationCount++;
-            } else if (remark === "spf") {
-              map[agent].spfTotal += handling;
-              map[agent].spfCount++;
-            }
-          }
-
-          /* EXISTING METRICS */
-          const traffic = (a.traffic || "").toLowerCase();
-          const status = (a.status || "").toLowerCase();
-          const customerStatus = (a.customer_status || "").toLowerCase();
-          const soAmount = Number(a.so_amount ?? 0);
-          const qtySold = Number(a.qty_sold ?? 0);
-
-          if (traffic === "sales") map[agent].salesCount++;
-          else if (traffic === "non-sales") map[agent].nonSalesCount++;
-
-          if (status === "converted into sales")
-            map[agent].convertedCount++;
-
-          if (customerStatus === "new client") map[agent].newClientCount++;
-          if (customerStatus === "new non-buying")
-            map[agent].newNonBuyingCount++;
-          if (customerStatus === "existing active")
-            map[agent].ExistingActiveCount++;
-          if (customerStatus === "existing inactive")
-            map[agent].ExistingInactive++;
-
-          map[agent].amount += isNaN(soAmount) ? 0 : soAmount;
-          map[agent].qtySold += isNaN(qtySold) ? 0 : qtySold;
-
-          if (
-            customerStatus === "new client" &&
-            status === "converted into sales"
-          )
-            map[agent].newClientConvertedAmount += soAmount;
-
-          if (
-            customerStatus === "new non-buying" &&
-            status === "converted into sales"
-          )
-            map[agent].newNonBuyingConvertedAmount += soAmount;
-
-          if (
-            customerStatus === "existing active" &&
-            status === "converted into sales"
-          )
-            map[agent].newExistingActiveConvertedAmount += soAmount;
-
-          if (
-            customerStatus === "existing inactive" &&
-            status === "converted into sales"
-          )
-            map[agent].newExistingInactiveConvertedAmount += soAmount;
+  useEffect(() => {
+    async function fetchActivities() {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/act-fetch-agent-sales", {
+          cache: "no-store",
         });
+        const json = await res.json();
+        setActivities(json.data || []);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchActivities();
+  }, []);
 
-      return Object.values(map);
-    }, [activities, dateCreatedFilterRange]);
+  const isDateInRange = (dateStr?: string, range?: DateRange) => {
+    if (!range) return true;
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return false;
+    if (range.from && date < new Date(range.from.setHours(0, 0, 0, 0)))
+      return false;
+    if (range.to && date > new Date(range.to.setHours(23, 59, 59, 999)))
+      return false;
+    return true;
+  };
 
-    const totalSoAmount = groupedData.reduce(
-      (sum: number, r: any) => sum + r.amount,
-      0
-    );
+  const groupedData = useMemo(() => {
+    const map: Record<
+      string,
+      {
+        agent: string;
+        salesCount: number;
+        nonSalesCount: number;
+        convertedCount: number;
+        amount: number;
+        qtySold: number;
+        newClientCount: number;
+        newNonBuyingCount: number;
+        ExistingActiveCount: number;
+        ExistingInactive: number;
+        newClientConvertedAmount: number;
+        newNonBuyingConvertedAmount: number;
+        newExistingActiveConvertedAmount: number;
+        newExistingInactiveConvertedAmount: number;
 
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Territory Sales Associate Conversion</CardTitle>
-        </CardHeader>
+        tsaResponseTotal: number;
+        tsaResponseCount: number;
 
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Rank</TableHead>
-                  <TableHead>Agent Name</TableHead>
-                  <TableHead className="text-right">Sales</TableHead>
-                  <TableHead className="text-right">Non-Sales</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="text-right">QTY Sold</TableHead>
-                  <TableHead className="text-right">Converted Sales</TableHead>
-                  <TableHead className="text-right">% Conversion</TableHead>
-                  <TableHead className="text-right">New Client</TableHead>
-                  <TableHead className="text-right">New Non-Buying</TableHead>
-                  <TableHead className="text-right">Existing Active</TableHead>
-                  <TableHead className="text-right">Existing Inactive</TableHead>
-                  <TableHead className="text-right">
-                    New Client (Converted)
-                  </TableHead>
-                  <TableHead className="text-right">
-                    New Non-Buying (Converted)
-                  </TableHead>
-                  <TableHead className="text-right">
-                    Existing Active (Converted)
-                  </TableHead>
-                  <TableHead className="text-right">
-                    Existing Inactive (Converted)
-                  </TableHead>
-                  <TableHead className="text-right">
-                    TSAs Response Time
-                  </TableHead>
-                  <TableHead className="text-right">Quotation HT</TableHead>
-                  <TableHead className="text-right">
-                    Non Quotation HT
-                  </TableHead>
-                  <TableHead className="text-right">SPF HD</TableHead>
-                </TableRow>
-              </TableHeader>
+        quotationTotal: number;
+        quotationCount: number;
+        nonQuotationTotal: number;
+        nonQuotationCount: number;
+        spfTotal: number;
+        spfCount: number;
+      }
+    > = {};
 
-              <TableBody>
-                {groupedData
-                  .slice()
-                  .sort((a: any, b: any) => b.amount - a.amount)
-                  .map((r: any, i: number) => {
-                    const agentDetails = agents.find(
-                      (a: any) => a.ReferenceID === r.agent
-                    );
-                    const fullName = agentDetails
-                      ? `${agentDetails.Firstname} ${agentDetails.Lastname}`
-                      : r.agent;
+    activities
+      .filter(
+        (a) =>
+          isDateInRange(
+            a.ticket_received ||
+              a.ticket_endorsed ||
+              a.date_updated ||
+              a.date_created,
+            dateCreatedFilterRange
+          ) &&
+          a.agent
+      )
+      .forEach((a) => {
+        const agent = a.agent!;
+        const soAmount = Number(a.so_amount ?? 0);
+        const qtySold = Number(a.qty_sold ?? 0);
+        const traffic = a.traffic.toLowerCase();
+        const status = a.status.toLowerCase();
+        const cs = a.customer_status.toLowerCase();
+        const remarks = a.remarks || "";
 
-                    return (
-                      <TableRow key={r.agent}>
-                        <TableCell>
-                          <Badge>{i + 1}</Badge>
-                        </TableCell>
-                        <TableCell>{fullName}</TableCell>
-                        <TableCell className="text-right">{r.salesCount}</TableCell>
-                        <TableCell className="text-right">{r.nonSalesCount}</TableCell>
-                        <TableCell className="text-right">
-                          ₱{r.amount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">{r.qtySold}</TableCell>
-                        <TableCell className="text-right">{r.convertedCount}</TableCell>
-                        <TableCell className="text-right">
-                          {r.salesCount === 0
-                            ? "0.00%"
-                            : ((r.convertedCount / r.salesCount) * 100).toFixed(2) + "%"}
-                        </TableCell>
+        if (!map[agent]) {
+          map[agent] = {
+            agent,
+            salesCount: 0,
+            nonSalesCount: 0,
+            convertedCount: 0,
+            amount: 0,
+            qtySold: 0,
+            newClientCount: 0,
+            newNonBuyingCount: 0,
+            ExistingActiveCount: 0,
+            ExistingInactive: 0,
+            newClientConvertedAmount: 0,
+            newNonBuyingConvertedAmount: 0,
+            newExistingActiveConvertedAmount: 0,
+            newExistingInactiveConvertedAmount: 0,
+            tsaResponseTotal: 0,
+            tsaResponseCount: 0,
+            quotationTotal: 0,
+            quotationCount: 0,
+            nonQuotationTotal: 0,
+            nonQuotationCount: 0,
+            spfTotal: 0,
+            spfCount: 0,
+          };
+        }
 
-                        <TableCell className="text-right">{r.newClientCount}</TableCell>
-                        <TableCell className="text-right">{r.newNonBuyingCount}</TableCell>
-                        <TableCell className="text-right">{r.ExistingActiveCount}</TableCell>
-                        <TableCell className="text-right">{r.ExistingInactive}</TableCell>
+        if (traffic === "sales") map[agent].salesCount++;
+        if (traffic === "non-sales") map[agent].nonSalesCount++;
+        if (status === "converted into sales") map[agent].convertedCount++;
 
-                        <TableCell className="text-right">
-                          ₱{r.newClientConvertedAmount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₱{r.newNonBuyingConvertedAmount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₱{r.newExistingActiveConvertedAmount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₱{r.newExistingInactiveConvertedAmount.toFixed(2)}
-                        </TableCell>
+        if (cs === "new client") map[agent].newClientCount++;
+        if (cs === "new non-buying") map[agent].newNonBuyingCount++;
+        if (cs === "existing active") map[agent].ExistingActiveCount++;
+        if (cs === "existing inactive") map[agent].ExistingInactive++;
 
-                        <TableCell className="text-right font-mono">
-                          {formatHHMMSS(r.tsaResponseTotal / r.tsaResponseCount)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatHHMMSS(r.tsaQuotationTotal / r.tsaQuotationCount)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatHHMMSS(r.tsaNonQuotationTotal / r.tsaNonQuotationCount)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatHHMMSS(r.spfTotal / r.spfCount)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
+        map[agent].amount += soAmount;
+        map[agent].qtySold += qtySold;
 
-        <Separator />
+        if (status === "converted into sales") {
+          if (cs === "new client") map[agent].newClientConvertedAmount += soAmount;
+          if (cs === "new non-buying") map[agent].newNonBuyingConvertedAmount += soAmount;
+          if (cs === "existing active") map[agent].newExistingActiveConvertedAmount += soAmount;
+          if (cs === "existing inactive") map[agent].newExistingInactiveConvertedAmount += soAmount;
+        }
 
-        <CardFooter className="flex justify-end">
-          <Badge>
-            Total Amount: ₱
-            {totalSoAmount.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </Badge>
-        </CardFooter>
-      </Card>
-    );
-  }
-);
+        // TSA Response Time (Endorsed → Handling)
+        const respSec = diffSeconds(a.ticket_endorsed, a.tsa_handling_time);
+        if (respSec !== null) {
+          map[agent].tsaResponseTotal += respSec;
+          map[agent].tsaResponseCount++;
+        }
+
+        // Handling Time (Received → Handling)
+        const handleSec = diffSeconds(a.ticket_received, a.tsa_handling_time);
+
+        if (
+          handleSec !== null &&
+          remarks === "Quotation For Approval" &&
+          status === "converted into sales"
+        ) {
+          map[agent].quotationTotal += handleSec;
+          map[agent].quotationCount++;
+        }
+
+        if (handleSec !== null && NON_QUOTATION_REMARKS.includes(remarks)) {
+          map[agent].nonQuotationTotal += handleSec;
+          map[agent].nonQuotationCount++;
+        }
+
+        if (handleSec !== null && remarks === "For SPF") {
+          map[agent].spfTotal += handleSec;
+          map[agent].spfCount++;
+        }
+      });
+
+    return Object.values(map);
+  }, [activities, dateCreatedFilterRange]);
+
+  useImperativeHandle(ref, () => ({
+    downloadCSV() {},
+  }));
+
+  return (
+    <Card>
+      <CardHeader className="flex justify-between">
+        <CardTitle>Territory Sales Associate Conversion</CardTitle>
+        <Info size={18} />
+      </CardHeader>
+
+      <CardContent>
+        {(loading || agentsLoading) && <p>Loading...</p>}
+        {error && <p className="text-destructive">{error}</p>}
+
+        {!loading && groupedData.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Rank</TableHead>
+                <TableHead>Agent Name</TableHead>
+                <TableHead className="text-right">Sales</TableHead>
+                <TableHead className="text-right">Non-Sales</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">QTY Sold</TableHead>
+                <TableHead className="text-right">Converted Sales</TableHead>
+                <TableHead className="text-right">% Inquiry to Sales</TableHead>
+                <TableHead className="text-right">New Client</TableHead>
+                <TableHead className="text-right">New Non-Buying</TableHead>
+                <TableHead className="text-right">Existing Active</TableHead>
+                <TableHead className="text-right">Existing Inactive</TableHead>
+                <TableHead className="text-right">New Client (Converted)</TableHead>
+                <TableHead className="text-right">New Non-Buying (Converted)</TableHead>
+                <TableHead className="text-right">Existing Active (Converted)</TableHead>
+                <TableHead className="text-right">Existing Inactive (Converted)</TableHead>
+                <TableHead className="text-right">TSAs Response Time</TableHead>
+                <TableHead className="text-right">Non Quotation HT</TableHead>
+                <TableHead className="text-right">Quotation HT</TableHead>
+                <TableHead className="text-right">SPF HD</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {groupedData
+                .sort((a, b) => b.amount - a.amount)
+                .map((r, i) => {
+                  const agent = agents.find((a) => a.ReferenceID === r.agent);
+                  return (
+                    <TableRow key={r.agent}>
+                      <TableCell><Badge>{i + 1}</Badge></TableCell>
+                      <TableCell>{agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown)"}</TableCell>
+
+                      <TableCell className="text-right">{r.salesCount}</TableCell>
+                      <TableCell className="text-right">{r.nonSalesCount}</TableCell>
+                      <TableCell className="text-right">₱{r.amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{r.qtySold}</TableCell>
+                      <TableCell className="text-right">{r.convertedCount}</TableCell>
+                      <TableCell className="text-right">
+                        {r.salesCount === 0 ? "" : ((r.convertedCount / r.salesCount) * 100).toFixed(2) + "%"}
+                      </TableCell>
+
+                      <TableCell className="text-right">{r.newClientCount}</TableCell>
+                      <TableCell className="text-right">{r.newNonBuyingCount}</TableCell>
+                      <TableCell className="text-right">{r.ExistingActiveCount}</TableCell>
+                      <TableCell className="text-right">{r.ExistingInactive}</TableCell>
+
+                      <TableCell className="text-right">{r.newClientConvertedAmount}</TableCell>
+                      <TableCell className="text-right">{r.newNonBuyingConvertedAmount}</TableCell>
+                      <TableCell className="text-right">{r.newExistingActiveConvertedAmount}</TableCell>
+                      <TableCell className="text-right">{r.newExistingInactiveConvertedAmount}</TableCell>
+
+                      <TableCell className="text-right">
+                        {r.tsaResponseCount ? formatHMMSS(Math.round(r.tsaResponseTotal / r.tsaResponseCount)) : ""}
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        {r.nonQuotationCount ? formatHMMSS(Math.round(r.nonQuotationTotal / r.nonQuotationCount)) : ""}
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        {r.quotationCount ? formatHMMSS(Math.round(r.quotationTotal / r.quotationCount)) : ""}
+                      </TableCell>
+
+    <TableCell className="text-right">
+    {r.spfCount
+        ? formatHMMSS(Math.round(r.spfTotal / r.spfCount))
+        : ""}
+    </TableCell>
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      <Separator />
+
+      <CardFooter className="flex justify-end">
+        <Badge>Report Generated</Badge>
+      </CardFooter>
+    </Card>
+  );
+});
 
 export default AgentSalesTableCard;
