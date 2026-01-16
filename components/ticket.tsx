@@ -742,7 +742,7 @@ export const Ticket: React.FC<TicketProps> = ({
             await new Promise((r) => setTimeout(r, 1000));
 
             const headers = [
-                "Agent Name",
+                "CSR Agent",
                 "Company Name",
                 "Status",
                 "Date Created",
@@ -750,6 +750,7 @@ export const Ticket: React.FC<TicketProps> = ({
                 "Contact Person",
                 "Contact Number",
                 "Email Address",
+                "Gender",
                 "Ticket Received",
                 "Ticket Endorsed",
                 "Traffic",
@@ -760,8 +761,12 @@ export const Ticket: React.FC<TicketProps> = ({
                 "Customer Type",
                 "Customer Status",
                 "Department",
-                "Manager",
-                "Agent",
+                "Territory Sales Manager",
+                "TSM Acknowledge Time",
+                "TSM Handling Time",
+                "Territory Sales Associate",
+                "TSA Acknowledge Time",
+                "TSA Handling Time",
                 "Remarks",
                 "Inquiry",
                 "Item Code",
@@ -777,6 +782,7 @@ export const Ticket: React.FC<TicketProps> = ({
                 "PO Source",
                 "Payment Date",
                 "Delivery Date",
+                "Close Reason",
             ];
 
             const formatDate = (dateStr?: string) => {
@@ -794,8 +800,9 @@ export const Ticket: React.FC<TicketProps> = ({
                 item.contact_person || "-",
                 item.contact_number || "-",
                 item.email_address || "-",
-                item.ticket_received || "-",
-                item.ticket_endorsed || "-",
+                item.gender || "-",
+                formatDate(item.ticket_received),
+                formatDate(item.ticket_endorsed),
                 item.traffic || "-",
                 item.source_company || "-",
                 item.channel || "-",
@@ -805,7 +812,11 @@ export const Ticket: React.FC<TicketProps> = ({
                 item.customer_status || "-",
                 item.department || "-",
                 getAgentNameByReferenceID(item.manager),
+                formatDate(item.tsm_acknowledge_date),
+                formatDate(item.tsm_handling_time),
                 getAgentNameByReferenceID(item.agent),
+                formatDate(item.tsa_acknowledge_date),
+                formatDate(item.tsa_handling_time),
                 item.remarks || "-",
                 item.inquiry || "-",
                 item.item_code || "-",
@@ -821,6 +832,7 @@ export const Ticket: React.FC<TicketProps> = ({
                 item.po_source || "-",
                 formatDate(item.payment_date),
                 formatDate(item.delivery_date),
+                item.close_reason || "-",
             ]);
 
             const csvContent =

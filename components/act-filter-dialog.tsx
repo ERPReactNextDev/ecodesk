@@ -67,116 +67,124 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
 }) => {
   return (
     <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-auto">
+      <DialogContent className="w-[90vh] max-w-none flex flex-col">
+        {/* HEADER */}
         <DialogHeader>
           <DialogTitle>Filter & Sort Activities</DialogTitle>
         </DialogHeader>
 
-        {/* FILTERS — GRID (NOT VERTICAL) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-          {filterFields.map((field) => {
-            const options = Array.from(
-              new Set(
-                mergedData
-                  .map((item) => (item as any)[field])
-                  .filter(
-                    (val) => val !== undefined && val !== null && val !== ""
-                  )
-              )
-            ).sort();
-
-            return (
-              <div key={field}>
-                <label className="block text-sm font-medium capitalize mb-1">
-                  {field.replace(/_/g, " ")}
-                </label>
-
-                <Select
-                  value={filters[field] || "__all__"}
-                  onValueChange={(value) =>
-                    handleFilterChange(
-                      field,
-                      value === "__all__" ? "" : value
+        {/* BODY (SCROLLABLE) */}
+        <div className="flex-1 overflow-y-auto pr-1">
+          {/* FILTERS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+            {filterFields.map((field) => {
+              const options = Array.from(
+                new Set(
+                  mergedData
+                    .map((item) => (item as any)[field])
+                    .filter(
+                      (val) =>
+                        val !== undefined &&
+                        val !== null &&
+                        val !== ""
                     )
-                  }
-                >
-                  <SelectTrigger className="w-full cursor-pointer">
-                    <SelectValue placeholder="-- All --" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__" className="cursor-pointer">-- All --</SelectItem>
-                    {options.map((opt) => (
-                      <SelectItem key={opt} value={opt} className="cursor-pointer">
-                        {opt}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            );
-          })}
-        </div>
+                )
+              ).sort();
 
-        {/* SORTING */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Sort By
-            </label>
-            <Select
-              value={sortField}
-              onValueChange={(value) => setSortField(value)}
-            >
-              <SelectTrigger className="w-full cursor-pointer">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sortableFields.map((field) => (
-                  <SelectItem
-                    key={field}
-                    value={field}
-                    className="capitalize"
-                  >
+              return (
+                <div key={field}>
+                  <label className="block text-sm font-medium capitalize mb-1">
                     {field.replace(/_/g, " ")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </label>
+
+                  <Select
+                    value={filters[field] || "__all__"}
+                    onValueChange={(value) =>
+                      handleFilterChange(
+                        field,
+                        value === "__all__" ? "" : value
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="-- All --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">
+                        -- All --
+                      </SelectItem>
+                      {options.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Sort Order
-            </label>
-            <RadioGroup
-              value={sortOrder}
-              onValueChange={(value) =>
-                setSortOrder(value as "asc" | "desc")
-              }
-              className="flex gap-6 mt-2"
-            >
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="asc" id="asc" className="cursor-pointer"/>
-                <label htmlFor="asc">Ascending</label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="desc" id="desc" className="cursor-pointer"/>
-                <label htmlFor="desc">Descending</label>
-              </div>
-            </RadioGroup>
+          {/* SORTING */}
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 my-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Sort By
+              </label>
+              <Select
+                value={sortField}
+                onValueChange={setSortField}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortableFields.map((field) => (
+                    <SelectItem
+                      key={field}
+                      value={field}
+                      className="capitalize"
+                    >
+                      {field.replace(/_/g, " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Sort Order
+              </label>
+              <RadioGroup
+                value={sortOrder}
+                onValueChange={(value) =>
+                  setSortOrder(value as "asc" | "desc")
+                }
+                className="flex gap-6 mt-2"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="asc" id="asc" />
+                  <label htmlFor="asc">Ascending</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="desc" id="desc" />
+                  <label htmlFor="desc">Descending</label>
+                </div>
+              </RadioGroup>
+            </div>
           </div>
         </div>
 
-        {/* FOOTER */}
-        <DialogFooter className="flex justify-end gap-2">
+        {/* FOOTER (FIXED, NO OVERLAP) */}
+        <DialogFooter className="border-t pt-3 flex justify-end gap-2">
           <Button
             variant="secondary"
             onClick={() => setFilterDialogOpen(false)}
-            className="cursor-pointer"
           >
             Cancel
           </Button>
-          <Button onClick={() => setFilterDialogOpen(false)} className="cursor-pointer">
+          <Button onClick={() => setFilterDialogOpen(false)}>
             Apply
           </Button>
         </DialogFooter>
