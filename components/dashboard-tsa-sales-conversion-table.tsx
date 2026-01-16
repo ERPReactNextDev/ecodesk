@@ -191,9 +191,9 @@ const AgentSalesTableCard = forwardRef<
         (a) =>
           isDateInRange(
             a.ticket_received ||
-              a.ticket_endorsed ||
-              a.date_updated ||
-              a.date_created,
+            a.ticket_endorsed ||
+            a.date_updated ||
+            a.date_created,
             dateCreatedFilterRange
           ) &&
           a.agent
@@ -287,7 +287,7 @@ const AgentSalesTableCard = forwardRef<
   }, [activities, dateCreatedFilterRange]);
 
   useImperativeHandle(ref, () => ({
-    downloadCSV() {},
+    downloadCSV() { },
   }));
 
   return (
@@ -369,11 +369,11 @@ const AgentSalesTableCard = forwardRef<
                         {r.quotationCount ? formatHMMSS(Math.round(r.quotationTotal / r.quotationCount)) : ""}
                       </TableCell>
 
-    <TableCell className="text-right">
-    {r.spfCount
-        ? formatHMMSS(Math.round(r.spfTotal / r.spfCount))
-        : ""}
-    </TableCell>
+                      <TableCell className="text-right">
+                        {r.spfCount
+                          ? formatHMMSS(Math.round(r.spfTotal / r.spfCount))
+                          : ""}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
