@@ -142,6 +142,15 @@ function formatDuration(seconds: number): string {
 
 /* ===================== INTERFACES ===================== */
 
+function formatDate(date?: Date | null): string {
+  if (!date) return "";
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}
+
 interface Activity {
   agent?: string;
   date_created?: string;
@@ -413,8 +422,19 @@ const AgentSalesTableCard = forwardRef<
 
   return (
     <Card>
-      <CardHeader className="flex justify-between">
+      <CardHeader className="flex justify-between items-center">
         <CardTitle>Territory Sales Associate Conversion</CardTitle>
+        <div className="text-sm text-muted-foreground">
+            {dateCreatedFilterRange?.from || dateCreatedFilterRange?.to ? (
+              <>
+                {dateCreatedFilterRange.from ? formatDate(dateCreatedFilterRange.from) : "Any"}{" "}
+                -{" "}
+                {dateCreatedFilterRange.to ? formatDate(dateCreatedFilterRange.to) : "Any"}
+              </>
+            ) : (
+              <span>All Dates</span>
+            )}
+          </div>
         <Popover>
           <PopoverTrigger asChild>
             <button className="cursor-pointer">
