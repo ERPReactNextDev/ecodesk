@@ -1221,6 +1221,7 @@ export function TicketSheet(props: TicketSheetProps) {
                                         <SelectItem value="JA-NCR-727428">Jerry Abaluyan</SelectItem>
                                         <SelectItem value="JM-CBU-702043">Johnnel Malco</SelectItem>
                                         <SelectItem value="MF-PH-840897">Ma. riza Felizmena</SelectItem>
+                                        <SelectItem value="SH-NCR-420492">Sette Hosena</SelectItem>
                                         <SelectItem value="MP-CDO-613398">Mark Pacis</SelectItem>
                                         <SelectItem value="RD-NCR-612038">Ronald Dela Cueva</SelectItem>
                                         <SelectItem value="RT-NCR-815758">Roy Tayuman</SelectItem>
