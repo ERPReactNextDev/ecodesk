@@ -126,140 +126,158 @@ interface TicketSheetProps {
 
 
 const MANAGER_AGENT_MAP: Record<string, string[]> = {
-  "AB-NCR-288130": [
-    "JP-NCR-321488", // Jeff Puying
-    "VO-NCR-765107", // Vince Ortiz
-    "JC-NCR-635171", // Josh Candazo
-    "WA-NCR-532926", // Wilnie Ardeloso
-    "AP-NCR-338109", // Ansley Patelo
-    "CB-NCR-578383", // Cristy Bobis
-    "SR-NCR-157258", // Sherylin Rapote
-    "MQ-NCR-618228", // Michael Quijano
-    "CN-NCR-915669", // Candy Notob
-    "EL-NCR-403385", // Erwin Laude
-  ],
+    "AB-NCR-288130": [
+        "JP-NCR-321488", // Jeff Puying
+        "VO-NCR-765107", // Vince Ortiz
+        "JC-NCR-635171", // Josh Candazo
+        "WA-NCR-532926", // Wilnie Ardeloso
+        "AP-NCR-338109", // Ansley Patelo
+        "CB-NCR-578383", // Cristy Bobis
+        "SR-NCR-157258", // Sherylin Rapote
+        "MQ-NCR-618228", // Michael Quijano
+        "CN-NCR-915669", // Candy Notob
+        "EL-NCR-403385", // Erwin Laude
+        "AB-NCR-864408", // Myla Tandugan
+        "RB-NCR-968208", // Roselyn Barnes
+    ],
 
-  "RD-NCR-612038": [
-    "CA-NCR-506100", // Christopher Acierto
-  ],
+    "RD-NCR-612038": [
+        "CA-NCR-506100", // Christopher Acierto
+    ],
 
-  "JA-NCR-727428": [
-    "AP-NCR-468624", // Agnes Angeli Panopio
-    "RB-NCR-968208", // Roselyn Barnes
-  ],
+    "JA-NCR-727428": [
+        "AP-NCR-468624", // Agnes Angeli Panopio
+    ],
 
-  "RT-NCR-815758": [
-    "JL-NCR-577103", // Jeffrey Lacson
-    "LD-NCR-898785", // Lotty De Guzman
-    "RI-NCR-820157", // Rodelio Ico
-    "RF-NCR-864625", // Rialyn Francisco
-    "AP-NCR-362012", // Alvin Perez
-    "RD-NCR-118744", // Rodolfo Delizo
-    "RD-NCR-180410", // Ruby Del Rosario
-    "GR-NCR-401280", // Gene Mark Roxas
-    "DD-NCR-462607", // Dionisio Doyugan
-    "GA-NCR-330568", // Gretchel Aquino
-  ],
+    "RT-NCR-815758": [
+        "JL-NCR-577103", // Jeffrey Lacson
+        "LD-NCR-898785", // Lotty De Guzman
+        "RI-NCR-820157", // Rodelio Ico
+        "RF-NCR-864625", // Rialyn Francisco
+        "AP-NCR-362012", // Alvin Perez
+        "RD-NCR-118744", // Rodolfo Delizo
+        "RD-NCR-180410", // Ruby Del Rosario
+        "GR-NCR-401280", // Gene Mark Roxas
+        "DD-NCR-462607", // Dionisio Doyugan
+        "GA-NCR-330568", // Gretchel Aquino
+        "NC-NCR-904943", // Nino Conopio
+    ],
 
-  "AS-NCR-146592": [
-    "MV-CBU-151813", // Mark Villagonzalo
-    "CD-CBU-564558", // Connie Doroja
-    "RA-CBU-225479", // Rodelyn Abrea
-  ],
+    "AS-NCR-146592": [
+        "MV-CBU-151813", // Mark Villagonzalo
+        "CD-CBU-564558", // Connie Doroja
+        "RA-CBU-225479", // Rodelyn Abrea
+        "RR-Cebu-293424", // Rechel Racaza
+    ],
 
-  "JM-CBU-702043": [
-    "KY-DVO-679025", // Khay Marie Yango
-    "NM-DVO-812855", // Norman Maranga
-    "NJ-DVO-543095", // Neil Vincent Jarabej
-  ],
+    "JM-CBU-702043": [
+        "KY-DVO-679025", // Khay Marie Yango
+        "NM-DVO-812855", // Norman Maranga
+        "NJ-DVO-543095", // Neil Vincent Jarabej
+    ],
 
-  "MP-CDO-613398": [
-    "KG-CDO-910641", // Kurt Guangco
-    "VP-CDO-581288", // Venzross Posadas
-    "CG-CDO-771954", // Che Gumapac
-  ],
+    "MP-CDO-613398": [
+        "KG-CDO-910641", // Kurt Guangco
+        "VP-CDO-581288", // Venzross Posadas
+        "CG-CDO-771954", // Che Gumapac
+    ],
 
-  "MF-PH-840897": [
-    "JD-NCR-953794", // Jean Dela Cerna
-    "JS-NCR-606082", // Joy Merel Soriente
-    "RM-NCR-462285", // Rodney Mendoza
-    "RB-NCR-840445", // Raymart Binondo
-    "BL-NCR-704414", // Banjo Lising
-    "JC-NCR-245823", // Jonna Clarin
-    "AE-NCR-274606", // Alvin Estor
-  ],
+    "MF-PH-840897": [
+        "JD-NCR-953794", // Jean Dela Cerna
+        "JS-NCR-606082", // Joy Merel Soriente
+        "RM-NCR-462285", // Rodney Mendoza
+        "RB-NCR-840445", // Raymart Binondo
+        "BL-NCR-704414", // Banjo Lising
+        "JC-NCR-245823", // Jonna Clarin
+        "AE-NCR-274606", // Alvin Estor
+    ],
 
-  "SH-NCR-420492": [
-    "RB-PH-765029", // Rafael Bayani
-    "JD-NCR-296929", // Jennifer Dela Cruz
-    "ES-PH-966693", // Elaine Soroan
-  ],
+    "SH-NCR-420492": [
+        "RB-PH-765029", // Rafael Bayani
+        "JD-NCR-296929", // Jennifer Dela Cruz
+        "ES-PH-966693", // Elaine Soroan
+    ],
 
-  "KG-PH-878400": [
-    // ⚠️ NOT IN YOUR LIST YET
-    // Add only when confirmed IDs exist
-  ],
+    "JG-NCR-713768": [
+        "CB-NCR-313436", // Badoy Christian Paul
+        "JA-NCR-839373", // Alimasa Jeffrey
+    ],
+
+    "KG-PH-878400": [
+        "JD-NCR-607727", // Joyce Ann De Leon
+        "RL-NCR-974509", // Ma. Ronilaine Leonardo
+    ],
 
     "TT-PH-500404": [
-    "AE-NCR-555756",
-    "JG-NCR-920587"
+        "AE-NCR-555756"
     ],
 };
 
 const AGENTS = [
-  { id: "AP-NCR-468624", name: "Agnes Angeli, Panopio" },
-  { id: "AE-NCR-274606", name: "Alvin, Estor" },
-  { id: "AP-NCR-362012", name: "Alvin, Perez" },
-  { id: "AP-NCR-338109", name: "Ansley, Patelo" },
-  { id: "BL-NCR-704414", name: "Banjo, Lising" },
-  { id: "CN-NCR-915669", name: "Candy, Notob" },
-  { id: "CG-CDO-771954", name: "Che, Gumapac" },
-  { id: "CA-NCR-506100", name: "Christopher, Acierto" },
-  { id: "CD-CBU-564558", name: "Connie, Doroja" },
-  { id: "CB-NCR-578383", name: "Cristy, Bobis" },
-  { id: "DD-DVO-211099", name: "Dane Ariane, Delute" },
-  { id: "DD-NCR-462607", name: "Dionisio, Doyugan" },
-  { id: "ES-PH-966693", name: "Elaine, Soroan" },
-  { id: "EL-NCR-403385", name: "Erwin Jr, Laude" },
-  { id: "FN-CBU-905953", name: "Ferdy, Navarro" },
-  { id: "GR-NCR-401280", name: "Gene Mark, Roxas" },
-  { id: "GA-NCR-330568", name: "Gretchel Ann, Aquino" },
-  { id: "JJ-DVO-928920", name: "Jayson, Jungaya" },
-  { id: "JD-NCR-953794", name: "Jean, Dela Cerna" },
-  { id: "JL-NCR-577103", name: "Jeffrey, Lacson" },
-  { id: "JP-DVO-561222", name: "Jevan, Pinero" },
-  { id: "JP-NCR-321488", name: "John Jeffrey, Puying" },
-  { id: "JC-NCR-245823", name: "Jonna, Clarin" },
-  { id: "JC-NCR-635171", name: "Josh, Candazo" },
-  { id: "JS-NCR-606082", name: "Joy Merel, Soriente" },
-  { id: "JT-CBU-850172", name: "Jude Francinni, Tan" },
-  { id: "KY-DVO-679025", name: "Khay, Yango" },
-  { id: "KG-CDO-910641", name: "Kurt Narrem, Guangco" },
-  { id: "LD-NCR-898785", name: "Lotty, De Guzman" },
-  { id: "MM-NCR-642069", name: "Maricar, Magdaong" },
-  { id: "MV-CBU-151813", name: "Mark, Villagonzalo" },
-  { id: "MQ-NCR-618228", name: "Michael, Quijano" },
-  { id: "NJ-DVO-543095", name: "Neil Vincent, Jarabej" },
-  { id: "NM-DVO-812855", name: "Norman, Maranga" },
-  { id: "RB-NCR-840445", name: "Raymart, Binondo" },
-  { id: "RN-CDO-536745", name: "Reggie, Nocete" },
-  { id: "RF-NCR-864625", name: "Rialyn, Francisco" },
-  { id: "RI-NCR-820157", name: "Rodelio, Ico" },
-  { id: "RA-CBU-225479", name: "Rodelyn, Abrea" },
-  { id: "RM-NCR-462285", name: "Rodney, Mendoza" },
-  { id: "RD-NCR-118744", name: "Rodolfo Jr, Delizo" },
-  { id: "RB-NCR-968208", name: "Roselyn, Barnes" },
-  { id: "RD-NCR-180410", name: "Ruby, Del Rosario" },
-  { id: "SS-NCR-369807", name: "Shane Rey, Santos" },
-  { id: "SN-NCR-514468", name: "Shermaine, Navarro" },
-  { id: "SR-NCR-157258", name: "Sherylin, Rapote" },
-  { id: "VP-CDO-581288", name: "Venzross, Posadas" },
-  { id: "VO-NCR-765107", name: "Vince, Ortiz" },
-  { id: "WA-NCR-532926", name: "Wilnie, Ardeloso" },
-  { id: "JD-NCR-296929", name: "Jennifer, Dela Cruz" },
-  { id: "RB-PH-765029", name: "Rafael, Bayani" },
-  { id: "JG-NCR-920587", name: "Test Leroux" },
-  { id: "AE-NCR-555756", name: "Test Agent" }
+    { id: "AP-NCR-468624", name: "Agnes Angeli, Panopio" },
+    { id: "AE-NCR-274606", name: "Alvin, Estor" },
+    { id: "AP-NCR-362012", name: "Alvin, Perez" },
+    { id: "AP-NCR-338109", name: "Ansley, Patelo" },
+    { id: "BL-NCR-704414", name: "Banjo, Lising" },
+    { id: "CN-NCR-915669", name: "Candy, Notob" },
+    { id: "CG-CDO-771954", name: "Che, Gumapac" },
+    { id: "CA-NCR-506100", name: "Christopher, Acierto" },
+    { id: "CD-CBU-564558", name: "Connie, Doroja" },
+    { id: "CB-NCR-578383", name: "Cristy, Bobis" },
+    { id: "DD-DVO-211099", name: "Dane Ariane, Delute" },
+    { id: "DD-NCR-462607", name: "Dionisio, Doyugan" },
+    { id: "EL-NCR-403385", name: "Erwin Jr, Laude" },
+    { id: "FN-CBU-905953", name: "Ferdy, Navarro" },
+    { id: "GR-NCR-401280", name: "Gene Mark, Roxas" },
+    { id: "GA-NCR-330568", name: "Gretchel Ann, Aquino" },
+    { id: "JJ-DVO-928920", name: "Jayson, Jungaya" },
+    { id: "JD-NCR-953794", name: "Jean, Dela Cerna" },
+    { id: "JL-NCR-577103", name: "Jeffrey, Lacson" },
+    { id: "JP-DVO-561222", name: "Jevan, Pinero" },
+    { id: "JP-NCR-321488", name: "John Jeffrey, Puying" },
+    { id: "JC-NCR-245823", name: "Jonna, Clarin" },
+    { id: "JC-NCR-635171", name: "Josh, Candazo" },
+    { id: "JS-NCR-606082", name: "Joy Merel, Soriente" },
+    { id: "JT-CBU-850172", name: "Jude Francinni, Tan" },
+    { id: "KY-DVO-679025", name: "Khay, Yango" },
+    { id: "KG-CDO-910641", name: "Kurt Narrem, Guangco" },
+    { id: "LD-NCR-898785", name: "Lotty, De Guzman" },
+    { id: "MM-NCR-642069", name: "Maricar, Magdaong" },
+    { id: "MV-CBU-151813", name: "Mark, Villagonzalo" },
+    { id: "MQ-NCR-618228", name: "Michael, Quijano" },
+    { id: "NJ-DVO-543095", name: "Neil Vincent, Jarabej" },
+    { id: "NM-DVO-812855", name: "Norman, Maranga" },
+    { id: "RB-NCR-840445", name: "Raymart, Binondo" },
+    { id: "RN-CDO-536745", name: "Reggie, Nocete" },
+    { id: "RF-NCR-864625", name: "Rialyn, Francisco" },
+    { id: "RI-NCR-820157", name: "Rodelio, Ico" },
+    { id: "RA-CBU-225479", name: "Rodelyn, Abrea" },
+    { id: "RM-NCR-462285", name: "Rodney, Mendoza" },
+    { id: "RD-NCR-118744", name: "Rodolfo Jr, Delizo" },
+    { id: "RB-NCR-968208", name: "Roselyn, Barnes" },
+    { id: "RD-NCR-180410", name: "Ruby, Del Rosario" },
+    { id: "SS-NCR-369807", name: "Shane Rey, Santos" },
+    { id: "SN-NCR-514468", name: "Shermaine, Navarro" },
+    { id: "SR-NCR-157258", name: "Sherylin, Rapote" },
+    { id: "VP-CDO-581288", name: "Venzross, Posadas" },
+    { id: "VO-NCR-765107", name: "Vince, Ortiz" },
+    { id: "WA-NCR-532926", name: "Wilnie, Ardeloso" },
+    { id: "JD-NCR-296929", name: "Jennifer, Dela Cruz" },
+
+    { id: "RB-PH-765029", name: "Rafael, Bayani" },
+    { id: "JD-NCR-296929", name: "Jennifer, Dela Cruz" },
+    { id: "ES-PH-966693", name: "Elaine, Soroan" },
+    { id: "AB-NCR-864408", name: "Myla, Tindugan" },
+    { id: "CB-NCR-313436", name: "Christian Paul, Badoy" },
+    { id: "JA-NCR-839373", name: "Jeffrey, Alimasa" },
+    { id: "NC-NCR-904943", name: "Nino Gregorio, Conopio" },
+    { id: "RR-Cebu-293424", name: "Rechel, Racaza" },
+
+    { id: "JD-NCR-607727", name: "Joyce Ann, De Leon" },
+    { id: "RL-NCR-974509", name: "Ma. Ronilaine, Leonardo" },
+    
+    { id: "JG-NCR-920587", name: "Test Leroux" },
+    { id: "AE-NCR-555756", name: "Test Agent" }
 ];
 
 
@@ -445,7 +463,7 @@ export function TicketSheet(props: TicketSheetProps) {
         handleBack,
         handleNext,
         handleUpdate
-        
+
     } = props;
 
     const [loadingActivities, setLoadingActivities] = useState(false);
@@ -469,77 +487,57 @@ export function TicketSheet(props: TicketSheetProps) {
             .finally(() => setLoadingActivities(false));
     }, []);
 
-        useEffect(() => {
+    useEffect(() => {
         fetchActivities();
-        }, [fetchActivities]);
+    }, [fetchActivities]);
 
 
-// 1️⃣ Ticket Received vs Ticket Endorsed validation
-useEffect(() => {
-  if (!ticketReceived || !ticketEndorsed) {
-    setTimeError(null);
-    return;
-  }
+    // 1️⃣ Ticket Received vs Ticket Endorsed validation
+    useEffect(() => {
+        if (!ticketReceived || !ticketEndorsed) {
+            setTimeError(null);
+            return;
+        }
 
-  const received = new Date(ticketReceived);
-  const endorsed = new Date(ticketEndorsed);
+        const received = new Date(ticketReceived);
+        const endorsed = new Date(ticketEndorsed);
 
-  if (!isNaN(received.getTime()) && !isNaN(endorsed.getTime())) {
-    if (endorsed < received) {
-      setTimeError("Ticket Endorsed cannot be earlier than Ticket Received.");
-    } else {
-      setTimeError(null);
-    }
-  }
-}, [ticketReceived, ticketEndorsed]);
-
-// 2️⃣ TSA Acknowledge vs TSA Handling validation
-useEffect(() => {
-  if (!tsaAcknowledgeDate || !tsaHandlingTime) {
-    setTsaTimeError(null);
-    return;
-  }
-
-  const ack = new Date(tsaAcknowledgeDate);
-  const handle = new Date(tsaHandlingTime);
-
-  if (!isNaN(ack.getTime()) && !isNaN(handle.getTime())) {
-    if (handle < ack) {
-      setTsaTimeError("TSA Handling Time cannot be earlier than TSA Acknowledgement Date.");
-    } else {
-      setTsaTimeError(null);
-    }
-  }
-}, [tsaAcknowledgeDate, tsaHandlingTime]);
+        if (!isNaN(received.getTime()) && !isNaN(endorsed.getTime())) {
+            if (endorsed < received) {
+                setTimeError("Ticket Endorsed cannot be earlier than Ticket Received.");
+            } else {
+                setTimeError(null);
+            }
+        }
+    }, [ticketReceived, ticketEndorsed]);
 
 
+    // 2️⃣ Close Reason → Auto dash logic
+    useEffect(() => {
+        if (closeReason === "Same Specs Provided") {
+            setCounterOffer("-");
+            setClientSpecs("-");
+        } else {
+            if (counterOffer === "-") setCounterOffer("");
+            if (clientSpecs === "-") setClientSpecs("");
+        }
+    }, [closeReason]);
 
-// 2️⃣ Close Reason → Auto dash logic
-useEffect(() => {
-  if (closeReason === "Same Specs Provided") {
-    setCounterOffer("-");
-    setClientSpecs("-");
-  } else {
-    if (counterOffer === "-") setCounterOffer("");
-    if (clientSpecs === "-") setClientSpecs("");
-  }
-}, [closeReason]);
 
+    // 3️⃣ Channel → Source auto dash logic
+    useEffect(() => {
+        const channelsWithSource = [
+            "Viber",
+            "Text Message",
+            "Website",
+            "Voice Call",
+            "Whatsapp",
+        ];
 
-// 3️⃣ Channel → Source auto dash logic
-useEffect(() => {
-  const channelsWithSource = [
-    "Viber",
-    "Text Message",
-    "Website",
-    "Voice Call",
-    "Whatsapp",
-  ];
-
-  if (!channelsWithSource.includes(channel)) {
-    setSource("-");
-  }
-}, [channel]);
+        if (!channelsWithSource.includes(channel)) {
+            setSource("-");
+        }
+    }, [channel]);
 
 
     const groupedActivities = activities.filter(
@@ -575,11 +573,11 @@ useEffect(() => {
         channel?: string;
         wrapUp?: string;
         status?: string;
+        customerStatus?: string;
+        customerType?: string;
     }>({});
 
     const [timeError, setTimeError] = useState<string | null>(null);
-    const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
-
 
     // Options
     const departmentOptions: Option[] = [
@@ -625,48 +623,66 @@ useEffect(() => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const validateStep4 = () => {
+        const newErrors: typeof errors = {};
+
+        if (!customerStatus) {
+            newErrors.customerStatus = "Customer Status is required.";
+        }
+
+        if (!customerType) {
+            newErrors.customerType = "Customer Type is required.";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+
     const validateStep6 = () => {
-    const newErrors: typeof errors = {};
+        const newErrors: typeof errors = {};
 
-    if (!status) {
-        newErrors.status = "Status is required.";
-    }
-
-    if (status === "Closed") {
-    if (!closeReason.trim()) {
-        newErrors.status = "Close reason is required.";
-    }
-
-    if (closeReason === "Counter Offer") {
-        if (!counterOffer.trim()) {
-        newErrors.status = "Counter offer is required.";
+        if (!status) {
+            newErrors.status = "Status is required.";
         }
-        if (!clientSpecs.trim()) {
-        newErrors.status = "Client specs are required.";
+
+        if (status === "Closed") {
+            if (!closeReason.trim()) {
+                newErrors.status = "Close reason is required.";
+            }
+
+            if (closeReason === "Counter Offer") {
+                if (!counterOffer.trim()) {
+                    newErrors.status = "Counter offer is required.";
+                }
+                if (!clientSpecs.trim()) {
+                    newErrors.status = "Client specs are required.";
+                }
+            }
         }
-    }
-    }
 
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
     // Override handleNext to add validation on step 3 and 6
     const onNext = () => {
-    if (step === 3) {
-        if (timeError) return;
-        if (!validateStep3()) return;
-    }
+        if (step === 3) {
+            if (timeError) return;
+            if (!validateStep3()) return;
+        }
 
-    if (step === 6) {
-        if (tsaTimeError) return;   // 🔥 BLOCK if TSA time invalid
-        if (!validateStep6()) return;
-    }
+        if (step === 4) {
+            if (!validateStep4()) return;
+        }
 
-    setErrors({});
-    handleNext();
+        if (step === 6) {
+            if (!validateStep6()) return;
+        }
+
+        setErrors({});
+        handleNext();
     };
-
 
     const [loadingSave, setLoadingSave] = useState(false);
     const [loadingLoad, setLoadingLoad] = useState(false);
@@ -679,25 +695,21 @@ useEffect(() => {
     };
 
     // Helper: common buttons with validation on Next
-const Navigation = () => (
-  <div className="flex justify-between mt-4">
-    <Button variant="outline" onClick={handleBack} className="cursor-pointer">
-      Back
-    </Button>
+    const Navigation = () => (
+        <div className="flex justify-between mt-4">
+            <Button variant="outline" onClick={handleBack} className="cursor-pointer">
+                Back
+            </Button>
 
-    <Button
-      onClick={onNext}
-      className="cursor-pointer"
-      disabled={
-        (step === 3 && !!timeError) ||
-        (step === 3 && !!tsaTimeError) // 🔥 TSA validation blocks Next in Step 3
-      }
-    >
-      Next
-    </Button>
-  </div>
-);
-
+            <Button
+                onClick={onNext}
+                className="cursor-pointer"
+                disabled={step === 3 && !!timeError}
+            >
+                Next
+            </Button>
+        </div>
+    );
 
     return (
         <>
@@ -711,6 +723,12 @@ const Navigation = () => (
                                     value={department}
                                     onValueChange={setDepartment}
                                 >
+
+                                    {errors.customerStatus && (
+                                        <p className="text-sm text-red-600 mt-2">
+                                            {errors.customerStatus}
+                                        </p>
+                                    )}
                                     {departmentOptions.map((item) => (
                                         <FieldLabel key={item.value} className="cursor-pointer">
                                             <Field orientation="horizontal" className="w-full items-start">
@@ -749,39 +767,39 @@ const Navigation = () => (
                     <FieldGroup>
                         <FieldSet>
                             <Field>
-                            <FieldLabel>Date Created</FieldLabel>
-                            <FieldDescription>
-                                Manually set the original date and time this ticket was created.
-                            </FieldDescription>
-                            <InputField
-                                type="datetime-local"
-                                value={dateCreated}
-                                onChange={(e) => setDateCreated(e.target.value)}
-                            />
+                                <FieldLabel>Date Created</FieldLabel>
+                                <FieldDescription>
+                                    Manually set the original date and time this ticket was created.
+                                </FieldDescription>
+                                <InputField
+                                    type="datetime-local"
+                                    value={dateCreated}
+                                    onChange={(e) => setDateCreated(e.target.value)}
+                                />
                             </Field>
                             <Field>
                                 <FieldLabel>Ticket Received</FieldLabel>
                                 <FieldDescription>
                                     Date and time when the ticket was initially received or logged.
                                 </FieldDescription>
-                                    <InputField
-                                        type="datetime-local"
-                                        value={ticketReceived}
-                                        onChange={(e) => setTicketReceived(e.target.value)}
-                                        error={errors.ticketReceived || timeError || undefined}
-                                    />
+                                <InputField
+                                    type="datetime-local"
+                                    value={ticketReceived}
+                                    onChange={(e) => setTicketReceived(e.target.value)}
+                                    error={errors.ticketReceived || timeError || undefined}
+                                />
                             </Field>
                             <Field>
                                 <FieldLabel>Ticket Endorsed</FieldLabel>
                                 <FieldDescription>
                                     Date and time when the ticket was endorsed to the assigned department.
                                 </FieldDescription>
-                                    <InputField
-                                        type="datetime-local"
-                                        value={ticketEndorsed}
-                                        onChange={(e) => setTicketEndorsed(e.target.value)}
-                                        error={errors.ticketEndorsed || timeError || undefined}
-                                    />
+                                <InputField
+                                    type="datetime-local"
+                                    value={ticketEndorsed}
+                                    onChange={(e) => setTicketEndorsed(e.target.value)}
+                                    error={errors.ticketEndorsed || timeError || undefined}
+                                />
 
                             </Field>
 
@@ -856,79 +874,77 @@ const Navigation = () => (
                                     error={errors.wrapUp}
                                 />
                             </Field>
-                                {/* SHOW SOURCE ONLY FOR CERTAIN CHANNELS */}
-                                {["Viber", "Text Message", "Website", "Voice Call", "Whatsapp"].includes(channel) && (
+                            {/* SHOW SOURCE ONLY FOR CERTAIN CHANNELS */}
+                            {["Viber", "Text Message", "Website", "Voice Call", "Whatsapp"].includes(channel) && (
                                 <Field>
                                     <FieldLabel>Source</FieldLabel>
                                     <FieldDescription>
-                                    Origin or reference indicating how the lead or concern was generated.
+                                        Origin or reference indicating how the lead or concern was generated.
                                     </FieldDescription>
 
                                     <SelectField
-                                    value={source}
-                                    onChange={setSource}
-                                    placeholder="Select a source"
-                                    options={[
-                                        { value: "FB Ads", label: "FB Ads" },
-                                        { value: "LNB", label: "LNB" },
-                                        { value: "Viber", label: "Viber Community" },
-                                        { value: "Whatsapp", label: "Whatsapp Community" },
-                                        { value: "SMS", label: "SMS" },
-                                        { value: "Website", label: "Website" },
-                                        { value: "Word of Mouth", label: "Word of Mouth" },
-                                        { value: "Quotation Docs", label: "Quotation Docs" },
-                                        { value: "Google Search", label: "Google Search" },
-                                        { value: "Site Visit", label: "Site Visit" },
-                                        { value: "Agent Call", label: "Agent Call" },
-                                        { value: "Catalogue", label: "Catalogue" },
-                                        { value: "Shopee", label: "Shopee" },
-                                        { value: "Lazada", label: "Lazada" },
-                                        { value: "Tiktok", label: "Tiktok" },
-                                        { value: "Worldbex", label: "Worldbex" },
-                                        { value: "PhilConstruct", label: "PhilConstruct" },
-                                        { value: "Conex", label: "Conex" },
-                                        { value: "Product Demo", label: "Product Demo" },
-                                    ]}
+                                        value={source}
+                                        onChange={setSource}
+                                        placeholder="Select a source"
+                                        options={[
+                                            { value: "FB Ads", label: "FB Ads" },
+                                            { value: "LNB", label: "LNB" },
+                                            { value: "Viber", label: "Viber Community" },
+                                            { value: "Whatsapp", label: "Whatsapp Community" },
+                                            { value: "SMS", label: "SMS" },
+                                            { value: "Website", label: "Website" },
+                                            { value: "Word of Mouth", label: "Word of Mouth" },
+                                            { value: "Quotation Docs", label: "Quotation Docs" },
+                                            { value: "Google Search", label: "Google Search" },
+                                            { value: "Site Visit", label: "Site Visit" },
+                                            { value: "Agent Call", label: "Agent Call" },
+                                            { value: "Catalogue", label: "Catalogue" },
+                                            { value: "Shopee", label: "Shopee" },
+                                            { value: "Lazada", label: "Lazada" },
+                                            { value: "Tiktok", label: "Tiktok" },
+                                            { value: "Worldbex", label: "Worldbex" },
+                                            { value: "PhilConstruct", label: "PhilConstruct" },
+                                            { value: "Conex", label: "Conex" },
+                                            { value: "Product Demo", label: "Product Demo" },
+                                        ]}
                                     />
                                 </Field>
-                                )}
-                                    <Field>
-                                    <FieldLabel>TSM Acknowledgement Date</FieldLabel>
-                                    <InputField
-                                        type="datetime-local"
-                                        value={tsmAcknowledgeDate}
-                                        onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
-                                    />
-                                    </Field>
+                            )}
+                            <Field>
+                                <FieldLabel>TSM Acknowledgement Date</FieldLabel>
+                                <InputField
+                                    type="datetime-local"
+                                    value={tsmAcknowledgeDate}
+                                    onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
+                                />
+                            </Field>
 
-                                    <Field>
-                                    <FieldLabel>TSM Handling Time</FieldLabel>
-                                    <InputField
-                                        type="datetime-local"
-                                        value={tsmHandlingTime}
-                                        onChange={(e) => setTsmHandlingTime(e.target.value)}
-                                    />
-                                    </Field>
+                            <Field>
+                                <FieldLabel>TSM Handling Time</FieldLabel>
+                                <InputField
+                                    type="datetime-local"
+                                    value={tsmHandlingTime}
+                                    onChange={(e) => setTsmHandlingTime(e.target.value)}
+                                />
+                            </Field>
 
-                                    <Field>
-                                    <FieldLabel>TSA Acknowledgement Date</FieldLabel>
-                                    <InputField
-                                        type="datetime-local"
-                                        value={tsaAcknowledgeDate}
-                                        onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
-                                    />
-                                    </Field>
+                            <Field>
+                                <FieldLabel>TSA Acknowledgement Date</FieldLabel>
+                                <InputField
+                                    type="datetime-local"
+                                    value={tsaAcknowledgeDate}
+                                    onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
+                                />
+                            </Field>
 
-                                    <Field>
-                                    <FieldLabel>TSA Handling Time</FieldLabel>
-                                    <InputField
-                                        type="datetime-local"
-                                        value={tsaHandlingTime}
-                                        onChange={(e) => setTsaHandlingTime(e.target.value)}
-                                        error={tsaTimeError || undefined}
-                                    />
-                                    </Field>
-
+                            <Field>
+                                <FieldLabel>TSA Handling Time</FieldLabel>
+                                <InputField
+                                    type="datetime-local"
+                                    value={tsaHandlingTime}
+                                    onChange={(e) => setTsaHandlingTime(e.target.value)}
+                                />
+                            </Field>
 
                         </FieldSet>
                     </FieldGroup>
@@ -957,34 +973,47 @@ const Navigation = () => (
                             </FieldLabel>
                         ))}
                     </RadioGroup>
-
+                    {errors.customerStatus && (
+                        <p className="text-sm text-red-600 mt-2">
+                            {errors.customerStatus}
+                        </p>
+                    )}
                     {/* Customer Type */}
-                    <RadioGroup
-                        value={customerType}
-                        onValueChange={setCustomerType}
-                    >
-                        {customerTypeOptions.map((item) => (
-                            <FieldLabel key={item.value}>
-                                <Field orientation="horizontal" className="w-full items-start">
-                                    <FieldContent className="flex-1">
-                                        <FieldTitle>{item.title}</FieldTitle>
-                                        <FieldDescription>{item.description}</FieldDescription>
+                    <div className={!customerStatus ? "opacity-50 pointer-events-none" : ""}>
+                        <RadioGroup
+                            value={customerType}
+                            onValueChange={setCustomerType}
+                        >
+                            {errors.customerType && (
+                                <p className="text-sm text-red-600 mt-2">
+                                    {errors.customerType}
+                                </p>
+                            )}
 
-                                        {customerType === item.value && (
-                                            <div className="mt-4 flex gap-2">
-                                                <Button variant="outline" onClick={handleBack}>
-                                                    Back
-                                                </Button>
-                                                <Button onClick={onNext}>Next</Button>
-                                            </div>
-                                        )}
-                                    </FieldContent>
+                            {customerTypeOptions.map((item) => (
+                                <FieldLabel key={item.value}>
+                                    <Field orientation="horizontal" className="w-full items-start">
+                                        <FieldContent className="flex-1">
+                                            <FieldTitle>{item.title}</FieldTitle>
+                                            <FieldDescription>{item.description}</FieldDescription>
 
-                                    <RadioGroupItem value={item.value} />
-                                </Field>
-                            </FieldLabel>
-                        ))}
-                    </RadioGroup>
+                                            {customerType === item.value && (
+                                                <div className="mt-4 flex gap-2">
+                                                    <Button variant="outline" onClick={handleBack}>
+                                                        Back
+                                                    </Button>
+                                                    <Button onClick={onNext}>Next</Button>
+                                                </div>
+                                            )}
+                                        </FieldContent>
+
+                                        <RadioGroupItem value={item.value} />
+                                    </Field>
+                                </FieldLabel>
+                            ))}
+                        </RadioGroup>
+                    </div>
+
                 </>
             )}
 
@@ -1188,6 +1217,7 @@ const Navigation = () => (
                                         <SelectItem value="BR-PH-358329">Betty Rodriguez</SelectItem>
                                         <SelectItem value="MM-PH-104083">Maricris Mercado</SelectItem>
                                         <SelectItem value="EY-NCR-396116">Edgar Yem</SelectItem>
+                                        <SelectItem value="JG-NCR-713768">Janna Gumatay</SelectItem>
                                         <SelectItem value="JA-NCR-727428">Jerry Abaluyan</SelectItem>
                                         <SelectItem value="JM-CBU-702043">Johnnel Malco</SelectItem>
                                         <SelectItem value="MF-PH-840897">Ma. riza Felizmena</SelectItem>
@@ -1218,46 +1248,46 @@ const Navigation = () => (
                         </Select>
                     </Field>
 
-{wrapUp !== "Job Applicants" &&
-  (department === "Sales" || department === "Business Development") && (
-    <>
-      <Field>
-        <FieldLabel>Agent</FieldLabel>
-        <FieldDescription>
-          Select the agent assigned to handle this ticket or inquiry.
-        </FieldDescription>
+                    {wrapUp !== "Job Applicants" &&
+                        (department === "Sales" || department === "Business Development") && (
+                            <>
+                                <Field>
+                                    <FieldLabel>Agent</FieldLabel>
+                                    <FieldDescription>
+                                        Select the agent assigned to handle this ticket or inquiry.
+                                    </FieldDescription>
 
-        <Select
-          value={agent}
-          onValueChange={(value) => setAgent(value)}
-          disabled={!manager}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select an Agent" />
-          </SelectTrigger>
+                                    <Select
+                                        value={agent}
+                                        onValueChange={(value) => setAgent(value)}
+                                        disabled={!manager}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select an Agent" />
+                                        </SelectTrigger>
 
-          <SelectContent>
-            {(MANAGER_AGENT_MAP[manager] || []).length === 0 && (
-              <SelectItem value="__none__" disabled>
-                No agents available
-              </SelectItem>
-            )}
+                                        <SelectContent>
+                                            {(MANAGER_AGENT_MAP[manager] || []).length === 0 && (
+                                                <SelectItem value="__none__" disabled>
+                                                    No agents available
+                                                </SelectItem>
+                                            )}
 
-            {(MANAGER_AGENT_MAP[manager] || []).map((agentId) => {
-              const agentItem = AGENTS.find((a) => a.id === agentId);
-              if (!agentItem) return null;
+                                            {(MANAGER_AGENT_MAP[manager] || []).map((agentId) => {
+                                                const agentItem = AGENTS.find((a) => a.id === agentId);
+                                                if (!agentItem) return null;
 
-              return (
-                <SelectItem key={agentItem.id} value={agentItem.id}>
-                  {agentItem.name}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-      </Field>
-    </>
-  )}
+                                                return (
+                                                    <SelectItem key={agentItem.id} value={agentItem.id}>
+                                                        {agentItem.name}
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                            </>
+                        )}
 
 
                     <Field>
@@ -1270,14 +1300,14 @@ const Navigation = () => (
                         />
                     </Field>
 
-                            {status === "Closed" && (
-                            <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
-                                <h4 className="font-semibold text-sm text-red-700">
+                    {status === "Closed" && (
+                        <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
+                            <h4 className="font-semibold text-sm text-red-700">
                                 On Closing of Ticket (Required)
-                                </h4>
+                            </h4>
 
-                                {/* 1. CLOSE REASON (DROPDOWN) */}
-                                <Field>
+                            {/* 1. CLOSE REASON (DROPDOWN) */}
+                            <Field>
                                 <FieldLabel>1. Close Reason *</FieldLabel>
                                 <select
                                     value={closeReason}
@@ -1292,32 +1322,32 @@ const Navigation = () => (
                                     <option value="Not Interested">Not Interested</option>
                                     <option value="Others">Others</option>
                                 </select>
-                                </Field>
+                            </Field>
 
-                                {/* 2 & 3 — ONLY IF NOT "SAME SPECS PROVIDED" */}
-                                {closeReason === "Counter Offer" && (
+                            {/* 2 & 3 — ONLY IF NOT "SAME SPECS PROVIDED" */}
+                            {closeReason === "Counter Offer" && (
                                 <>
                                     <Field>
-                                    <FieldLabel>2. Add Counter Offer *</FieldLabel>
-                                    <Textarea
-                                        value={counterOffer}
-                                        onChange={(e) => setCounterOffer(e.target.value)}
-                                        placeholder="Enter counter offer..."
-                                    />
+                                        <FieldLabel>2. Add Counter Offer *</FieldLabel>
+                                        <Textarea
+                                            value={counterOffer}
+                                            onChange={(e) => setCounterOffer(e.target.value)}
+                                            placeholder="Enter counter offer..."
+                                        />
                                     </Field>
 
                                     <Field>
-                                    <FieldLabel>3. Client Specs *</FieldLabel>
-                                    <Textarea
-                                        value={clientSpecs}
-                                        onChange={(e) => setClientSpecs(e.target.value)}
-                                        placeholder="Enter client specifications..."
-                                    />
+                                        <FieldLabel>3. Client Specs *</FieldLabel>
+                                        <Textarea
+                                            value={clientSpecs}
+                                            onChange={(e) => setClientSpecs(e.target.value)}
+                                            placeholder="Enter client specifications..."
+                                        />
                                     </Field>
                                 </>
-                                )}
-                            </div>
                             )}
+                        </div>
+                    )}
 
                     {status === "Converted into Sales" && (
                         <>
@@ -1397,14 +1427,13 @@ const Navigation = () => (
                     )}
 
                     <Button variant="outline" onClick={handleBack} disabled={loadingSave || loadingLoad} className="cursor-pointer">Back</Button>
-                        <Button
+                    <Button
                         onClick={onUpdate}
-                        disabled={loadingSave || loadingLoad || !!timeError || !!tsaTimeError}
+                        disabled={loadingSave || loadingLoad || !!timeError}
                         className="cursor-pointer"
-                        >
-
+                    >
                         {loadingSave ? "Saving..." : "Save"}
-                        </Button>
+                    </Button>
                 </>
             )}
         </>
