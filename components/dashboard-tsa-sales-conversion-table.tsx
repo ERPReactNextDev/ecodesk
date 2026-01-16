@@ -1,32 +1,145 @@
 "use client";
 
-import React, {
-  useState,
-  useMemo,
-  forwardRef,
-  useImperativeHandle,
-  useEffect,
-} from "react";
+import React, { useState, useMemo, forwardRef, useImperativeHandle, useEffect, } from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
-
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
+
+/* ===================== HELPERS ===================== */
+
+/* ===================== TSA RESPONSE TIME ===================== */
+function computeResponseSeconds(
+  ticket_endorsed?: string,
+  tsa_handling_time?: string
+): number | null {
+  if (!ticket_endorsed || !tsa_handling_time) return null;
+
+  const start = new Date(ticket_endorsed);
+  const end = new Date(tsa_handling_time);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs < 0) return null;
+
+  return Math.floor(diffMs / 1000);
+}
+
+/* ===================== TSA RESPONSE TIME ===================== */
+
+
+
+/* ===================== QUOTATION HANDLING TIME ===================== */
+function computeQuotationSeconds(
+  ticket_received?: string,
+  tsa_handling_time?: string,
+  remarks?: string,
+  status?: string
+): number | null {
+  if (
+    !ticket_received ||
+    !tsa_handling_time ||
+    !remarks ||
+    !status
+  ) return null;
+
+  if (
+    remarks.toLowerCase() !== "quotation for approval" ||
+    status.toLowerCase() !== "converted into sales"
+  ) return null;
+
+  const start = new Date(ticket_received);
+  const end = new Date(tsa_handling_time);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs < 0) return null;
+
+  return Math.floor(diffMs / 1000);
+}
+
+/* ===================== QUOTATION HANDLING TIME ===================== */
+
+
+
+/* ===================== NON-QUOTATION HANDLING TIME ===================== */
+
+function computeNonQuotationSeconds(
+  ticket_received?: string,
+  tsa_handling_time?: string,
+  remarks?: string
+): number | null {
+  if (!ticket_received || !tsa_handling_time || !remarks) return null;
+
+  const validRemarks = [
+    "no stocks / insufficient stocks",
+    "unable to contact customer",
+    "item not carried",
+    "waiting for client confirmation",
+    "customer request cancellation",
+    "accreditation / partnership",
+    "no response for client",
+    "assisted",
+    "for site visit",
+    "non standard item",
+    "po received",
+    "for occular inspection"
+  ];
+
+  if (!validRemarks.includes(remarks.toLowerCase())) return null;
+
+  const start = new Date(ticket_received);
+  const end = new Date(tsa_handling_time);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs < 0) return null;
+
+  return Math.floor(diffMs / 1000);
+}
+
+/* ===================== NON-QUOTATION HANDLING TIME ===================== */
+
+
+
+/* ===================== SPF HANDLING DURATION ===================== */
+
+function computeSPFSeconds(
+  ticket_received?: string,
+  tsa_handling_time?: string,
+  remarks?: string
+): number | null {
+  if (!ticket_received || !tsa_handling_time || !remarks) return null;
+
+  if (remarks.toLowerCase() !== "for spf") return null;
+
+  const start = new Date(ticket_received);
+  const end = new Date(tsa_handling_time);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs < 0) return null;
+
+  return Math.floor(diffMs / 1000);
+}
+
+/* ===================== SPF HANDLING DURATION ===================== */
+
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+
+  return `${h}h ${m}m ${s}s`;
+}
 
 /* ===================== INTERFACES ===================== */
 
@@ -43,6 +156,7 @@ interface Activity {
 
   ticket_received?: string;
   ticket_endorsed?: string;
+
   tsa_handling_time?: string;
 }
 
@@ -60,45 +174,6 @@ export interface AgentSalesConversionCardRef {
   downloadCSV: () => void;
 }
 
-/* ===================== HELPERS ===================== */
-
-// difference in seconds
-const diffSeconds = (start?: string, end?: string) => {
-  if (!start || !end) return null;
-  const s = new Date(start);
-  const e = new Date(end);
-  if (isNaN(s.getTime()) || isNaN(e.getTime())) return null;
-  if (e < s) return null;
-  return Math.round((e.getTime() - s.getTime()) / 1000);
-};
-
-// ✅ EXCEL FORMAT: H:MM:SS (NO padded hour)
-const formatHMMSS = (totalSeconds: number) => {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-};
-
-const NON_QUOTATION_REMARKS = [
-  "No Stocks",
-  "Insufficient Stocks",
-  "Unable to Contact Customer",
-  "Item Not Carried",
-  "Waiting for Client Confirmation",
-  "Customer Requested Cancellation",
-  "Accreditation/Partnership",
-  "No Response from Client",
-  "Assisted",
-  "For Site Visit",
-  "Non-Standard Item",
-  "PO Received",
-  "Pending Quotation",
-  "For Ocular Inspection",
-];
-
-/* ===================== COMPONENT ===================== */
-
 const AgentSalesTableCard = forwardRef<
   AgentSalesConversionCardRef,
   Props
@@ -108,6 +183,8 @@ const AgentSalesTableCard = forwardRef<
   const [loading, setLoading] = useState(false);
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /* ===================== FETCH ===================== */
 
   useEffect(() => {
     async function fetchAgents() {
@@ -143,17 +220,29 @@ const AgentSalesTableCard = forwardRef<
     fetchActivities();
   }, []);
 
+  /* ===================== DATE FILTER ===================== */
+
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
-    if (!range) return true;
-    if (!dateStr) return false;
+    if (!range || !dateStr) return true;
+
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return false;
-    if (range.from && date < new Date(range.from.setHours(0, 0, 0, 0)))
-      return false;
-    if (range.to && date > new Date(range.to.setHours(23, 59, 59, 999)))
-      return false;
+
+    const from = range.from
+      ? new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0)
+      : null;
+
+    const to = range.to
+      ? new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate(), 23, 59, 59)
+      : null;
+
+    if (from && date < from) return false;
+    if (to && date > to) return false;
+
     return true;
   };
+
+  /* ===================== GROUPED DATA ===================== */
 
   const groupedData = useMemo(() => {
     const map: Record<
@@ -165,37 +254,36 @@ const AgentSalesTableCard = forwardRef<
         convertedCount: number;
         amount: number;
         qtySold: number;
+
         newClientCount: number;
         newNonBuyingCount: number;
         ExistingActiveCount: number;
         ExistingInactive: number;
+
         newClientConvertedAmount: number;
         newNonBuyingConvertedAmount: number;
         newExistingActiveConvertedAmount: number;
         newExistingInactiveConvertedAmount: number;
-
-        tsaResponseTotal: number;
-        tsaResponseCount: number;
-
-        quotationTotal: number;
+        // TSA RESPONSE TIME
+        totalResponseSeconds: number;
+        responseCount: number;
+        // QUOTATION HANDLING TIME
+        quotationTotalSeconds: number;
         quotationCount: number;
-        nonQuotationTotal: number;
+        // NON-QUOTATION HANDLING TIME
+        nonQuotationTotalSeconds: number;
         nonQuotationCount: number;
-        spfTotal: number;
+        // SPF HANDLING DURATION
+        spfTotalSeconds: number;
         spfCount: number;
+
       }
     > = {};
 
     activities
       .filter(
         (a) =>
-          isDateInRange(
-            a.ticket_received ||
-            a.ticket_endorsed ||
-            a.date_updated ||
-            a.date_created,
-            dateCreatedFilterRange
-          ) &&
+          isDateInRange(a.date_updated, dateCreatedFilterRange) &&
           a.agent
       )
       .forEach((a) => {
@@ -205,7 +293,6 @@ const AgentSalesTableCard = forwardRef<
         const traffic = a.traffic.toLowerCase();
         const status = a.status.toLowerCase();
         const cs = a.customer_status.toLowerCase();
-        const remarks = a.remarks || "";
 
         if (!map[agent]) {
           map[agent] = {
@@ -215,22 +302,29 @@ const AgentSalesTableCard = forwardRef<
             convertedCount: 0,
             amount: 0,
             qtySold: 0,
+
             newClientCount: 0,
             newNonBuyingCount: 0,
             ExistingActiveCount: 0,
             ExistingInactive: 0,
+
             newClientConvertedAmount: 0,
             newNonBuyingConvertedAmount: 0,
             newExistingActiveConvertedAmount: 0,
             newExistingInactiveConvertedAmount: 0,
-            tsaResponseTotal: 0,
-            tsaResponseCount: 0,
-            quotationTotal: 0,
+
+            totalResponseSeconds: 0,
+            responseCount: 0,
+
+            quotationTotalSeconds: 0,
             quotationCount: 0,
-            nonQuotationTotal: 0,
+
+            nonQuotationTotalSeconds: 0,
             nonQuotationCount: 0,
-            spfTotal: 0,
+
+            spfTotalSeconds: 0,
             spfCount: 0,
+
           };
         }
 
@@ -253,34 +347,57 @@ const AgentSalesTableCard = forwardRef<
           if (cs === "existing inactive") map[agent].newExistingInactiveConvertedAmount += soAmount;
         }
 
-        // TSA Response Time (Endorsed → Handling)
-        const respSec = diffSeconds(a.ticket_endorsed, a.tsa_handling_time);
-        if (respSec !== null) {
-          map[agent].tsaResponseTotal += respSec;
-          map[agent].tsaResponseCount++;
+        // TSA RESPONSE TIME COMPUTATION
+        const responseSeconds = computeResponseSeconds(
+          a.ticket_endorsed,
+          a.tsa_handling_time
+        );
+
+        if (responseSeconds !== null) {
+          map[agent].totalResponseSeconds += responseSeconds;
+          map[agent].responseCount++;
         }
 
-        // Handling Time (Received → Handling)
-        const handleSec = diffSeconds(a.ticket_received, a.tsa_handling_time);
 
-        if (
-          handleSec !== null &&
-          remarks === "Quotation For Approval" &&
-          status === "converted into sales"
-        ) {
-          map[agent].quotationTotal += handleSec;
+        // QUOTATION HANDLING TIME COMPUTATION
+        const quotationSeconds = computeQuotationSeconds(
+          a.ticket_received,
+          a.tsa_handling_time,
+          a.remarks,
+          a.status
+        );
+
+        if (quotationSeconds !== null) {
+          map[agent].quotationTotalSeconds += quotationSeconds;
           map[agent].quotationCount++;
         }
+        
 
-        if (handleSec !== null && NON_QUOTATION_REMARKS.includes(remarks)) {
-          map[agent].nonQuotationTotal += handleSec;
+        // NON-QUOTATION HANDLING TIME COMPUTATION
+        const nonQuotationSeconds = computeNonQuotationSeconds(
+          a.ticket_received,
+          a.tsa_handling_time,
+          a.remarks
+        );
+
+        if (nonQuotationSeconds !== null) {
+          map[agent].nonQuotationTotalSeconds += nonQuotationSeconds;
           map[agent].nonQuotationCount++;
         }
 
-        if (handleSec !== null && remarks === "For SPF") {
-          map[agent].spfTotal += handleSec;
+
+        // SPF HANDLING DURATION COMPUTATION
+        const spfSeconds = computeSPFSeconds(
+          a.ticket_received,
+          a.tsa_handling_time,
+          a.remarks
+        );
+
+        if (spfSeconds !== null) {
+          map[agent].spfTotalSeconds += spfSeconds;
           map[agent].spfCount++;
         }
+
       });
 
     return Object.values(map);
@@ -290,11 +407,87 @@ const AgentSalesTableCard = forwardRef<
     downloadCSV() { },
   }));
 
+  /* ===================== RENDER ===================== */
+
   return (
     <Card>
       <CardHeader className="flex justify-between">
         <CardTitle>Territory Sales Associate Conversion</CardTitle>
-        <Info size={18} />
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="cursor-pointer">
+              <Info size={18} />
+            </button>
+          </PopoverTrigger>
+
+          <PopoverContent className="w-[420px] text-sm">
+            <div className="space-y-3">
+              <h4 className="font-semibold">Computation Guide</h4>
+
+              <ul className="space-y-2">
+                <li>
+                  <b>Sales</b> – Number of records where <i>Traffic = Sales</i>
+                </li>
+
+                <li>
+                  <b>Non-Sales</b> – Number of records where <i>Traffic = Non-Sales</i>
+                </li>
+
+                <li>
+                  <b>Amount</b> – Total <i>SO Amount</i> per agent
+                </li>
+
+                <li>
+                  <b>QTY Sold</b> – Total quantity sold per agent
+                </li>
+
+                <li>
+                  <b>Converted Sales</b> – Number of records with status
+                  <i> “Converted into Sales”</i>
+                </li>
+
+                <li>
+                  <b>% Inquiry to Sales</b> –
+                  (Converted Sales ÷ Sales) × 100
+                </li>
+
+                <li>
+                  <b>TSA Response Time</b> –
+                  <i>TSA Handling Time − Ticket Endorsed</i>
+                </li>
+
+                <li>
+                  <b>Quotation Handling Time</b> –
+                  <i>TSA Handling Time − Ticket Received</i><br />
+                  <span className="text-muted-foreground">
+                    Applies only when:<br />
+                    • Remarks = “Quotation for Approval”<br />
+                    • Status = “Converted into Sales”
+                  </span>
+                </li>
+
+                <li>
+                  <b>Non-Quotation Handling Time</b> –
+                  <i>TSA Handling Time − Ticket Received</i><br />
+                  <span className="text-muted-foreground">
+                    Applies to non-quotation remarks such as:<br />
+                    No Stocks, Unable to Contact Customer, Item Not Carried, Waiting for
+                    Client Confirmation, and similar cases
+                  </span>
+                </li>
+
+                <li>
+                  <b>SPF Handling Duration</b> –
+                  <i>TSA Handling Time − Ticket Received</i><br />
+                  <span className="text-muted-foreground">
+                    Applies only when Remarks = “For SPF”
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </PopoverContent>
+        </Popover>
+
       </CardHeader>
 
       <CardContent>
@@ -321,10 +514,10 @@ const AgentSalesTableCard = forwardRef<
                 <TableHead className="text-right">New Non-Buying (Converted)</TableHead>
                 <TableHead className="text-right">Existing Active (Converted)</TableHead>
                 <TableHead className="text-right">Existing Inactive (Converted)</TableHead>
-                <TableHead className="text-right">TSAs Response Time</TableHead>
-                <TableHead className="text-right">Non Quotation HT</TableHead>
-                <TableHead className="text-right">Quotation HT</TableHead>
-                <TableHead className="text-right">SPF HD</TableHead>
+                <TableHead className="text-right">TSA Response Time</TableHead>
+                <TableHead className="text-right">Quotation Handling Time</TableHead>
+                <TableHead className="text-right">Non-Quotation Handling Time</TableHead>
+                <TableHead className="text-right">SPF Handling Duration</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -336,43 +529,56 @@ const AgentSalesTableCard = forwardRef<
                   return (
                     <TableRow key={r.agent}>
                       <TableCell><Badge>{i + 1}</Badge></TableCell>
-                      <TableCell>{agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown)"}</TableCell>
+                      <TableCell>
+                        {agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown)"}
+                      </TableCell>
 
                       <TableCell className="text-right">{r.salesCount}</TableCell>
                       <TableCell className="text-right">{r.nonSalesCount}</TableCell>
-                      <TableCell className="text-right">₱{r.amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">₱{r.amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2, })}</TableCell>
                       <TableCell className="text-right">{r.qtySold}</TableCell>
                       <TableCell className="text-right">{r.convertedCount}</TableCell>
                       <TableCell className="text-right">
-                        {r.salesCount === 0 ? "" : ((r.convertedCount / r.salesCount) * 100).toFixed(2) + "%"}
+                        {r.salesCount === 0
+                          ? "-"
+                          : ((r.convertedCount / r.salesCount) * 100).toFixed(2) + "%"}
                       </TableCell>
 
                       <TableCell className="text-right">{r.newClientCount}</TableCell>
                       <TableCell className="text-right">{r.newNonBuyingCount}</TableCell>
                       <TableCell className="text-right">{r.ExistingActiveCount}</TableCell>
                       <TableCell className="text-right">{r.ExistingInactive}</TableCell>
-
                       <TableCell className="text-right">{r.newClientConvertedAmount}</TableCell>
                       <TableCell className="text-right">{r.newNonBuyingConvertedAmount}</TableCell>
                       <TableCell className="text-right">{r.newExistingActiveConvertedAmount}</TableCell>
                       <TableCell className="text-right">{r.newExistingInactiveConvertedAmount}</TableCell>
-
                       <TableCell className="text-right">
-                        {r.tsaResponseCount ? formatHMMSS(Math.round(r.tsaResponseTotal / r.tsaResponseCount)) : ""}
+                        {r.responseCount === 0
+                          ? "-"
+                          : formatDuration(
+                            Math.floor(r.totalResponseSeconds / r.responseCount)
+                          )}
                       </TableCell>
-
                       <TableCell className="text-right">
-                        {r.nonQuotationCount ? formatHMMSS(Math.round(r.nonQuotationTotal / r.nonQuotationCount)) : ""}
+                        {r.quotationCount === 0
+                          ? "-"
+                          : formatDuration(Math.floor(r.quotationTotalSeconds / r.quotationCount))}
                       </TableCell>
-
                       <TableCell className="text-right">
-                        {r.quotationCount ? formatHMMSS(Math.round(r.quotationTotal / r.quotationCount)) : ""}
+                        {r.nonQuotationCount === 0
+                          ? "-"
+                          : formatDuration(
+                            Math.floor(
+                              r.nonQuotationTotalSeconds / r.nonQuotationCount
+                            )
+                          )}
                       </TableCell>
-
                       <TableCell className="text-right">
-                        {r.spfCount
-                          ? formatHMMSS(Math.round(r.spfTotal / r.spfCount))
-                          : ""}
+                        {r.spfCount === 0
+                          ? "-"
+                          : formatDuration(
+                            Math.floor(r.spfTotalSeconds / r.spfCount)
+                          )}
                       </TableCell>
                     </TableRow>
                   );

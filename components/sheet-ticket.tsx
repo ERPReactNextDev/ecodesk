@@ -1034,6 +1034,7 @@ export function TicketSheet(props: TicketSheetProps) {
                                     options={[
                                         { value: "No Stocks / Insufficient Stocks", label: "No Stocks / Insufficient Stocks" },
                                         { value: "Item Not Carried", label: "Item Not Carried" },
+                                        { value: "Unable to Contact Customer", label: "Unable to Contact Customer" },
                                         { value: "Quotation For Approval", label: "Quotation For Approval" },
                                         { value: "Customer Request Cancellation", label: "Customer Request Cancellation" },
                                         { value: "Accreditation / Partnership", label: "Accreditation / Partnership" },
@@ -1047,6 +1048,8 @@ export function TicketSheet(props: TicketSheetProps) {
                                         { value: "Not Converted to Sales", label: "Not Converted to Sales" },
                                         { value: "For Occular Inspection", label: "For Occular Inspection" },
                                         { value: "Sold", label: "Sold" },
+                                        { value: "Waiting for Client Confirmation", label: "Waiting for Client Confirmation" },
+                                        { value: "Pending Quotation", label: "Pending Quotation" },
                                     ]}
                                 />
                             </Field>
