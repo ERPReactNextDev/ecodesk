@@ -40,17 +40,13 @@ function computeQuotationSeconds(
   remarks?: string,
   status?: string
 ): number | null {
-  if (
-    !ticket_received ||
-    !tsa_handling_time ||
-    !remarks ||
-    !status
-  ) return null;
+  if (!ticket_received || !tsa_handling_time || !remarks || !status) return null;
 
-  if (
-    remarks.trim().toLowerCase() !== "quotation for approval" ||
-    remarks.trim().toLowerCase() !== "converted into sales"
-  ) return null;
+  const normalizedRemarks = remarks.trim().toLowerCase();
+  const normalizedStatus = status.trim().toLowerCase();
+
+  if (normalizedRemarks !== "quotation for approval") return null;
+  if (normalizedStatus !== "converted into sales") return null;
 
   const start = new Date(ticket_received);
   const end = new Date(tsa_handling_time);
@@ -62,6 +58,7 @@ function computeQuotationSeconds(
 
   return Math.floor(diffMs / 1000);
 }
+
 
 /* ===================== QUOTATION HANDLING TIME ===================== */
 
