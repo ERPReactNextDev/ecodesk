@@ -168,6 +168,9 @@ interface Agent {
 
 interface Props {
   dateCreatedFilterRange: DateRange | undefined;
+  setDateCreatedFilterRangeAction: React.Dispatch<
+    React.SetStateAction<DateRange | undefined>
+  >;
 }
 
 export interface AgentSalesConversionCardRef {
@@ -371,7 +374,7 @@ const AgentSalesTableCard = forwardRef<
           map[agent].quotationTotalSeconds += quotationSeconds;
           map[agent].quotationCount++;
         }
-        
+
 
         // NON-QUOTATION HANDLING TIME COMPUTATION
         const nonQuotationSeconds = computeNonQuotationSeconds(
