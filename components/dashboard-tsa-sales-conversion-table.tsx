@@ -48,8 +48,8 @@ function computeQuotationSeconds(
   ) return null;
 
   if (
-    remarks.toLowerCase() !== "quotation for approval" ||
-    status.toLowerCase() !== "converted into sales"
+    remarks.trim().toLowerCase() !== "quotation for approval" ||
+    remarks.trim().toLowerCase() !== "converted into sales"
   ) return null;
 
   const start = new Date(ticket_received);
@@ -91,7 +91,9 @@ function computeNonQuotationSeconds(
     "for occular inspection"
   ];
 
-  if (!validRemarks.includes(remarks.toLowerCase())) return null;
+  const normalizedRemarks = remarks.trim().toLowerCase();
+
+  if (!validRemarks.includes(normalizedRemarks)) return null;
 
   const start = new Date(ticket_received);
   const end = new Date(tsa_handling_time);
@@ -286,7 +288,7 @@ const AgentSalesTableCard = forwardRef<
     activities
       .filter(
         (a) =>
-          isDateInRange(a.date_updated, dateCreatedFilterRange) &&
+          isDateInRange(a.date_created, dateCreatedFilterRange) &&
           a.agent
       )
       .forEach((a) => {
@@ -532,7 +534,7 @@ const AgentSalesTableCard = forwardRef<
                   return (
                     <TableRow key={r.agent}>
                       <TableCell><Badge>{i + 1}</Badge></TableCell>
-                      <TableCell>
+                      <TableCell className="capitalize">
                         {agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown)"}
                       </TableCell>
 
