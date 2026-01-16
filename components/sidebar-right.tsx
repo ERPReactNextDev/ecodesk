@@ -46,9 +46,9 @@ export function SidebarRight({
     Lastname: "",
     Position: "",
     Email: "",
-  Role: "",   // 👈 add
-  profilePicture: "",
-});
+    Role: "",   // 👈 add
+    profilePicture: "",
+  });
 
 
   /* ================= HELPERS ================= */
@@ -167,9 +167,9 @@ export function SidebarRight({
           Lastname: data.Lastname || "",
           Position: data.Position || "",
           Email: data.Email || "",
-        Role: data.Role || "",     // 👈 add
-        profilePicture: data.profilePicture || "",
-      });
+          Role: data.Role || "",     // 👈 add
+          profilePicture: data.profilePicture || "",
+        });
 
       });
   }, [userId]);
@@ -203,27 +203,27 @@ export function SidebarRight({
             }}
           />
 
-<div className="p-2">
-          {dateFilterFlag === 1 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="w-full"
-              onClick={clearDateFilter}
-            >
-              Clear Date Filter
-            </Button>
-          )}
+          <div className="pr-2 pl-2 space-y-2">
+            {dateFilterFlag === 1 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full"
+                onClick={clearDateFilter}
+              >
+                Clear Date Filter
+              </Button>
+            )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full cursor-pointer"
-            onClick={() => setDateFilterOpen(true)}
-          >
-            Advanced Date Filter
-          </Button>
-</div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full cursor-pointer"
+              onClick={() => setDateFilterOpen(true)}
+            >
+              Advanced Date Filter
+            </Button>
+          </div>
 
           <SidebarSeparator />
 
