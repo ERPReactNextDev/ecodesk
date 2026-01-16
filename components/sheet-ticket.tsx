@@ -1249,7 +1249,7 @@ export function TicketSheet(props: TicketSheetProps) {
                     </Field>
 
                     {wrapUp !== "Job Applicants" &&
-                        (department === "Sales" || department === "Business Development") && (
+                        (department === "Sales" || department === "Business Development" || department === "Marketing" || department === "E-Commerce") && (
                             <>
                                 <Field>
                                     <FieldLabel>Agent</FieldLabel>
