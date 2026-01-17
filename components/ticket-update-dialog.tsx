@@ -440,6 +440,7 @@ export function UpdateTicketDialog({
       po_source: poSourceState,
       payment_date: paymentDateState,
       delivery_date: deliveryDateState,
+      date_created: dateCreatedState,
       date_updated: new Date().toISOString(),
 
       ...(statusState === "Closed" && {

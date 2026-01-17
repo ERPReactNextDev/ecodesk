@@ -1,3 +1,4 @@
+// pages/api/act-save-activity.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { MongoClient, ObjectId } from "mongodb";
 
@@ -34,7 +35,10 @@ async function connectToDatabase() {
   return { client, db };
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "PUT") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
@@ -55,30 +59,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const filter = { _id: new ObjectId(body._id) };
 
-    // Get the existing document to preserve date_created
-    const existingDoc = await collection.findOne(filter);
-    if (!existingDoc) {
-      return res.status(404).json({ error: "Activity not found" });
-    }
-
-    // Prepare update data:
-    // - Remove _id from update payload
-    // - Keep date_created from existing doc
-    // - Set date_updated to now
-    const updateData = { ...body };
+    // 🔹 Prepare update payload
+    const updateData: any = { ...body };
     delete updateData._id;
 
-    // Respect incoming date_created if provided, otherwise keep existing
-    if (!updateData.date_created) {
-      updateData.date_created = existingDoc.date_created;
-    }
+    // ✅ ALLOW editing date_created
+// ✅ ALLOW editing date_created (datetime-local → UTC safe)
+if (updateData.date_created) {
+  const localDate = new Date(updateData.date_created);
 
-    // Always update date_updated
-    updateData.date_updated = new Date().toISOString();
+  const utcDate = new Date(
+    localDate.getTime() - localDate.getTimezoneOffset() * 60000
+  );
 
-    updateData.date_updated = new Date().toISOString();
+  updateData.date_created = utcDate;
+}
 
-    const result = await collection.updateOne(filter, { $set: updateData });
+    // ✅ ALWAYS update date_updated
+    updateData.date_updated = new Date();
+
+    const result = await collection.updateOne(
+      filter,
+      { $set: updateData }
+    );
 
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: "Activity not found" });
@@ -87,6 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ success: true });
   } catch (error: any) {
     console.error("MongoDB update error:", error);
-    return res.status(500).json({ error: error.message || "Failed to update activity" });
+    return res.status(500).json({
+      error: error.message || "Failed to update activity",
+    });
   }
 }
