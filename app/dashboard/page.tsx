@@ -473,13 +473,14 @@ useEffect(() => {
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
 
-            <TSASalesTableCard
-              ref={tsaSalesTrafficCardRef}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-              userReferenceId={userDetails.referenceid}
-              role={userDetails.role}
-            />
+<TSASalesTableCard
+  ref={tsaSalesTrafficCardRef}
+  dateCreatedFilterRange={dateCreatedFilterRange}
+  setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+  userReferenceId={userDetails.referenceid}
+  role={userDetails.role}
+/>
+
 
             <TSMSalesTableCard
               ref={tsmSalesTrafficCardRef}
