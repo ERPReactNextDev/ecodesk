@@ -11,22 +11,24 @@ import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popove
 
 /* ===================== HELPERS ===================== */
 
+function normalizeRemarks(remarks?: string): string {
+  return remarks?.trim().toLowerCase() ?? "";
+}
+
 /* ===================== TSA RESPONSE TIME ===================== */
 function computeResponseSeconds(
   ticket_endorsed?: string,
-  tsa_handling_time?: string
+  tsa_acknowledge_date?: string
 ): number | null {
-  if (!ticket_endorsed || !tsa_handling_time) return null;
+  if (!ticket_endorsed || !tsa_acknowledge_date) return null;
 
   const start = new Date(ticket_endorsed);
-  const end = new Date(tsa_handling_time);
+  const end = new Date(tsa_acknowledge_date);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+  if (end < start) return null;
 
-  const diffMs = end.getTime() - start.getTime();
-  if (diffMs < 0) return null;
-
-  return Math.floor(diffMs / 1000);
+  return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
 
 /* ===================== TSA RESPONSE TIME ===================== */
@@ -35,28 +37,20 @@ function computeResponseSeconds(
 
 /* ===================== QUOTATION HANDLING TIME ===================== */
 function computeQuotationSeconds(
-  ticket_received?: string,
+  tsa_acknowledge_date?: string,
   tsa_handling_time?: string,
-  remarks?: string,
-  status?: string
+  remarks?: string
 ): number | null {
-  if (!ticket_received || !tsa_handling_time || !remarks || !status) return null;
+  if (!tsa_acknowledge_date || !tsa_handling_time || !remarks) return null;
 
-  const normalizedRemarks = remarks.trim().toLowerCase();
-  const normalizedStatus = status.trim().toLowerCase();
+  if (normalizeRemarks(remarks) !== "quotation for approval") return null;
 
-  if (normalizedRemarks !== "quotation for approval") return null;
-  if (normalizedStatus !== "converted into sales") return null;
-
-  const start = new Date(ticket_received);
+  const start = new Date(tsa_acknowledge_date);
   const end = new Date(tsa_handling_time);
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+  if (end < start) return null;
 
-  const diffMs = end.getTime() - start.getTime();
-  if (diffMs < 0) return null;
-
-  return Math.floor(diffMs / 1000);
+  return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
 
 
@@ -67,41 +61,28 @@ function computeQuotationSeconds(
 /* ===================== NON-QUOTATION HANDLING TIME ===================== */
 
 function computeNonQuotationSeconds(
-  ticket_received?: string,
+  tsa_acknowledge_date?: string,
   tsa_handling_time?: string,
   remarks?: string
 ): number | null {
-  if (!ticket_received || !tsa_handling_time || !remarks) return null;
+  if (!tsa_acknowledge_date || !tsa_handling_time || !remarks) return null;
 
-  const validRemarks = [
-    "no stocks / insufficient stocks",
-    "unable to contact customer",
-    "item not carried",
-    "waiting for client confirmation",
-    "customer request cancellation",
-    "accreditation / partnership",
-    "no response for client",
-    "assisted",
-    "for site visit",
-    "non standard item",
-    "po received",
-    "for occular inspection"
-  ];
+  const r = normalizeRemarks(remarks);
 
-  const normalizedRemarks = remarks.trim().toLowerCase();
+  // EXCLUDE only quotation & SPF
+  if (r === "quotation for approval") return null;
+  if (r === "for spf") return null;
 
-  if (!validRemarks.includes(normalizedRemarks)) return null;
-
-  const start = new Date(ticket_received);
+  const start = new Date(tsa_acknowledge_date);
   const end = new Date(tsa_handling_time);
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+  if (end < start) return null;
 
-  const diffMs = end.getTime() - start.getTime();
-  if (diffMs < 0) return null;
-
-  return Math.floor(diffMs / 1000);
+  return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
+
+
+
 
 /* ===================== NON-QUOTATION HANDLING TIME ===================== */
 
@@ -110,24 +91,23 @@ function computeNonQuotationSeconds(
 /* ===================== SPF HANDLING DURATION ===================== */
 
 function computeSPFSeconds(
-  ticket_received?: string,
+  tsa_acknowledge_date?: string,
   tsa_handling_time?: string,
   remarks?: string
 ): number | null {
-  if (!ticket_received || !tsa_handling_time || !remarks) return null;
+  if (!tsa_acknowledge_date || !tsa_handling_time || !remarks) return null;
 
-  if (remarks.toLowerCase() !== "for spf") return null;
+  if (normalizeRemarks(remarks) !== "for spf") return null;
 
-  const start = new Date(ticket_received);
+  const start = new Date(tsa_acknowledge_date);
   const end = new Date(tsa_handling_time);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+  if (end < start) return null;
 
-  const diffMs = end.getTime() - start.getTime();
-  if (diffMs < 0) return null;
-
-  return Math.floor(diffMs / 1000);
+  return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
+
 
 /* ===================== SPF HANDLING DURATION ===================== */
 
@@ -152,7 +132,6 @@ function formatDate(date?: Date | null): string {
 }
 
 interface Activity {
-  referenceid?: string;
   agent?: string;
   date_created?: string;
   date_updated?: string;
@@ -165,7 +144,7 @@ interface Activity {
 
   ticket_received?: string;
   ticket_endorsed?: string;
-
+  tsa_acknowledge_date?: string;
   tsa_handling_time?: string;
 }
 
@@ -180,8 +159,6 @@ interface Props {
   setDateCreatedFilterRangeAction: React.Dispatch<
     React.SetStateAction<DateRange | undefined>
   >;
-  userReferenceId: string;
-  role: string;
 }
 
 export interface AgentSalesConversionCardRef {
@@ -191,7 +168,7 @@ export interface AgentSalesConversionCardRef {
 const AgentSalesTableCard = forwardRef<
   AgentSalesConversionCardRef,
   Props
->(({ dateCreatedFilterRange, userReferenceId, role }, ref) => {
+>(({ dateCreatedFilterRange }, ref) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -294,21 +271,13 @@ const AgentSalesTableCard = forwardRef<
       }
     > = {};
 
-      activities
-        .filter((a) => {
-          if (!isDateInRange(a.date_created, dateCreatedFilterRange)) return false;
-          if (!a.agent) return false;
-          if (!a.referenceid || a.referenceid.trim() === "") return false;
-
-          // 🔐 NON-ADMIN → OWN DATA ONLY
-          if (role !== "Admin") {
-            return a.referenceid === userReferenceId;
-          }
-
-          // 👑 ADMIN → SEE ALL
-          return true;
-        })
-        .forEach((a) => {
+    activities
+      .filter(
+        (a) =>
+          isDateInRange(a.date_created, dateCreatedFilterRange) &&
+          a.agent
+      )
+      .forEach((a) => {
         const agent = a.agent!;
         const soAmount = Number(a.so_amount ?? 0);
         const qtySold = Number(a.qty_sold ?? 0);
@@ -372,7 +341,7 @@ const AgentSalesTableCard = forwardRef<
         // TSA RESPONSE TIME COMPUTATION
         const responseSeconds = computeResponseSeconds(
           a.ticket_endorsed,
-          a.tsa_handling_time
+          a.tsa_acknowledge_date
         );
 
         if (responseSeconds !== null) {
@@ -383,10 +352,9 @@ const AgentSalesTableCard = forwardRef<
 
         // QUOTATION HANDLING TIME COMPUTATION
         const quotationSeconds = computeQuotationSeconds(
-          a.ticket_received,
+          a.tsa_acknowledge_date,
           a.tsa_handling_time,
-          a.remarks,
-          a.status
+          a.remarks
         );
 
         if (quotationSeconds !== null) {
@@ -396,11 +364,11 @@ const AgentSalesTableCard = forwardRef<
 
 
         // NON-QUOTATION HANDLING TIME COMPUTATION
-        const nonQuotationSeconds = computeNonQuotationSeconds(
-          a.ticket_received,
-          a.tsa_handling_time,
-          a.remarks
-        );
+const nonQuotationSeconds = computeNonQuotationSeconds(
+  a.tsa_acknowledge_date,
+  a.tsa_handling_time,
+  a.remarks
+);
 
         if (nonQuotationSeconds !== null) {
           map[agent].nonQuotationTotalSeconds += nonQuotationSeconds;
@@ -410,7 +378,7 @@ const AgentSalesTableCard = forwardRef<
 
         // SPF HANDLING DURATION COMPUTATION
         const spfSeconds = computeSPFSeconds(
-          a.ticket_received,
+          a.tsa_acknowledge_date,
           a.tsa_handling_time,
           a.remarks
         );
@@ -489,15 +457,14 @@ const AgentSalesTableCard = forwardRef<
                   <i>TSA Handling Time − Ticket Endorsed</i>
                 </li>
 
-                <li>
-                  <b>Quotation Handling Time</b> –
-                  <i>TSA Handling Time − Ticket Received</i><br />
-                  <span className="text-muted-foreground">
-                    Applies only when:<br />
-                    • Remarks = “Quotation for Approval”<br />
-                    • Status = “Converted into Sales”
-                  </span>
-                </li>
+                  <li>
+                    <b>Quotation Handling Time</b> –
+                    <i>TSA Handling Time − TSA Acknowledge Date</i><br />
+                    <span className="text-muted-foreground">
+                      Applies when:<br />
+                      • Remarks = “Quotation for Approval”
+                    </span>
+                  </li>
 
                 <li>
                   <b>Non-Quotation Handling Time</b> –
