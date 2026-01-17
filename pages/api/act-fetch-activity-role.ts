@@ -8,62 +8,72 @@ let cachedClient: MongoClient | null = null;
 let cachedDb: any = null;
 
 async function connectToDatabase() {
-    if (cachedClient && cachedDb) {
-        return { client: cachedClient, db: cachedDb };
-    }
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
+  }
 
-    const client = new MongoClient(MONGODB_URI);
-    await client.connect();
-    const db = client.db(MONGODB_DB);
+  const client = new MongoClient(MONGODB_URI);
+  await client.connect();
+  const db = client.db(MONGODB_DB);
 
-    cachedClient = client;
-    cachedDb = db;
+  cachedClient = client;
+  cachedDb = db;
 
-    return { client, db };
+  return { client, db };
 }
 
 export default async function handler(
-    req: NextApiRequest,
-    res: NextApiResponse
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
-    if (req.method !== "GET") {
-        return res.status(405).json({ error: "Method Not Allowed" });
+  if (req.method !== "GET") {
+    return res.status(405).json({
+      success: false,
+      message: "Method not allowed",
+    });
+  }
+
+  try {
+    const role = req.headers["x-user-role"];
+    const referenceid = req.headers["x-reference-id"];
+
+    if (!role) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized request",
+      });
     }
 
-    try {
-        const role = req.headers["x-user-role"];
-        const referenceid = req.headers["x-reference-id"];
+    const { db } = await connectToDatabase();
+    const collection = db.collection("activity");
 
-        if (!role) {
-            return res.status(401).json({ error: "Unauthorized: role missing" });
-        }
+    let filter: any = {};
 
-        const { db } = await connectToDatabase();
-        const collection = db.collection("activity");
-
-        let filter: any = {};
-
-        // 🔐 ACCESS CONTROL
-        if (role === "Admin") {
-            filter = {}; // lahat
-        } else {
-            if (!referenceid || typeof referenceid !== "string") {
-                return res.status(403).json({
-                    error: "Forbidden: staff must have referenceid",
-                });
-            }
-
-            filter = { referenceid }; // sariling data lang
-        }
-
-        const data = await collection.find(filter).toArray();
-
-        return res.status(200).json({
-            success: true,
-            data,
+    // 🔐 ACCESS CONTROL
+    if (role === "Admin") {
+      filter = {};
+    } else {
+      if (!referenceid || typeof referenceid !== "string") {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
         });
-    } catch (error) {
-        console.error("Activity fetch error:", error);
-        return res.status(500).json({ error: "Server error" });
+      }
+
+      filter = { referenceid };
     }
+
+    const data = await collection.find(filter).toArray();
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (e) {
+    console.log("Activity fetch issue:", e);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server issue",
+    });
+  }
 }

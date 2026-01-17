@@ -159,6 +159,10 @@ interface Props {
   setDateCreatedFilterRangeAction: React.Dispatch<
     React.SetStateAction<DateRange | undefined>
   >;
+
+  // ✅ ADD THESE
+  userReferenceId: string;
+  role: string;
 }
 
 export interface AgentSalesConversionCardRef {
@@ -168,7 +172,7 @@ export interface AgentSalesConversionCardRef {
 const AgentSalesTableCard = forwardRef<
   AgentSalesConversionCardRef,
   Props
->(({ dateCreatedFilterRange }, ref) => {
+>(({ dateCreatedFilterRange, role, userReferenceId }, ref) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -193,23 +197,46 @@ const AgentSalesTableCard = forwardRef<
     fetchAgents();
   }, []);
 
-  useEffect(() => {
-    async function fetchActivities() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/act-fetch-agent-sales", {
-          cache: "no-store",
-        });
-        const json = await res.json();
-        setActivities(json.data || []);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+useEffect(() => {
+  async function fetchActivities() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/act-fetch-activity-role", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": role,
+          "x-reference-id": userReferenceId,
+        },
+      });
+
+
+      const json = await res.json();
+
+      // ✅ SAME STATUS FILTER AS ticket.tsx
+      const allowedStatuses = [
+        "On-Progress",
+        "Closed",
+        "Endorsed",
+        "Converted into Sales",
+      ];
+
+      const filtered = (json.data || []).filter((a: any) =>
+        allowedStatuses.includes(a.status)
+      );
+
+      setActivities(filtered);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    fetchActivities();
-  }, []);
+  }
+
+  fetchActivities();
+}, [role, userReferenceId]);
+
 
   /* ===================== DATE FILTER ===================== */
 
