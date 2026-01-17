@@ -152,6 +152,7 @@ function formatDate(date?: Date | null): string {
 }
 
 interface Activity {
+  referenceid?: string;
   agent?: string;
   date_created?: string;
   date_updated?: string;
@@ -179,6 +180,8 @@ interface Props {
   setDateCreatedFilterRangeAction: React.Dispatch<
     React.SetStateAction<DateRange | undefined>
   >;
+  userReferenceId: string;
+  role: string;
 }
 
 export interface AgentSalesConversionCardRef {
@@ -188,7 +191,7 @@ export interface AgentSalesConversionCardRef {
 const AgentSalesTableCard = forwardRef<
   AgentSalesConversionCardRef,
   Props
->(({ dateCreatedFilterRange }, ref) => {
+>(({ dateCreatedFilterRange, userReferenceId, role }, ref) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -291,13 +294,21 @@ const AgentSalesTableCard = forwardRef<
       }
     > = {};
 
-    activities
-      .filter(
-        (a) =>
-          isDateInRange(a.date_created, dateCreatedFilterRange) &&
-          a.agent
-      )
-      .forEach((a) => {
+      activities
+        .filter((a) => {
+          if (!isDateInRange(a.date_created, dateCreatedFilterRange)) return false;
+          if (!a.agent) return false;
+          if (!a.referenceid || a.referenceid.trim() === "") return false;
+
+          // 🔐 NON-ADMIN → OWN DATA ONLY
+          if (role !== "Admin") {
+            return a.referenceid === userReferenceId;
+          }
+
+          // 👑 ADMIN → SEE ALL
+          return true;
+        })
+        .forEach((a) => {
         const agent = a.agent!;
         const soAmount = Number(a.so_amount ?? 0);
         const qtySold = Number(a.qty_sold ?? 0);

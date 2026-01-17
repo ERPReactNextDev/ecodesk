@@ -85,20 +85,42 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
   const [agentsLoading, setAgentsLoading] = useState(false);
 
   useEffect(() => {
-    async function fetchAgents() {
-      setAgentsLoading(true);
-      try {
-        const res = await fetch("/api/fetch-agent");
-        if (!res.ok) throw new Error("Failed to fetch agents");
-        const data = await res.json();
-        setAgents(data);
-      } catch (err) {
-        console.error(err);
-        setAgents([]);
-      } finally {
-        setAgentsLoading(false);
-      }
+async function fetchAgents() {
+  setAgentsLoading(true);
+
+  try {
+    const res = await fetch("/api/fetch-agent", {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || "Failed to fetch agents");
     }
+
+    const json = await res.json();
+
+    // Support both { data: [...] } and raw array
+    const agentsData = Array.isArray(json)
+      ? json
+      : Array.isArray(json?.data)
+      ? json.data
+      : [];
+
+    setAgents(agentsData);
+  } catch (err) {
+    console.error("Fetch agents error:", err);
+    setAgents([]);
+  } finally {
+    setAgentsLoading(false);
+  }
+}
     fetchAgents();
   }, []);
 
