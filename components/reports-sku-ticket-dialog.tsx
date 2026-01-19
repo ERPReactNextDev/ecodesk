@@ -43,6 +43,7 @@ interface SkuTicketItem {
   tsa_acknowledge_date?: string;
   tsm_handling_time?: string;
   tsa_handling_time?: string;
+  hr_acknowledge_date?: string;
 
   /* Remarks */
   remarks?: string;
@@ -170,6 +171,12 @@ export function ReportsSkuTicketDialog({ item }: Props) {
               <p><strong>TSA Acknowledgement Date:</strong> {formatDateTime(item.tsa_acknowledge_date)}</p>
               <p><strong>TSM Handling Time:</strong> {formatDateTime(item.tsm_handling_time)}</p>
               <p><strong>TSA Handling Time:</strong> {formatDateTime(item.tsa_handling_time)}</p>
+              {item.wrap_up === "Job Applicants" && (
+                <p>
+                  <strong>HR Acknowledgement Date:</strong>{" "}
+                  {formatDateTime(item.hr_acknowledge_date)}
+                </p>
+              )}
             </div>
           </section>
 

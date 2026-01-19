@@ -88,13 +88,13 @@ interface Activity {
   tsa_acknowledge_date?: string;
   tsm_handling_time?: string;
   tsa_handling_time?: string;
+  hr_acknowledge_date?: string;
 
   company_name: string;
   contact_number: string;
   contact_person: string;
   email_address: string;
 }
-
 
 interface UpdateActivityDialogProps {
   onCreated: (newActivity: Activity) => void;
@@ -148,6 +148,7 @@ interface UpdateActivityDialogProps {
   tsa_acknowledge_date?: string;
   tsm_handling_time?: string;
   tsa_handling_time?: string;
+  hr_acknowledge_date?: string;
 }
 
 function SpinnerEmpty({ onCancel }: { onCancel?: () => void }) {
@@ -219,6 +220,7 @@ export function UpdateTicketDialog({
   tsa_acknowledge_date,
   tsm_handling_time,
   tsa_handling_time,
+  hr_acknowledge_date,
   quotation_number,
   quotation_amount,
   payment_terms,
@@ -247,9 +249,12 @@ export function UpdateTicketDialog({
   const [tsaAcknowledgeDate, setTsaAcknowledgeDate] = useState("");
   const [tsmHandlingTime, setTsmHandlingTime] = useState("");
   const [tsaHandlingTime, setTsaHandlingTime] = useState("");
+  const [hrAcknowledgeDate, setHrAcknowledgeDate] = useState("");
+
   const [genderState, setGender] = useState("");
   const [channelState, setChannel] = useState("");
   const [wrapUpState, setWrapUp] = useState("");
+  const isJobApplicant = wrapUpState === "Job Applicants";
   const [sourceState, setSource] = useState("");
   const [customerTypeState, setCustomerType] = useState("");
   const [customerStatusState, setCustomerStatus] = useState("");
@@ -327,6 +332,7 @@ export function UpdateTicketDialog({
     setTsaAcknowledgeDate(toDatetimeLocal(tsa_acknowledge_date));
     setTsmHandlingTime(toDatetimeLocal(tsm_handling_time));
     setTsaHandlingTime(toDatetimeLocal(tsa_handling_time));
+    setHrAcknowledgeDate(toDatetimeLocal(hr_acknowledge_date));
 
     setCompanyName(company_name || "");
     setContactPerson(contact_person || "");
@@ -374,7 +380,7 @@ export function UpdateTicketDialog({
     company_name,
     contact_number,
     contact_person,
-    email_address
+    email_address,
   ]);
 
   useEffect(() => {
@@ -386,10 +392,16 @@ export function UpdateTicketDialog({
     }
   }, [ticket_reference_number]);
 
+  useEffect(() => {
+    if (isJobApplicant && step > 3) {
+      setStep(3);
+    }
+  }, [isJobApplicant, step]);
 
   const handleUpdate = async () => {
     setLoading(true);
 
+    
     const newActivity: Activity & {
       close_reason?: string;
       counter_offer?: string;
@@ -414,6 +426,7 @@ export function UpdateTicketDialog({
       tsa_acknowledge_date: tsaAcknowledgeDate,
       tsm_handling_time: tsmHandlingTime,
       tsa_handling_time: tsaHandlingTime,
+      hr_acknowledge_date: hrAcknowledgeDate,
 
       gender: genderState,
       channel: channelState,
@@ -449,6 +462,39 @@ export function UpdateTicketDialog({
         client_specs: clientSpecs,
       }),
     };
+
+  // 🔥 CLEAR STEPS 4–6 ONLY WHEN SAVING AT STEP 3 (JOB APPLICANTS)
+if (wrapUpState === "Job Applicants" && step === 3) {
+  newActivity.customer_type = "-";
+  newActivity.customer_status = "-";
+  newActivity.department = "-";
+  newActivity.manager = "-";
+  newActivity.agent = "-";
+
+  newActivity.remarks = "-";
+  newActivity.inquiry = "-";
+
+  newActivity.item_code = "-";
+  newActivity.item_description = "-";
+  newActivity.po_number = "-";
+  newActivity.so_date = "-";
+  newActivity.so_number = "-";
+  newActivity.so_amount = "-";
+  newActivity.qty_sold = "-";
+
+  newActivity.quotation_number = "-";
+  newActivity.quotation_amount = "-";
+
+  newActivity.payment_terms = "-";
+  newActivity.po_source = "-";
+  newActivity.payment_date = "-";
+  newActivity.delivery_date = "-";
+
+  // ❗ DO NOT TOUCH STATUS
+  newActivity.close_reason = "-";
+  newActivity.counter_offer = "-";
+  newActivity.client_specs = "-";
+}
 
 
     try {
@@ -541,7 +587,12 @@ export function UpdateTicketDialog({
     <>
       <Sheet open={sheetOpen} onOpenChange={onSheetOpenChange}>
         <SheetTrigger asChild>
-          <Button type="button" variant="outline" onClick={() => setSheetOpen(true)} className="cursor-pointer">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSheetOpen(true)}
+            className="cursor-pointer"
+          >
             Update
           </Button>
         </SheetTrigger>
@@ -553,65 +604,79 @@ export function UpdateTicketDialog({
         >
           <SheetHeader>
             <SheetTitle>Update Activity</SheetTitle>
-            <SheetDescription>Fill out the steps to update activity.</SheetDescription>
+            <SheetDescription>
+              Fill out the steps to update activity.
+            </SheetDescription>
           </SheetHeader>
 
           {/* Progress Steps */}
           <div className="flex items-center mb-6">
-            {[1, 2, 3, 4, 5, 6].map((s, i, arr) => {
-              const isActive = step === s;
-              const isCompleted = step > s;
+            {(isJobApplicant ? [1, 2, 3] : [1, 2, 3, 4, 5, 6]).map(
+              (s, i, arr) => {
+                const isActive = step === s;
+                const isCompleted = step > s;
 
-              return (
-                <React.Fragment key={s}>
-                  <div
-                    className="flex flex-col items-center relative flex-1 cursor-pointer"
-                    onClick={() => setStep(s)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        setStep(s);
-                      }
-                    }}
-                    aria-current={isActive ? "step" : undefined}
-                    aria-label={`Step ${s}: ${s === 1 ? "Traffic" :
-                      s === 2 ? "Department" :
-                        s === 3 ? "Ticket" :
-                          s === 4 ? "Customer" :
-                            s === 5 ? "Status" :
-                              "Assignee"
-                      }`}
-                  >
+                return (
+                  <React.Fragment key={s}>
                     <div
-                      className={`
+                      className="flex flex-col items-center relative flex-1 cursor-pointer"
+                      onClick={() => {
+                        if (isJobApplicant && s > 3) return;
+                        setStep(s);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          setStep(s);
+                        }
+                      }}
+                      aria-current={isActive ? "step" : undefined}
+                      aria-label={`Step ${s}: ${
+                        s === 1
+                          ? "Traffic"
+                          : s === 2
+                            ? "Department"
+                            : s === 3
+                              ? "Ticket"
+                              : s === 4
+                                ? "Customer"
+                                : s === 5
+                                  ? "Status"
+                                  : "Assignee"
+                      }`}
+                    >
+                      <div
+                        className={`
               w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-semibold z-10
               ${isActive ? "bg-blue-600" : isCompleted ? "bg-green-500" : "bg-gray-300"}
               hover:brightness-90 transition
             `}
-                    >
-                      {s}
-                    </div>
-                    <span className="mt-2 text-xs text-center max-w-[70px]">
-                      {s === 1 && "Traffic"}
-                      {s === 2 && "Department"}
-                      {s === 3 && "Ticket"}
-                      {s === 4 && "Customer"}
-                      {s === 5 && "Status"}
-                      {s === 6 && "Assignee"}
-                    </span>
+                      >
+                        {s}
+                      </div>
+                      <span className="mt-2 text-xs text-center max-w-[70px]">
+                        {s === 1 && "Traffic"}
+                        {s === 2 && "Department"}
+                        {s === 3 && "Ticket"}
+                        {s === 4 && "Customer"}
+                        {s === 5 && "Status"}
+                        {s === 6 && "Assignee"}
+                      </span>
 
-                    {i !== arr.length - 1 && (
-                      <div
-                        className={`absolute top-5 right-[-50%] w-full h-1 ${step > s ? "bg-green-500" : "bg-gray-300"
+                      {i !== arr.length - 1 && (
+                        <div
+                          className={`absolute top-5 right-[-50%] w-full h-1 ${
+                            step > s ? "bg-green-500" : "bg-gray-300"
                           }`}
-                        style={{ zIndex: 0 }}
-                      />
-                    )}
-                  </div>
-                </React.Fragment>
-              );
-            })}
+                          style={{ zIndex: 0 }}
+                        />
+                      )}
+                    </div>
+                  </React.Fragment>
+                );
+              },
+            )}
           </div>
 
           {loading ? (
@@ -623,7 +688,9 @@ export function UpdateTicketDialog({
                 <div>
                   <FieldGroup>
                     <FieldSet>
-                      <FieldLabel className="font-semibold text-sm">Company Name</FieldLabel>
+                      <FieldLabel className="font-semibold text-sm">
+                        Company Name
+                      </FieldLabel>
                       <Input
                         type="text"
                         value={companyName}
@@ -635,7 +702,9 @@ export function UpdateTicketDialog({
 
                   <FieldGroup>
                     <FieldSet className="mt-4">
-                      <FieldLabel className="font-semibold text-sm">Contact Person</FieldLabel>
+                      <FieldLabel className="font-semibold text-sm">
+                        Contact Person
+                      </FieldLabel>
                       <Input
                         type="text"
                         value={contactPerson}
@@ -647,7 +716,9 @@ export function UpdateTicketDialog({
 
                   <FieldGroup>
                     <FieldSet className="mt-4">
-                      <FieldLabel className="font-semibold text-sm">Contact Number</FieldLabel>
+                      <FieldLabel className="font-semibold text-sm">
+                        Contact Number
+                      </FieldLabel>
                       <Input
                         type="text"
                         value={contactNumber}
@@ -659,7 +730,9 @@ export function UpdateTicketDialog({
 
                   <FieldGroup>
                     <FieldSet className="mt-4">
-                      <FieldLabel className="font-semibold text-sm">Email Address</FieldLabel>
+                      <FieldLabel className="font-semibold text-sm">
+                        Email Address
+                      </FieldLabel>
                       <Input
                         type="text"
                         value={emailAddress}
@@ -683,7 +756,9 @@ export function UpdateTicketDialog({
                           <Field orientation="horizontal">
                             <FieldContent>
                               <FieldTitle>Sales</FieldTitle>
-                              <FieldDescription>Make outgoing calls or sales interactions.</FieldDescription>
+                              <FieldDescription>
+                                Make outgoing calls or sales interactions.
+                              </FieldDescription>
                             </FieldContent>
                             <RadioGroupItem value="Sales" />
                           </Field>
@@ -693,7 +768,9 @@ export function UpdateTicketDialog({
                           <Field orientation="horizontal">
                             <FieldContent>
                               <FieldTitle>Non-Sales</FieldTitle>
-                              <FieldDescription>Handle general inquiries or assistance.</FieldDescription>
+                              <FieldDescription>
+                                Handle general inquiries or assistance.
+                              </FieldDescription>
                             </FieldContent>
                             <RadioGroupItem value="Non-Sales" />
                           </Field>
@@ -717,7 +794,8 @@ export function UpdateTicketDialog({
                             <FieldContent>
                               <FieldTitle>Ecoshift Corporation</FieldTitle>
                               <FieldDescription>
-                                The Fastest-Growing Provider of Innovative Lighting Solutions
+                                The Fastest-Growing Provider of Innovative
+                                Lighting Solutions
                               </FieldDescription>
                             </FieldContent>
                             <RadioGroupItem value="Ecoshift Corporation" />
@@ -729,7 +807,8 @@ export function UpdateTicketDialog({
                             <FieldContent>
                               <FieldTitle>Disruptive Solutions Inc</FieldTitle>
                               <FieldDescription>
-                                Future-ready lighting solutions that brighten spaces, cut costs, and power smarter business
+                                Future-ready lighting solutions that brighten
+                                spaces, cut costs, and power smarter business
                               </FieldDescription>
                             </FieldContent>
                             <RadioGroupItem value="Disruptive Solutions Inc" />
@@ -741,7 +820,8 @@ export function UpdateTicketDialog({
                             <FieldContent>
                               <FieldTitle>Buildchem Solutions</FieldTitle>
                               <FieldDescription>
-                                Manufactures high-performance chemical products for the building and infrastructure sectors.
+                                Manufactures high-performance chemical products
+                                for the building and infrastructure sectors.
                               </FieldDescription>
                             </FieldContent>
                             <RadioGroupItem value="Buildchem Solutions" />
@@ -751,7 +831,10 @@ export function UpdateTicketDialog({
                     </FieldSet>
                   </FieldGroup>
 
-                  <Button className="mt-4 w-full cursor-pointer" onClick={() => setStep(2)}>
+                  <Button
+                    className="mt-4 w-full cursor-pointer"
+                    onClick={() => setStep(2)}
+                  >
                     Next
                   </Button>
                 </div>
@@ -822,7 +905,10 @@ export function UpdateTicketDialog({
                   ticketReferenceNumber={ticketReferenceNumber}
                   setTicketReferenceNumber={setTicketReferenceNumber}
                   handleBack={() => setStep((prev) => prev - 1)}
-                  handleNext={() => setStep((prev) => prev + 1)}
+                  handleNext={() => {
+                    if (isJobApplicant && step === 3) return;
+                    setStep((prev) => prev + 1);
+                  }}
                   handleUpdate={handleUpdate}
                   closeReason={closeReason}
                   setCloseReason={setCloseReason}
@@ -832,15 +918,14 @@ export function UpdateTicketDialog({
                   setClientSpecs={setClientSpecs}
                   tsmAcknowledgeDate={tsmAcknowledgeDate}
                   setTsmAcknowledgeDate={setTsmAcknowledgeDate}
-
                   tsaAcknowledgeDate={tsaAcknowledgeDate}
                   setTsaAcknowledgeDate={setTsaAcknowledgeDate}
-
                   tsmHandlingTime={tsmHandlingTime}
                   setTsmHandlingTime={setTsmHandlingTime}
-
                   tsaHandlingTime={tsaHandlingTime}
                   setTsaHandlingTime={setTsaHandlingTime}
+                  hrAcknowledgeDate={hrAcknowledgeDate}
+                  setHrAcknowledgeDate={setHrAcknowledgeDate}
                 />
               )}
             </div>
