@@ -10,6 +10,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "
 import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
 
 /* ===================== HELPERS ===================== */
+function isValidSalesInquiry(a: Activity) {
+  return (
+    a.traffic?.toLowerCase() === "sales" &&
+    normalizeRemarks(a.remarks) !== "po received"
+  );
+}
+
+function isConvertedSale(a: Activity) {
+  return (
+    a.traffic?.toLowerCase() === "sales" &&
+    a.status?.toLowerCase() === "converted into sales" &&
+    normalizeRemarks(a.remarks) !== "po received"
+  );
+}
+
 
 function normalizeRemarks(remarks?: string): string {
   return remarks?.trim().toLowerCase() ?? "";
@@ -30,6 +45,8 @@ function computeResponseSeconds(
 
   return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
+
+
 
 /* ===================== TSA RESPONSE TIME ===================== */
 
@@ -61,25 +78,27 @@ function computeQuotationSeconds(
 /* ===================== NON-QUOTATION HANDLING TIME ===================== */
 
 function computeNonQuotationSeconds(
-  tsa_acknowledge_date?: string,
+  ticket_received?: string,
   tsa_handling_time?: string,
   remarks?: string
 ): number | null {
-  if (!tsa_acknowledge_date || !tsa_handling_time || !remarks) return null;
-
   const r = normalizeRemarks(remarks);
 
-  // EXCLUDE only quotation & SPF
+  if (!ticket_received || !tsa_handling_time) return null;
   if (r === "quotation for approval") return null;
   if (r === "for spf") return null;
 
-  const start = new Date(tsa_acknowledge_date);
+  const start = new Date(ticket_received);
   const end = new Date(tsa_handling_time);
 
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   if (end < start) return null;
 
   return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
+
+
+
 
 
 
@@ -91,15 +110,19 @@ function computeNonQuotationSeconds(
 /* ===================== SPF HANDLING DURATION ===================== */
 
 function computeSPFSeconds(
-  tsa_acknowledge_date?: string,
+  ticket_received?: string,
   tsa_handling_time?: string,
   remarks?: string
 ): number | null {
-  if (!tsa_acknowledge_date || !tsa_handling_time || !remarks) return null;
+  if (
+    !ticket_received ||
+    !tsa_handling_time ||
+    normalizeRemarks(remarks) !== "for spf"
+  ) {
+    return null;
+  }
 
-  if (normalizeRemarks(remarks) !== "for spf") return null;
-
-  const start = new Date(tsa_acknowledge_date);
+  const start = new Date(ticket_received);
   const end = new Date(tsa_handling_time);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
@@ -107,6 +130,7 @@ function computeSPFSeconds(
 
   return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
+
 
 
 /* ===================== SPF HANDLING DURATION ===================== */
@@ -346,36 +370,46 @@ useEffect(() => {
           };
         }
 
-        if (traffic === "sales") map[agent].salesCount++;
-        if (traffic === "non-sales") map[agent].nonSalesCount++;
-        if (status === "converted into sales") map[agent].convertedCount++;
+        if (normalizeRemarks(a.remarks) === "po received") return;
 
-        if (cs === "new client") map[agent].newClientCount++;
-        if (cs === "new non-buying") map[agent].newNonBuyingCount++;
-        if (cs === "existing active") map[agent].ExistingActiveCount++;
-        if (cs === "existing inactive") map[agent].ExistingInactive++;
-
-        map[agent].amount += soAmount;
-        map[agent].qtySold += qtySold;
-
-        if (status === "converted into sales") {
-          if (cs === "new client") map[agent].newClientConvertedAmount += soAmount;
-          if (cs === "new non-buying") map[agent].newNonBuyingConvertedAmount += soAmount;
-          if (cs === "existing active") map[agent].newExistingActiveConvertedAmount += soAmount;
-          if (cs === "existing inactive") map[agent].newExistingInactiveConvertedAmount += soAmount;
+        // SALES / NON-SALES COUNT
+        // SALES / NON-SALES COUNT
+        if (isValidSalesInquiry(a)) {
+          map[agent].salesCount++;
         }
+
+        if (traffic === "non-sales") {
+          map[agent].nonSalesCount++;
+        }
+
+        // CUSTOMER STATUS COUNTS (Sales inquiries only – Excel-aligned)
+        if (isValidSalesInquiry(a)) {
+  if (cs === "new client") map[agent].newClientCount++;
+  if (cs === "new non-buying") map[agent].newNonBuyingCount++;
+  if (cs === "existing active") map[agent].ExistingActiveCount++;
+  if (cs === "existing inactive") map[agent].ExistingInactive++;
+}
+
+        // ✅ ONLY TRUE SALES CONVERSIONS
+        if (isConvertedSale(a)) {
+          map[agent].convertedCount++;
+  map[agent].amount += soAmount;
+  map[agent].qtySold += qtySold;
+}
+
 
         // TSA RESPONSE TIME COMPUTATION
-        const responseSeconds = computeResponseSeconds(
-          a.ticket_endorsed,
-          a.tsa_acknowledge_date
-        );
+        if (a.ticket_endorsed && a.tsa_acknowledge_date) {
+          const responseSeconds = computeResponseSeconds(
+            a.ticket_endorsed,
+            a.tsa_acknowledge_date
+          );
 
-        if (responseSeconds !== null) {
-          map[agent].totalResponseSeconds += responseSeconds;
-          map[agent].responseCount++;
+          if (responseSeconds !== null) {
+            map[agent].totalResponseSeconds += responseSeconds;
+            map[agent].responseCount++;
+          }
         }
-
 
         // QUOTATION HANDLING TIME COMPUTATION
         const quotationSeconds = computeQuotationSeconds(
@@ -392,11 +426,10 @@ useEffect(() => {
 
         // NON-QUOTATION HANDLING TIME COMPUTATION
 const nonQuotationSeconds = computeNonQuotationSeconds(
-  a.tsa_acknowledge_date,
+  a.ticket_received,        // ✅ TAMA
   a.tsa_handling_time,
   a.remarks
 );
-
         if (nonQuotationSeconds !== null) {
           map[agent].nonQuotationTotalSeconds += nonQuotationSeconds;
           map[agent].nonQuotationCount++;
@@ -405,7 +438,7 @@ const nonQuotationSeconds = computeNonQuotationSeconds(
 
         // SPF HANDLING DURATION COMPUTATION
         const spfSeconds = computeSPFSeconds(
-          a.tsa_acknowledge_date,
+          a.ticket_received,        // ✅ TAMA
           a.tsa_handling_time,
           a.remarks
         );

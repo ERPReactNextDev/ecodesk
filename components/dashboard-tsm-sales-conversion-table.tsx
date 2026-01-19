@@ -67,10 +67,11 @@ interface Activity {
     ticket_endorsed?: string;
     wrap_up?: string;
 
-    // ✅ TSM timestamps
-    tsm_acknowledge_date?: string;
-    tsm_handling_time?: string;
+    // ✅ TSA timestamps (Excel-based)
+    tsa_acknowledge_date?: string;
+    tsa_handling_time?: string;
 }
+
 
 interface Agent {
     ReferenceID: string;
@@ -244,14 +245,18 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                 const isConverted = status === "converted into sales";
 
                 // 1️⃣ TSM Acknowledge Time
+                // 1️⃣ TSA Response Time (Excel)
                 const ackTime = safeDiffMinutes(
                     a.ticket_received,
-                    a.tsm_acknowledge_date
+                    a.tsa_acknowledge_date
                 );
-
+                // 2️⃣ TSA Handling Time (Excel – Quotation only)
                 const handlingTime =
     isQuotation
-        ? safeDiffMinutes(a.tsm_acknowledge_date, a.tsm_handling_time)
+                        ? safeDiffMinutes(
+                            a.tsa_acknowledge_date,
+                            a.tsa_handling_time
+                        )
         : 0;
 
                 const isNonQuotation =
@@ -260,7 +265,10 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
 
                 const nonQuotationTime =
     isNonQuotation
-        ? safeDiffMinutes(a.tsm_acknowledge_date, a.tsm_handling_time)
+                        ? safeDiffMinutes(
+                            a.tsa_acknowledge_date,
+                            a.tsa_handling_time
+                        )
         : 0;
 
 
@@ -379,10 +387,12 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                         ? `${managerDetails.Firstname} ${managerDetails.Lastname}`
                         : "(Unknown Manager)";
 
+                    const totalInquiry = row.salesCount + row.nonSalesCount;
+
                     const conversionRate =
-                        row.salesCount === 0
+                        totalInquiry === 0
                             ? "0.00%"
-                            : ((row.convertedCount / row.salesCount) * 100).toFixed(2) + "%";
+                            : ((row.convertedCount / totalInquiry) * 100).toFixed(2) + "%";
 
                     return [
                         (index + 1).toString(),
@@ -611,10 +621,15 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                                                 <TableCell className="font-mono tabular-nums text-right">{qtySold.toLocaleString()}</TableCell>
                                                 <TableCell className="font-mono tabular-nums text-right">{convertedCount.toLocaleString()}</TableCell>
                                                 <TableCell className="font-mono tabular-nums text-right">
-                                                    {salesCount === 0
-                                                        ? "0.00%"
-                                                        : ((convertedCount / salesCount) * 100).toFixed(2) + "%"}
+                                                    {(() => {
+                                                        const totalInquiry = salesCount + nonSalesCount;
+
+                                                        return totalInquiry === 0
+                                                            ? "0.00%"
+                                                            : ((convertedCount / totalInquiry) * 100).toFixed(2) + "%";
+                                                    })()}
                                                 </TableCell>
+
                                                 <TableCell className="font-mono tabular-nums text-right">{newClientCount.toLocaleString()}</TableCell>
                                                 <TableCell className="font-mono tabular-nums text-right">{newNonBuyingCount.toLocaleString()}</TableCell>
                                                 <TableCell className="font-mono tabular-nums text-right">{ExistingActiveCount.toLocaleString()}</TableCell>
@@ -685,12 +700,22 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
                                     </TableCell>
                                     <TableCell className="font-mono tabular-nums text-right">
                                         {(() => {
-                                            const totalSales = groupedData.reduce((sum, row) => sum + row.salesCount, 0);
-                                            const totalConverted = groupedData.reduce((sum, row) => sum + row.convertedCount, 0);
-                                            if (totalSales === 0) return "0.00%";
-                                            return ((totalConverted / totalSales) * 100).toFixed(2) + "%";
+                                            const totalInquiry = groupedData.reduce(
+                                                (sum, row) => sum + row.salesCount + row.nonSalesCount,
+                                                0
+                                            );
+
+                                            const totalConverted = groupedData.reduce(
+                                                (sum, row) => sum + row.convertedCount,
+                                                0
+                                            );
+
+                                            return totalInquiry === 0
+                                                ? "0.00%"
+                                                : ((totalConverted / totalInquiry) * 100).toFixed(2) + "%";
                                         })()}
                                     </TableCell>
+
                                     <TableCell className="font-mono tabular-nums text-right">
                                         {groupedData.reduce((sum, row) => sum + row.newClientCount, 0).toLocaleString()}
                                     </TableCell>
