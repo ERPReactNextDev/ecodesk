@@ -84,6 +84,10 @@ interface AgentSalesConversionCardProps {
     setDateCreatedFilterRangeAction: React.Dispatch<
         React.SetStateAction<DateRange | undefined>
     >;
+
+    // ✅ SAME AS ticket.tsx / TSA table
+    role: string;
+    userReferenceId: string;
 }
 
 export interface AgentSalesConversionCardRef {
@@ -92,6 +96,8 @@ export interface AgentSalesConversionCardRef {
 
 const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesConversionCardProps>(({
     dateCreatedFilterRange,
+    role,
+    userReferenceId,
 }, ref) => {
 
     const [showTooltip, setShowTooltip] = useState(false);
@@ -121,33 +127,51 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
         fetchManagers();
     }, []);
 
-    useEffect(() => {
-        async function fetchActivities() {
-            setLoading(true);
-            setError(null);
-            try {
-                const res = await fetch("/api/act-fetch-agent-sales", {
-                    cache: "no-store",
-                    headers: {
-                        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-                        Pragma: "no-cache",
-                        Expires: "0",
-                    },
-                });
-                if (!res.ok) {
-                    const json = await res.json();
-                    throw new Error(json.error || "Failed to fetch activities");
-                }
+useEffect(() => {
+    async function fetchActivities() {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch("/api/act-fetch-activity-role", {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-user-role": role,
+                    "x-reference-id": userReferenceId,
+                },
+            });
+
+            if (!res.ok) {
                 const json = await res.json();
-                setActivities(json.data || []);
-            } catch (err: any) {
-                setError(err.message || "Error fetching activities");
-            } finally {
-                setLoading(false);
+                throw new Error(json.error || "Failed to fetch activities");
             }
+
+            const json = await res.json();
+
+            // ✅ SAME STATUS FILTER AS ticket.tsx
+            const allowedStatuses = [
+                "On-Progress",
+                "Closed",
+                "Endorsed",
+                "Converted into Sales",
+            ];
+
+            setActivities(
+                (json.data || []).filter((a: any) =>
+                    allowedStatuses.includes(a.status)
+                )
+            );
+        } catch (err: any) {
+            setError(err.message || "Failed to fetch activities");
+        } finally {
+            setLoading(false);
         }
-        fetchActivities();
-    }, []);
+    }
+
+    fetchActivities();
+}, [role, userReferenceId]);
+
 
     const isDateInRange = (dateStr?: string, range?: DateRange) => {
         if (!range) return true;
@@ -225,14 +249,14 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
             }
         > = {};
 
-        activities
-            .filter(
-                (a) =>
-                    isDateInRange(a.ticket_received, dateCreatedFilterRange) &&
-                    a.manager &&
-                    a.manager.trim() !== "" &&
-                    (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
-            )
+activities
+  .filter(
+    (a) =>
+      isDateInRange(a.ticket_received, dateCreatedFilterRange) &&
+      a.manager &&
+      a.manager.trim() !== "" &&
+      (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
+  )
             .forEach((a) => {
                 const wrap = a.wrap_up?.toLowerCase().trim() || "";
                 const status = a.status?.toLowerCase() || "";

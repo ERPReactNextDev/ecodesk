@@ -481,11 +481,13 @@ useEffect(() => {
               role={userDetails.role}
             />
 
-            <TSMSalesTableCard
-              ref={tsmSalesTrafficCardRef}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-            />
+<TSMSalesTableCard
+  ref={tsmSalesTrafficCardRef}
+  dateCreatedFilterRange={dateCreatedFilterRange}
+  setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+  role={userDetails.role}
+  userReferenceId={userDetails.referenceid}
+/>
           </div>
 
           <Separator />
