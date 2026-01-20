@@ -69,7 +69,9 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef {}
+export interface AgentSalesConversionCardRef { }
+
+const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const AgentSalesTableCard: ForwardRefRenderFunction<
   AgentSalesConversionCardRef,
@@ -85,42 +87,42 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
   const [agentsLoading, setAgentsLoading] = useState(false);
 
   useEffect(() => {
-async function fetchAgents() {
-  setAgentsLoading(true);
+    async function fetchAgents() {
+      setAgentsLoading(true);
 
-  try {
-    const res = await fetch("/api/fetch-agent", {
-      method: "GET",
-      cache: "no-store",
-      headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    });
+      try {
+        const res = await fetch("/api/fetch-agent", {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
-      throw new Error(err?.error || "Failed to fetch agents");
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.error || "Failed to fetch agents");
+        }
+
+        const json = await res.json();
+
+        // Support both { data: [...] } and raw array
+        const agentsData = Array.isArray(json)
+          ? json
+          : Array.isArray(json?.data)
+            ? json.data
+            : [];
+
+        setAgents(agentsData);
+      } catch (err) {
+        console.error("Fetch agents error:", err);
+        setAgents([]);
+      } finally {
+        setAgentsLoading(false);
+      }
     }
-
-    const json = await res.json();
-
-    // Support both { data: [...] } and raw array
-    const agentsData = Array.isArray(json)
-      ? json
-      : Array.isArray(json?.data)
-      ? json.data
-      : [];
-
-    setAgents(agentsData);
-  } catch (err) {
-    console.error("Fetch agents error:", err);
-    setAgents([]);
-  } finally {
-    setAgentsLoading(false);
-  }
-}
     fetchAgents();
   }, []);
 
@@ -195,7 +197,6 @@ async function fetchAgents() {
           return false;
         if (!a.referenceid || a.referenceid.trim() === "") return false;
 
-        // 🔐 if not Admin → only own data
         if (role !== "Admin") {
           return a.referenceid === userReferenceId;
         }
@@ -232,7 +233,7 @@ async function fetchAgents() {
           };
         }
 
-        // 🔥 SALES PER CUSTOMER STATUS (from Sheet Ticket)
+        // Sales per customer status
         if (status === "converted into sales" && remarks !== "po received") {
           if (customerStatus === "New Client") {
             map[referenceid].newClientSales += isNaN(soAmount) ? 0 : soAmount;
@@ -257,40 +258,40 @@ async function fetchAgents() {
           }
         }
 
-        // ⏱ CSR RESPONSE TIME
-// ⏱ CSR RESPONSE TIME (EXCEL-ALIGNED)
-if (
-  received &&
-  endorsed &&
-  isDateInRange(received, dateCreatedFilterRange) &&
-  isDateInRange(endorsed, dateCreatedFilterRange)
-) {
-  const r = new Date(received);
-  const e = new Date(endorsed);
+        // CSR RESPONSE TIME
+        if (
+          received &&
+          endorsed &&
+          isDateInRange(received, dateCreatedFilterRange) &&
+          isDateInRange(endorsed, dateCreatedFilterRange)
+        ) {
+          const r = new Date(received);
+          const e = new Date(endorsed);
 
-  if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
-    map[referenceid].responseTimeTotal += e.getTime() - r.getTime();
-    map[referenceid].responseCount += 1;
-  }
-}
-
-
-        // 🔥 PO RECEIVED RULE
-
-        if (remarks === "po received") {
-          // count ONLY as Non-Sales inquiry
-          map[referenceid].nonSalesCount += 1;
-          return; // 🚫 block from all revenue & conversion
+          if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
+            const diff = e.getTime() - r.getTime();
+            if (diff <= MAX_RESPONSE_TIME_MS) {
+              map[referenceid].responseTimeTotal += diff;
+              map[referenceid].responseCount += 1;
+            }
+          }
         }
 
-        // Normal traffic counting
+        // PO RECEIVED rule
+        if (remarks === "po received") {
+          // Count only as non-sales inquiry, block from revenue & conversion
+          map[referenceid].nonSalesCount += 1;
+          return;
+        }
+
+        // Traffic counting
         if (traffic === "sales") {
           map[referenceid].salesCount += 1;
         } else if (traffic === "non-sales") {
           map[referenceid].nonSalesCount += 1;
         }
 
-        // Only real conversions count
+        // Conversion counting
         if (status === "converted into sales") {
           map[referenceid].convertedCount += 1;
           map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
@@ -302,12 +303,10 @@ if (
   }, [activities, dateCreatedFilterRange, role, userReferenceId]);
 
   const totalSoAmount = groupedData.reduce((sum, row) => sum + row.amount, 0);
-
   const totalSales = groupedData.reduce((s, r) => s + r.salesCount, 0);
   const totalConverted = groupedData.reduce((s, r) => s + r.convertedCount, 0);
   const totalQty = groupedData.reduce((s, r) => s + r.qtySold, 0);
   const totalAmount = groupedData.reduce((s, r) => s + r.amount, 0);
-
   const totalNewClient = groupedData.reduce((s, r) => s + r.newClientSales, 0);
   const totalNewNonBuying = groupedData.reduce(
     (s, r) => s + r.newNonBuyingSales,
@@ -321,7 +320,6 @@ if (
     (s, r) => s + r.existingInactiveSales,
     0
   );
-
   const totalResponseTime = groupedData.reduce(
     (s, r) => s + r.responseTimeTotal,
     0
@@ -342,19 +340,20 @@ if (
     totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
   const formatMs = (ms: number) => {
-    const s = Math.floor(ms / 1000);
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
+    const totalSeconds = Math.round(ms / 1000); // 👈 FIX
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+
     return `${String(h).padStart(2, "0")}:${String(m).padStart(
       2,
       "0"
-    )}:${String(sec).padStart(2, "0")}`;
+    )}:${String(s).padStart(2, "0")}`;
   };
 
-const totalRowResponseAverage =
-  totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
+  const totalRowResponseAverage =
+    totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
   return (
     <Card>
@@ -442,21 +441,15 @@ const totalRowResponseAverage =
                   <TableHead className="text-right">Non-Sales</TableHead>
                   <TableHead className="text-right">Sales</TableHead>
                   <TableHead className="text-right">Qty Sold</TableHead>
-                  <TableHead className="text-right">
-                    Converted to Sale
-                  </TableHead>
+                  <TableHead className="text-right">Converted to Sale</TableHead>
                   <TableHead className="text-right">% Conversion</TableHead>
                   <TableHead className="text-right">Ave. Unit</TableHead>
                   <TableHead className="text-right">Ave. Value</TableHead>
                   <TableHead className="text-right">New Client</TableHead>
                   <TableHead className="text-right">New-Non Buying</TableHead>
                   <TableHead className="text-right">Existing Active</TableHead>
-                  <TableHead className="text-right">
-                    Existing Inactive
-                  </TableHead>
-                  <TableHead className="text-right">
-                    CSR Response Time
-                  </TableHead>
+                  <TableHead className="text-right">Existing Inactive</TableHead>
+                  <TableHead className="text-right">CSR Response Time</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -496,9 +489,8 @@ const totalRowResponseAverage =
                           ₱{row.amount.toLocaleString()}
                         </TableCell>
 
-                        <TableCell className="text-right">
-                          {row.qtySold}
-                        </TableCell>
+                        <TableCell className="text-right">{row.qtySold}</TableCell>
+
                         <TableCell className="text-right">
                           {row.convertedCount}
                         </TableCell>
@@ -506,10 +498,9 @@ const totalRowResponseAverage =
                         <TableCell className="text-right">
                           {row.salesCount === 0
                             ? "0.00%"
-                            : (
-                                (row.convertedCount / row.salesCount) *
-                                100
-                              ).toFixed(2) + "%"}
+                            : ((row.convertedCount / row.salesCount) * 100).toFixed(
+                              2
+                            ) + "%"}
                         </TableCell>
 
                         <TableCell className="text-right">
@@ -521,9 +512,7 @@ const totalRowResponseAverage =
                         <TableCell className="text-right">
                           {row.convertedCount === 0
                             ? "0"
-                            : (
-                                row.amount / row.convertedCount
-                              ).toLocaleString()}
+                            : (row.amount / row.convertedCount).toLocaleString()}
                         </TableCell>
 
                         <TableCell className="text-right">
@@ -567,9 +556,7 @@ const totalRowResponseAverage =
                     {totalConversionPct.toFixed(2)}%
                   </TableCell>
 
-                  <TableCell className="text-right">
-                    {totalAveUnit.toFixed(0)}
-                  </TableCell>
+                  <TableCell className="text-right">{totalAveUnit.toFixed(0)}</TableCell>
 
                   <TableCell className="text-right">
                     {totalAveValue.toLocaleString()}
@@ -588,10 +575,7 @@ const totalRowResponseAverage =
                     ₱{totalExistingInactive.toLocaleString()}
                   </TableCell>
 
-                  <TableCell className="text-right">
-                  {formatMs(totalRowResponseAverage)}
-
-                  </TableCell>
+                  <TableCell className="text-right">{formatMs(totalRowResponseAverage)}</TableCell>
                 </TableRow>
               </tfoot>
             </Table>
