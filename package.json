@@ -67,6 +67,7 @@
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
     "firebase": "^12.6.0",
+    "framer-motion": "^12.27.0",
     "html-react-parser": "^5.2.11",
     "htmlparser2": "^10.0.0",
     "input-otp": "^1.4.2",

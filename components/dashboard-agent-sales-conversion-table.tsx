@@ -258,15 +258,22 @@ async function fetchAgents() {
         }
 
         // ⏱ CSR RESPONSE TIME
-        if (received && endorsed) {
-          const r = new Date(received);
-          const e = new Date(endorsed);
+// ⏱ CSR RESPONSE TIME (EXCEL-ALIGNED)
+if (
+  received &&
+  endorsed &&
+  isDateInRange(received, dateCreatedFilterRange) &&
+  isDateInRange(endorsed, dateCreatedFilterRange)
+) {
+  const r = new Date(received);
+  const e = new Date(endorsed);
 
-          if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
-            map[referenceid].responseTimeTotal += e.getTime() - r.getTime();
-            map[referenceid].responseCount += 1;
-          }
-        }
+  if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
+    map[referenceid].responseTimeTotal += e.getTime() - r.getTime();
+    map[referenceid].responseCount += 1;
+  }
+}
+
 
         // 🔥 PO RECEIVED RULE
 
@@ -345,17 +352,9 @@ async function fetchAgents() {
     )}:${String(sec).padStart(2, "0")}`;
   };
 
-  const totalRowResponseAverage = useMemo(() => {
-  const rowsWithTime = groupedData.filter(r => r.responseCount > 0);
+const totalRowResponseAverage =
+  totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
-  if (rowsWithTime.length === 0) return 0;
-
-  const sumOfRowAverages = rowsWithTime.reduce((sum, r) => {
-    return sum + r.responseTimeTotal / r.responseCount;
-  }, 0);
-
-  return sumOfRowAverages / rowsWithTime.length;
-}, [groupedData]);
 
   return (
     <Card>

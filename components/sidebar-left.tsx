@@ -17,7 +17,8 @@ import {
   PhoneCall,
   Bot,
   Mail,
-  Building2
+  Building2,
+  Plus
 } from "lucide-react";
 
 import { NavFavorites } from "@/components/nav-favorites";
@@ -31,7 +32,11 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarRail,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 function getMenuItems(userId: string | null) {
   return [
@@ -47,7 +52,7 @@ const data = {
     },
   ],
   navSecondary: [
-    { title: "Help", url: "/help", icon: HelpCircle },
+    { title: "Guide", url: "/help", icon: HelpCircle },
     { title: "Calendar", url: "/calendar", icon: CalendarDays },
     { title: "Settings", url: "/settings", icon: Settings },
   ],
@@ -195,6 +200,16 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
     [withUserId]
   );
 
+  function handleRaiseTicketClick(userId?: string) {
+    if (!userId) {
+      console.warn("User ID is missing");
+      return;
+    }
+
+    const url = `/ticket?id=${encodeURIComponent(userId)}`;
+    window.location.href = url;
+  }
+
   return (
     <Sidebar className="border-r-0" {...props}>
       <SidebarHeader>
@@ -211,6 +226,19 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
         />
         <NavSecondary items={navSecondaryWithId} className="mt-auto" />
       </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem className="flex items-center justify-center">
+            <Button onClick={() => handleRaiseTicketClick(userId ?? undefined)}
+              className="bg-black text-white py-6 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-[#d11a2a] transition-all shadow-lg shadow-gray-200"
+            >
+              <Plus size={18} /> Raise a Concern
+            </Button>
+          </SidebarMenuItem>
+
+        </SidebarMenu>
+      </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>
