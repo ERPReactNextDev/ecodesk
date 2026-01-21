@@ -9,19 +9,24 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { role, department, manager } = req.query;
+  // 🔎 accept all supported filters
+  const { role, department, manager, tsm } = req.query;
 
   try {
     const db = await connectToDatabase();
 
+    // ✅ always start with Active users only
     const query: any = {
       Status: "Active",
     };
 
     // 🔎 ctrl+f friendly conditions
-    if (role) query.Role = role;
-    if (department) query.Department = department;
-    if (manager) query.Manager = manager;
+    if (role) query.Role = String(role);
+    if (department) query.Department = String(department);
+    if (manager) query.Manager = String(manager);
+
+    // ✅ IMPORTANT: strict TSM match
+    if (tsm) query.TSM = String(tsm);
 
     const users = await db
       .collection("users")
