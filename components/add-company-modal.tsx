@@ -118,51 +118,53 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   }, [formData.company_name, formData.contact_person, existingCompanies]);
 
 const isFormValid = () => {
-  // hard required fields
-  const required: Array<keyof typeof formData> = [
-    "industry",
-    "address",
-    "company_name",
-  ];
+  // 🔹 check if at least ONE field is filled
+  const hasAnyInput =
+    formData.company_name.trim() ||
+    formData.address.trim() ||
+    formData.industry ||
+    formData.email_address.trim() ||
+    contactPersons.some(p => p.trim()) ||
+    contactNumbers.some(n => n.trim());
 
-  const allFilled = required.every((f) => formData[f]);
-
-  // identifiers (optional but at least one required)
-  const hasName = contactPersons.some((p) => p.trim());
-  const hasContact = contactNumbers.some((n) => n.trim());
-  const hasEmail = !!formData.email_address.trim();
-
-  const hasAnyIdentifier = hasName || hasContact || hasEmail;
-
-  // email validation ONLY if provided
+  // 🔹 email validation (ONLY if email is typed)
   const emailValid =
     !formData.email_address ||
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
 
-  return (
-    allFilled &&
-    hasAnyIdentifier &&
-    emailValid &&
-    !duplicate.contact
-  );
+  // ❌ disable if:
+  // - no input at all
+  // - email exists but invalid
+  if (!hasAnyInput) return false;
+  if (!emailValid) return false;
+
+  return true;
 };
 
 
 
   /* ACCOUNT REFERENCE GENERATOR */
-  const generateAccountReferenceNumber = async (companyName: string) => {
-    const prefix = companyName.trim().substring(0, 2).toUpperCase();
-    const res = await fetch(`/api/get-account-references?prefix=${prefix}-CSR`);
-    const data = await res.json();
+const generateAccountReferenceNumber = async (companyName: string) => {
+  // 🔹 fallback prefix if company name is empty
+  const prefix = companyName.trim()
+    ? companyName.trim().substring(0, 2).toUpperCase()
+    : "NA";
 
-    let max = 0;
-    data.references.forEach((r: string) => {
-      const m = r.match(/CSR-(\d{8})$/);
-      if (m) max = Math.max(max, parseInt(m[1], 10));
-    });
+  const res = await fetch(`/api/get-account-references?prefix=${prefix}-CSR`);
+  const data = await res.json();
 
-    return `${prefix}-CSR-${String(max + 1).padStart(8, "0")}`;
-  };
+  const references: string[] = Array.isArray(data?.references)
+    ? data.references
+    : [];
+
+  let max = 0;
+  references.forEach((r) => {
+    const m = r.match(/CSR-(\d{8})$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+
+  return `${prefix}-CSR-${String(max + 1).padStart(8, "0")}`;
+};
 
   /* CONTACT NUMBER HANDLERS */
   const handleContactChange = (index: number, value: string) => {
@@ -200,9 +202,10 @@ const isFormValid = () => {
       .filter(Boolean)
       .join(" / ");
 
-const joinedPersons =
-  contactPersons.map((p) => p.trim()).filter(Boolean).join(" / ") ||
-  "Client not Disclosed";
+      const joinedPersons = contactPersons
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .join(" / ");
 
       const res = await fetch("/api/com-save-company", {
         method: "POST",
@@ -286,7 +289,7 @@ const joinedPersons =
             </Field>
 
               <Field>
-                <FieldLabel>Customer Name</FieldLabel>
+                <FieldLabel>Customer Name *</FieldLabel>
 
                 <div className="space-y-2">
                   {contactPersons.map((name, idx) => (
@@ -330,7 +333,7 @@ const joinedPersons =
 
             {/* ✅ MULTIPLE CONTACT NUMBERS */}
             <Field>
-              <FieldLabel>Contact Number</FieldLabel>
+              <FieldLabel>Contact Number *</FieldLabel>
               <div className="space-y-2">
                 {contactNumbers.map((num, idx) => (
                   <div key={idx} className="flex gap-2 items-center">
@@ -356,16 +359,30 @@ const joinedPersons =
               </div>
             </Field>
 
-            <Field>
-              <FieldLabel>Email Address</FieldLabel>
-              <Input
-                type="email"
-                value={formData.email_address}
-                onChange={(e) =>
-                  setFormData({ ...formData, email_address: e.target.value })
-                }
-              />
-            </Field>
+<Field>
+  <FieldLabel>Email Address</FieldLabel>
+  <Input
+    type="email"
+    value={formData.email_address}
+    onChange={(e) =>
+      setFormData({ ...formData, email_address: e.target.value })
+    }
+    className={
+      formData.email_address &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address)
+        ? "border-red-500"
+        : ""
+    }
+  />
+
+  {formData.email_address &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address) && (
+      <p className="text-xs text-red-600 mt-1">
+        Please enter a valid email address
+      </p>
+    )}
+</Field>
+
 
             <Field>
               <FieldLabel>Address *</FieldLabel>
