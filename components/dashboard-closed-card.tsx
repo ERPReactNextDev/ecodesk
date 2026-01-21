@@ -67,8 +67,8 @@ export function ClosedCard({
 const closedCount = useMemo(() => {
   return activities.filter(
     (a) =>
-      a.status?.toLowerCase() === "closed" &&
-      isDateInRange(a.date_updated ?? a.date_created, dateCreatedFilterRange)
+a.status === "Closed" &&
+isDateInRange(a.date_created, dateCreatedFilterRange)
   ).length;
 }, [activities, dateCreatedFilterRange]);
 
