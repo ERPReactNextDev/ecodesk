@@ -118,30 +118,35 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   }, [formData.company_name, formData.contact_person, existingCompanies]);
 
 const isFormValid = () => {
+  // hard required fields
   const required: Array<keyof typeof formData> = [
     "industry",
     "address",
+    "company_name",
   ];
 
   const allFilled = required.every((f) => formData[f]);
-  const hasContactPerson = contactPersons.some(n => n.trim());
 
-  
+  // identifiers (optional but at least one required)
+  const hasName = contactPersons.some((p) => p.trim());
+  const hasContact = contactNumbers.some((n) => n.trim());
+  const hasEmail = !!formData.email_address.trim();
 
-  // email is OPTIONAL — only validate if user typed something
+  const hasAnyIdentifier = hasName || hasContact || hasEmail;
+
+  // email validation ONLY if provided
   const emailValid =
     !formData.email_address ||
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
 
-  // contact number is OPTIONAL — allow empty
-  const hasContact = contactNumbers.some((n) => n.trim());
-  const contactValid = contactNumbers.length === 1
-    ? true        // allow blank
-    : hasContact; // if multiple fields exist, at least one must be filled
-
-return allFilled && emailValid && contactValid && hasContactPerson && !duplicate.contact;
-
+  return (
+    allFilled &&
+    hasAnyIdentifier &&
+    emailValid &&
+    !duplicate.contact
+  );
 };
+
 
 
   /* ACCOUNT REFERENCE GENERATOR */
@@ -195,10 +200,9 @@ return allFilled && emailValid && contactValid && hasContactPerson && !duplicate
       .filter(Boolean)
       .join(" / ");
 
-      const joinedPersons = contactPersons
-        .map((p) => p.trim())
-        .filter(Boolean)
-        .join(" / ");
+const joinedPersons =
+  contactPersons.map((p) => p.trim()).filter(Boolean).join(" / ") ||
+  "Client not Disclosed";
 
       const res = await fetch("/api/com-save-company", {
         method: "POST",
@@ -282,7 +286,7 @@ return allFilled && emailValid && contactValid && hasContactPerson && !duplicate
             </Field>
 
               <Field>
-                <FieldLabel>Customer Name *</FieldLabel>
+                <FieldLabel>Customer Name</FieldLabel>
 
                 <div className="space-y-2">
                   {contactPersons.map((name, idx) => (
@@ -326,7 +330,7 @@ return allFilled && emailValid && contactValid && hasContactPerson && !duplicate
 
             {/* ✅ MULTIPLE CONTACT NUMBERS */}
             <Field>
-              <FieldLabel>Contact Number *</FieldLabel>
+              <FieldLabel>Contact Number</FieldLabel>
               <div className="space-y-2">
                 {contactNumbers.map((num, idx) => (
                   <div key={idx} className="flex gap-2 items-center">
@@ -353,7 +357,7 @@ return allFilled && emailValid && contactValid && hasContactPerson && !duplicate
             </Field>
 
             <Field>
-              <FieldLabel>Email Address *</FieldLabel>
+              <FieldLabel>Email Address</FieldLabel>
               <Input
                 type="email"
                 value={formData.email_address}
