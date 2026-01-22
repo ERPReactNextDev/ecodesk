@@ -75,23 +75,23 @@ export function NavUser({
     }
   };
 
-  const doLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logLogoutActivity();
+const doLogout = async () => {
+  setIsLoggingOut(true);
+  try {
+    await logLogoutActivity();
 
-      await fetch("/api/logout", {
-        method: "POST",
-      });
+    await fetch("/api/logout", {
+      method: "POST",
+    });
 
-      localStorage.removeItem("userId");
+    localStorage.removeItem("userId");
 
-      router.replace("/login");
-    } finally {
-      setIsLoggingOut(false);
-      setIsDialogOpen(false);
-    }
-  };
+    router.replace("/login");
+  } finally {
+    setIsLoggingOut(false);
+    setIsDialogOpen(false);
+  }
+};
 
   return (
     <>
