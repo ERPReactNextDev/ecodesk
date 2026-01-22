@@ -79,7 +79,13 @@ export function NavUser({
     setIsLoggingOut(true);
     try {
       await logLogoutActivity();
+
+      await fetch("/api/logout", {
+        method: "POST",
+      });
+
       localStorage.removeItem("userId");
+
       router.replace("/login");
     } finally {
       setIsLoggingOut(false);
