@@ -40,15 +40,15 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
 }
 
 function formatHHMMSS(totalMinutes: number): string {
-    if (!totalMinutes || totalMinutes <= 0) return "0:00:00";
+    if (!totalMinutes || totalMinutes <= 0) return "00:00:00";
 
-    const seconds = Math.round(totalMinutes * 60);
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
+    // totalMinutes already rounded earlier (safeDiffMinutes)
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
 
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
 }
+
 
 
 interface Activity {
