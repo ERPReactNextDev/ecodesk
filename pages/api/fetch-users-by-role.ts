@@ -21,12 +21,25 @@ export default async function handler(
     };
 
     // 🔎 ctrl+f friendly conditions
-    if (role) query.Role = String(role);
-    if (department) query.Department = String(department);
-    if (manager) query.Manager = String(manager);
+// ALSO allow Role = Manager
+if (role) {
+  if (
+    role === "Territory Sales Manager" &&
+    department === "Sales"
+  ) {
+    query.Role = {
+      $in: ["Territory Sales Manager", "Manager"],
+    };
+  } else {
+    query.Role = String(role);
+  }
+}
 
-    // ✅ IMPORTANT: strict TSM match
-    if (tsm) query.TSM = String(tsm);
+if (department) query.Department = String(department);
+if (manager) query.Manager = String(manager);
+
+// ✅ IMPORTANT: strict TSM match (used when fetching agents)
+if (tsm) query.TSM = String(tsm);
 
     const users = await db
       .collection("users")
