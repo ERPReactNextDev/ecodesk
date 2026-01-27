@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useState, useMemo, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useState,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -20,10 +25,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
-// Tooltip component
+/* ================= TOOLTIP ================= */
 function TooltipInfo({ children }: { children: React.ReactNode }) {
   return (
     <div className="absolute top-full mt-1 w-80 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
@@ -32,10 +37,9 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ================= TYPES ================= */
 interface Activity {
-  customer_type: string;
-  company_name: string;
-  contact_person?: string;
+  customer_type?: string;
   date_created?: string;
 }
 
@@ -53,15 +57,14 @@ export interface CustomerTypeCardRef {
   downloadCSV: () => void;
 }
 
-const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(({
-  activities,
-  loading,
-  error,
-  dateCreatedFilterRange,
-}, ref) => {
-
+/* ================= COMPONENT ================= */
+const CustomerTypeCard = forwardRef<
+  CustomerTypeCardRef,
+  ChannelTableProps
+>(({ activities, loading, error, dateCreatedFilterRange }, ref) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
+  /* ================= DATE FILTER ================= */
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
     if (!range) return true;
     if (!dateStr) return false;
@@ -71,103 +74,82 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(({
 
     const { from, to } = range;
 
-    if (from && date < new Date(from.setHours(0, 0, 0, 0))) return false;
-    if (to && date > new Date(to.setHours(23, 59, 59, 999))) return false;
+    const fromDate = from
+      ? new Date(from.getFullYear(), from.getMonth(), from.getDate())
+      : null;
+    const toDate = to
+      ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
+      : null;
+
+    if (fromDate && date < fromDate) return false;
+    if (toDate && date > toDate) return false;
 
     return true;
   };
 
-  // Group by customer_type + company_name + contact_person and count occurrences
-  const groupedData = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        customer_type: string;
-        company_name: string;
-        contact_person?: string;
-        count: number;
-      }
-    > = {};
+  /* ================= CORE FIX =================
+     Count PER TICKET, grouped ONLY by customer_type
+     (matches Ticket filter behavior exactly)
+  ================================================= */
+  const displayData = useMemo(() => {
+    const summary: Record<string, number> = {};
 
     activities
       .filter(
         (a) =>
           isDateInRange(a.date_created, dateCreatedFilterRange) &&
           a.customer_type &&
-          a.customer_type.trim() !== "" &&
-          a.company_name &&
-          a.company_name.trim() !== ""
+          a.customer_type.trim() !== ""
       )
       .forEach((a) => {
-        const customer_type = a.customer_type!.trim();
-        const company_name = a.company_name.trim();
-        const contact_person = a.contact_person?.trim();
-        const key = `${customer_type}|${company_name}|${contact_person ?? ""}`;
-
-        if (!map[key]) {
-          map[key] = { customer_type, company_name, contact_person, count: 0 };
-        }
-        map[key].count += 1;
+        const key = a.customer_type!.trim();
+        summary[key] = (summary[key] ?? 0) + 1;
       });
 
-    return Object.values(map);
-  }, [activities, dateCreatedFilterRange]);
-
-  // For display in the table: group by customer_type only (sum counts)
-  const displayData = useMemo(() => {
-    const summary: Record<string, number> = {};
-    groupedData.forEach(({ customer_type, count }) => {
-      summary[customer_type] = (summary[customer_type] ?? 0) + count;
-    });
     return Object.entries(summary).map(([customer_type, count]) => ({
       customer_type,
       count,
     }));
-  }, [groupedData]);
+  }, [activities, dateCreatedFilterRange]);
 
-  const totalCount = displayData.reduce((sum, row) => sum + row.count, 0);
+  const totalCount = displayData.reduce(
+    (sum, row) => sum + row.count,
+    0
+  );
 
+  /* ================= CSV EXPORT ================= */
   useImperativeHandle(ref, () => ({
     downloadCSV: () => {
+      const headers = ["Customer Type", "Count"];
 
-      const headers = [
-        "Customer Type",
-        "Company Name",
-        "Contact Person",
-        "Count",
-      ];
-
-      const rows = groupedData.map(
-        ({ customer_type, company_name, contact_person, count }) => [
-          customer_type,
-          company_name,
-          contact_person ?? "",
-          count.toString(),
-        ]
-      );
+      const rows = displayData.map((row) => [
+        row.customer_type,
+        row.count.toString(),
+      ]);
 
       const csvContent =
         [headers, ...rows]
           .map((row) =>
-            row
-              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
-              .join(",")
+            row.map((item) => `"${item.replace(/"/g, '""')}"`).join(",")
           )
           .join("\n") + "\n";
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
       const url = URL.createObjectURL(blob);
 
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", "customer_type.csv");
+      link.setAttribute("download", "customer_type_summary.csv");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    }
+    },
   }));
 
+  /* ================= UI ================= */
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
@@ -181,7 +163,8 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(({
           <Info size={18} />
           {showTooltip && (
             <TooltipInfo>
-              This table shows the count of activities grouped by customer type within the selected date range.
+              This card shows the number of tickets per customer type.
+              The count exactly matches the filtered tickets list.
             </TooltipInfo>
           )}
         </div>
@@ -207,11 +190,14 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(({
             <TableBody>
               {displayData.map((row) => (
                 <TableRow key={row.customer_type}>
-                  <TableCell className="font-medium pt-4 pb-4 text-left">
+                  <TableCell className="font-medium py-4">
                     {row.customer_type}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Badge variant="outline" className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+                    <Badge
+                      variant="outline"
+                      className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums"
+                    >
                       {row.count}
                     </Badge>
                   </TableCell>
@@ -221,10 +207,12 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(({
           </Table>
         )}
       </CardContent>
+
       <Separator />
+
       <CardFooter className="flex justify-end">
         <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-         Total: {totalCount}
+          Total: {totalCount}
         </Badge>
       </CardFooter>
     </Card>
