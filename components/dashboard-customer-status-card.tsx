@@ -47,10 +47,13 @@ interface Activity {
 }
 
 interface CustomerStatusCardProps {
-  activities: Activity[]; // 🔥 SAME DATA SOURCE AS ticket.tsx
+  activities: Activity[];
   loading: boolean;
   error: string | null;
   dateCreatedFilterRange: DateRange | undefined;
+  setDateCreatedFilterRangeAction: React.Dispatch<
+    React.SetStateAction<DateRange | undefined>
+  >;
 }
 
 export interface CustomerStatusCardRef {
