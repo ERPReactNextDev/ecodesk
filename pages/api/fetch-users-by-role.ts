@@ -21,25 +21,38 @@ export default async function handler(
     };
 
     // 🔎 ctrl+f friendly conditions
-// ALSO allow Role = Manager
-if (role) {
-  if (
-    role === "Territory Sales Manager" &&
-    department === "Sales"
-  ) {
-    query.Role = {
-      $in: ["Territory Sales Manager", "Manager"],
-    };
-  } else {
-    query.Role = String(role);
-  }
-}
 
-if (department) query.Department = String(department);
-if (manager) query.Manager = String(manager);
+    // 🔥 SPECIAL BUSINESS RULE:
+    // TSM dropdown should include:
+    // 1. Real Territory Sales Managers
+    // 2. Managers ONLY if they have NO TSM (top-level)
+    if (role) {
+      if (
+        role === "Territory Sales Manager" &&
+        department === "Sales"
+      ) {
+        query.$or = [
+          { Role: "Territory Sales Manager" },
+          {
+            Role: "Manager",
+            $or: [
+              { TSM: { $exists: false } },
+              { TSM: null },
+              { TSM: "" },
+            ],
+          },
+        ];
+      } else {
+        query.Role = String(role);
+      }
+    }
 
-// ✅ IMPORTANT: strict TSM match (used when fetching agents)
-if (tsm) query.TSM = String(tsm);
+    if (department) query.Department = String(department);
+    if (manager) query.Manager = String(manager);
+
+    // ✅ IMPORTANT:
+    // strict TSM match (used when fetching agents)
+    if (tsm) query.TSM = String(tsm);
 
     const users = await db
       .collection("users")

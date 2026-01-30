@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useState, useMemo, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useState,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -20,10 +25,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 
-// Tooltip component
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+
+/* ================= TOOLTIP ================= */
 function TooltipInfo({ children }: { children: React.ReactNode }) {
   return (
     <div className="absolute top-full mt-1 w-80 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
@@ -32,36 +38,33 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ================= TYPES ================= */
 interface Activity {
-  customer_status: string;
-  company_name: string;
+  customer_status?: string;
+  company_name?: string;
   contact_person?: string;
   date_created?: string;
 }
 
-interface ChannelTableProps {
-  activities: Activity[];
+interface CustomerStatusCardProps {
+  activities: Activity[]; // 🔥 SAME DATA SOURCE AS ticket.tsx
   loading: boolean;
   error: string | null;
   dateCreatedFilterRange: DateRange | undefined;
-  setDateCreatedFilterRangeAction: React.Dispatch<
-    React.SetStateAction<DateRange | undefined>
-  >;
 }
 
 export interface CustomerStatusCardRef {
   downloadCSV: () => void;
 }
 
-const CustomerStatusCard = forwardRef<CustomerStatusCardRef, ChannelTableProps>(({
-  activities,
-  loading,
-  error,
-  dateCreatedFilterRange,
-}, ref) => {
-
+/* ================= COMPONENT ================= */
+const CustomerStatusCard = forwardRef<
+  CustomerStatusCardRef,
+  CustomerStatusCardProps
+>(({ activities, loading, error, dateCreatedFilterRange }, ref) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
+  /* ================= DATE FILTER (SAME AS ticket.tsx STYLE) ================= */
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
     if (!range) return true;
     if (!dateStr) return false;
@@ -71,90 +74,72 @@ const CustomerStatusCard = forwardRef<CustomerStatusCardRef, ChannelTableProps>(
 
     const { from, to } = range;
 
-    if (from && date < new Date(from.setHours(0, 0, 0, 0))) return false;
-    if (to && date > new Date(to.setHours(23, 59, 59, 999))) return false;
+    const fromDate = from
+      ? new Date(from.getFullYear(), from.getMonth(), from.getDate())
+      : null;
+
+    const toDate = to
+      ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
+      : null;
+
+    if (fromDate && date < fromDate) return false;
+    if (toDate && date > toDate) return false;
 
     return true;
   };
 
-  // Group by customer_status + company_name + contact_person and count occurrences
+  /* ================= FILTER + GROUP (LIKE act-filter-dialog logic) ================= */
   const groupedData = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        customer_status: string;
-        company_name: string;
-        contact_person?: string;
-        count: number;
-      }
-    > = {};
+    const map: Record<string, number> = {};
 
     activities
       .filter(
         (a) =>
-          isDateInRange(a.date_created, dateCreatedFilterRange) &&
           a.customer_status &&
           a.customer_status.trim() !== "" &&
-          a.company_name &&
-          a.company_name.trim() !== ""
+          isDateInRange(a.date_created, dateCreatedFilterRange),
       )
       .forEach((a) => {
-        const customer_status = a.customer_status!.trim();
-        const company_name = a.company_name.trim();
-        const contact_person = a.contact_person?.trim();
-        const key = `${customer_status}|${company_name}|${contact_person ?? ""}`;
-
-        if (!map[key]) {
-          map[key] = { customer_status, company_name, contact_person, count: 0 };
-        }
-        map[key].count += 1;
+        const status = a.customer_status!.trim();
+        map[status] = (map[status] || 0) + 1;
       });
 
-    return Object.values(map);
-  }, [activities, dateCreatedFilterRange]);
-
-  // For display in the table: group by customer_status only (sum counts)
-  const displayData = useMemo(() => {
-    const summary: Record<string, number> = {};
-    groupedData.forEach(({ customer_status, count }) => {
-      summary[customer_status] = (summary[customer_status] ?? 0) + count;
-    });
-    return Object.entries(summary).map(([customer_status, count]) => ({
+    return Object.entries(map).map(([customer_status, count]) => ({
       customer_status,
       count,
     }));
-  }, [groupedData]);
+  }, [activities, dateCreatedFilterRange]);
 
-  const totalCount = displayData.reduce((sum, row) => sum + row.count, 0);
+  const totalCount = groupedData.reduce(
+    (sum, row) => sum + row.count,
+    0,
+  );
 
+  /* ================= CSV EXPORT ================= */
   useImperativeHandle(ref, () => ({
     downloadCSV: () => {
+      if (!groupedData.length) return;
 
-      const headers = [
-        "Customer Status",
-        "Company Name",
-        "Contact Person",
-      ];
+      const headers = ["Customer Status", "Count"];
+      const rows = groupedData.map((r) => [
+        r.customer_status,
+        String(r.count),
+      ]);
 
-      const rows = groupedData.map(
-        ({ customer_status, company_name, contact_person }) => [
-          customer_status,
-          company_name,
-          contact_person ?? "",
-        ]
-      );
       const csvContent =
         [headers, ...rows]
           .map((row) =>
             row
-              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
-              .join(",")
+              .map((cell) => `"${cell.replace(/"/g, '""')}"`)
+              .join(","),
           )
           .join("\n") + "\n";
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
+      const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
 
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", "customer_status.csv");
@@ -162,9 +147,10 @@ const CustomerStatusCard = forwardRef<CustomerStatusCardRef, ChannelTableProps>(
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    }
+    },
   }));
 
+  /* ================= UI ================= */
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
@@ -178,8 +164,8 @@ const CustomerStatusCard = forwardRef<CustomerStatusCardRef, ChannelTableProps>(
           <Info size={18} />
           {showTooltip && (
             <TooltipInfo>
-              This table shows the count of activities grouped by customer status
-              within the selected date range.
+              Displays ticket records grouped by <b>Customer Status</b>, using
+              the same activity data shown in the Ticket list.
             </TooltipInfo>
           )}
         </div>
@@ -189,11 +175,11 @@ const CustomerStatusCard = forwardRef<CustomerStatusCardRef, ChannelTableProps>(
         {loading && <p>Loading activities...</p>}
         {error && <p className="text-destructive">{error}</p>}
 
-        {!loading && !error && displayData.length === 0 && (
+        {!loading && !error && groupedData.length === 0 && (
           <p className="text-muted-foreground">No data available.</p>
         )}
 
-        {!loading && !error && displayData.length > 0 && (
+        {!loading && !error && groupedData.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
@@ -203,13 +189,16 @@ const CustomerStatusCard = forwardRef<CustomerStatusCardRef, ChannelTableProps>(
             </TableHeader>
 
             <TableBody>
-              {displayData.map((row) => (
+              {groupedData.map((row) => (
                 <TableRow key={row.customer_status}>
-                  <TableCell className="font-medium pt-4 pb-4 text-left">
+                  <TableCell className="font-medium">
                     {row.customer_status}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Badge variant="outline" className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+                    <Badge
+                      variant="outline"
+                      className="h-9 min-w-9 rounded-full px-3 font-mono tabular-nums"
+                    >
                       {row.count}
                     </Badge>
                   </TableCell>
@@ -219,9 +208,11 @@ const CustomerStatusCard = forwardRef<CustomerStatusCardRef, ChannelTableProps>(
           </Table>
         )}
       </CardContent>
+
       <Separator />
+
       <CardFooter className="flex justify-end">
-        <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+        <Badge className="h-9 min-w-9 rounded-full px-3 font-mono tabular-nums">
           Total: {totalCount}
         </Badge>
       </CardFooter>
