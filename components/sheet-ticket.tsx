@@ -127,158 +127,7 @@ interface TicketSheetProps {
   handleUpdate: () => void;
 }
 
-const MANAGER_AGENT_MAP: Record<string, string[]> = {
-  "AB-NCR-288130": [
-    "JP-NCR-321488", // Jeff Puying
-    "VO-NCR-765107", // Vince Ortiz
-    "JC-NCR-635171", // Josh Candazo
-    "WA-NCR-532926", // Wilnie Ardeloso
-    "AP-NCR-338109", // Ansley Patelo
-    "CB-NCR-578383", // Cristy Bobis
-    "SR-NCR-157258", // Sherylin Rapote
-    "MQ-NCR-618228", // Michael Quijano
-    "CN-NCR-915669", // Candy Notob
-    "EL-NCR-403385", // Erwin Laude
-    "AB-NCR-864408", // Myla Tandugan
-    "RB-NCR-968208", // Roselyn Barnes
-  ],
 
-  "RD-NCR-612038": [
-    "CA-NCR-506100", // Christopher Acierto
-  ],
-
-  "JA-NCR-727428": [
-    "AP-NCR-468624", // Agnes Angeli Panopio
-  ],
-
-  "RT-NCR-815758": [
-    "JL-NCR-577103", // Jeffrey Lacson
-    "LD-NCR-898785", // Lotty De Guzman
-    "RI-NCR-820157", // Rodelio Ico
-    "RF-NCR-864625", // Rialyn Francisco
-    "AP-NCR-362012", // Alvin Perez
-    "RD-NCR-118744", // Rodolfo Delizo
-    "RD-NCR-180410", // Ruby Del Rosario
-    "GR-NCR-401280", // Gene Mark Roxas
-    "DD-NCR-462607", // Dionisio Doyugan
-    "GA-NCR-330568", // Gretchel Aquino
-    "NC-NCR-904943", // Nino Conopio
-  ],
-
-  "AS-NCR-146592": [
-    "MV-CBU-151813", // Mark Villagonzalo
-    "CD-CBU-564558", // Connie Doroja
-    "RA-CBU-225479", // Rodelyn Abrea
-    "RR-Cebu-293424", // Rechel Racaza
-  ],
-
-  "JM-CBU-702043": [
-    "KY-DVO-679025", // Khay Marie Yango
-    "NM-DVO-812855", // Norman Maranga
-    "NJ-DVO-543095", // Neil Vincent Jarabej
-  ],
-
-  "MP-CDO-613398": [
-    "KG-CDO-910641", // Kurt Guangco
-    "VP-CDO-581288", // Venzross Posadas
-    "CG-CDO-771954", // Che Gumapac
-  ],
-
-  "MF-PH-840897": [
-    "JD-NCR-953794", // Jean Dela Cerna
-    "JS-NCR-606082", // Joy Merel Soriente
-    "RM-NCR-462285", // Rodney Mendoza
-    "RB-NCR-840445", // Raymart Binondo
-    "BL-NCR-704414", // Banjo Lising
-    "JC-NCR-245823", // Jonna Clarin
-    "AE-NCR-274606", // Alvin Estor
-  ],
-
-  "SH-NCR-420492": [
-    "RB-PH-765029", // Rafael Bayani
-    "JD-NCR-296929", // Jennifer Dela Cruz
-    "ES-PH-966693", // Elaine Soroan
-  ],
-
-  "JG-NCR-713768": [
-    "CB-NCR-313436", // Badoy Christian Paul
-    "JA-NCR-839373", // Alimasa Jeffrey
-  ],
-
-  "KG-PH-878400": [
-    "JD-NCR-607727", // Joyce Ann De Leon
-    "RL-NCR-974509", // Ma. Ronilaine Leonardo
-  ],
-
-  "TT-PH-500404": ["AE-NCR-555756"],
-};
-
-const AGENTS = [
-  { id: "AP-NCR-468624", name: "Agnes Angeli, Panopio" },
-  { id: "AE-NCR-274606", name: "Alvin, Estor" },
-  { id: "AP-NCR-362012", name: "Alvin, Perez" },
-  { id: "AP-NCR-338109", name: "Ansley, Patelo" },
-  { id: "BL-NCR-704414", name: "Banjo, Lising" },
-  { id: "CN-NCR-915669", name: "Candy, Notob" },
-  { id: "CG-CDO-771954", name: "Che, Gumapac" },
-  { id: "CA-NCR-506100", name: "Christopher, Acierto" },
-  { id: "CD-CBU-564558", name: "Connie, Doroja" },
-  { id: "CB-NCR-578383", name: "Cristy, Bobis" },
-  { id: "DD-DVO-211099", name: "Dane Ariane, Delute" },
-  { id: "DD-NCR-462607", name: "Dionisio, Doyugan" },
-  { id: "EL-NCR-403385", name: "Erwin Jr, Laude" },
-  { id: "FN-CBU-905953", name: "Ferdy, Navarro" },
-  { id: "GR-NCR-401280", name: "Gene Mark, Roxas" },
-  { id: "GA-NCR-330568", name: "Gretchel Ann, Aquino" },
-  { id: "JJ-DVO-928920", name: "Jayson, Jungaya" },
-  { id: "JD-NCR-953794", name: "Jean, Dela Cerna" },
-  { id: "JL-NCR-577103", name: "Jeffrey, Lacson" },
-  { id: "JP-DVO-561222", name: "Jevan, Pinero" },
-  { id: "JP-NCR-321488", name: "John Jeffrey, Puying" },
-  { id: "JC-NCR-245823", name: "Jonna, Clarin" },
-  { id: "JC-NCR-635171", name: "Josh, Candazo" },
-  { id: "JS-NCR-606082", name: "Joy Merel, Soriente" },
-  { id: "JT-CBU-850172", name: "Jude Francinni, Tan" },
-  { id: "KY-DVO-679025", name: "Khay, Yango" },
-  { id: "KG-CDO-910641", name: "Kurt Narrem, Guangco" },
-  { id: "LD-NCR-898785", name: "Lotty, De Guzman" },
-  { id: "MM-NCR-642069", name: "Maricar, Magdaong" },
-  { id: "MV-CBU-151813", name: "Mark, Villagonzalo" },
-  { id: "MQ-NCR-618228", name: "Michael, Quijano" },
-  { id: "NJ-DVO-543095", name: "Neil Vincent, Jarabej" },
-  { id: "NM-DVO-812855", name: "Norman, Maranga" },
-  { id: "RB-NCR-840445", name: "Raymart, Binondo" },
-  { id: "RN-CDO-536745", name: "Reggie, Nocete" },
-  { id: "RF-NCR-864625", name: "Rialyn, Francisco" },
-  { id: "RI-NCR-820157", name: "Rodelio, Ico" },
-  { id: "RA-CBU-225479", name: "Rodelyn, Abrea" },
-  { id: "RM-NCR-462285", name: "Rodney, Mendoza" },
-  { id: "RD-NCR-118744", name: "Rodolfo Jr, Delizo" },
-  { id: "RB-NCR-968208", name: "Roselyn, Barnes" },
-  { id: "RD-NCR-180410", name: "Ruby, Del Rosario" },
-  { id: "SS-NCR-369807", name: "Shane Rey, Santos" },
-  { id: "SN-NCR-514468", name: "Shermaine, Navarro" },
-  { id: "SR-NCR-157258", name: "Sherylin, Rapote" },
-  { id: "VP-CDO-581288", name: "Venzross, Posadas" },
-  { id: "VO-NCR-765107", name: "Vince, Ortiz" },
-  { id: "WA-NCR-532926", name: "Wilnie, Ardeloso" },
-  { id: "JD-NCR-296929", name: "Jennifer, Dela Cruz" },
-
-  { id: "RB-PH-765029", name: "Rafael, Bayani" },
-  { id: "JD-NCR-296929", name: "Jennifer, Dela Cruz" },
-  { id: "ES-PH-966693", name: "Elaine, Soroan" },
-  { id: "AB-NCR-864408", name: "Myla, Tindugan" },
-  { id: "CB-NCR-313436", name: "Christian Paul, Badoy" },
-  { id: "JA-NCR-839373", name: "Jeffrey, Alimasa" },
-  { id: "NC-NCR-904943", name: "Nino Gregorio, Conopio" },
-  { id: "RR-Cebu-293424", name: "Rechel, Racaza" },
-
-  { id: "JD-NCR-607727", name: "Joyce Ann, De Leon" },
-  { id: "RL-NCR-974509", name: "Ma. Ronilaine, Leonardo" },
-
-  { id: "JG-NCR-920587", name: "Test Leroux" },
-  { id: "AE-NCR-555756", name: "Test Agent" },
-];
 
 // Reusable Radio Group
 const RadioOptionsGroup = ({
@@ -473,11 +322,53 @@ export function TicketSheet(props: TicketSheetProps) {
     handleUpdate,
   } = props;
 
+    // ================= ASSIGNEE (DYNAMIC USERS) =================
+  interface User {
+    ReferenceID: string;
+    Firstname: string;
+    Lastname: string;
+    Role: string;
+    Department: string;
+  }
+   const [managersList, setManagersList] = useState<User[]>([]);
+  const [agentsList, setAgentsList] = useState<User[]>([]);
+  const [loadingManagers, setLoadingManagers] = useState(false);
+  const [loadingAgents, setLoadingAgents] = useState(false);
+
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [errorActivities, setErrorActivities] = useState(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const isJobApplicant = wrapUp === "Job Applicants";
   const isHrActive = Boolean(hrAcknowledgeDate);
+
+  // ================= FETCH MANAGERS =================
+
+  
+  useEffect(() => {
+
+    
+if (!department) {
+  setManagersList([]);
+  setAgentsList([]);   // ✅ clear agents
+  setManager("");
+  setAgent("");        // ✅ reset agent
+  return;
+}
+
+    setLoadingManagers(true);
+
+    fetch(
+      `/api/fetch-users-by-role?role=Territory Sales Manager&department=${encodeURIComponent(
+        department,
+      )}`,
+    )
+      .then((res) => res.json())
+      .then((json) => {
+        setManagersList(json.data || []);
+      })
+      .catch(() => setManagersList([]))
+      .finally(() => setLoadingManagers(false));
+  }, [department]);
 
   const fetchActivities = useCallback(() => {
     setLoadingActivities(true);
@@ -499,6 +390,29 @@ export function TicketSheet(props: TicketSheetProps) {
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
+
+  // ================= FETCH AGENTS =================
+  useEffect(() => {
+    if (!manager) {
+      setAgentsList([]);
+      setAgent("");
+      return;
+    }
+
+    setLoadingAgents(true);
+
+    fetch(
+      `/api/fetch-users-by-role?role=Territory Sales Associate&department=Sales&tsm=${encodeURIComponent(
+        manager,
+      )}`,
+    )
+      .then((res) => res.json())
+      .then((json) => {
+        setAgentsList(json.data || []);
+      })
+      .catch(() => setAgentsList([]))
+      .finally(() => setLoadingAgents(false));
+  }, [manager]);
 
   // 1️⃣ Ticket Received vs Ticket Endorsed validation
   useEffect(() => {
@@ -1464,291 +1378,204 @@ export function TicketSheet(props: TicketSheetProps) {
         </>
       )}
 
-      {step === 6 && !isJobApplicant && (
-        <>
-          <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
-          <Field>
-            <FieldLabel>Manager</FieldLabel>
-            <FieldDescription>
-              Select the manager responsible for this task or client.
-            </FieldDescription>
-            <Select
-              value={manager}
-              onValueChange={(value) => setManager(value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a Manager" />
-              </SelectTrigger>
-              <SelectContent>
-                {department === "Accounting" ? (
-                  <SelectItem value="GM-NCR-435582">
-                    Grecylda Mamungay
-                  </SelectItem>
-                ) : department === "Business Development" ? (
-                  <SelectItem value="SH-NCR-420492">Sette Hosena</SelectItem>
-                ) : department === "Sales" ? (
-                  <>
-                    <SelectItem value="AS-NCR-146592">Albert Sabido</SelectItem>
-                    <SelectItem value="AB-NCR-288130">Angie Baldugo</SelectItem>
-                    <SelectItem value="BR-PH-358329">
-                      Betty Rodriguez
-                    </SelectItem>
-                    <SelectItem value="MM-PH-104083">
-                      Maricris Mercado
-                    </SelectItem>
-                    <SelectItem value="EY-NCR-396116">Edgar Yem</SelectItem>
-                    <SelectItem value="JG-NCR-713768">Janna Gumatay</SelectItem>
-                    <SelectItem value="JA-NCR-727428">
-                      Jerry Abaluyan
-                    </SelectItem>
-                    <SelectItem value="JM-CBU-702043">Johnnel Malco</SelectItem>
-                    <SelectItem value="MF-PH-840897">
-                      Ma. riza Felizmena
-                    </SelectItem>
-                    <SelectItem value="SH-NCR-420492">Sette Hosena</SelectItem>
-                    <SelectItem value="MP-CDO-613398">Mark Pacis</SelectItem>
-                    <SelectItem value="RD-NCR-612038">
-                      Ronald Dela Cueva
-                    </SelectItem>
-                    <SelectItem value="RT-NCR-815758">Roy Tayuman</SelectItem>
-                    <SelectItem value="TT-PH-500404">TSM Test</SelectItem>
-                  </>
-                ) : department === "Engineering" ? (
-                  <SelectItem value="DC-NCR-355948">Dave Catausan</SelectItem>
-                ) : department === "Warehouse" ? (
-                  <>
-                    <SelectItem value="JV-NCR-186355">
-                      Jonathan Vinoya
-                    </SelectItem>
-                    <SelectItem value="JD-NCR-580537">
-                      Jonathan Joseph Dumaual
-                    </SelectItem>
-                  </>
-                ) : department === "Procurement" ? (
-                  <SelectItem value="LV-NCR-170007">Leizl Velado</SelectItem>
-                ) : department === "Marketing" ||
-                  department === "E-Commerce" ? (
-                  <SelectItem value="KG-PH-878400">Karlie Garcia</SelectItem>
-                ) : department === "Human Resources" ? (
-                  <SelectItem value="OM-NCR-696218">Olive Minano</SelectItem>
-                ) : (
-                  <SelectItem value="TT-PH-500404">
-                    No managers available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </Field>
+{step === 6 && !isJobApplicant && (
+  <>
+    <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
 
-          {wrapUp !== "Job Applicants" &&
-            (department === "Sales" ||
-              department === "Business Development" ||
-              department === "Marketing" ||
-              department === "E-Commerce") && (
-              <>
-                <Field>
-                  <FieldLabel>Agent</FieldLabel>
-                  <FieldDescription>
-                    Select the agent assigned to handle this ticket or inquiry.
-                  </FieldDescription>
+    {/* ================= MANAGER ================= */}
+    <Field>
+      <FieldLabel>Manager</FieldLabel>
+      <FieldDescription>
+        Select the manager responsible for this task or client.
+      </FieldDescription>
 
-                  <Select
-                    value={agent}
-                    onValueChange={(value) => setAgent(value)}
-                    disabled={!manager}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select an Agent" />
-                    </SelectTrigger>
+      <Select
+        value={manager}
+        onValueChange={(value) => {
+          setManager(value);
+          setAgent(""); // reset agent when manager changes
+        }}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select a Manager" />
+        </SelectTrigger>
 
-                    <SelectContent>
-                      {(MANAGER_AGENT_MAP[manager] || []).length === 0 && (
-                        <SelectItem value="__none__" disabled>
-                          No agents available
-                        </SelectItem>
-                      )}
+        <SelectContent>
+          {loadingManagers && (
+            <SelectItem value="__loading__" disabled>
+              Loading managers...
+            </SelectItem>
+          )}
 
-                      {(MANAGER_AGENT_MAP[manager] || []).map((agentId) => {
-                        const agentItem = AGENTS.find((a) => a.id === agentId);
-                        if (!agentItem) return null;
+          {!loadingManagers && managersList.length === 0 && (
+            <SelectItem value="__none__" disabled>
+              No managers available
+            </SelectItem>
+          )}
 
-                        return (
-                          <SelectItem key={agentItem.id} value={agentItem.id}>
-                            {agentItem.name}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </>
-            )}
+          {managersList.map((m) => (
+            <SelectItem key={m.ReferenceID} value={m.ReferenceID}>
+              {m.Firstname} {m.Lastname}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
 
-          <Field>
-            <FieldLabel>Status</FieldLabel>
-            <RadioOptionsGroup
-              options={statusOptions}
-              value={status}
-              onChange={setStatus}
-              error={errors.status}
-            />
-          </Field>
+    {/* ================= AGENT ================= */}
+    {wrapUp !== "Job Applicants" &&
+      (department === "Sales" ||
+        department === "Business Development" ||
+        department === "Marketing" ||
+        department === "E-Commerce") && (
+        <Field>
+          <FieldLabel>Agent</FieldLabel>
+          <FieldDescription>
+            Select the agent assigned to handle this ticket or inquiry.
+          </FieldDescription>
 
-          {status === "Closed" && (
-            <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
-              <h4 className="font-semibold text-sm text-red-700">
-                On Closing of Ticket (Required)
-              </h4>
+          <Select
+            value={agent}
+            onValueChange={(value) => setAgent(value)}
+            disabled={!manager}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select an Agent" />
+            </SelectTrigger>
 
-              {/* 1. CLOSE REASON (DROPDOWN) */}
-              <Field>
-                <FieldLabel>1. Close Reason *</FieldLabel>
-                <select
-                  value={closeReason}
-                  onChange={(e) => setCloseReason(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="">Select a reason</option>
-                  <option value="Same Specs Provided">
-                    Same Specs Provided
-                  </option>
-                  <option value="Counter Offer">Counter Offer</option>
-                  <option value="Out of Stock">Out of Stock</option>
-                  <option value="Client Declined">Client Declined</option>
-                  <option value="Not Interested">Not Interested</option>
-                  <option value="Others">Others</option>
-                </select>
-              </Field>
-
-              {/* 2 & 3 — ONLY IF NOT "SAME SPECS PROVIDED" */}
-              {closeReason === "Counter Offer" && (
-                <>
-                  <Field>
-                    <FieldLabel>2. Add Counter Offer *</FieldLabel>
-                    <Textarea
-                      value={counterOffer}
-                      onChange={(e) => setCounterOffer(e.target.value)}
-                      placeholder="Enter counter offer..."
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel>3. Client Specs *</FieldLabel>
-                    <Textarea
-                      value={clientSpecs}
-                      onChange={(e) => setClientSpecs(e.target.value)}
-                      placeholder="Enter client specifications..."
-                    />
-                  </Field>
-                </>
+            <SelectContent>
+              {loadingAgents && (
+                <SelectItem value="__loading__" disabled>
+                  Loading agents...
+                </SelectItem>
               )}
-            </div>
-          )}
 
-          {status === "Converted into Sales" && (
-            <>
-              {ticketReferenceNumber &&
-                groupedActivities.length > 0 &&
-                (soNumberFromActivity !== "N/A" ||
-                  soAmountFromActivity !== "N/A") && (
-                  <Alert
-                    variant="default"
-                    className="relative mt-4 bg-green-100"
-                  >
-                    <CheckCircle2Icon className="h-4 w-4" />
+              {!loadingAgents && agentsList.length === 0 && (
+                <SelectItem value="__none__" disabled>
+                  No agents available
+                </SelectItem>
+              )}
 
-                    <AlertTitle>Ticket Reference Number</AlertTitle>
-
-                    <AlertDescription className="relative space-y-1 text-black">
-                      <p>
-                        <strong>{ticketReferenceNumber}</strong>
-                      </p>
-
-                      <p className="text-sm text-black">
-                        The Sales Order details below are automatically
-                        retrieved from the
-                        <strong> Taskflow System</strong> based on the Ticket
-                        Reference Number provided to the assigned agent.
-                      </p>
-
-                      {soNumberFromActivity !== "N/A" && (
-                        <p className="uppercase">
-                          SO Number: <strong>{soNumberFromActivity}</strong>
-                        </p>
-                      )}
-
-                      {soAmountFromActivity !== "N/A" && (
-                        <p className="uppercase">
-                          SO Amount: <strong>{soAmountFromActivity}</strong>
-                        </p>
-                      )}
-
-                      {productQuantityFromActivity !== "N/A" && (
-                        <p className="uppercase">
-                          QTY Sold:{" "}
-                          <strong>{productQuantityFromActivity}</strong>
-                        </p>
-                      )}
-
-                      {/* BUTTON — bottom right */}
-                      <div className="absolute bottom-0 right-0">
-                        <Button
-                          size="sm"
-                          onClick={handleApplySO}
-                          className="cursor-pointer"
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-              <Field>
-                <FieldLabel>SO Number</FieldLabel>
-                <InputField
-                  value={soNumber}
-                  onChange={(e) => setSoNumber(e.target.value)}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel>SO Amount</FieldLabel>
-                <InputField
-                  type="number"
-                  value={soAmount}
-                  onChange={(e) => setSoAmount(e.target.value)}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel>Qty Sold</FieldLabel>
-                <InputField
-                  type="number"
-                  value={qtySold}
-                  onChange={(e) => setQtySold(e.target.value)}
-                />
-              </Field>
-            </>
-          )}
-
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={loadingSave || loadingLoad}
-            className="cursor-pointer"
-          >
-            Back
-          </Button>
-          <Button
-            onClick={onUpdate}
-            disabled={loadingSave || loadingLoad || !!timeError}
-            className="cursor-pointer"
-          >
-            {loadingSave ? "Saving..." : "Save"}
-          </Button>
-        </>
+              {agentsList.map((a) => (
+                <SelectItem key={a.ReferenceID} value={a.ReferenceID}>
+                  {a.Firstname} {a.Lastname}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
       )}
+
+    {/* ================= STATUS ================= */}
+    <Field>
+      <FieldLabel>Status</FieldLabel>
+      <RadioOptionsGroup
+        options={statusOptions}
+        value={status}
+        onChange={setStatus}
+        error={errors.status}
+      />
+    </Field>
+
+    {/* ================= CLOSED ================= */}
+    {status === "Closed" && (
+      <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
+        <h4 className="font-semibold text-sm text-red-700">
+          On Closing of Ticket (Required)
+        </h4>
+
+        <Field>
+          <FieldLabel>1. Close Reason *</FieldLabel>
+          <select
+            value={closeReason}
+            onChange={(e) => setCloseReason(e.target.value)}
+            className="w-full border rounded-md px-3 py-2 text-sm"
+          >
+            <option value="">Select a reason</option>
+            <option value="Same Specs Provided">Same Specs Provided</option>
+            <option value="Counter Offer">Counter Offer</option>
+            <option value="Out of Stock">Out of Stock</option>
+            <option value="Client Declined">Client Declined</option>
+            <option value="Not Interested">Not Interested</option>
+            <option value="Others">Others</option>
+          </select>
+        </Field>
+
+        {closeReason === "Counter Offer" && (
+          <>
+            <Field>
+              <FieldLabel>2. Add Counter Offer *</FieldLabel>
+              <Textarea
+                value={counterOffer}
+                onChange={(e) => setCounterOffer(e.target.value)}
+                placeholder="Enter counter offer..."
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel>3. Client Specs *</FieldLabel>
+              <Textarea
+                value={clientSpecs}
+                onChange={(e) => setClientSpecs(e.target.value)}
+                placeholder="Enter client specifications..."
+              />
+            </Field>
+          </>
+        )}
+      </div>
+    )}
+
+    {/* ================= CONVERTED ================= */}
+    {status === "Converted into Sales" && (
+      <>
+        <Field>
+          <FieldLabel>SO Number</FieldLabel>
+          <InputField
+            value={soNumber}
+            onChange={(e) => setSoNumber(e.target.value)}
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel>SO Amount</FieldLabel>
+          <InputField
+            type="number"
+            value={soAmount}
+            onChange={(e) => setSoAmount(e.target.value)}
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel>Qty Sold</FieldLabel>
+          <InputField
+            type="number"
+            value={qtySold}
+            onChange={(e) => setQtySold(e.target.value)}
+          />
+        </Field>
+      </>
+    )}
+
+    {/* ================= ACTIONS ================= */}
+    <Button
+      variant="outline"
+      onClick={handleBack}
+      disabled={loadingSave || loadingLoad}
+      className="cursor-pointer"
+    >
+      Back
+    </Button>
+
+    <Button
+      onClick={onUpdate}
+      disabled={loadingSave || loadingLoad || !!timeError}
+      className="cursor-pointer"
+    >
+      {loadingSave ? "Saving..." : "Save"}
+    </Button>
+  </>
+)}
+
     </>
   );
 }

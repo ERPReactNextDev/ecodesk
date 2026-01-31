@@ -33,26 +33,49 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
   onSave,
 }) => {
   const [companyName, setCompanyName] = useState("");
-  const [contactPerson, setContactPerson] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
+  const [contactPersons, setContactPersons] = useState<string[]>([""]);
+  const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
   const [emailAddress, setEmailAddress] = useState("");
   const [address, setAddress] = useState("");
   const [industry, setIndustry] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /* LOAD DATA */
   useEffect(() => {
     if (account && isOpen) {
       setCompanyName(account.company_name ?? "");
-      setContactPerson(account.contact_person ?? "");
-      setContactNumber(account.contact_number ?? "");
+
+      setContactPersons(
+        account.contact_person
+          ? account.contact_person.split(" / ").filter(Boolean)
+          : [""]
+      );
+
+      setContactNumbers(
+        account.contact_number && account.contact_number !== "none"
+          ? account.contact_number.split(" / ").filter(Boolean)
+          : [""]
+      );
+
       setEmailAddress(account.email_address ?? "");
       setAddress(account.address ?? "");
       setIndustry(account.industry ?? "");
     }
   }, [account, isOpen]);
 
+  /* SAVE */
   const handleSave = async () => {
     if (!account?.id) return;
+
+    const joinedPersons = contactPersons
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(" / ");
+
+    const joinedNumbers = contactNumbers
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .join(" / ");
 
     setLoading(true);
     try {
@@ -63,8 +86,8 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
           id: account.id,
           referenceid: account.referenceid,
           company_name: companyName,
-          contact_person: contactPerson,
-          contact_number: contactNumber,
+          contact_person: joinedPersons,
+          contact_number: joinedNumbers,
           email_address: emailAddress,
           address,
           industry,
@@ -92,10 +115,7 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={(o) => !o && !loading && onClose()}>
-      <SheetContent
-        side="right"
-        className="w-[420px] max-w-full flex flex-col p-0"
-      >
+      <SheetContent side="right" className="w-[420px] max-w-full flex flex-col p-0">
         {/* HEADER */}
         <SheetHeader className="px-6 py-4 border-b">
           <SheetTitle className="text-lg font-semibold">
@@ -103,7 +123,7 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
           </SheetTitle>
         </SheetHeader>
 
-        {/* FORM (SCROLLABLE) */}
+        {/* FORM */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -113,9 +133,7 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
         >
           <FieldSet disabled={loading} className="space-y-5">
             <Field>
-              <FieldLabel>
-                Company <span className="text-red-500">*</span>
-              </FieldLabel>
+              <FieldLabel>Company *</FieldLabel>
               <FieldContent>
                 <Input
                   value={companyName}
@@ -125,36 +143,82 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
               </FieldContent>
             </Field>
 
+            {/* CUSTOMER NAMES */}
             <Field>
-              <FieldLabel>
-                Customer Name <span className="text-red-500">*</span>
-              </FieldLabel>
-              <FieldContent>
-                <Input
-                  value={contactPerson}
-                  onChange={(e) => setContactPerson(e.target.value)}
-                  required
-                />
-              </FieldContent>
+              <FieldLabel>Customer Name *</FieldLabel>
+              <div className="space-y-2">
+                {contactPersons.map((name, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <Input
+                      value={name}
+                      onChange={(e) => {
+                        const updated = [...contactPersons];
+                        updated[idx] = e.target.value;
+                        setContactPersons(updated);
+                      }}
+                      className="flex-grow"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (contactPersons.length === 1) return;
+                        setContactPersons(contactPersons.filter((_, i) => i !== idx));
+                      }}
+                    >
+                      −
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setContactPersons((p) => [...p, ""])}
+                >
+                  + Add another name
+                </Button>
+              </div>
+            </Field>
+
+            {/* CONTACT NUMBERS */}
+            <Field>
+              <FieldLabel>Contact Number *</FieldLabel>
+              <div className="space-y-2">
+                {contactNumbers.map((num, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <Input
+                      value={num}
+                      onChange={(e) => {
+                        const updated = [...contactNumbers];
+                        updated[idx] = e.target.value;
+                        setContactNumbers(updated);
+                      }}
+                      className="flex-grow"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (contactNumbers.length === 1) return;
+                        setContactNumbers(contactNumbers.filter((_, i) => i !== idx));
+                      }}
+                    >
+                      −
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setContactNumbers((p) => [...p, ""])}
+                >
+                  + Add another number
+                </Button>
+              </div>
             </Field>
 
             <Field>
-              <FieldLabel>
-                Contact Number <span className="text-red-500">*</span>
-              </FieldLabel>
-              <FieldContent>
-                <Input
-                  value={contactNumber}
-                  onChange={(e) => setContactNumber(e.target.value)}
-                  required
-                />
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel>
-                Email Address <span className="text-red-500">*</span>
-              </FieldLabel>
+              <FieldLabel>Email Address *</FieldLabel>
               <FieldContent>
                 <Input
                   type="email"
@@ -166,9 +230,7 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
             </Field>
 
             <Field>
-              <FieldLabel>
-                Address <span className="text-red-500">*</span>
-              </FieldLabel>
+              <FieldLabel>Address *</FieldLabel>
               <FieldContent>
                 <Input
                   value={address}
@@ -190,7 +252,7 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
           </FieldSet>
         </form>
 
-        {/* FOOTER (FIXED) */}
+        {/* FOOTER */}
         <div className="border-t bg-white px-6 py-4 flex gap-3">
           <Button
             type="button"

@@ -2,10 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // Next.js 13 app router
+import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
-  Bell,
   ChevronsUpDown,
   LogOut,
 } from "lucide-react";
@@ -31,7 +30,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 import { db } from "@/lib/firebase";
@@ -55,17 +61,18 @@ export function NavUser({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  /* ---------------- Logout Activity ---------------- */
   const logLogoutActivity = async () => {
     try {
       const deviceId = localStorage.getItem("deviceId") || "unknown-device";
-      const location = null; // add geo-location if needed
+
       await addDoc(collection(db, "activity_logs"), {
         userId,
         email: user.email,
         status: "logout",
         timestamp: new Date().toISOString(),
         deviceId,
-        location,
+        location: null,
         browser: navigator.userAgent,
         os: navigator.platform,
         date_created: serverTimestamp(),
@@ -75,15 +82,27 @@ export function NavUser({
     }
   };
 
+  /* ---------------- Logout Action ---------------- */
   const doLogout = async () => {
     setIsLoggingOut(true);
+
     try {
-      await logLogoutActivity();
-      localStorage.removeItem("userId");
-      router.replace("/login");
+      logLogoutActivity().catch(console.error);
+
+      await fetch("/api/logout", {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
     } finally {
+      // 🔥 HARD CLEAN — SAME LOGIC AS OTHER PROJECT
+      localStorage.removeItem("userid"); // ✅ CORRECT KEY
+      localStorage.removeItem("deviceId"); // optional cleanup
+
       setIsLoggingOut(false);
       setIsDialogOpen(false);
+
+      router.replace("/login");
     }
   };
 
@@ -99,16 +118,22 @@ export function NavUser({
               >
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {user.name?.charAt(0) ?? "U"}
+                  </AvatarFallback>
                 </Avatar>
+
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium capitalize">{user.name}</span>
+                  <span className="truncate font-medium capitalize">
+                    {user.name}
+                  </span>
                   {user.position && (
                     <span className="truncate text-xs text-muted-foreground">
                       {user.position}
                     </span>
                   )}
                 </div>
+
                 <ChevronsUpDown className="ml-auto size-4" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
@@ -123,10 +148,15 @@ export function NavUser({
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">EK</AvatarFallback>
+                    <AvatarFallback className="rounded-lg">
+                      {user.name?.charAt(0) ?? "U"}
+                    </AvatarFallback>
                   </Avatar>
+
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium capitalize">{user.name}</span>
+                    <span className="truncate font-medium capitalize">
+                      {user.name}
+                    </span>
                     {user.position && (
                       <span className="truncate text-xs text-muted-foreground">
                         {user.position}
@@ -142,7 +172,7 @@ export function NavUser({
                 <DropdownMenuItem asChild>
                   <Link href={`/profile?id=${encodeURIComponent(userId)}`}>
                     <div className="flex items-center gap-2">
-                      <BadgeCheck />
+                      <BadgeCheck className="size-4" />
                       <span>Account</span>
                     </div>
                   </Link>
@@ -156,15 +186,15 @@ export function NavUser({
                 className="cursor-pointer"
                 disabled={isLoggingOut}
               >
-                <LogOut />
-                Log out
+                <LogOut className="size-4" />
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>
       </SidebarMenu>
 
-      {/* Dialog confirmation */}
+      {/* Confirm Logout Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -173,6 +203,7 @@ export function NavUser({
               Are you sure you want to log out?
             </DialogDescription>
           </DialogHeader>
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -181,6 +212,7 @@ export function NavUser({
             >
               Cancel
             </Button>
+
             <Button
               onClick={doLogout}
               disabled={isLoggingOut}

@@ -69,7 +69,7 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef { }
+export interface AgentSalesConversionCardRef {}
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -95,7 +95,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           method: "GET",
           cache: "no-store",
           headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            "Cache-Control":
+              "no-store, no-cache, must-revalidate, proxy-revalidate",
             Pragma: "no-cache",
             Expires: "0",
           },
@@ -287,17 +288,18 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           }
         }
 
+        // 🔒 NORMALIZE TRAFFIC (IMPORTANT)
+        const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
+
         // PO RECEIVED rule
         if (remarks === "po received") {
-          // Count only as non-sales inquiry, block from revenue & conversion
+          // Always count as NON-SALES inquiry
           map[referenceid].nonSalesCount += 1;
-          return;
-        }
-
-        // Traffic counting
-        if (traffic === "sales") {
+        } else if (normalizedTraffic === "sales") {
           map[referenceid].salesCount += 1;
-        } else if (traffic === "non-sales") {
+        } else {
+          // 🔥 DEFAULT FALLBACK
+          // Anything else = Non-Sales
           map[referenceid].nonSalesCount += 1;
         }
 
@@ -320,23 +322,23 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
   const totalNewClient = groupedData.reduce((s, r) => s + r.newClientSales, 0);
   const totalNewNonBuying = groupedData.reduce(
     (s, r) => s + r.newNonBuyingSales,
-    0
+    0,
   );
   const totalExistingActive = groupedData.reduce(
     (s, r) => s + r.existingActiveSales,
-    0
+    0,
   );
   const totalExistingInactive = groupedData.reduce(
     (s, r) => s + r.existingInactiveSales,
-    0
+    0,
   );
   const totalResponseTime = groupedData.reduce(
     (s, r) => s + r.responseTimeTotal,
-    0
+    0,
   );
   const totalResponseCount = groupedData.reduce(
     (s, r) => s + r.responseCount,
-    0
+    0,
   );
 
   const totalConversionPct =
@@ -350,15 +352,13 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
   const formatMs = (ms: number) => {
-    const totalSeconds = Math.round(ms / 1000); // 👈 FIX
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
+    // round to nearest minute
+    const totalMinutes = Math.round(ms / (1000 * 60));
 
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(
-      2,
-      "0"
-    )}:${String(s).padStart(2, "0")}`;
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
   };
 
   const totalRowResponseAverage =
@@ -450,15 +450,21 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableHead className="text-right">Non-Sales</TableHead>
                   <TableHead className="text-right">Sales</TableHead>
                   <TableHead className="text-right">Qty Sold</TableHead>
-                  <TableHead className="text-right">Converted to Sale</TableHead>
+                  <TableHead className="text-right">
+                    Converted to Sale
+                  </TableHead>
                   <TableHead className="text-right">% Conversion</TableHead>
                   <TableHead className="text-right">Ave. Unit</TableHead>
                   <TableHead className="text-right">Ave. Value</TableHead>
                   <TableHead className="text-right">New Client</TableHead>
                   <TableHead className="text-right">New-Non Buying</TableHead>
                   <TableHead className="text-right">Existing Active</TableHead>
-                  <TableHead className="text-right">Existing Inactive</TableHead>
-                  <TableHead className="text-right">CSR Response Time</TableHead>
+                  <TableHead className="text-right">
+                    Existing Inactive
+                  </TableHead>
+                  <TableHead className="text-right">
+                    CSR Response Time
+                  </TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -468,7 +474,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   .sort((a, b) => b.amount - a.amount)
                   .map((row, index) => {
                     const agent = agents.find(
-                      (a) => a.ReferenceID === row.referenceid
+                      (a) => a.ReferenceID === row.referenceid,
                     );
                     const fullName = agent
                       ? `${agent.Firstname} ${agent.Lastname}`
@@ -498,7 +504,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                           ₱{row.amount.toLocaleString()}
                         </TableCell>
 
-                        <TableCell className="text-right">{row.qtySold}</TableCell>
+                        <TableCell className="text-right">
+                          {row.qtySold}
+                        </TableCell>
 
                         <TableCell className="text-right">
                           {row.convertedCount}
@@ -507,9 +515,10 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                         <TableCell className="text-right">
                           {row.salesCount === 0
                             ? "0.00%"
-                            : ((row.convertedCount / row.salesCount) * 100).toFixed(
-                              2
-                            ) + "%"}
+                            : (
+                                (row.convertedCount / row.salesCount) *
+                                100
+                              ).toFixed(2) + "%"}
                         </TableCell>
 
                         <TableCell className="text-right">
@@ -521,7 +530,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                         <TableCell className="text-right">
                           {row.convertedCount === 0
                             ? "0"
-                            : (row.amount / row.convertedCount).toLocaleString()}
+                            : (
+                                row.amount / row.convertedCount
+                              ).toLocaleString()}
                         </TableCell>
 
                         <TableCell className="text-right">
@@ -565,7 +576,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     {totalConversionPct.toFixed(2)}%
                   </TableCell>
 
-                  <TableCell className="text-right">{totalAveUnit.toFixed(0)}</TableCell>
+                  <TableCell className="text-right">
+                    {totalAveUnit.toFixed(0)}
+                  </TableCell>
 
                   <TableCell className="text-right">
                     {totalAveValue.toLocaleString()}
@@ -584,7 +597,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     ₱{totalExistingInactive.toLocaleString()}
                   </TableCell>
 
-                  <TableCell className="text-right">{formatMs(totalRowResponseAverage)}</TableCell>
+                  <TableCell className="text-right">
+                    {formatMs(totalRowResponseAverage)}
+                  </TableCell>
                 </TableRow>
               </tfoot>
             </Table>

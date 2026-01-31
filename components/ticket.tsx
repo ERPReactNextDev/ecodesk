@@ -414,22 +414,31 @@ export const Ticket: React.FC<TicketProps> = ({
     });
 
     // Sort filtered data
-    data = data.slice().sort((a, b) => {
-      let aVal = (a as any)[sortField];
-      let bVal = (b as any)[sortField];
+data = data.slice().sort((a, b) => {
+  // 🔥 1️⃣ ENDORSED ALWAYS ON TOP
+  const aIsEndorsed = a.status === "Endorsed";
+  const bIsEndorsed = b.status === "Endorsed";
 
-      if (sortField === "date_created" || sortField === "date_updated") {
-        aVal = aVal ? new Date(aVal).getTime() : 0;
-        bVal = bVal ? new Date(bVal).getTime() : 0;
-      } else {
-        aVal = aVal ? aVal.toString().toLowerCase() : "";
-        bVal = bVal ? bVal.toString().toLowerCase() : "";
-      }
+  if (aIsEndorsed && !bIsEndorsed) return -1;
+  if (!aIsEndorsed && bIsEndorsed) return 1;
 
-      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
+  // 🔁 2️⃣ NORMAL SORT (DATE / FIELD)
+  let aVal = (a as any)[sortField];
+  let bVal = (b as any)[sortField];
+
+  if (sortField === "date_created" || sortField === "date_updated") {
+    aVal = aVal ? new Date(aVal).getTime() : 0;
+    bVal = bVal ? new Date(bVal).getTime() : 0;
+  } else {
+    aVal = aVal ? aVal.toString().toLowerCase() : "";
+    bVal = bVal ? bVal.toString().toLowerCase() : "";
+  }
+
+  if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+  if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+});
+
 
     return data;
   }, [

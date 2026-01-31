@@ -118,46 +118,53 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   }, [formData.company_name, formData.contact_person, existingCompanies]);
 
 const isFormValid = () => {
-  const required: Array<keyof typeof formData> = [
-    "industry",
-    "address",
-  ];
+  // 🔹 check if at least ONE field is filled
+  const hasAnyInput =
+    formData.company_name.trim() ||
+    formData.address.trim() ||
+    formData.industry ||
+    formData.email_address.trim() ||
+    contactPersons.some(p => p.trim()) ||
+    contactNumbers.some(n => n.trim());
 
-  const allFilled = required.every((f) => formData[f]);
-  const hasContactPerson = contactPersons.some(n => n.trim());
-
-  
-
-  // email is OPTIONAL — only validate if user typed something
+  // 🔹 email validation (ONLY if email is typed)
   const emailValid =
     !formData.email_address ||
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
 
-  // contact number is OPTIONAL — allow empty
-  const hasContact = contactNumbers.some((n) => n.trim());
-  const contactValid = contactNumbers.length === 1
-    ? true        // allow blank
-    : hasContact; // if multiple fields exist, at least one must be filled
+  // ❌ disable if:
+  // - no input at all
+  // - email exists but invalid
+  if (!hasAnyInput) return false;
+  if (!emailValid) return false;
 
-return allFilled && emailValid && contactValid && hasContactPerson && !duplicate.contact;
-
+  return true;
 };
 
 
+
   /* ACCOUNT REFERENCE GENERATOR */
-  const generateAccountReferenceNumber = async (companyName: string) => {
-    const prefix = companyName.trim().substring(0, 2).toUpperCase();
-    const res = await fetch(`/api/get-account-references?prefix=${prefix}-CSR`);
-    const data = await res.json();
+const generateAccountReferenceNumber = async (companyName: string) => {
+  // 🔹 fallback prefix if company name is empty
+  const prefix = companyName.trim()
+    ? companyName.trim().substring(0, 2).toUpperCase()
+    : "NA";
 
-    let max = 0;
-    data.references.forEach((r: string) => {
-      const m = r.match(/CSR-(\d{8})$/);
-      if (m) max = Math.max(max, parseInt(m[1], 10));
-    });
+  const res = await fetch(`/api/get-account-references?prefix=${prefix}-CSR`);
+  const data = await res.json();
 
-    return `${prefix}-CSR-${String(max + 1).padStart(8, "0")}`;
-  };
+  const references: string[] = Array.isArray(data?.references)
+    ? data.references
+    : [];
+
+  let max = 0;
+  references.forEach((r) => {
+    const m = r.match(/CSR-(\d{8})$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+
+  return `${prefix}-CSR-${String(max + 1).padStart(8, "0")}`;
+};
 
   /* CONTACT NUMBER HANDLERS */
   const handleContactChange = (index: number, value: string) => {
@@ -352,16 +359,30 @@ return allFilled && emailValid && contactValid && hasContactPerson && !duplicate
               </div>
             </Field>
 
-            <Field>
-              <FieldLabel>Email Address *</FieldLabel>
-              <Input
-                type="email"
-                value={formData.email_address}
-                onChange={(e) =>
-                  setFormData({ ...formData, email_address: e.target.value })
-                }
-              />
-            </Field>
+<Field>
+  <FieldLabel>Email Address</FieldLabel>
+  <Input
+    type="email"
+    value={formData.email_address}
+    onChange={(e) =>
+      setFormData({ ...formData, email_address: e.target.value })
+    }
+    className={
+      formData.email_address &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address)
+        ? "border-red-500"
+        : ""
+    }
+  />
+
+  {formData.email_address &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address) && (
+      <p className="text-xs text-red-600 mt-1">
+        Please enter a valid email address
+      </p>
+    )}
+</Field>
+
 
             <Field>
               <FieldLabel>Address *</FieldLabel>
