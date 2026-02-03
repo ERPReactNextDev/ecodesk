@@ -1449,11 +1449,38 @@ export function TicketSheet(props: TicketSheetProps) {
                       </SelectItem>
                     )}
 
-                    {agentsList.map((a) => (
-                      <SelectItem key={a.ReferenceID} value={a.ReferenceID}>
-                        {a.Firstname} {a.Lastname} {a.Connection}
-                      </SelectItem>
-                    ))}
+                    {agentsList.map((a) => {
+                      const connection = a.Connection;
+
+                      const isOnline = connection === "Online";
+
+                      // Disable ONLY when explicitly Offline
+                      const isDisabled = connection === "Offline";
+
+                      return (
+                        <SelectItem
+                          key={a.ReferenceID}
+                          value={a.ReferenceID}
+                          disabled={isDisabled}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span>
+                              {a.Firstname} {a.Lastname}
+                            </span>
+
+                            <span
+                              className={`px-1 py-0.5 rounded-full text-[10px] font-semibold ${
+                                isOnline
+                                  ? "bg-green-100 text-green-700 border border-green-300"
+                                  : "bg-gray-100 text-gray-500 border border-gray-300"
+                              }`}
+                            >
+                              {connection || "No Status"}
+                            </span>
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </Field>
