@@ -401,7 +401,6 @@ export function UpdateTicketDialog({
   const handleUpdate = async () => {
     setLoading(true);
 
-    
     const newActivity: Activity & {
       close_reason?: string;
       counter_offer?: string;
@@ -463,39 +462,38 @@ export function UpdateTicketDialog({
       }),
     };
 
-  // 🔥 CLEAR STEPS 4–6 ONLY WHEN SAVING AT STEP 3 (JOB APPLICANTS)
-if (wrapUpState === "Job Applicants" && step === 3) {
-  newActivity.customer_type = "-";
-  newActivity.customer_status = "-";
-  newActivity.department = "-";
-  newActivity.manager = "-";
-  newActivity.agent = "-";
+    // 🔥 CLEAR STEPS 4–6 ONLY WHEN SAVING AT STEP 3 (JOB APPLICANTS)
+    if (wrapUpState === "Job Applicants" && step === 3) {
+      newActivity.customer_type = "-";
+      newActivity.customer_status = "-";
+      newActivity.department = "-";
+      newActivity.manager = "-";
+      newActivity.agent = "-";
 
-  newActivity.remarks = "-";
-  newActivity.inquiry = "-";
+      newActivity.remarks = "-";
+      newActivity.inquiry = "-";
 
-  newActivity.item_code = "-";
-  newActivity.item_description = "-";
-  newActivity.po_number = "-";
-  newActivity.so_date = "-";
-  newActivity.so_number = "-";
-  newActivity.so_amount = "-";
-  newActivity.qty_sold = "-";
+      newActivity.item_code = "-";
+      newActivity.item_description = "-";
+      newActivity.po_number = "-";
+      newActivity.so_date = "-";
+      newActivity.so_number = "-";
+      newActivity.so_amount = "-";
+      newActivity.qty_sold = "-";
 
-  newActivity.quotation_number = "-";
-  newActivity.quotation_amount = "-";
+      newActivity.quotation_number = "-";
+      newActivity.quotation_amount = "-";
 
-  newActivity.payment_terms = "-";
-  newActivity.po_source = "-";
-  newActivity.payment_date = "-";
-  newActivity.delivery_date = "-";
+      newActivity.payment_terms = "-";
+      newActivity.po_source = "-";
+      newActivity.payment_date = "-";
+      newActivity.delivery_date = "-";
 
-  // ❗ DO NOT TOUCH STATUS
-  newActivity.close_reason = "-";
-  newActivity.counter_offer = "-";
-  newActivity.client_specs = "-";
-}
-
+      // ❗ DO NOT TOUCH STATUS
+      newActivity.close_reason = "-";
+      newActivity.counter_offer = "-";
+      newActivity.client_specs = "-";
+    }
 
     try {
       const res = await fetch("/api/act-save-activity", {

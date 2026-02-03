@@ -127,8 +127,6 @@ interface TicketSheetProps {
   handleUpdate: () => void;
 }
 
-
-
 // Reusable Radio Group
 const RadioOptionsGroup = ({
   options,
@@ -322,7 +320,7 @@ export function TicketSheet(props: TicketSheetProps) {
     handleUpdate,
   } = props;
 
-    // ================= ASSIGNEE (DYNAMIC USERS) =================
+  // ================= ASSIGNEE (DYNAMIC USERS) =================
   interface User {
     ReferenceID: string;
     Firstname: string;
@@ -330,7 +328,8 @@ export function TicketSheet(props: TicketSheetProps) {
     Role: string;
     Department: string;
   }
-   const [managersList, setManagersList] = useState<User[]>([]);
+  const [managersList, setManagersList] = useState<User[]>([]);
+  const [managersAvailable, setManagersAvailable] = useState(0);
   const [agentsList, setAgentsList] = useState<User[]>([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
   const [loadingAgents, setLoadingAgents] = useState(false);
@@ -343,17 +342,14 @@ export function TicketSheet(props: TicketSheetProps) {
 
   // ================= FETCH MANAGERS =================
 
-  
   useEffect(() => {
-
-    
-if (!department) {
-  setManagersList([]);
-  setAgentsList([]);   // ✅ clear agents
-  setManager("");
-  setAgent("");        // ✅ reset agent
-  return;
-}
+    if (!department) {
+      setManagersList([]);
+      setAgentsList([]); // ✅ clear agents
+      setManager("");
+      setAgent(""); // ✅ reset agent
+      return;
+    }
 
     setLoadingManagers(true);
 
@@ -364,7 +360,9 @@ if (!department) {
     )
       .then((res) => res.json())
       .then((json) => {
-        setManagersList(json.data || []);
+        const list = json.data || [];
+        setManagersList(list);
+        setManagersAvailable(list.length);
       })
       .catch(() => setManagersList([]))
       .finally(() => setLoadingManagers(false));
@@ -498,6 +496,7 @@ if (!department) {
   }>({});
 
   const [timeError, setTimeError] = useState<string | null>(null);
+  const isManagerRequiredButMissing = managersAvailable > 0 && !manager;
 
   // Options
   const departmentOptions: Option[] = [
@@ -716,46 +715,46 @@ if (!department) {
       </Button>
 
       {/* 🔹 JOB APPLICANT → SAVE DIRECTLY ON STEP 3 */}
-{isJobApplicant && step === 3 ? (
-  <Button
-    onClick={() => {
-      // 🔥 AUTO CLEAR STEPS 4–6
-      setCustomerStatus("");
-      setCustomerType("");
-      setRemarks("");
-      setInquiry("");
+      {isJobApplicant && step === 3 ? (
+        <Button
+          onClick={() => {
+            // 🔥 AUTO CLEAR STEPS 4–6
+            setCustomerStatus("");
+            setCustomerType("");
+            setRemarks("");
+            setInquiry("");
 
-      setItemCode("");
-      setItemDescription("");
-      setPoNumber("");
-      setSoDate("");
-      setSoNumber("");
-      setSoAmount("");
-      setQuotationNumber("");
-      setQuotationAmount("");
-      setQtySold("");
+            setItemCode("");
+            setItemDescription("");
+            setPoNumber("");
+            setSoDate("");
+            setSoNumber("");
+            setSoAmount("");
+            setQuotationNumber("");
+            setQuotationAmount("");
+            setQtySold("");
 
-      setPaymentTerms("");
-      setPoSource("");
-      setPaymentDate("");
-      setDeliveryDate("");
+            setPaymentTerms("");
+            setPoSource("");
+            setPaymentDate("");
+            setDeliveryDate("");
 
-      setManager("");
-      setAgent("");
+            setManager("");
+            setAgent("");
 
-      setCloseReason("");
-      setCounterOffer("");
-      setClientSpecs("");
+            setCloseReason("");
+            setCounterOffer("");
+            setClientSpecs("");
 
-      // ❗ STATUS IS NOT CLEARED
-      handleUpdate();
-    }}
-    disabled={!!timeError}
-    className="cursor-pointer"
-  >
-    Save
-  </Button>
-) : (
+            // ❗ STATUS IS NOT CLEARED
+            handleUpdate();
+          }}
+          disabled={!!timeError}
+          className="cursor-pointer"
+        >
+          Save
+        </Button>
+      ) : (
         <Button
           onClick={onNext}
           disabled={step === 3 && !!timeError}
@@ -1378,204 +1377,216 @@ if (!department) {
         </>
       )}
 
-{step === 6 && !isJobApplicant && (
-  <>
-    <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
+      {step === 6 && !isJobApplicant && (
+        <>
+          <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
 
-    {/* ================= MANAGER ================= */}
-    <Field>
-      <FieldLabel>Manager</FieldLabel>
-      <FieldDescription>
-        Select the manager responsible for this task or client.
-      </FieldDescription>
+          {/* ================= MANAGER ================= */}
+          <Field>
+            <FieldLabel>Manager</FieldLabel>
+            <FieldDescription>
+              Select the manager responsible for this task or client.
+            </FieldDescription>
 
-      <Select
-        value={manager}
-        onValueChange={(value) => {
-          setManager(value);
-          setAgent(""); // reset agent when manager changes
-        }}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a Manager" />
-        </SelectTrigger>
+            <Select
+              value={manager}
+              onValueChange={(value) => {
+                setManager(value);
+                setAgent(""); // reset agent when manager changes
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a Manager" />
+              </SelectTrigger>
 
-        <SelectContent>
-          {loadingManagers && (
-            <SelectItem value="__loading__" disabled>
-              Loading managers...
-            </SelectItem>
+              <SelectContent>
+                {loadingManagers && (
+                  <SelectItem value="__loading__" disabled>
+                    Loading managers...
+                  </SelectItem>
+                )}
+
+                {!loadingManagers && managersList.length === 0 && (
+                  <SelectItem value="__none__" disabled>
+                    No managers available
+                  </SelectItem>
+                )}
+
+                {managersList.map((m) => (
+                  <SelectItem key={m.ReferenceID} value={m.ReferenceID}>
+                    {m.Firstname} {m.Lastname}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          {/* ================= AGENT ================= */}
+          {wrapUp !== "Job Applicants" &&
+            (department === "Sales" ||
+              department === "Business Development" ||
+              department === "Marketing" ||
+              department === "E-Commerce") && (
+              <Field>
+                <FieldLabel>Agent</FieldLabel>
+                <FieldDescription>
+                  Select the agent assigned to handle this ticket or inquiry.
+                </FieldDescription>
+
+                <Select
+                  value={agent}
+                  onValueChange={(value) => setAgent(value)}
+                  disabled={!manager}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select an Agent" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {loadingAgents && (
+                      <SelectItem value="__loading__" disabled>
+                        Loading agents...
+                      </SelectItem>
+                    )}
+
+                    {!loadingAgents && agentsList.length === 0 && (
+                      <SelectItem value="__none__" disabled>
+                        No agents available
+                      </SelectItem>
+                    )}
+
+                    {agentsList.map((a) => (
+                      <SelectItem key={a.ReferenceID} value={a.ReferenceID}>
+                        {a.Firstname} {a.Lastname}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+
+          {/* ================= STATUS ================= */}
+          <Field>
+            <FieldLabel>Status</FieldLabel>
+            <RadioOptionsGroup
+              options={statusOptions}
+              value={status}
+              onChange={setStatus}
+              error={errors.status}
+            />
+          </Field>
+
+          {/* ================= CLOSED ================= */}
+          {status === "Closed" && (
+            <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
+              <h4 className="font-semibold text-sm text-red-700">
+                On Closing of Ticket (Required)
+              </h4>
+
+              <Field>
+                <FieldLabel>1. Close Reason *</FieldLabel>
+                <select
+                  value={closeReason}
+                  onChange={(e) => setCloseReason(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="">Select a reason</option>
+                  <option value="Same Specs Provided">
+                    Same Specs Provided
+                  </option>
+                  <option value="Counter Offer">Counter Offer</option>
+                  <option value="Out of Stock">Out of Stock</option>
+                  <option value="Client Declined">Client Declined</option>
+                  <option value="Not Interested">Not Interested</option>
+                  <option value="Others">Others</option>
+                </select>
+              </Field>
+
+              {closeReason === "Counter Offer" && (
+                <>
+                  <Field>
+                    <FieldLabel>2. Add Counter Offer *</FieldLabel>
+                    <Textarea
+                      value={counterOffer}
+                      onChange={(e) => setCounterOffer(e.target.value)}
+                      placeholder="Enter counter offer..."
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel>3. Client Specs *</FieldLabel>
+                    <Textarea
+                      value={clientSpecs}
+                      onChange={(e) => setClientSpecs(e.target.value)}
+                      placeholder="Enter client specifications..."
+                    />
+                  </Field>
+                </>
+              )}
+            </div>
           )}
 
-          {!loadingManagers && managersList.length === 0 && (
-            <SelectItem value="__none__" disabled>
-              No managers available
-            </SelectItem>
+          {/* ================= CONVERTED ================= */}
+          {status === "Converted into Sales" && (
+            <>
+              <Field>
+                <FieldLabel>SO Number</FieldLabel>
+                <InputField
+                  value={soNumber}
+                  onChange={(e) => setSoNumber(e.target.value)}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel>SO Amount</FieldLabel>
+                <InputField
+                  type="number"
+                  value={soAmount}
+                  onChange={(e) => setSoAmount(e.target.value)}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel>Qty Sold</FieldLabel>
+                <InputField
+                  type="number"
+                  value={qtySold}
+                  onChange={(e) => setQtySold(e.target.value)}
+                />
+              </Field>
+            </>
           )}
 
-          {managersList.map((m) => (
-            <SelectItem key={m.ReferenceID} value={m.ReferenceID}>
-              {m.Firstname} {m.Lastname}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Field>
-
-    {/* ================= AGENT ================= */}
-    {wrapUp !== "Job Applicants" &&
-      (department === "Sales" ||
-        department === "Business Development" ||
-        department === "Marketing" ||
-        department === "E-Commerce") && (
-        <Field>
-          <FieldLabel>Agent</FieldLabel>
-          <FieldDescription>
-            Select the agent assigned to handle this ticket or inquiry.
-          </FieldDescription>
-
-          <Select
-            value={agent}
-            onValueChange={(value) => setAgent(value)}
-            disabled={!manager}
+          {/* ================= ACTIONS ================= */}
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            disabled={loadingSave || loadingLoad}
+            className="cursor-pointer"
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select an Agent" />
-            </SelectTrigger>
+            Back
+          </Button>
 
-            <SelectContent>
-              {loadingAgents && (
-                <SelectItem value="__loading__" disabled>
-                  Loading agents...
-                </SelectItem>
-              )}
+          <Button
+            onClick={onUpdate}
+            disabled={
+              loadingSave ||
+              loadingLoad ||
+              !!timeError ||
+              isManagerRequiredButMissing
+            }
+            className="cursor-pointer"
+          >
+            {loadingSave ? "Saving..." : "Save"}
+          </Button>
 
-              {!loadingAgents && agentsList.length === 0 && (
-                <SelectItem value="__none__" disabled>
-                  No agents available
-                </SelectItem>
-              )}
-
-              {agentsList.map((a) => (
-                <SelectItem key={a.ReferenceID} value={a.ReferenceID}>
-                  {a.Firstname} {a.Lastname}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+          {isManagerRequiredButMissing && (
+            <p className="text-xs text-red-600 mt-2">
+              Please select a manager before saving.
+            </p>
+          )}
+        </>
       )}
-
-    {/* ================= STATUS ================= */}
-    <Field>
-      <FieldLabel>Status</FieldLabel>
-      <RadioOptionsGroup
-        options={statusOptions}
-        value={status}
-        onChange={setStatus}
-        error={errors.status}
-      />
-    </Field>
-
-    {/* ================= CLOSED ================= */}
-    {status === "Closed" && (
-      <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
-        <h4 className="font-semibold text-sm text-red-700">
-          On Closing of Ticket (Required)
-        </h4>
-
-        <Field>
-          <FieldLabel>1. Close Reason *</FieldLabel>
-          <select
-            value={closeReason}
-            onChange={(e) => setCloseReason(e.target.value)}
-            className="w-full border rounded-md px-3 py-2 text-sm"
-          >
-            <option value="">Select a reason</option>
-            <option value="Same Specs Provided">Same Specs Provided</option>
-            <option value="Counter Offer">Counter Offer</option>
-            <option value="Out of Stock">Out of Stock</option>
-            <option value="Client Declined">Client Declined</option>
-            <option value="Not Interested">Not Interested</option>
-            <option value="Others">Others</option>
-          </select>
-        </Field>
-
-        {closeReason === "Counter Offer" && (
-          <>
-            <Field>
-              <FieldLabel>2. Add Counter Offer *</FieldLabel>
-              <Textarea
-                value={counterOffer}
-                onChange={(e) => setCounterOffer(e.target.value)}
-                placeholder="Enter counter offer..."
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel>3. Client Specs *</FieldLabel>
-              <Textarea
-                value={clientSpecs}
-                onChange={(e) => setClientSpecs(e.target.value)}
-                placeholder="Enter client specifications..."
-              />
-            </Field>
-          </>
-        )}
-      </div>
-    )}
-
-    {/* ================= CONVERTED ================= */}
-    {status === "Converted into Sales" && (
-      <>
-        <Field>
-          <FieldLabel>SO Number</FieldLabel>
-          <InputField
-            value={soNumber}
-            onChange={(e) => setSoNumber(e.target.value)}
-          />
-        </Field>
-
-        <Field>
-          <FieldLabel>SO Amount</FieldLabel>
-          <InputField
-            type="number"
-            value={soAmount}
-            onChange={(e) => setSoAmount(e.target.value)}
-          />
-        </Field>
-
-        <Field>
-          <FieldLabel>Qty Sold</FieldLabel>
-          <InputField
-            type="number"
-            value={qtySold}
-            onChange={(e) => setQtySold(e.target.value)}
-          />
-        </Field>
-      </>
-    )}
-
-    {/* ================= ACTIONS ================= */}
-    <Button
-      variant="outline"
-      onClick={handleBack}
-      disabled={loadingSave || loadingLoad}
-      className="cursor-pointer"
-    >
-      Back
-    </Button>
-
-    <Button
-      onClick={onUpdate}
-      disabled={loadingSave || loadingLoad || !!timeError}
-      className="cursor-pointer"
-    >
-      {loadingSave ? "Saving..." : "Save"}
-    </Button>
-  </>
-)}
-
     </>
   );
 }
