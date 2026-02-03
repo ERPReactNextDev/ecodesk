@@ -165,8 +165,18 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
     const { from, to } = range;
 
-    if (from && date < new Date(from.setHours(0, 0, 0, 0))) return false;
-    if (to && date > new Date(to.setHours(23, 59, 59, 999))) return false;
+    // IMPORTANT: clone dates, DO NOT mutate originals
+    if (from) {
+      const fromStart = new Date(from);
+      fromStart.setHours(0, 0, 0, 0);
+      if (date < fromStart) return false;
+    }
+
+    if (to) {
+      const toEnd = new Date(to);
+      toEnd.setHours(23, 59, 59, 999);
+      if (date > toEnd) return false;
+    }
 
     return true;
   };
