@@ -100,25 +100,18 @@ interface TicketSheetProps {
   setTicketReferenceNumber: React.Dispatch<React.SetStateAction<string>>;
   closeReason: string;
   setCloseReason: React.Dispatch<React.SetStateAction<string>>;
-
   counterOffer: string;
   setCounterOffer: React.Dispatch<React.SetStateAction<string>>;
-
   clientSpecs: string;
   setClientSpecs: React.Dispatch<React.SetStateAction<string>>;
-
   tsmAcknowledgeDate: string;
   setTsmAcknowledgeDate: React.Dispatch<React.SetStateAction<string>>;
-
   tsaAcknowledgeDate: string;
   setTsaAcknowledgeDate: React.Dispatch<React.SetStateAction<string>>;
-
   tsmHandlingTime: string;
   setTsmHandlingTime: React.Dispatch<React.SetStateAction<string>>;
-
   tsaHandlingTime: string;
   setTsaHandlingTime: React.Dispatch<React.SetStateAction<string>>;
-
   hrAcknowledgeDate: string;
   setHrAcknowledgeDate: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
@@ -327,6 +320,7 @@ export function TicketSheet(props: TicketSheetProps) {
     Lastname: string;
     Role: string;
     Department: string;
+    Connection: string;
   }
   const [managersList, setManagersList] = useState<User[]>([]);
   const [managersAvailable, setManagersAvailable] = useState(0);
@@ -1457,7 +1451,7 @@ export function TicketSheet(props: TicketSheetProps) {
 
                     {agentsList.map((a) => (
                       <SelectItem key={a.ReferenceID} value={a.ReferenceID}>
-                        {a.Firstname} {a.Lastname}
+                        {a.Firstname} {a.Lastname} {a.Connection}
                       </SelectItem>
                     ))}
                   </SelectContent>
