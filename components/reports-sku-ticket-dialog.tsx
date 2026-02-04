@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -69,9 +69,7 @@ const formatDateTime = (value?: string) => {
 const TimeCircle = ({ label, value }: { label: string; value?: string }) => (
   <div className="flex flex-col items-center text-center space-y-2">
     <div className="w-32 h-32 rounded-full border-2 border-slate-300 flex items-center justify-center p-3">
-      <span className="text-sm font-semibold">
-        {formatDateTime(value)}
-      </span>
+      <span className="text-sm font-semibold">{formatDateTime(value)}</span>
     </div>
     <span className="text-xs font-medium">{label}</span>
   </div>
@@ -85,6 +83,33 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export function ReportsSkuTicketDialog({ item }: Props) {
+  const [users, setUsers] = useState<
+    { ReferenceID: string; Firstname: string; Lastname: string }[]
+  >([]);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const res = await fetch("/api/fetch-agent");
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const data = await res.json();
+        setUsers(data || []);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setUsers([]);
+      }
+    }
+
+    fetchUsers();
+  }, []);
+
+  const getUserNameByRefId = (refId?: string) => {
+    if (!refId) return "-";
+
+    const user = users.find((u) => u.ReferenceID === refId);
+
+    return user ? `${user.Firstname} ${user.Lastname}` : refId;
+  };
   const [open, setOpen] = useState(false);
 
   return (
@@ -132,11 +157,22 @@ export function ReportsSkuTicketDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">SKU Information</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Item Code:</strong> {item.item_code || "-"}</p>
-              <p><strong>Item Description:</strong> {item.item_description || "-"}</p>
-              <p><strong>Quantity Sold:</strong> {item.qty_sold || "-"}</p>
-              <p><strong>SO Number:</strong> {item.so_number || "-"}</p>
-              <p><strong>SO Amount:</strong> {item.so_amount || "-"}</p>
+              <p>
+                <strong>Item Code:</strong> {item.item_code || "-"}
+              </p>
+              <p>
+                <strong>Item Description:</strong>{" "}
+                {item.item_description || "-"}
+              </p>
+              <p>
+                <strong>Quantity Sold:</strong> {item.qty_sold || "-"}
+              </p>
+              <p>
+                <strong>SO Number:</strong> {item.so_number || "-"}
+              </p>
+              <p>
+                <strong>SO Amount:</strong> {item.so_amount || "-"}
+              </p>
             </div>
           </section>
 
@@ -148,14 +184,19 @@ export function ReportsSkuTicketDialog({ item }: Props) {
             <div className="grid grid-cols-2 gap-3 text-xs">
               <p>
                 <strong>Company:</strong>{" "}
-                {item.company_name &&
-                item.company_name !== item.contact_person
+                {item.company_name && item.company_name !== item.contact_person
                   ? item.company_name
                   : "-"}
               </p>
-              <p><strong>Contact Person:</strong> {item.contact_person || "-"}</p>
-              <p><strong>Contact Number:</strong> {item.contact_number || "-"}</p>
-              <p><strong>Email Address:</strong> {item.email_address || "-"}</p>
+              <p>
+                <strong>Contact Person:</strong> {item.contact_person || "-"}
+              </p>
+              <p>
+                <strong>Contact Number:</strong> {item.contact_number || "-"}
+              </p>
+              <p>
+                <strong>Email Address:</strong> {item.email_address || "-"}
+              </p>
             </div>
           </section>
 
@@ -215,12 +256,24 @@ export function ReportsSkuTicketDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Ticket Information</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Department:</strong> {item.department || "-"}</p>
-              <p><strong>Manager:</strong> {item.manager || "-"}</p>
-              <p><strong>Agent:</strong> {item.agent || "-"}</p>
-              <p><strong>Traffic:</strong> {item.traffic || "-"}</p>
-              <p><strong>Channel:</strong> {item.channel || "-"}</p>
-              <p><strong>Wrap Up:</strong> {item.wrap_up || "-"}</p>
+              <p>
+                <strong>Department:</strong> {item.department || "-"}
+              </p>
+              <p>
+                <strong>Manager:</strong> {getUserNameByRefId(item.manager)}
+              </p>
+              <p>
+                <strong>Agent:</strong> {getUserNameByRefId(item.agent)}
+              </p>
+              <p>
+                <strong>Traffic:</strong> {item.traffic || "-"}
+              </p>
+              <p>
+                <strong>Channel:</strong> {item.channel || "-"}
+              </p>
+              <p>
+                <strong>Wrap Up:</strong> {item.wrap_up || "-"}
+              </p>
             </div>
           </section>
 
@@ -230,10 +283,14 @@ export function ReportsSkuTicketDialog({ item }: Props) {
               <section className="space-y-2">
                 <h3 className="font-semibold text-sm">Remarks</h3>
                 {item.remarks && (
-                  <p className="text-xs"><strong>Remarks:</strong> {item.remarks}</p>
+                  <p className="text-xs">
+                    <strong>Remarks:</strong> {item.remarks}
+                  </p>
                 )}
                 {item.inquiry && (
-                  <p className="text-xs"><strong>Inquiry:</strong> {item.inquiry}</p>
+                  <p className="text-xs">
+                    <strong>Inquiry:</strong> {item.inquiry}
+                  </p>
                 )}
               </section>
             </>
@@ -244,9 +301,15 @@ export function ReportsSkuTicketDialog({ item }: Props) {
               <Separator className="my-4" />
               <section className="space-y-2 bg-muted p-3 rounded-lg">
                 <h3 className="font-semibold text-sm">Closure Details</h3>
-                <p className="text-xs"><strong>Close Reason:</strong> {item.close_reason || "-"}</p>
-                <p className="text-xs"><strong>Counter Offer:</strong> {item.counter_offer || "-"}</p>
-                <p className="text-xs"><strong>Client Specs:</strong> {item.client_specs || "-"}</p>
+                <p className="text-xs">
+                  <strong>Close Reason:</strong> {item.close_reason || "-"}
+                </p>
+                <p className="text-xs">
+                  <strong>Counter Offer:</strong> {item.counter_offer || "-"}
+                </p>
+                <p className="text-xs">
+                  <strong>Client Specs:</strong> {item.client_specs || "-"}
+                </p>
               </section>
             </>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -76,9 +76,7 @@ const formatDateTime = (value?: string) => {
 const TimeCircle = ({ label, value }: { label: string; value?: string }) => (
   <div className="flex flex-col items-center text-center space-y-2">
     <div className="w-32 h-32 rounded-full border-2 border-slate-300 flex items-center justify-center p-3">
-      <span className="text-sm font-semibold">
-        {formatDateTime(value)}
-      </span>
+      <span className="text-sm font-semibold">{formatDateTime(value)}</span>
     </div>
     <span className="text-xs font-medium">{label}</span>
   </div>
@@ -92,6 +90,33 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export function TicketHistoryDialog({ item }: Props) {
+  const [users, setUsers] = useState<
+    { ReferenceID: string; Firstname: string; Lastname: string }[]
+  >([]);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const res = await fetch("/api/fetch-agent");
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const data = await res.json();
+        setUsers(data || []);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setUsers([]);
+      }
+    }
+
+    fetchUsers();
+  }, []);
+
+  const getUserNameByRefId = (refId?: string) => {
+    if (!refId) return "-";
+
+    const user = users.find((u) => u.ReferenceID === refId);
+
+    return user ? `${user.Firstname} ${user.Lastname}` : refId;
+  };
   const [open, setOpen] = useState(false);
 
   return (
@@ -149,8 +174,7 @@ export function TicketHistoryDialog({ item }: Props) {
               </p>
               <p>
                 <strong>Company:</strong>{" "}
-                {item.company_name &&
-                item.company_name !== item.contact_person
+                {item.company_name && item.company_name !== item.contact_person
                   ? item.company_name
                   : "-"}
               </p>
@@ -227,16 +251,36 @@ export function TicketHistoryDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Additional Details</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Traffic:</strong> {item.traffic || "-"}</p>
-              <p><strong>Channel:</strong> {item.channel || "-"}</p>
-              <p><strong>Source Company:</strong> {item.source_company || "-"}</p>
-              <p><strong>Source:</strong> {item.source || "-"}</p>
-              <p><strong>Wrap Up:</strong> {item.wrap_up || "-"}</p>
-              <p><strong>Department:</strong> {item.department || "-"}</p>
-              <p><strong>Manager:</strong> {item.manager || "-"}</p>
-              <p><strong>Agent:</strong> {item.agent || "-"}</p>
-              <p><strong>Customer Type:</strong> {item.customer_type || "-"}</p>
-              <p><strong>Customer Status:</strong> {item.customer_status || "-"}</p>
+              <p>
+                <strong>Traffic:</strong> {item.traffic || "-"}
+              </p>
+              <p>
+                <strong>Channel:</strong> {item.channel || "-"}
+              </p>
+              <p>
+                <strong>Source Company:</strong> {item.source_company || "-"}
+              </p>
+              <p>
+                <strong>Source:</strong> {item.source || "-"}
+              </p>
+              <p>
+                <strong>Wrap Up:</strong> {item.wrap_up || "-"}
+              </p>
+              <p>
+                <strong>Department:</strong> {item.department || "-"}
+              </p>
+              <p>
+                <strong>Manager:</strong> {getUserNameByRefId(item.manager)}
+              </p>
+              <p>
+                <strong>Agent:</strong> {getUserNameByRefId(item.agent)}
+              </p>
+              <p>
+                <strong>Customer Type:</strong> {item.customer_type || "-"}
+              </p>
+              <p>
+                <strong>Customer Status:</strong> {item.customer_status || "-"}
+              </p>
             </div>
           </section>
 
