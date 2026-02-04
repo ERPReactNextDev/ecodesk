@@ -35,6 +35,7 @@ import { ClosedCard } from "@/components/dashboard-closed-card";
 import { EndorsedCard } from "@/components/dashboard-endorsed-card";
 import { ConvertedSalesCard } from "@/components/dashboard-converted-sales-card";
 import { MetricsCard } from "@/components/dashboard-metrics-card";
+
 import { WeeklyInboundCard } from "@/components/dashboard-weekly-inbound-card";
 import InboundTrafficGenderCard from "@/components/dashboard-inbound-traffic-gender-card";
 import CustomerStatusCard from "@/components/dashboard-customer-status-card";
@@ -48,6 +49,9 @@ import AgentSalesTableCard from "@/components/dashboard-agent-sales-conversion-t
 import AgentSalesTableWeeklyCard from "@/components/dashboard-agent-sales-conversion-table-weekly";
 import TSASalesTableCard from "@/components/dashboard-tsa-sales-conversion-table";
 import TSMSalesTableCard from "@/components/dashboard-tsm-sales-conversion-table";
+
+//
+import CountTickets from "@/components/dashboard-agent-ticket-table";
 
 interface UserDetails {
   referenceid: string;
@@ -121,29 +125,29 @@ function DashboardContent() {
   const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const queryUserId = searchParams?.get("id") ?? "";
 
-useEffect(() => {
-  if (dateCreatedFilterRange) return;
+  useEffect(() => {
+    if (dateCreatedFilterRange) return;
 
-  const raw = localStorage.getItem("date-filter-dialog");
+    const raw = localStorage.getItem("date-filter-dialog");
 
-  // ✅ If may saved filter, HUWAG galawin
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed?.from && parsed?.to) return;
-    } catch {
-      localStorage.removeItem("date-filter-dialog");
+    // ✅ If may saved filter, HUWAG galawin
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.from && parsed?.to) return;
+      } catch {
+        localStorage.removeItem("date-filter-dialog");
+      }
     }
-  }
 
-  // ✅ Fallback ONLY if walang saved filter
-  const today = new Date();
-  const from = new Date(today);
-  from.setHours(0, 0, 0, 0);
-  const to = new Date(today);
-  to.setHours(23, 59, 59, 999);
-  setDateCreatedFilterRangeAction({ from, to });
-}, [dateCreatedFilterRange]);
+    // ✅ Fallback ONLY if walang saved filter
+    const today = new Date();
+    const from = new Date(today);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(today);
+    to.setHours(23, 59, 59, 999);
+    setDateCreatedFilterRangeAction({ from, to });
+  }, [dateCreatedFilterRange]);
 
 
   // Set userId from query params
@@ -459,13 +463,21 @@ useEffect(() => {
           <Separator />
 
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-          <AgentSalesTableCard
-            ref={agentSalesCardRef}
-            dateCreatedFilterRange={dateCreatedFilterRange}
-            setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-            userReferenceId={userDetails.referenceid}
-            role={userDetails.role}
-          />
+            <CountTickets
+              ref={agentSalesCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              userReferenceId={userDetails.referenceid}
+              role={userDetails.role}
+            />
+
+            <AgentSalesTableCard
+              ref={agentSalesCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              userReferenceId={userDetails.referenceid}
+              role={userDetails.role}
+            />
 
             <AgentSalesTableWeeklyCard
               ref={agentSalesWeeklyCardRef}
@@ -481,13 +493,13 @@ useEffect(() => {
               role={userDetails.role}
             />
 
-<TSMSalesTableCard
-  ref={tsmSalesTrafficCardRef}
-  dateCreatedFilterRange={dateCreatedFilterRange}
-  setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-  role={userDetails.role}
-  userReferenceId={userDetails.referenceid}
-/>
+            <TSMSalesTableCard
+              ref={tsmSalesTrafficCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              role={userDetails.role}
+              userReferenceId={userDetails.referenceid}
+            />
           </div>
 
           <Separator />

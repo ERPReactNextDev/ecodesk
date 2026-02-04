@@ -414,31 +414,30 @@ export const Ticket: React.FC<TicketProps> = ({
     });
 
     // Sort filtered data
-data = data.slice().sort((a, b) => {
-  // 🔥 1️⃣ ENDORSED ALWAYS ON TOP
-  const aIsEndorsed = a.status === "Endorsed";
-  const bIsEndorsed = b.status === "Endorsed";
+    data = data.slice().sort((a, b) => {
+      // 🔥 1️⃣ ENDORSED ALWAYS ON TOP
+      const aIsEndorsed = a.status === "Endorsed";
+      const bIsEndorsed = b.status === "Endorsed";
 
-  if (aIsEndorsed && !bIsEndorsed) return -1;
-  if (!aIsEndorsed && bIsEndorsed) return 1;
+      if (aIsEndorsed && !bIsEndorsed) return -1;
+      if (!aIsEndorsed && bIsEndorsed) return 1;
 
-  // 🔁 2️⃣ NORMAL SORT (DATE / FIELD)
-  let aVal = (a as any)[sortField];
-  let bVal = (b as any)[sortField];
+      // 🔁 2️⃣ NORMAL SORT (DATE / FIELD)
+      let aVal = (a as any)[sortField];
+      let bVal = (b as any)[sortField];
 
-  if (sortField === "date_created" || sortField === "date_updated") {
-    aVal = aVal ? new Date(aVal).getTime() : 0;
-    bVal = bVal ? new Date(bVal).getTime() : 0;
-  } else {
-    aVal = aVal ? aVal.toString().toLowerCase() : "";
-    bVal = bVal ? bVal.toString().toLowerCase() : "";
-  }
+      if (sortField === "date_created" || sortField === "date_updated") {
+        aVal = aVal ? new Date(aVal).getTime() : 0;
+        bVal = bVal ? new Date(bVal).getTime() : 0;
+      } else {
+        aVal = aVal ? aVal.toString().toLowerCase() : "";
+        bVal = bVal ? bVal.toString().toLowerCase() : "";
+      }
 
-  if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
-  if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
-  return 0;
-});
-
+      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
 
     return data;
   }, [
@@ -1137,25 +1136,31 @@ data = data.slice().sort((a, b) => {
                     </span>
                   </div>
 
-                  <div className="text-muted-foreground mt-1 space-y-0.5">
-                    <div>
-                      Updated:{" "}
-                      {new Date(item.date_updated).toLocaleDateString()}{" "}
-                      {new Date(item.date_updated).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
+<div className="text-muted-foreground mt-1 space-y-0.5">
+  <div>
+    Updated:{" "}
+    {new Date(item.date_updated).toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })}
+  </div>
 
-                    <div className="text-[10px] text-slate-500">
-                      Created:{" "}
-                      {new Date(item.date_created).toLocaleDateString()}{" "}
-                      {new Date(item.date_created).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  </div>
+  <div className="text-[10px] text-slate-500">
+    Created:{" "}
+    {new Date(item.date_created).toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })}
+  </div>
+</div>
 
                   <div className="mt-1 flex items-center gap-1">
                     <span

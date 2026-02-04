@@ -7,11 +7,15 @@ const MONGODB_DB = process.env.MONGODB_DB;
 
 // Runtime check for env vars
 if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+  throw new Error(
+    "Please define the MONGODB_URI environment variable inside .env.local"
+  );
 }
 
 if (!MONGODB_DB) {
-  throw new Error("Please define the MONGODB_DB environment variable inside .env.local");
+  throw new Error(
+    "Please define the MONGODB_DB environment variable inside .env.local"
+  );
 }
 
 const mongoUri: string = MONGODB_URI;
@@ -64,23 +68,15 @@ export default async function handler(
     delete updateData._id;
 
     // ================================
-    // 🔁 SMART DATE UPDATE LOGIC
+    // ✅ FIXED DATE HANDLING LOGIC
     // ================================
 
-    // If user is editing date_created ONLY → do NOT update date_updated
-    if (!updateData.date_created) {
-      updateData.date_updated = new Date();
-    }
+    // Always update date_updated whenever a record is modified
+    updateData.date_updated = new Date();
 
-    // If date_created is provided, safely convert it to UTC
+    // If date_created is provided from the client, store it directly as a Date object
     if (updateData.date_created) {
-      const localDate = new Date(updateData.date_created);
-
-      const utcDate = new Date(
-        localDate.getTime() - localDate.getTimezoneOffset() * 60000
-      );
-
-      updateData.date_created = utcDate;
+      updateData.date_created = new Date(updateData.date_created);
     }
 
     const result = await collection.updateOne(
