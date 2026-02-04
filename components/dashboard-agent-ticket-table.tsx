@@ -202,7 +202,7 @@ const CountTickets: ForwardRefRenderFunction<
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
-        <CardTitle>CSR Sales Conversion Table</CardTitle>
+        <CardTitle>CSR Tickets Counts</CardTitle>
       </CardHeader>
 
       <CardContent>
