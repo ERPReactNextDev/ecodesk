@@ -701,6 +701,14 @@ export function TicketSheet(props: TicketSheetProps) {
     handleUpdate();
   };
 
+  const isStep3NextDisabled =
+    !ticketReceived ||
+    !ticketEndorsed ||
+    !gender ||
+    !channel ||
+    !wrapUp ||
+    !!timeError;
+
   // Helper: common buttons with validation on Next
   const Navigation = () => (
     <div className="flex justify-between mt-4">
@@ -751,7 +759,7 @@ export function TicketSheet(props: TicketSheetProps) {
       ) : (
         <Button
           onClick={onNext}
-          disabled={step === 3 && !!timeError}
+          disabled={step === 3 ? isStep3NextDisabled : false}
           className="cursor-pointer"
         >
           Next

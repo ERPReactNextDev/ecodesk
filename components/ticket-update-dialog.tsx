@@ -838,6 +838,7 @@ export function UpdateTicketDialog({
                   <Button
                     className="mt-4 w-full cursor-pointer"
                     onClick={() => setStep(2)}
+                    disabled={!sourceCompanyState}
                   >
                     Next
                   </Button>
