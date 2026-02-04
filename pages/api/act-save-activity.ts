@@ -64,16 +64,16 @@ export default async function handler(
     delete updateData._id;
 
     // ✅ ALLOW editing date_created
-// ✅ ALLOW editing date_created (datetime-local → UTC safe)
-if (updateData.date_created) {
-  const localDate = new Date(updateData.date_created);
+    // ✅ ALLOW editing date_created (datetime-local → UTC safe)
+    if (updateData.date_created) {
+      const localDate = new Date(updateData.date_created);
 
-  const utcDate = new Date(
-    localDate.getTime() - localDate.getTimezoneOffset() * 60000
-  );
+      const utcDate = new Date(
+        localDate.getTime() - localDate.getTimezoneOffset() * 60000
+      );
 
-  updateData.date_created = utcDate;
-}
+      updateData.date_created = utcDate;
+    }
 
     // ✅ ALWAYS update date_updated
     updateData.date_updated = new Date();
