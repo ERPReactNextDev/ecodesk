@@ -42,7 +42,11 @@ interface ChannelTableProps {
   loading: boolean;
   error: string | null;
   dateCreatedFilterRange: DateRange | undefined;
+  setDateCreatedFilterRangeAction: React.Dispatch<
+    React.SetStateAction<DateRange | undefined>
+  >;
 }
+
 
 export interface SourceCompanyCardRef {
   downloadCSV: () => void;
