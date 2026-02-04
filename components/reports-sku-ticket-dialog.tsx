@@ -153,6 +153,11 @@ export function ReportsSkuTicketDialog({ item }: Props) {
 
           <Separator className="my-4" />
 
+          {/* COMPANY NAME - BIG, BLUEISH, UNDERLINED */}
+          <p className="text-xl font-bold text-blue-700 underline mb-4 capitalize">
+            {item.company_name || "-"}
+          </p>
+
           {/* SKU INFORMATION */}
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">SKU Information</h3>
@@ -182,12 +187,6 @@ export function ReportsSkuTicketDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Customer Information</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p>
-                <strong>Company:</strong>{" "}
-                {item.company_name && item.company_name !== item.contact_person
-                  ? item.company_name
-                  : "-"}
-              </p>
               <p>
                 <strong>Contact Person:</strong> {item.contact_person || "-"}
               </p>

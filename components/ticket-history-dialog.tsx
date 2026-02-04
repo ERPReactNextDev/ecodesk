@@ -159,6 +159,11 @@ export function TicketHistoryDialog({ item }: Props) {
 
           <Separator className="my-4" />
 
+          {/* COMPANY NAME - BIG, GREEN, UNDERLINED */}
+          <p className="text-xl font-bold text-green-700 underline mb-4 capitalize">
+            {item.company_name || "-"}
+          </p>
+
           {/* CONTACT INFO */}
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Contact Information</h3>
@@ -249,37 +254,16 @@ export function TicketHistoryDialog({ item }: Props) {
 
           {/* OTHER DETAILS */}
           <section className="space-y-2">
-            <h3 className="font-semibold text-sm">Additional Details</h3>
+            <h3 className="font-semibold text-sm">Contact Information</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <p>
-                <strong>Traffic:</strong> {item.traffic || "-"}
+                <strong>Contact Person:</strong> {item.contact_person || "-"}
               </p>
               <p>
-                <strong>Channel:</strong> {item.channel || "-"}
+                <strong>Contact Number:</strong> {item.contact_number || "-"}
               </p>
               <p>
-                <strong>Source Company:</strong> {item.source_company || "-"}
-              </p>
-              <p>
-                <strong>Source:</strong> {item.source || "-"}
-              </p>
-              <p>
-                <strong>Wrap Up:</strong> {item.wrap_up || "-"}
-              </p>
-              <p>
-                <strong>Department:</strong> {item.department || "-"}
-              </p>
-              <p>
-                <strong>Manager:</strong> {getUserNameByRefId(item.manager)}
-              </p>
-              <p>
-                <strong>Agent:</strong> {getUserNameByRefId(item.agent)}
-              </p>
-              <p>
-                <strong>Customer Type:</strong> {item.customer_type || "-"}
-              </p>
-              <p>
-                <strong>Customer Status:</strong> {item.customer_status || "-"}
+                <strong>Email Address:</strong> {item.email_address || "-"}
               </p>
             </div>
           </section>
