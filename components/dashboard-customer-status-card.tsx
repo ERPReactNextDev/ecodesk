@@ -67,7 +67,7 @@ const CustomerStatusCard = forwardRef<
 >(({ activities, loading, error, dateCreatedFilterRange }, ref) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  /* ================= DATE FILTER (SAME AS ticket.tsx STYLE) ================= */
+  /* ================= DATE FILTER ================= */
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
     if (!range) return true;
     if (!dateStr) return false;
@@ -91,38 +91,45 @@ const CustomerStatusCard = forwardRef<
     return true;
   };
 
-  /* ================= FILTER + GROUP (LIKE act-filter-dialog logic) ================= */
-  const groupedData = useMemo(() => {
+  /* ================= GROUPING WITH OTHERS COUNT ================= */
+  const { groupedData, othersCount } = useMemo(() => {
     const map: Record<string, number> = {};
+    let others = 0;
 
     activities
-      .filter(
-        (a) =>
-          a.customer_status &&
-          a.customer_status.trim() !== "" &&
-          a.customer_status.trim() !== "-" &&
-          isDateInRange(a.date_created, dateCreatedFilterRange),
-      )
+      .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
       .forEach((a) => {
-        const status = a.customer_status!.trim();
-        map[status] = (map[status] || 0) + 1;
+        const status = a.customer_status?.trim();
+
+        if (!status || status === "-") {
+          others += 1;
+        } else {
+          map[status] = (map[status] || 0) + 1;
+        }
       });
 
-    return Object.entries(map).map(([customer_status, count]) => ({
-      customer_status,
-      count,
-    }));
+    return {
+      groupedData: Object.entries(map).map(([customer_status, count]) => ({
+        customer_status,
+        count,
+      })),
+      othersCount: others,
+    };
   }, [activities, dateCreatedFilterRange]);
 
-  const totalCount = groupedData.reduce((sum, row) => sum + row.count, 0);
+  const totalCount =
+    groupedData.reduce((sum, row) => sum + row.count, 0) + othersCount;
 
   /* ================= CSV EXPORT ================= */
   useImperativeHandle(ref, () => ({
     downloadCSV: () => {
-      if (!groupedData.length) return;
-
       const headers = ["Customer Status", "Count"];
+
       const rows = groupedData.map((r) => [r.customer_status, String(r.count)]);
+
+      if (othersCount > 0) {
+        rows.push(["Count of Others Status", othersCount.toString()]);
+      }
 
       const csvContent =
         [headers, ...rows]
@@ -161,7 +168,9 @@ const CustomerStatusCard = forwardRef<
           {showTooltip && (
             <TooltipInfo>
               Displays ticket records grouped by <b>Customer Status</b>, using
-              the same activity data shown in the Ticket list.
+              the same activity data shown in the Ticket list. Entries with no
+              status or "-" are counted separately as <b>Count of Others
+              Status</b>.
             </TooltipInfo>
           )}
         </div>
@@ -171,11 +180,11 @@ const CustomerStatusCard = forwardRef<
         {loading && <p>Loading activities...</p>}
         {error && <p className="text-destructive">{error}</p>}
 
-        {!loading && !error && groupedData.length === 0 && (
+        {!loading && !error && groupedData.length === 0 && othersCount === 0 && (
           <p className="text-muted-foreground">No data available.</p>
         )}
 
-        {!loading && !error && groupedData.length > 0 && (
+        {!loading && !error && (
           <Table>
             <TableHeader>
               <TableRow>
@@ -187,9 +196,7 @@ const CustomerStatusCard = forwardRef<
             <TableBody>
               {groupedData.map((row) => (
                 <TableRow key={row.customer_status}>
-                  <TableCell className="font-medium">
-                    {row.customer_status}
-                  </TableCell>
+                  <TableCell className="font-medium">{row.customer_status}</TableCell>
                   <TableCell className="text-right">
                     <Badge
                       variant="outline"
@@ -200,6 +207,22 @@ const CustomerStatusCard = forwardRef<
                   </TableCell>
                 </TableRow>
               ))}
+
+              {othersCount > 0 && (
+                <TableRow key="others-status">
+                  <TableCell className="font-medium italic text-muted-foreground">
+                    Count of Others Status
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge
+                      variant="outline"
+                      className="h-9 min-w-9 rounded-full px-3 font-mono tabular-nums"
+                    >
+                      {othersCount}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         )}

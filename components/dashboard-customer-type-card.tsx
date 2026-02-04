@@ -93,33 +93,35 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(
       return true;
     };
 
-    /* ================= CORE FIX =================
-     Count PER TICKET, grouped ONLY by customer_type
-     (matches Ticket filter behavior exactly)
-  ================================================= */
-    const displayData = useMemo(() => {
+    /* ================= CORE LOGIC ================= */
+    const { displayData, jobApplicationCount } = useMemo(() => {
       const summary: Record<string, number> = {};
+      let jobApps = 0;
 
       activities
-        .filter(
-          (a) =>
-            isDateInRange(a.date_created, dateCreatedFilterRange) &&
-            a.customer_type &&
-            a.customer_type.trim() !== "" &&
-            a.customer_type.trim() !== "-",
-        )
+        .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
         .forEach((a) => {
-          const key = a.customer_type!.trim();
-          summary[key] = (summary[key] ?? 0) + 1;
+          const ct = a.customer_type?.trim();
+
+          if (!ct || ct === "-") {
+            // count as job application (not included in summary)
+            jobApps += 1;
+          } else {
+            summary[ct] = (summary[ct] ?? 0) + 1;
+          }
         });
 
-      return Object.entries(summary).map(([customer_type, count]) => ({
-        customer_type,
-        count,
-      }));
+      return {
+        displayData: Object.entries(summary).map(([customer_type, count]) => ({
+          customer_type,
+          count,
+        })),
+        jobApplicationCount: jobApps,
+      };
     }, [activities, dateCreatedFilterRange]);
 
-    const totalCount = displayData.reduce((sum, row) => sum + row.count, 0);
+    const totalCount =
+      displayData.reduce((sum, row) => sum + row.count, 0) + jobApplicationCount;
 
     /* ================= CSV EXPORT ================= */
     useImperativeHandle(ref, () => ({
@@ -130,6 +132,11 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(
           row.customer_type,
           row.count.toString(),
         ]);
+
+        // Add job applications as a separate row
+        if (jobApplicationCount > 0) {
+          rows.push(["Count of Job Applications", jobApplicationCount.toString()]);
+        }
 
         const csvContent =
           [headers, ...rows]
@@ -168,7 +175,9 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(
             {showTooltip && (
               <TooltipInfo>
                 This card shows the number of tickets per customer type. The
-                count exactly matches the filtered tickets list.
+                count exactly matches the filtered tickets list. Entries without
+                a customer type or with "-" are counted separately as job
+                applications.
               </TooltipInfo>
             )}
           </div>
@@ -178,11 +187,11 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(
           {loading && <p>Loading activities...</p>}
           {error && <p className="text-destructive">{error}</p>}
 
-          {!loading && !error && displayData.length === 0 && (
+          {!loading && !error && displayData.length === 0 && jobApplicationCount === 0 && (
             <p className="text-muted-foreground">No data available.</p>
           )}
 
-          {!loading && !error && displayData.length > 0 && (
+          {!loading && !error && (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -207,6 +216,23 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(
                     </TableCell>
                   </TableRow>
                 ))}
+
+                {/* Show job applications as a separate row */}
+                {jobApplicationCount > 0 && (
+                  <TableRow key="job-applications">
+                    <TableCell className="font-medium py-4 italic text-muted-foreground">
+                      Count of Job Applications
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge
+                        variant="outline"
+                        className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums"
+                      >
+                        {jobApplicationCount}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           )}

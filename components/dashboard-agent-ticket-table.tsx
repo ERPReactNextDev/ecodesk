@@ -33,7 +33,7 @@ interface Activity {
   referenceid?: string;
   date_created?: string;
   company_name?: string; // assumed to exist
-  // other fields omitted
+  contact_person?: string;
 }
 
 interface Agent {
@@ -258,7 +258,8 @@ const CountTickets: ForwardRefRenderFunction<
                               >
                                 <TableCell />
                                 <TableCell>
-                                  {act.company_name || "(No company name)"}
+                                  {act.company_name || "(No company name)"}<br />
+                                  {act.contact_person || "(No company name)"}
                                 </TableCell>
                                 <TableCell className="text-right">1</TableCell>
                               </TableRow>

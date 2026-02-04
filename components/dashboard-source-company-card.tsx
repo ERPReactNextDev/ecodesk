@@ -20,9 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 // Tooltip component
 function TooltipInfo({ children }: { children: React.ReactNode }) {
@@ -35,8 +34,6 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
 
 interface Activity {
   source_company: string;
-  company_name: string;
-  contact_person?: string;
   date_created?: string;
 }
 
@@ -45,9 +42,6 @@ interface ChannelTableProps {
   loading: boolean;
   error: string | null;
   dateCreatedFilterRange: DateRange | undefined;
-  setDateCreatedFilterRangeAction: React.Dispatch<
-    React.SetStateAction<DateRange | undefined>
-  >;
 }
 
 export interface SourceCompanyCardRef {
@@ -78,80 +72,44 @@ const SourceCompanyCard = forwardRef<SourceCompanyCardRef, ChannelTableProps>(({
     return true;
   };
 
-  // Group by source_company + company_name + contact_person and count occurrences
+  // Count all activities grouped by source_company
   const groupedData = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        source_company: string;
-        company_name: string;
-        contact_person?: string;
-        count: number;
-      }
-    > = {};
+    const countMap: Record<string, number> = {};
 
     activities
       .filter(
         (a) =>
           isDateInRange(a.date_created, dateCreatedFilterRange) &&
           a.source_company &&
-          a.source_company.trim() !== "" &&
-          a.company_name &&
-          a.company_name.trim() !== ""
+          a.source_company.trim() !== ""
       )
       .forEach((a) => {
         const source_company = a.source_company!.trim();
-        const company_name = a.company_name.trim();
-        const contact_person = a.contact_person?.trim();
-        const key = `${source_company}|${company_name}|${contact_person ?? ""}`;
-
-        if (!map[key]) {
-          map[key] = { source_company, company_name, contact_person, count: 0 };
-        }
-        map[key].count += 1;
+        countMap[source_company] = (countMap[source_company] ?? 0) + 1;
       });
 
-    return Object.values(map);
-  }, [activities, dateCreatedFilterRange]);
-
-  // For display in the table: group by source_company only (sum counts)
-  const displayData = useMemo(() => {
-    const summary: Record<string, number> = {};
-    groupedData.forEach(({ source_company, count }) => {
-      summary[source_company] = (summary[source_company] ?? 0) + count;
-    });
-    return Object.entries(summary).map(([source_company, count]) => ({
+    return Object.entries(countMap).map(([source_company, count]) => ({
       source_company,
       count,
     }));
-  }, [groupedData]);
+  }, [activities, dateCreatedFilterRange]);
 
-  const totalCount = displayData.reduce((sum, row) => sum + row.count, 0);
+  const totalCount = groupedData.reduce((sum, row) => sum + row.count, 0);
 
   useImperativeHandle(ref, () => ({
     downloadCSV: () => {
+      const headers = ["Source Company", "Count"];
 
-      const headers = [
-        "Customer Type",
-        "Company Name",
-        "Contact Person",
-        "Count",
-      ];
-
-      const rows = groupedData.map(
-        ({ source_company, company_name, contact_person, count }) => [
-          source_company,
-          company_name,
-          contact_person ?? "",
-          count.toString(),
-        ]
-      );
+      const rows = groupedData.map(({ source_company, count }) => [
+        source_company,
+        count.toString(),
+      ]);
 
       const csvContent =
         [headers, ...rows]
           .map((row) =>
             row
-              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
+              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape quotes
               .join(",")
           )
           .join("\n") + "\n";
@@ -182,7 +140,7 @@ const SourceCompanyCard = forwardRef<SourceCompanyCardRef, ChannelTableProps>(({
           <Info size={18} />
           {showTooltip && (
             <TooltipInfo>
-              This table shows the count of activities grouped by company within the selected date range.
+              This table shows the count of activities grouped by source company within the selected date range.
             </TooltipInfo>
           )}
         </div>
@@ -192,21 +150,21 @@ const SourceCompanyCard = forwardRef<SourceCompanyCardRef, ChannelTableProps>(({
         {loading && <p>Loading activities...</p>}
         {error && <p className="text-destructive">{error}</p>}
 
-        {!loading && !error && displayData.length === 0 && (
+        {!loading && !error && groupedData.length === 0 && (
           <p className="text-muted-foreground">No data available.</p>
         )}
 
-        {!loading && !error && displayData.length > 0 && (
+        {!loading && !error && groupedData.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead></TableHead>
+                <TableHead>Source Company</TableHead>
                 <TableHead className="text-right">Count</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
-              {displayData.map((row) => (
+              {groupedData.map((row) => (
                 <TableRow key={row.source_company}>
                   <TableCell className="font-medium pt-4 pb-4 text-left">
                     {row.source_company}
@@ -225,10 +183,11 @@ const SourceCompanyCard = forwardRef<SourceCompanyCardRef, ChannelTableProps>(({
       <Separator />
       <CardFooter className="flex justify-end">
         <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-         Total: {totalCount}
+          Total: {totalCount}
         </Badge>
       </CardFooter>
     </Card>
   );
 });
+
 export default SourceCompanyCard;
