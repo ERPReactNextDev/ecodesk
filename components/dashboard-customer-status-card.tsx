@@ -100,6 +100,7 @@ const CustomerStatusCard = forwardRef<
         (a) =>
           a.customer_status &&
           a.customer_status.trim() !== "" &&
+          a.customer_status.trim() !== "-" &&
           isDateInRange(a.date_created, dateCreatedFilterRange),
       )
       .forEach((a) => {
@@ -113,10 +114,7 @@ const CustomerStatusCard = forwardRef<
     }));
   }, [activities, dateCreatedFilterRange]);
 
-  const totalCount = groupedData.reduce(
-    (sum, row) => sum + row.count,
-    0,
-  );
+  const totalCount = groupedData.reduce((sum, row) => sum + row.count, 0);
 
   /* ================= CSV EXPORT ================= */
   useImperativeHandle(ref, () => ({
@@ -124,17 +122,12 @@ const CustomerStatusCard = forwardRef<
       if (!groupedData.length) return;
 
       const headers = ["Customer Status", "Count"];
-      const rows = groupedData.map((r) => [
-        r.customer_status,
-        String(r.count),
-      ]);
+      const rows = groupedData.map((r) => [r.customer_status, String(r.count)]);
 
       const csvContent =
         [headers, ...rows]
           .map((row) =>
-            row
-              .map((cell) => `"${cell.replace(/"/g, '""')}"`)
-              .join(","),
+            row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","),
           )
           .join("\n") + "\n";
 
