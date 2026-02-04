@@ -63,20 +63,25 @@ export default async function handler(
     const updateData: any = { ...body };
     delete updateData._id;
 
-    // ✅ ALLOW editing date_created
-// ✅ ALLOW editing date_created (datetime-local → UTC safe)
-if (updateData.date_created) {
-  const localDate = new Date(updateData.date_created);
+    // ================================
+    // 🔁 SMART DATE UPDATE LOGIC
+    // ================================
 
-  const utcDate = new Date(
-    localDate.getTime() - localDate.getTimezoneOffset() * 60000
-  );
+    // If user is editing date_created ONLY → do NOT update date_updated
+    if (!updateData.date_created) {
+      updateData.date_updated = new Date();
+    }
 
-  updateData.date_created = utcDate;
-}
+    // If date_created is provided, safely convert it to UTC
+    if (updateData.date_created) {
+      const localDate = new Date(updateData.date_created);
 
-    // ✅ ALWAYS update date_updated
-    updateData.date_updated = new Date();
+      const utcDate = new Date(
+        localDate.getTime() - localDate.getTimezoneOffset() * 60000
+      );
+
+      updateData.date_created = utcDate;
+    }
 
     const result = await collection.updateOne(
       filter,
@@ -88,6 +93,7 @@ if (updateData.date_created) {
     }
 
     return res.status(200).json({ success: true });
+
   } catch (error: any) {
     console.error("MongoDB update error:", error);
     return res.status(500).json({

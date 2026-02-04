@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  Suspense,
-  useRef,
-} from "react";
+import React, { useEffect, useState, useCallback, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { FormatProvider } from "@/contexts/FormatContext";
@@ -33,7 +27,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { type DateRange } from "react-day-picker";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import { toast } from "sonner";
 
 import { AccountsCard } from "@/components/dashboard-accounts-card";
@@ -88,8 +82,9 @@ interface Activity {
 }
 
 function DashboardContent() {
-  const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
-    React.useState<DateRange | undefined>(undefined);
+  const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] = React.useState<
+    DateRange | undefined
+  >(undefined);
 
   const searchParams = useSearchParams();
   const { userId, setUserId } = useUser();
@@ -115,52 +110,41 @@ function DashboardContent() {
   // Ref to access ChannelCard download function
   const channelCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const sourceCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const inboundTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
-    null,
-  );
-  const customerStatusCardRef = useRef<{ downloadCSV: () => void } | null>(
-    null,
-  );
+  const inboundTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const customerStatusCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const customerTypeCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const companyDistributionCardRef = useRef<{ downloadCSV: () => void } | null>(
-    null,
-  );
+  const companyDistributionCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const wrapupCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const tsaSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
-    null,
-  );
+  const tsaSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const agentSalesCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(
-    null,
-  );
-  const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
-    null,
-  );
+  const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const queryUserId = searchParams?.get("id") ?? "";
 
-  useEffect(() => {
-    if (dateCreatedFilterRange) return;
+useEffect(() => {
+  if (dateCreatedFilterRange) return;
 
-    const raw = localStorage.getItem("date-filter-dialog");
+  const raw = localStorage.getItem("date-filter-dialog");
 
-    // ✅ If may saved filter, HUWAG galawin
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (parsed?.from && parsed?.to) return;
-      } catch {
-        localStorage.removeItem("date-filter-dialog");
-      }
+  // ✅ If may saved filter, HUWAG galawin
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.from && parsed?.to) return;
+    } catch {
+      localStorage.removeItem("date-filter-dialog");
     }
+  }
 
-    // ✅ Fallback ONLY if walang saved filter
-    const today = new Date();
-    const from = new Date(today);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(today);
-    to.setHours(23, 59, 59, 999);
-    setDateCreatedFilterRangeAction({ from, to });
-  }, [dateCreatedFilterRange]);
+  // ✅ Fallback ONLY if walang saved filter
+  const today = new Date();
+  const from = new Date(today);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(today);
+  to.setHours(23, 59, 59, 999);
+  setDateCreatedFilterRangeAction({ from, to });
+}, [dateCreatedFilterRange]);
+
 
   // Set userId from query params
   useEffect(() => {
@@ -181,9 +165,7 @@ function DashboardContent() {
       setErrorUser(null);
       setLoadingUser(true);
       try {
-        const response = await fetch(
-          `/api/user?id=${encodeURIComponent(userId)}`,
-        );
+        const response = await fetch(`/api/user?id=${encodeURIComponent(userId)}`);
         if (!response.ok) throw new Error("Failed to fetch user data");
         const data = await response.json();
 
@@ -199,7 +181,7 @@ function DashboardContent() {
         console.error("Error fetching user data:", err);
         setErrorUser("Failed to fetch user data");
         toast.error(
-          "Failed to connect to server. Please try again later or refresh your network connection",
+          "Failed to connect to server. Please try again later or refresh your network connection"
         );
       } finally {
         setLoadingUser(false);
@@ -217,8 +199,7 @@ function DashboardContent() {
       const res = await fetch("/api/com-fetch-account", {
         cache: "no-store",
         headers: {
-          "Cache-Control":
-            "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
           Pragma: "no-cache",
           Expires: "0",
         },
@@ -240,16 +221,14 @@ function DashboardContent() {
 
     try {
       // If Admin, don't filter by referenceid; else filter by referenceid
-      const url =
-        userDetails.role === "Admin"
-          ? `/api/act-fetch-activity` // fetch all activities for Admin (API should support this)
-          : `/api/act-fetch-activity?referenceid=${encodeURIComponent(userDetails.referenceid)}`;
+      const url = userDetails.role === "Admin"
+        ? `/api/act-fetch-activity`  // fetch all activities for Admin (API should support this)
+        : `/api/act-fetch-activity?referenceid=${encodeURIComponent(userDetails.referenceid)}`;
 
       const res = await fetch(url, {
         cache: "no-store",
         headers: {
-          "Cache-Control":
-            "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
           Pragma: "no-cache",
           Expires: "0",
         },
@@ -266,8 +245,7 @@ function DashboardContent() {
       // Merge company info by matching account_reference_number
       const mergedActivities = fetchedActivities.map((activity) => {
         const matchedCompany = companies.find(
-          (comp) =>
-            comp.account_reference_number === activity.account_reference_number,
+          (comp) => comp.account_reference_number === activity.account_reference_number
         );
         return {
           ...activity,
@@ -410,59 +388,33 @@ function DashboardContent() {
       <SidebarInset>
         <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2 px-3 z-[50]">
           <SidebarTrigger />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
 
           <div className="flex justify-between items-center w-full">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="line-clamp-1">
-                    Dashboard
-                  </BreadcrumbPage>
+                  <BreadcrumbPage className="line-clamp-1">Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
 
             <div className="flex items-center space-x-2">
-              <Select
-                defaultValue=""
-                onValueChange={(value) => setSelectedExport(value)}
-              >
+              <Select defaultValue="" onValueChange={(value) => setSelectedExport(value)}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Select Option" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Export All">Export All</SelectItem>
-                  <SelectItem value="Export Channel Usage">
-                    Export Channel Usage
-                  </SelectItem>
-                  <SelectItem value="Export Source Usage">
-                    Export Wrap Up Usage
-                  </SelectItem>
-                  <SelectItem value="Export Inbound Traffic by Gender">
-                    Export Inbound Traffic by Gender
-                  </SelectItem>
-                  <SelectItem value="Export Customer Status Distribution">
-                    Export Customer Status Distribution
-                  </SelectItem>
-                  <SelectItem value="Export Type Distribution">
-                    Export Type Distribution
-                  </SelectItem>
-                  <SelectItem value="Export Company Distribution">
-                    Export Company Distribution
-                  </SelectItem>
-                  <SelectItem value="Export Wrap Up Distribution">
-                    Export Wrap Up Distribution
-                  </SelectItem>
-                  <SelectItem value="Export TSA Sales Traffic">
-                    Export TSA Sales
-                  </SelectItem>
-                  <SelectItem value="Export TSM Sales Traffic">
-                    Export TSM Sales
-                  </SelectItem>
+                  <SelectItem value="Export Channel Usage">Export Channel Usage</SelectItem>
+                  <SelectItem value="Export Source Usage">Export Wrap Up Usage</SelectItem>
+                  <SelectItem value="Export Inbound Traffic by Gender">Export Inbound Traffic by Gender</SelectItem>
+                  <SelectItem value="Export Customer Status Distribution">Export Customer Status Distribution</SelectItem>
+                  <SelectItem value="Export Type Distribution">Export Type Distribution</SelectItem>
+                  <SelectItem value="Export Company Distribution">Export Company Distribution</SelectItem>
+                  <SelectItem value="Export Wrap Up Distribution">Export Wrap Up Distribution</SelectItem>
+                  <SelectItem value="Export TSA Sales Traffic">Export TSA Sales</SelectItem>
+                  <SelectItem value="Export TSM Sales Traffic">Export TSM Sales</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -483,8 +435,7 @@ function DashboardContent() {
               loading={loadingActivities}
               error={errorActivities}
               dateCreatedFilterRange={dateCreatedFilterRange}
-              referenceid={userDetails.referenceid}
-              role={userDetails.role}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
 
             <EndorsedCard
@@ -502,18 +453,19 @@ function DashboardContent() {
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
+
           </div>
 
           <Separator />
 
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-            <AgentSalesTableCard
-              ref={agentSalesCardRef}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-              userReferenceId={userDetails.referenceid}
-              role={userDetails.role}
-            />
+          <AgentSalesTableCard
+            ref={agentSalesCardRef}
+            dateCreatedFilterRange={dateCreatedFilterRange}
+            setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+            userReferenceId={userDetails.referenceid}
+            role={userDetails.role}
+          />
 
             <AgentSalesTableWeeklyCard
               ref={agentSalesWeeklyCardRef}
@@ -529,13 +481,13 @@ function DashboardContent() {
               role={userDetails.role}
             />
 
-            <TSMSalesTableCard
-              ref={tsmSalesTrafficCardRef}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-              role={userDetails.role}
-              userReferenceId={userDetails.referenceid}
-            />
+<TSMSalesTableCard
+  ref={tsmSalesTrafficCardRef}
+  dateCreatedFilterRange={dateCreatedFilterRange}
+  setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+  role={userDetails.role}
+  userReferenceId={userDetails.referenceid}
+/>
           </div>
 
           <Separator />
