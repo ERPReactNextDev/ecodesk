@@ -489,6 +489,12 @@ export function UpdateTicketDialog({
       newActivity.payment_date = "-";
       newActivity.delivery_date = "-";
 
+      // 🔥 ADD THIS PART – CLEAR TSA / TSM FIELDS
+      newActivity.tsm_acknowledge_date = "";
+      newActivity.tsm_handling_time = "";
+      newActivity.tsa_acknowledge_date = "";
+      newActivity.tsa_handling_time = "";
+
       // ❗ DO NOT TOUCH STATUS
       newActivity.close_reason = "-";
       newActivity.counter_offer = "-";
