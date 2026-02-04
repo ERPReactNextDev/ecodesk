@@ -38,13 +38,15 @@ interface ActFilterDialogProps {
 
   mergedData: any[];
   sortableFields: string[];
+
+  agents: { ReferenceID: string; Firstname: string; Lastname: string }[];
 }
 
 // Extend allowed fields to include referenceid (agent)
 type ExtendedFilterField = FilterField | "referenceid";
 
 const filterFields: ExtendedFilterField[] = [
-  "referenceid",        // 👈 NEW: Filter by Agent
+  "referenceid",
   "source_company",
   "source",
   "wrap_up",
@@ -68,6 +70,7 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
   setSortOrder,
   mergedData,
   sortableFields,
+  agents,
 }) => {
   return (
     <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
@@ -79,18 +82,30 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
         <div className="flex-1 overflow-y-auto pr-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
             {filterFields.map((field) => {
-              const options = Array.from(
-                new Set(
-                  mergedData
-                    .map((item) => (item as any)[field])
-                    .filter(
-                      (val) =>
-                        val !== undefined &&
-                        val !== null &&
-                        val !== ""
-                    )
-                )
-              ).sort();
+              let options: string[] = [];
+
+              if (field === "referenceid") {
+                options = Array.from(
+                  new Set(
+                    mergedData
+                      .map((item) => item.referenceid)
+                      .filter((val) => val)
+                  )
+                ).sort();
+              } else {
+                options = Array.from(
+                  new Set(
+                    mergedData
+                      .map((item) => (item as any)[field])
+                      .filter(
+                        (val) =>
+                          val !== undefined &&
+                          val !== null &&
+                          val !== ""
+                      )
+                  )
+                ).sort();
+              }
 
               return (
                 <div key={field}>
@@ -112,15 +127,33 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="-- All --" />
                     </SelectTrigger>
+
                     <SelectContent>
-                      <SelectItem value="__all__">
-                        -- All --
-                      </SelectItem>
-                      {options.map((opt) => (
-                        <SelectItem key={opt} value={opt}>
-                          {opt}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="__all__">-- All --</SelectItem>
+
+                      {options.map((opt) => {
+                        if (field === "referenceid") {
+                          const agent = agents.find(
+                            (a) => a.ReferenceID === opt
+                          );
+
+                          const name = agent
+                            ? `${agent.Firstname} ${agent.Lastname}`
+                            : opt;
+
+                          return (
+                            <SelectItem key={opt} value={opt}>
+                              {name}
+                            </SelectItem>
+                          );
+                        }
+
+                        return (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -133,13 +166,12 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
               <label className="block text-sm font-medium mb-1">
                 Sort By
               </label>
-              <Select
-                value={sortField}
-                onValueChange={setSortField}
-              >
+
+              <Select value={sortField} onValueChange={setSortField}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
+
                 <SelectContent>
                   {sortableFields.map((field) => (
                     <SelectItem
@@ -158,6 +190,7 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
               <label className="block text-sm font-medium mb-1">
                 Sort Order
               </label>
+
               <RadioGroup
                 value={sortOrder}
                 onValueChange={(value) =>
@@ -169,6 +202,7 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
                   <RadioGroupItem value="asc" id="asc" />
                   <label htmlFor="asc">Ascending</label>
                 </div>
+
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="desc" id="desc" />
                   <label htmlFor="desc">Descending</label>
@@ -185,6 +219,7 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
           >
             Cancel
           </Button>
+
           <Button onClick={() => setFilterDialogOpen(false)}>
             Apply
           </Button>

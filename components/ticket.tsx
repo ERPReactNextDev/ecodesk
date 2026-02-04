@@ -167,7 +167,7 @@ export const Ticket: React.FC<TicketProps> = ({
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   const [filters, setFilters] = useState<{
-    referenceid?: string; 
+    referenceid?: string;
     source_company?: string;
     source?: string;
     wrap_up?: string;
@@ -1137,31 +1137,31 @@ export const Ticket: React.FC<TicketProps> = ({
                     </span>
                   </div>
 
-<div className="text-muted-foreground mt-1 space-y-0.5">
-  <div>
-    Updated:{" "}
-    {new Date(item.date_updated).toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    })}
-  </div>
+                  <div className="text-muted-foreground mt-1 space-y-0.5">
+                    <div>
+                      Updated:{" "}
+                      {new Date(item.date_updated).toLocaleString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </div>
 
-  <div className="text-[10px] text-slate-500">
-    Created:{" "}
-    {new Date(item.date_created).toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    })}
-  </div>
-</div>
+                    <div className="text-[10px] text-slate-500">
+                      Created:{" "}
+                      {new Date(item.date_created).toLocaleString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </div>
+                  </div>
 
                   <div className="mt-1 flex items-center gap-1">
                     <span
@@ -1303,6 +1303,7 @@ export const Ticket: React.FC<TicketProps> = ({
           setSortOrder={setSortOrder}
           mergedData={filteredAndSortedData}
           sortableFields={sortableFields}
+          agents={agents} // 👈 THIS LINE FIXES THE ERROR
         />
       </Card>
 
