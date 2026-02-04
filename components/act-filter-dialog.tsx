@@ -27,8 +27,8 @@ interface ActFilterDialogProps {
   filterDialogOpen: boolean;
   setFilterDialogOpen: (open: boolean) => void;
 
-  filters: Partial<Record<FilterField, string>>;
-  handleFilterChange: (field: FilterField, value: string) => void;
+  filters: Partial<Record<FilterField | "referenceid", string>>;
+  handleFilterChange: (field: FilterField | "referenceid", value: string) => void;
 
   sortField: string;
   setSortField: (field: string) => void;
@@ -40,7 +40,11 @@ interface ActFilterDialogProps {
   sortableFields: string[];
 }
 
-const filterFields: FilterField[] = [
+// Extend allowed fields to include referenceid (agent)
+type ExtendedFilterField = FilterField | "referenceid";
+
+const filterFields: ExtendedFilterField[] = [
+  "referenceid",        // 👈 NEW: Filter by Agent
   "source_company",
   "source",
   "wrap_up",
@@ -68,14 +72,11 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
   return (
     <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
       <DialogContent className="w-[90vh] max-w-none flex flex-col">
-        {/* HEADER */}
         <DialogHeader>
           <DialogTitle>Filter & Sort Activities</DialogTitle>
         </DialogHeader>
 
-        {/* BODY (SCROLLABLE) */}
         <div className="flex-1 overflow-y-auto pr-1">
-          {/* FILTERS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
             {filterFields.map((field) => {
               const options = Array.from(
@@ -94,14 +95,16 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
               return (
                 <div key={field}>
                   <label className="block text-sm font-medium capitalize mb-1">
-                    {field.replace(/_/g, " ")}
+                    {field === "referenceid"
+                      ? "Agent"
+                      : field.replace(/_/g, " ")}
                   </label>
 
                   <Select
-                    value={filters[field] || "__all__"}
+                    value={(filters as any)[field] || "__all__"}
                     onValueChange={(value) =>
                       handleFilterChange(
-                        field,
+                        field as any,
                         value === "__all__" ? "" : value
                       )
                     }
@@ -125,7 +128,6 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
             })}
           </div>
 
-          {/* SORTING */}
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4 my-4">
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -176,7 +178,6 @@ export const ActFilterDialog: React.FC<ActFilterDialogProps> = ({
           </div>
         </div>
 
-        {/* FOOTER (FIXED, NO OVERLAP) */}
         <DialogFooter className="border-t pt-3 flex justify-end gap-2">
           <Button
             variant="secondary"
