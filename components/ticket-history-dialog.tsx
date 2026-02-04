@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 
 /* ✅ Strongly typed item */
 interface TicketHistoryItem {
@@ -25,7 +24,7 @@ interface TicketHistoryItem {
   ticket_received?: string;
   ticket_endorsed?: string;
 
-  /* ✅ NEW FIELDS */
+  /* TIMELINE FIELDS */
   tsm_acknowledge_date?: string;
   tsa_acknowledge_date?: string;
   tsm_handling_time?: string;
@@ -73,13 +72,24 @@ const formatDateTime = (value?: string) => {
   return isNaN(d.getTime()) ? "-" : d.toLocaleString();
 };
 
+/* Big circle time display */
+const TimeCircle = ({ label, value }: { label: string; value?: string }) => (
+  <div className="flex flex-col items-center text-center space-y-2">
+    <div className="w-32 h-32 rounded-full border-2 border-slate-300 flex items-center justify-center p-3">
+      <span className="text-sm font-semibold">
+        {formatDateTime(value)}
+      </span>
+    </div>
+    <span className="text-xs font-medium">{label}</span>
+  </div>
+);
+
 const STATUS_STYLES: Record<string, string> = {
   "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
-  "Closed": "bg-gray-200 text-gray-700 border-gray-300",
-  "Endorsed": "bg-purple-100 text-purple-700 border-purple-300",
+  Closed: "bg-gray-200 text-gray-700 border-gray-300",
+  Endorsed: "bg-purple-100 text-purple-700 border-purple-300",
   "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
 };
-
 
 export function TicketHistoryDialog({ item }: Props) {
   const [open, setOpen] = useState(false);
@@ -102,7 +112,10 @@ export function TicketHistoryDialog({ item }: Props) {
 
               <span
                 className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold
-                  ${STATUS_STYLES[item.status ?? ""] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
+                  ${
+                    STATUS_STYLES[item.status ?? ""] ??
+                    "bg-slate-100 text-slate-700 border-slate-300"
+                  }`}
               >
                 {item.status || "-"}
               </span>
@@ -125,42 +138,95 @@ export function TicketHistoryDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Contact Information</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Contact Person:</strong> {item.contact_person || "-"}</p>
-              <p><strong>Contact Number:</strong> {item.contact_number || "-"}</p>
-              <p><strong>Email Address:</strong> {item.email_address || "-"}</p>
               <p>
-                  <strong>Company:</strong>{" "}
-                  {item.company_name &&
-                  item.company_name !== item.contact_person
-                    ? item.company_name
-                    : "-"}
-                </p>
+                <strong>Contact Person:</strong> {item.contact_person || "-"}
+              </p>
+              <p>
+                <strong>Contact Number:</strong> {item.contact_number || "-"}
+              </p>
+              <p>
+                <strong>Email Address:</strong> {item.email_address || "-"}
+              </p>
+              <p>
+                <strong>Company:</strong>{" "}
+                {item.company_name &&
+                item.company_name !== item.contact_person
+                  ? item.company_name
+                  : "-"}
+              </p>
             </div>
           </section>
 
           <Separator className="my-4" />
 
-          {/* TICKET DETAILS */}
+          {/* TIMELINE FORMAT SECTION */}
+          <section className="space-y-6">
+            <h3 className="font-semibold text-sm">Ticket Timeline</h3>
+
+            {/* Date Created */}
+            <div className="flex justify-center">
+              <TimeCircle label="Date Created" value={item.date_created} />
+            </div>
+
+            <Separator />
+
+            {/* Ticket Received / Endorsed */}
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
+              <TimeCircle
+                label="Ticket Received"
+                value={item.ticket_received}
+              />
+              <TimeCircle
+                label="Ticket Endorsed"
+                value={item.ticket_endorsed}
+              />
+            </div>
+
+            <Separator />
+
+            {/* TSA */}
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
+              <TimeCircle
+                label="TSA Acknowledgement Date"
+                value={item.tsa_acknowledge_date}
+              />
+              <TimeCircle
+                label="TSA Handling Time"
+                value={item.tsa_handling_time}
+              />
+            </div>
+
+            <Separator />
+
+            {/* TSM */}
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
+              <TimeCircle
+                label="TSM Acknowledgement Date"
+                value={item.tsm_acknowledge_date}
+              />
+              <TimeCircle
+                label="TSM Handling Time"
+                value={item.tsm_handling_time}
+              />
+            </div>
+
+            <Separator />
+
+            {/* HR */}
+            <div className="flex justify-center">
+              <TimeCircle
+                label="HR Acknowledgement Date"
+                value={item.hr_acknowledge_date}
+              />
+            </div>
+          </section>
+
+          <Separator className="my-4" />
+
+          {/* OTHER DETAILS */}
           <section className="space-y-2">
-            <h3 className="font-semibold text-sm">Ticket Details</h3>
+            <h3 className="font-semibold text-sm">Additional Details</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Ticket Received:</strong> {formatDateTime(item.ticket_received)}</p>
-              <p><strong>Ticket Endorsed:</strong> {formatDateTime(item.ticket_endorsed)}</p>
-
-              {/* ✅ NEW FIELDS */}
-              <p><strong>Date Created:</strong> {formatDateTime(item.date_created)}</p>
-              <p><strong>TSM Acknowledgement Date:</strong> {formatDateTime(item.tsm_acknowledge_date)}</p>
-              <p><strong>TSA Acknowledgement Date:</strong> {formatDateTime(item.tsa_acknowledge_date)}</p>
-              <p><strong>TSM Handling Time:</strong> {formatDateTime(item.tsm_handling_time)}</p>
-              <p><strong>TSA Handling Time:</strong> {formatDateTime(item.tsa_handling_time)}</p>
-              <p><strong>HR Acknowledgement Date:</strong> {formatDateTime(item.hr_acknowledge_date)}</p>
-              {item.wrap_up === "Job Applicants" && (
-                  <p>
-                    <strong>HR Acknowledgement Date:</strong>{" "}
-                    {formatDateTime(item.hr_acknowledge_date)}
-                  </p>
-                )}
-
               <p><strong>Traffic:</strong> {item.traffic || "-"}</p>
               <p><strong>Channel:</strong> {item.channel || "-"}</p>
               <p><strong>Source Company:</strong> {item.source_company || "-"}</p>
@@ -174,31 +240,39 @@ export function TicketHistoryDialog({ item }: Props) {
             </div>
           </section>
 
-          {/* REMARKS / INQUIRY */}
           {(item.remarks || item.inquiry) && (
             <>
               <Separator className="my-4" />
               <section className="space-y-2">
                 <h3 className="font-semibold text-sm">Remarks & Inquiry</h3>
                 {item.remarks && (
-                  <p className="text-xs"><strong>Remarks:</strong> {item.remarks}</p>
+                  <p className="text-xs">
+                    <strong>Remarks:</strong> {item.remarks}
+                  </p>
                 )}
                 {item.inquiry && (
-                  <p className="text-xs"><strong>Inquiry:</strong> {item.inquiry}</p>
+                  <p className="text-xs">
+                    <strong>Inquiry:</strong> {item.inquiry}
+                  </p>
                 )}
               </section>
             </>
           )}
 
-          {/* CLOSURE DETAILS */}
           {item.status === "Closed" && (
             <>
               <Separator className="my-4" />
               <section className="space-y-2 bg-muted p-3 rounded-lg">
                 <h3 className="font-semibold text-sm">Closure Details</h3>
-                <p className="text-xs"><strong>Close Reason:</strong> {item.close_reason || "-"}</p>
-                <p className="text-xs"><strong>Counter Offer:</strong> {item.counter_offer || "-"}</p>
-                <p className="text-xs"><strong>Client Specs:</strong> {item.client_specs || "-"}</p>
+                <p className="text-xs">
+                  <strong>Close Reason:</strong> {item.close_reason || "-"}
+                </p>
+                <p className="text-xs">
+                  <strong>Counter Offer:</strong> {item.counter_offer || "-"}
+                </p>
+                <p className="text-xs">
+                  <strong>Client Specs:</strong> {item.client_specs || "-"}
+                </p>
               </section>
             </>
           )}
