@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 
 /* ✅ Typed SKU ticket record */
 interface SkuTicketItem {
@@ -38,7 +37,7 @@ interface SkuTicketItem {
   channel?: string;
   wrap_up?: string;
 
-  /* ✅ NEW FIELDS */
+  /* TIMELINE FIELDS */
   tsm_acknowledge_date?: string;
   tsa_acknowledge_date?: string;
   tsm_handling_time?: string;
@@ -66,10 +65,22 @@ const formatDateTime = (value?: string) => {
   return isNaN(d.getTime()) ? "-" : d.toLocaleString();
 };
 
+/* Big Circle Display */
+const TimeCircle = ({ label, value }: { label: string; value?: string }) => (
+  <div className="flex flex-col items-center text-center space-y-2">
+    <div className="w-32 h-32 rounded-full border-2 border-slate-300 flex items-center justify-center p-3">
+      <span className="text-sm font-semibold">
+        {formatDateTime(value)}
+      </span>
+    </div>
+    <span className="text-xs font-medium">{label}</span>
+  </div>
+);
+
 const STATUS_STYLES: Record<string, string> = {
   "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
-  "Closed": "bg-gray-200 text-gray-700 border-gray-300",
-  "Endorsed": "bg-purple-100 text-purple-700 border-purple-300",
+  Closed: "bg-gray-200 text-gray-700 border-gray-300",
+  Endorsed: "bg-purple-100 text-purple-700 border-purple-300",
   "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
 };
 
@@ -95,7 +106,10 @@ export function ReportsSkuTicketDialog({ item }: Props) {
 
               <span
                 className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold
-                  ${STATUS_STYLES[item.status ?? ""] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
+                  ${
+                    STATUS_STYLES[item.status ?? ""] ??
+                    "bg-slate-100 text-slate-700 border-slate-300"
+                  }`}
               >
                 {item.status || "N/A"}
               </span>
@@ -147,6 +161,56 @@ export function ReportsSkuTicketDialog({ item }: Props) {
 
           <Separator className="my-4" />
 
+          {/* TIMELINE SECTION */}
+          <section className="space-y-6">
+            <h3 className="font-semibold text-sm">Ticket Timeline</h3>
+
+            {/* Date Created */}
+            <div className="flex justify-center">
+              <TimeCircle label="Date Created" value={item.date_created} />
+            </div>
+
+            <Separator />
+
+            {/* TSA */}
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
+              <TimeCircle
+                label="TSA Acknowledgement Date"
+                value={item.tsa_acknowledge_date}
+              />
+              <TimeCircle
+                label="TSA Handling Time"
+                value={item.tsa_handling_time}
+              />
+            </div>
+
+            <Separator />
+
+            {/* TSM */}
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
+              <TimeCircle
+                label="TSM Acknowledgement Date"
+                value={item.tsm_acknowledge_date}
+              />
+              <TimeCircle
+                label="TSM Handling Time"
+                value={item.tsm_handling_time}
+              />
+            </div>
+
+            <Separator />
+
+            {/* HR */}
+            <div className="flex justify-center">
+              <TimeCircle
+                label="HR Acknowledgement Date"
+                value={item.hr_acknowledge_date}
+              />
+            </div>
+          </section>
+
+          <Separator className="my-4" />
+
           {/* TICKET META */}
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Ticket Information</h3>
@@ -160,27 +224,6 @@ export function ReportsSkuTicketDialog({ item }: Props) {
             </div>
           </section>
 
-          <Separator className="my-4" />
-
-          {/* ✅ ACKNOWLEDGE & HANDLING */}
-          <section className="space-y-2">
-            <h3 className="font-semibold text-sm">Acknowledge & Handling</h3>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Date Created:</strong> {formatDateTime(item.date_created)}</p>
-              <p><strong>TSM Acknowledgement Date:</strong> {formatDateTime(item.tsm_acknowledge_date)}</p>
-              <p><strong>TSA Acknowledgement Date:</strong> {formatDateTime(item.tsa_acknowledge_date)}</p>
-              <p><strong>TSM Handling Time:</strong> {formatDateTime(item.tsm_handling_time)}</p>
-              <p><strong>TSA Handling Time:</strong> {formatDateTime(item.tsa_handling_time)}</p>
-              {item.wrap_up === "Job Applicants" && (
-                <p>
-                  <strong>HR Acknowledgement Date:</strong>{" "}
-                  {formatDateTime(item.hr_acknowledge_date)}
-                </p>
-              )}
-            </div>
-          </section>
-
-          {/* REMARKS */}
           {(item.remarks || item.inquiry) && (
             <>
               <Separator className="my-4" />
@@ -196,7 +239,6 @@ export function ReportsSkuTicketDialog({ item }: Props) {
             </>
           )}
 
-          {/* CLOSURE DETAILS */}
           {item.status === "Closed" && (
             <>
               <Separator className="my-4" />
