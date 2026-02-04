@@ -31,7 +31,10 @@ interface AddCompanyModalProps {
   onCreated: () => Promise<void>;
 }
 
-export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps) {
+export function AddCompanyModal({
+  referenceid,
+  onCreated,
+}: AddCompanyModalProps) {
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -57,10 +60,15 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   // names
   const [contactPersons, setContactPersons] = useState<string[]>([""]);
 
-
   const [existingCompanies, setExistingCompanies] = useState<
-    { company_name: string; contact_person: string }[]
+    {
+      company_name: string;
+      contact_person: string;
+      contact_number: string;
+      email_address: string;
+    }[]
   >([]);
+
   const [duplicate, setDuplicate] = useState({ contact: false });
 
   const clientSegments = [
@@ -95,7 +103,9 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
               data.data.map((c: any) => ({
                 company_name: (c.company_name ?? "").toLowerCase().trim(),
                 contact_person: (c.contact_person ?? "").toLowerCase().trim(),
-              }))
+                contact_number: (c.contact_number ?? "").toLowerCase().trim(),
+                email_address: (c.email_address ?? "").toLowerCase().trim(),
+              })),
             );
           }
         });
@@ -105,66 +115,82 @@ export function AddCompanyModal({ referenceid, onCreated }: AddCompanyModalProps
   /* DUPLICATE CHECK */
   useEffect(() => {
     const name = formData.company_name.toLowerCase().trim();
+
     const person = contactPersons
       .map((p) => p.toLowerCase().trim())
       .filter(Boolean)
       .join(" / ");
 
+    const numbers = contactNumbers
+      .map((n) => n.toLowerCase().trim())
+      .filter(Boolean)
+      .join(" / ");
+
+    const email = (formData.email_address || "").toLowerCase().trim();
+
+    const isDuplicate = existingCompanies.some(
+      (c) =>
+        c.company_name === name &&
+        c.contact_person === person &&
+        c.contact_number === numbers &&
+        c.email_address === email,
+    );
+
     setDuplicate({
-      contact: existingCompanies.some(
-        (c) => c.company_name === name && c.contact_person === person
-      ),
+      contact: isDuplicate,
     });
-  }, [formData.company_name, formData.contact_person, existingCompanies]);
+  }, [
+    formData.company_name,
+    formData.email_address,
+    contactPersons,
+    contactNumbers,
+    existingCompanies,
+  ]);
 
-const isFormValid = () => {
-  // 🔹 check if at least ONE field is filled
-  const hasAnyInput =
-    formData.company_name.trim() ||
-    formData.address.trim() ||
-    formData.industry ||
-    formData.email_address.trim() ||
-    contactPersons.some(p => p.trim()) ||
-    contactNumbers.some(n => n.trim());
+  const isFormValid = () => {
+    const hasAnyInput =
+      formData.company_name.trim() ||
+      formData.address.trim() ||
+      formData.industry ||
+      formData.email_address.trim() ||
+      contactPersons.some((p) => p.trim()) ||
+      contactNumbers.some((n) => n.trim());
 
-  // 🔹 email validation (ONLY if email is typed)
-  const emailValid =
-    !formData.email_address ||
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
+    const emailValid =
+      !formData.email_address ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
 
-  // ❌ disable if:
-  // - no input at all
-  // - email exists but invalid
-  if (!hasAnyInput) return false;
-  if (!emailValid) return false;
+    if (!hasAnyInput) return false;
+    if (!emailValid) return false;
 
-  return true;
-};
+    // ❌ IMPORTANT: block save if duplicate
+    if (duplicate.contact) return false;
 
-
+    return true;
+  };
 
   /* ACCOUNT REFERENCE GENERATOR */
-const generateAccountReferenceNumber = async (companyName: string) => {
-  // 🔹 fallback prefix if company name is empty
-  const prefix = companyName.trim()
-    ? companyName.trim().substring(0, 2).toUpperCase()
-    : "NA";
+  const generateAccountReferenceNumber = async (companyName: string) => {
+    // 🔹 fallback prefix if company name is empty
+    const prefix = companyName.trim()
+      ? companyName.trim().substring(0, 2).toUpperCase()
+      : "NA";
 
-  const res = await fetch(`/api/get-account-references?prefix=${prefix}-CSR`);
-  const data = await res.json();
+    const res = await fetch(`/api/get-account-references?prefix=${prefix}-CSR`);
+    const data = await res.json();
 
-  const references: string[] = Array.isArray(data?.references)
-    ? data.references
-    : [];
+    const references: string[] = Array.isArray(data?.references)
+      ? data.references
+      : [];
 
-  let max = 0;
-  references.forEach((r) => {
-    const m = r.match(/CSR-(\d{8})$/);
-    if (m) max = Math.max(max, parseInt(m[1], 10));
-  });
+    let max = 0;
+    references.forEach((r) => {
+      const m = r.match(/CSR-(\d{8})$/);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
 
-  return `${prefix}-CSR-${String(max + 1).padStart(8, "0")}`;
-};
+    return `${prefix}-CSR-${String(max + 1).padStart(8, "0")}`;
+  };
 
   /* CONTACT NUMBER HANDLERS */
   const handleContactChange = (index: number, value: string) => {
@@ -185,22 +211,23 @@ const generateAccountReferenceNumber = async (companyName: string) => {
   };
 
   const handleSave = async () => {
-  if (saving) return; // 🔒 stop double click
-  if (!isFormValid()) {
-    toast.error("Please complete required fields and avoid duplicates.");
-    return;
-  }
+    if (saving) return; // 🔒 stop double click
+    if (!isFormValid()) {
+      toast.error("Please complete required fields and avoid duplicates.");
+      return;
+    }
 
-  try {
-    setSaving(true); // 🔒 lock button
+    try {
+      setSaving(true); // 🔒 lock button
 
-    const account_reference_number =
-      await generateAccountReferenceNumber(formData.company_name);
+      const account_reference_number = await generateAccountReferenceNumber(
+        formData.company_name,
+      );
 
-    const joinedContacts = contactNumbers
-      .map((n) => n.trim())
-      .filter(Boolean)
-      .join(" / ");
+      const joinedContacts = contactNumbers
+        .map((n) => n.trim())
+        .filter(Boolean)
+        .join(" / ");
 
       const joinedPersons = contactPersons
         .map((p) => p.trim())
@@ -214,30 +241,28 @@ const generateAccountReferenceNumber = async (companyName: string) => {
           referenceid,
           account_reference_number,
           ...formData,
-          contact_person: joinedPersons,   // 🔥 joined names
+          contact_person: joinedPersons, // 🔥 joined names
           contact_number: joinedContacts,
           date_created: new Date().toISOString(),
         }),
       });
 
+      if (!res.ok) {
+        const j = await res.json();
+        throw new Error(j.error || "Failed to save");
+      }
 
-    if (!res.ok) {
-      const j = await res.json();
-      throw new Error(j.error || "Failed to save");
+      toast.success("Company saved");
+      setOpen(false);
+      resetForm();
+      await onCreated();
+    } catch (err) {
+      console.error(err);
+      toast.error("Saving failed");
+    } finally {
+      setSaving(false); // 🔓 unlock
     }
-
-    toast.success("Company saved");
-    setOpen(false);
-    resetForm();
-    await onCreated();
-  } catch (err) {
-    console.error(err);
-    toast.error("Saving failed");
-  } finally {
-    setSaving(false); // 🔓 unlock
-  }
-};
-
+  };
 
   const resetForm = () => {
     setFormData({
@@ -265,7 +290,10 @@ const generateAccountReferenceNumber = async (companyName: string) => {
         <Button className="cursor-pointer">Add Account</Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-[420px] sm:w-[480px] p-0 flex flex-col">
+      <SheetContent
+        side="right"
+        className="w-[420px] sm:w-[480px] p-0 flex flex-col"
+      >
         <SheetHeader className="px-6 py-4 border-b">
           <SheetTitle>Add New Account</SheetTitle>
         </SheetHeader>
@@ -277,59 +305,62 @@ const generateAccountReferenceNumber = async (companyName: string) => {
               <Input
                 value={formData.company_name}
                 onChange={(e) =>
-                  setFormData({ ...formData, company_name: e.target.value.toUpperCase() })
+                  setFormData({
+                    ...formData,
+                    company_name: e.target.value.toUpperCase(),
+                  })
                 }
                 className={duplicate.contact ? "border-red-500" : ""}
               />
               {duplicate.contact && (
                 <p className="text-xs text-red-600 mt-1">
-                  Duplicate company with same contact person
+                  Exact duplicate record exists (same company, contact person,
+                  number and email)
                 </p>
               )}
             </Field>
 
-              <Field>
-                <FieldLabel>Customer Name *</FieldLabel>
+            <Field>
+              <FieldLabel>Customer Name *</FieldLabel>
 
-                <div className="space-y-2">
-                  {contactPersons.map((name, idx) => (
-                    <div key={idx} className="flex gap-2 items-center">
-                      <Input
-                        value={name}
-                        onChange={(e) => {
-                          const updated = [...contactPersons];
-                          updated[idx] = e.target.value;
-                          setContactPersons(updated);
-                        }}
-                        placeholder="Customer Name"
-                        className="flex-grow"
-                      />
+              <div className="space-y-2">
+                {contactPersons.map((name, idx) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <Input
+                      value={name}
+                      onChange={(e) => {
+                        const updated = [...contactPersons];
+                        updated[idx] = e.target.value;
+                        setContactPersons(updated);
+                      }}
+                      placeholder="Customer Name"
+                      className="flex-grow"
+                    />
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          if (contactPersons.length === 1) return;
-                          const updated = [...contactPersons];
-                          updated.splice(idx, 1);
-                          setContactPersons(updated);
-                        }}
-                      >
-                        −
-                      </Button>
-                    </div>
-                  ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (contactPersons.length === 1) return;
+                        const updated = [...contactPersons];
+                        updated.splice(idx, 1);
+                        setContactPersons(updated);
+                      }}
+                    >
+                      −
+                    </Button>
+                  </div>
+                ))}
 
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setContactPersons((prev) => [...prev, ""])}
-                  >
-                    + Add another name
-                  </Button>
-                </div>
-              </Field>
-
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setContactPersons((prev) => [...prev, ""])}
+                >
+                  + Add another name
+                </Button>
+              </div>
+            </Field>
 
             {/* ✅ MULTIPLE CONTACT NUMBERS */}
             <Field>
@@ -353,36 +384,39 @@ const generateAccountReferenceNumber = async (companyName: string) => {
                     </Button>
                   </div>
                 ))}
-                <Button type="button" variant="secondary" onClick={addContactField}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={addContactField}
+                >
                   + Add another number
                 </Button>
               </div>
             </Field>
 
-<Field>
-  <FieldLabel>Email Address</FieldLabel>
-  <Input
-    type="email"
-    value={formData.email_address}
-    onChange={(e) =>
-      setFormData({ ...formData, email_address: e.target.value })
-    }
-    className={
-      formData.email_address &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address)
-        ? "border-red-500"
-        : ""
-    }
-  />
+            <Field>
+              <FieldLabel>Email Address</FieldLabel>
+              <Input
+                type="email"
+                value={formData.email_address}
+                onChange={(e) =>
+                  setFormData({ ...formData, email_address: e.target.value })
+                }
+                className={
+                  formData.email_address &&
+                  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address)
+                    ? "border-red-500"
+                    : ""
+                }
+              />
 
-  {formData.email_address &&
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address) && (
-      <p className="text-xs text-red-600 mt-1">
-        Please enter a valid email address
-      </p>
-    )}
-</Field>
-
+              {formData.email_address &&
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address) && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Please enter a valid email address
+                  </p>
+                )}
+            </Field>
 
             <Field>
               <FieldLabel>Address *</FieldLabel>
@@ -398,9 +432,7 @@ const generateAccountReferenceNumber = async (companyName: string) => {
               <FieldLabel>Client Segment *</FieldLabel>
               <Select
                 value={formData.industry}
-                onValueChange={(v) =>
-                  setFormData({ ...formData, industry: v })
-                }
+                onValueChange={(v) => setFormData({ ...formData, industry: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -426,7 +458,11 @@ const generateAccountReferenceNumber = async (companyName: string) => {
             {saving ? "Saving..." : "Save"}
           </Button>
 
-          <Button className="flex-1" variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            className="flex-1"
+            variant="outline"
+            onClick={() => setOpen(false)}
+          >
             Cancel
           </Button>
         </div>
