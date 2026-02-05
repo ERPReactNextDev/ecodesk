@@ -5,7 +5,6 @@ import { MongoClient, ObjectId } from "mongodb";
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB = process.env.MONGODB_DB;
 
-// Runtime check for env vars
 if (!MONGODB_URI) {
   throw new Error(
     "Please define the MONGODB_URI environment variable inside .env.local"
@@ -63,28 +62,20 @@ export default async function handler(
 
     const filter = { _id: new ObjectId(body._id) };
 
-    // 🔹 Prepare update payload
     const updateData: any = { ...body };
     delete updateData._id;
 
-    // =======================================================
-    // ✅ FIXED & VERCEL-SAFE DATE HANDLING LOGIC
-    // =======================================================
+    // ===========================================================
+    // ✅ FINAL FIX BASED ON YOUR ACTUAL DB FORMAT
+    // ===========================================================
 
-    // Always update date_updated using UTC-safe ISO format
+    // date_updated is stored as ISO string
     updateData.date_updated = new Date().toISOString();
 
-    // Handle date_created properly across timezones
+    // date_created in your DB is STRING ("YYYY-MM-DDTHH:mm")
+    // so we must NOT convert it
     if (updateData.date_created) {
-      const parsedDate = new Date(updateData.date_created);
-
-      if (!isNaN(parsedDate.getTime())) {
-        // Store as ISO string to prevent timezone shifting
-        updateData.date_created = parsedDate.toISOString();
-      } else {
-        // If somehow invalid, keep original to avoid corruption
-        updateData.date_created = updateData.date_created;
-      }
+      updateData.date_created = updateData.date_created;
     }
 
     const result = await collection.updateOne(
