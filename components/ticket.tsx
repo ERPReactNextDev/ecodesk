@@ -1149,31 +1149,7 @@ export const Ticket: React.FC<TicketProps> = ({
                     )}
                   </div>
 
-                  <div className="text-muted-foreground space-y-1">
-                    <div>
-                      Updated:{" "}
-                      {new Date(item.date_updated).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </div>
 
-                    <div className="text-[10px] text-slate-500">
-                      Created:{" "}
-                      {new Date(item.date_created).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </div>
-                  </div>
 
                   <div className="text-muted-foreground space-y-1">
                     <div>
