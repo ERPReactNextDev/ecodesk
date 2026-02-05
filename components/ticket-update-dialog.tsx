@@ -748,7 +748,12 @@ export function UpdateTicketDialog({
 
                   <FieldGroup>
                     <FieldSet className="mt-4">
-                      <FieldLabel>Choose Traffic</FieldLabel>
+                      <FieldLabel>
+                        Choose Traffic{" "}
+                        <span className="text-red-600 text-xs italic">
+                          *required
+                        </span>
+                      </FieldLabel>
                       <RadioGroup
                         defaultValue={trafficState}
                         onValueChange={(value) => {
@@ -785,7 +790,12 @@ export function UpdateTicketDialog({
 
                   <FieldGroup>
                     <FieldSet>
-                      <FieldLabel className="mt-4">Choose Company</FieldLabel>
+                      <FieldLabel className="mt-4">
+                        Choose Company{" "}
+                        <span className="text-red-600 text-xs italic">
+                          *required
+                        </span>
+                      </FieldLabel>
                       <RadioGroup
                         defaultValue={sourceCompanyState}
                         onValueChange={(value) => {
@@ -838,7 +848,7 @@ export function UpdateTicketDialog({
                   <Button
                     className="mt-4 w-full cursor-pointer"
                     onClick={() => setStep(2)}
-                    disabled={!sourceCompanyState}
+                    disabled={!trafficState || !sourceCompanyState}
                   >
                     Next
                   </Button>
