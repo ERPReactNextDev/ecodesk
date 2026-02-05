@@ -779,21 +779,6 @@ export function UpdateTicketDialog({
                             <RadioGroupItem value="Non-Sales" />
                           </Field>
                         </FieldLabel>
-
-                        {/* NEW OPTION */}
-                        <FieldLabel className="cursor-pointer">
-                          <Field orientation="horizontal">
-                            <FieldContent>
-                              <FieldTitle>Others</FieldTitle>
-                              <FieldDescription>
-                                For interactions that do not clearly fall under
-                                Sales or Non-Sales, such as internal
-                                coordination, system testing, or special cases.
-                              </FieldDescription>
-                            </FieldContent>
-                            <RadioGroupItem value="Others" />
-                          </Field>
-                        </FieldLabel>
                       </RadioGroup>
                     </FieldSet>
                   </FieldGroup>
@@ -861,9 +846,7 @@ export function UpdateTicketDialog({
               )}
 
               {/* Steps 2 - 6: TicketSheet */}
-              {(trafficState === "Sales" ||
-                trafficState === "Non-Sales" ||
-                trafficState === "Others") && (
+              {(trafficState === "Sales" || trafficState === "Non-Sales") && (
                 <TicketSheet
                   step={step}
                   setStep={setStep}
