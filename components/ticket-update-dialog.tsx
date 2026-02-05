@@ -861,7 +861,9 @@ export function UpdateTicketDialog({
               )}
 
               {/* Steps 2 - 6: TicketSheet */}
-              {(trafficState === "Sales" || trafficState === "Non-Sales") && (
+              {(trafficState === "Sales" ||
+                trafficState === "Non-Sales" ||
+                trafficState === "Others") && (
                 <TicketSheet
                   step={step}
                   setStep={setStep}
