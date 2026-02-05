@@ -1,4 +1,4 @@
-//agent sales conversion table
+//sales conversion table
 "use client";
 
 import React, {
@@ -572,7 +572,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     {totalConversionPct.toFixed(2)}%
                   </TableCell>
 
-                  <TableCell className="text-right">{totalAveUnit}</TableCell>
+                  <TableCell className="text-right">
+                    {totalAveUnit.toFixed(2)}
+                  </TableCell>
 
                   <TableCell className="text-right">
                     {totalAveValue.toFixed(2)}
