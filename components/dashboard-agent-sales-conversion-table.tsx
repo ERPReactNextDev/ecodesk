@@ -352,15 +352,14 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
   const formatMs = (ms: number) => {
-    // round to nearest minute
-    const totalMinutes = Math.round(ms / (1000 * 60));
+    const totalSeconds = Math.round(ms / 1000);
 
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
 
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
-
   const totalRowResponseAverage =
     totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
@@ -520,19 +519,15 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                                 100
                               ).toFixed(2) + "%"}
                         </TableCell>
-
                         <TableCell className="text-right">
                           {row.convertedCount === 0
-                            ? "0"
-                            : (row.qtySold / row.convertedCount).toFixed(0)}
+                            ? "0.00"
+                            : (row.qtySold / row.convertedCount).toFixed(2)}
                         </TableCell>
-
                         <TableCell className="text-right">
                           {row.convertedCount === 0
-                            ? "0"
-                            : (
-                                row.amount / row.convertedCount
-                              ).toLocaleString()}
+                            ? "0.00"
+                            : (row.amount / row.convertedCount).toFixed(2)}
                         </TableCell>
 
                         <TableCell className="text-right">
@@ -576,12 +571,10 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     {totalConversionPct.toFixed(2)}%
                   </TableCell>
 
-                  <TableCell className="text-right">
-                    {totalAveUnit.toFixed(0)}
-                  </TableCell>
+                  <TableCell className="text-right">{totalAveUnit}</TableCell>
 
                   <TableCell className="text-right">
-                    {totalAveValue.toLocaleString()}
+                    {totalAveValue.toFixed(2)}
                   </TableCell>
 
                   <TableCell className="text-right">
