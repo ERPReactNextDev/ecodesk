@@ -67,16 +67,24 @@ export default async function handler(
     const updateData: any = { ...body };
     delete updateData._id;
 
-    // ================================
-    // ✅ FIXED DATE HANDLING LOGIC
-    // ================================
+    // =======================================================
+    // ✅ FIXED & VERCEL-SAFE DATE HANDLING LOGIC
+    // =======================================================
 
-    // Always update date_updated whenever a record is modified
-    updateData.date_updated = new Date();
+    // Always update date_updated using UTC-safe ISO format
+    updateData.date_updated = new Date().toISOString();
 
-    // If date_created is provided from the client, store it directly as a Date object
+    // Handle date_created properly across timezones
     if (updateData.date_created) {
-      updateData.date_created = new Date(updateData.date_created);
+      const parsedDate = new Date(updateData.date_created);
+
+      if (!isNaN(parsedDate.getTime())) {
+        // Store as ISO string to prevent timezone shifting
+        updateData.date_created = parsedDate.toISOString();
+      } else {
+        // If somehow invalid, keep original to avoid corruption
+        updateData.date_created = updateData.date_created;
+      }
     }
 
     const result = await collection.updateOne(
