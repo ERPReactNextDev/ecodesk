@@ -53,18 +53,24 @@ function computeSimpleDiff(start?: string, end?: string) {
   return formatDuration(e.getTime() - s.getTime());
 }
 
-function computeCSRResponseTime(ticketReceived?: string, ticketEndorsed?: string) {
+function computeCSRResponseTime(
+  ticketReceived?: string,
+  ticketEndorsed?: string,
+) {
   const start = toDate(ticketReceived);
   const end = toDate(ticketEndorsed);
 
   if (!start || !end) return "";
+
+  // Sunday check (Excel WEEKDAY = 7)
+  if (start.getDay() === 0 || end.getDay() === 0) {
+    return "0h 0m 0s";
+  }
+
   if (end < start) return "INVALID DATE";
 
   const WORK_START = 8;
   const WORK_END = 17;
-
-  // Sunday = no work
-  if (start.getDay() === 0 || end.getDay() === 0) return "0h 0m 0s";
 
   let startWork = new Date(start);
   startWork.setHours(WORK_START, 0, 0, 0);
@@ -80,13 +86,11 @@ function computeCSRResponseTime(ticketReceived?: string, ticketEndorsed?: string
   return formatDuration(effectiveEnd.getTime() - effectiveStart.getTime());
 }
 
-
-
 function computeTSAResponseTime(
   wrapUp: string,
   tsaAck?: string,
   tsaHandle?: string,
-  ticketReceived?: string
+  ticketEndorsed?: string,
 ) {
   const excluded = [
     "CustomerFeedback/Recommendation",
@@ -101,25 +105,19 @@ function computeTSAResponseTime(
   if (excluded.includes(wrapUp)) return "";
 
   const ack = toDate(tsaAck);
-  const handle = toDate(tsaHandle);
-  const received = toDate(ticketReceived);
+  const endorsed = toDate(ticketEndorsed);
 
-  if (!ack || !handle || !received) return "";
+  if (!ack || !endorsed) return "";
 
-  if (ack < received) return "INVALID DATE";
-  if (handle < ack) return "INVALID TIME";
+  if (ack < endorsed) return "INVALID DATE";
 
-  return formatDuration(handle.getTime() - received.getTime());
+  return formatDuration(ack.getTime() - endorsed.getTime());
 }
 
-
-
-
-function computeTSMHandlingTime(
+function computeTSMResponseTime(
   wrapUp: string,
   tsmAck?: string,
-  tsmHandle?: string,
-  ticketReceived?: string
+  ticketEndorsed?: string,
 ) {
   const excluded = [
     "CustomerFeedback/Recommendation",
@@ -134,18 +132,42 @@ function computeTSMHandlingTime(
   if (excluded.includes(wrapUp)) return "";
 
   const ack = toDate(tsmAck);
-  const handle = toDate(tsmHandle);
-  const received = toDate(ticketReceived);
+  const endorsed = toDate(ticketEndorsed);
 
-  if (!ack || !handle || !received) return "";
+  if (!ack || !endorsed) return "";
 
-  if (ack < received) return "INVALID DATE";
-  if (handle < ack) return "INVALID TIME";
+  if (ack < endorsed) return "INVALID DATE";
 
-  return formatDuration(handle.getTime() - received.getTime());
+  return formatDuration(ack.getTime() - endorsed.getTime());
 }
 
+function computeTSMHandlingTime(
+  wrapUp: string,
+  tsmAck?: string,
+  tsmHandle?: string,
+  ticketReceived?: string,
+) {
+  const excluded = [
+    "CustomerFeedback/Recommendation",
+    "Job Inquiry",
+    "Job Applicants",
+    "Supplier/Vendor Product Offer",
+    "Internal Whistle Blower",
+    "Threats / Extortion / Intimidation",
+    "Prank Call",
+  ];
 
+  if (excluded.includes(wrapUp)) return "";
+
+  const ack = toDate(tsmAck);
+  const received = toDate(ticketReceived);
+
+  if (!ack || !received) return "";
+
+  if (ack < received) return "INVALID DATE";
+
+  return formatDuration(ack.getTime() - received.getTime());
+}
 
 function computeNonQuotationHT(remarks: string, baseTime: string) {
   const list = [
@@ -497,25 +519,41 @@ export function TicketSheet(props: TicketSheetProps) {
 
   const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
 
-const tsaTime = computeTSAResponseTime(
-  wrapUp,
-  tsaAcknowledgeDate,
-  tsaHandlingTime,
-  ticketReceived,
-);
+  const tsmResponseTime = computeTSMResponseTime(
+    wrapUp,
+    tsmAcknowledgeDate,
+    ticketEndorsed,
+  );
 
-  const tsmTime = computeTSMHandlingTime(
+  const tsaResponseTime = computeTSAResponseTime(
+    wrapUp,
+    tsaAcknowledgeDate,
+    tsaHandlingTime,
+    ticketEndorsed,
+  );
+
+  const tsmHandlingTimeFinal = computeTSMHandlingTime(
     wrapUp,
     tsmAcknowledgeDate,
     tsmHandlingTime,
     ticketReceived,
   );
 
-  const nonQuotationHT = computeNonQuotationHT(remarks, tsmTime || tsaTime);
+const tsaHandlingTimeFinal =
+  tsaAcknowledgeDate && tsaHandlingTime && ticketReceived
+    ? formatDuration(
+        new Date(tsaHandlingTime).getTime() -
+          new Date(ticketReceived).getTime(),
+      )
+    : "";
 
-  const quotationHT = computeQuotationHT(remarks, tsmTime || tsaTime);
+  const baseHT = tsaHandlingTimeFinal || tsmHandlingTimeFinal;
 
-  const spfHT = computeSpfHT(remarks, tsmTime || tsaTime);
+  const nonQuotationHT = computeNonQuotationHT(remarks, baseHT);
+
+  const quotationHT = computeQuotationHT(remarks, baseHT);
+
+  const spfHT = computeSpfHT(remarks, baseHT);
 
   // ================= FETCH MANAGERS =================
 
@@ -1585,11 +1623,15 @@ const tsaTime = computeTSAResponseTime(
         </div>
 
         <div>
-          TSA Response Time: <b>{tsaTime || "-"}</b>
+          TSM Response Time: <b>{tsmResponseTime || "-"}</b>
         </div>
 
         <div>
-          TSM Handling Time: <b>{tsmTime || "-"}</b>
+          TSA Response Time: <b>{tsaResponseTime || "-"}</b>
+        </div>
+
+        <div>
+          TSA Handling Time: <b>{tsaHandlingTimeFinal || "-"}</b>
         </div>
 
         <hr className="my-2" />
