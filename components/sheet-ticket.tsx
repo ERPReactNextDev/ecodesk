@@ -1645,9 +1645,9 @@ const spfHT = baseHT
           CSR Response Time: <b>{csrTime || "-"}</b>
         </div>
 
-        <div>
+        {/* <div>
           TSM Response Time: <b>{tsmResponseTime || "-"}</b>
-        </div>
+        </div> */}
 
         <div>
           TSA Response Time: <b>{tsaResponseTime || "-"}</b>
