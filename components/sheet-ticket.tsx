@@ -57,8 +57,15 @@ function computeCSRResponseTime(
   ticketReceived?: string,
   ticketEndorsed?: string,
 ) {
-  return computeSimpleDiff(ticketReceived, ticketEndorsed);
+  const c = toDate(ticketReceived);
+  const e = toDate(ticketEndorsed);
+
+  if (!c || !e) return "";
+  if (e < c) return "INVALID DATE";
+
+  return formatDuration(e.getTime() - c.getTime());
 }
+
 
 function computeTSAResponseTime(
   wrapUp: string,
@@ -77,9 +84,14 @@ function computeTSAResponseTime(
   ];
 
   if (excluded.includes(wrapUp)) return "";
-  if (!tsaAck || !ticketEndorsed) return "";
 
-  return computeSimpleDiff(tsaAck, tsaHandle);
+  const ack = toDate(tsaAck);
+  const handle = toDate(tsaHandle);
+
+  if (!ack || !handle) return "";
+  if (handle < ack) return "INVALID TIME";
+
+  return formatDuration(handle.getTime() - ack.getTime());
 }
 
 function computeTSMHandlingTime(
@@ -99,10 +111,16 @@ function computeTSMHandlingTime(
   ];
 
   if (excluded.includes(wrapUp)) return "";
-  if (!tsmAck || !ticketReceived) return "";
 
-  return computeSimpleDiff(tsmAck, tsmHandle);
+  const ack = toDate(tsmAck);
+  const handle = toDate(tsmHandle);
+
+  if (!ack || !handle) return "";
+  if (handle < ack) return "INVALID TIME";
+
+  return formatDuration(handle.getTime() - ack.getTime());
 }
+
 
 function computeNonQuotationHT(remarks: string, baseTime: string) {
   const list = [
@@ -137,7 +155,7 @@ function computeQuotationHT(remarks: string, baseTime: string) {
 }
 
 function computeSpfHT(remarks: string, baseTime: string) {
-  return (remarks || "").toUpperCase() === "SPF" ? baseTime : "";
+  return (remarks || "").toUpperCase().includes("SPF") ? baseTime : "";
 }
 
 interface Option {
