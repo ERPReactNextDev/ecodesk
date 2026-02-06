@@ -943,41 +943,6 @@ export function TicketSheet(props: TicketSheetProps) {
                 />
               </Field>
 
-              <Field>
-                <FieldLabel>Gender</FieldLabel>
-                <FieldDescription>
-                  Select the customer's gender for segmentation and analysis
-                  purposes.
-                </FieldDescription>
-
-                <RadioGroup
-                  value={gender}
-                  onValueChange={setGender}
-                  className="flex flex-row gap-6"
-                >
-                  <FieldLabel className="cursor-pointer">
-                    <Field orientation="horizontal" className="items-center">
-                      <FieldContent className="flex items-center gap-2">
-                        <User className="text-blue-600" size={18} />
-                        <FieldTitle>Male</FieldTitle>
-                      </FieldContent>
-
-                      <RadioGroupItem value="Male" />
-                    </Field>
-                  </FieldLabel>
-
-                  <FieldLabel className="cursor-pointer">
-                    <Field orientation="horizontal" className="items-center">
-                      <FieldContent className="flex items-center gap-2">
-                        <UserRound className="text-pink-600" size={18} />
-                        <FieldTitle>Female</FieldTitle>
-                      </FieldContent>
-
-                      <RadioGroupItem value="Female" />
-                    </Field>
-                  </FieldLabel>
-                </RadioGroup>
-              </Field>
 
               <Field>
                 <FieldLabel>Channel</FieldLabel>

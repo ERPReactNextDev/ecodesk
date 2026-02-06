@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { User, User2 } from "lucide-react";
 
 import {
   Field,
@@ -753,6 +754,52 @@ export function UpdateTicketDialog({
                     </FieldSet>
                   </FieldGroup>
 
+                  {/* MOVED GENDER FROM STEP 3 TO STEP 1 */}
+                  <FieldGroup>
+                    <FieldSet className="mt-4">
+                      <FieldLabel className="font-semibold text-sm">
+                        Gender{" "}
+                        <span className="text-red-600 text-xs italic">
+                          *required
+                        </span>
+                      </FieldLabel>
+
+                      <RadioGroup
+                        value={genderState}
+                        onValueChange={setGender}
+                        className="flex flex-row gap-6"
+                      >
+                        <FieldLabel className="cursor-pointer">
+                          <Field
+                            orientation="horizontal"
+                            className="items-center"
+                          >
+                            <FieldContent className="flex items-center gap-2">
+                              <User className="text-blue-600" size={18} />
+                              <span>Male</span>
+                            </FieldContent>
+
+                            <RadioGroupItem value="Male" />
+                          </Field>
+                        </FieldLabel>
+
+                        <FieldLabel className="cursor-pointer">
+                          <Field
+                            orientation="horizontal"
+                            className="items-center"
+                          >
+                            <FieldContent className="flex items-center gap-2">
+                              <User2 className="text-pink-600" size={18} />
+                              <span>Female</span>
+                            </FieldContent>
+
+                            <RadioGroupItem value="Female" />
+                          </Field>
+                        </FieldLabel>
+                      </RadioGroup>
+                    </FieldSet>
+                  </FieldGroup>
+
                   <FieldGroup>
                     <FieldSet className="mt-4">
                       <FieldLabel>
@@ -855,7 +902,9 @@ export function UpdateTicketDialog({
                   <Button
                     className="mt-4 w-full cursor-pointer"
                     onClick={() => setStep(2)}
-                    disabled={!trafficState || !sourceCompanyState}
+                    disabled={
+                      !trafficState || !sourceCompanyState || !genderState
+                    }
                   >
                     Next
                   </Button>
