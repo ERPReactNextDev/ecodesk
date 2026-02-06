@@ -172,6 +172,7 @@ function computeTSMHandlingTime(
 function computeNonQuotationHT(remarks: string, baseTime: string) {
   const list = [
     "NO STOCKS / INSUFFICIENT STOCKS",
+    "CUSTOMER REQUEST CANCELLATION",
     "INSUFFICIENT STOCKS",
     "UNABLE TO CONTACT CUSTOMER",
     "ITEM NOT CARRIED",
@@ -501,6 +502,7 @@ export function TicketSheet(props: TicketSheetProps) {
   const [managersList, setManagersList] = useState<User[]>([]);
   const [managersAvailable, setManagersAvailable] = useState(0);
   const [agentsList, setAgentsList] = useState<User[]>([]);
+
   const [loadingManagers, setLoadingManagers] = useState(false);
   const [loadingAgents, setLoadingAgents] = useState(false);
 
@@ -566,7 +568,7 @@ export function TicketSheet(props: TicketSheetProps) {
     fetch(
       `/api/fetch-users-by-role?role=Territory Sales Manager&department=${encodeURIComponent(
         department,
-      )}`,
+      )}&currentUser=${manager || ""}`,
     )
       .then((res) => res.json())
       .then((json) => {
@@ -612,7 +614,7 @@ export function TicketSheet(props: TicketSheetProps) {
     fetch(
       `/api/fetch-users-by-role?role=Territory Sales Associate&department=Sales&tsm=${encodeURIComponent(
         manager,
-      )}`,
+      )}&currentUser=${agent || ""}`,
     )
       .then((res) => res.json())
       .then((json) => {

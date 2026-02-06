@@ -9,23 +9,16 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // 🔎 accept all supported filters
-  const { role, department, manager, tsm } = req.query;
+  const { role, department, manager, tsm, currentUser } = req.query;
 
   try {
     const db = await connectToDatabase();
 
-    // ✅ always start with Active users only
     const query: any = {
       Status: "Active",
     };
 
-    // 🔎 ctrl+f friendly conditions
-
-    // 🔥 SPECIAL BUSINESS RULE:
-    // TSM dropdown should include:
-    // 1. Real Territory Sales Managers
-    // 2. Managers ONLY if they have NO TSM (top-level)
+    // SPECIAL BUSINESS RULE FOR TSM
     if (role) {
       if (
         role === "Territory Sales Manager" &&
@@ -49,11 +42,9 @@ export default async function handler(
 
     if (department) query.Department = String(department);
     if (manager) query.Manager = String(manager);
-
-    // ✅ IMPORTANT:
-    // strict TSM match (used when fetching agents)
     if (tsm) query.TSM = String(tsm);
 
+    // NORMAL ACTIVE USERS
     const users = await db
       .collection("users")
       .find(query, {
@@ -66,7 +57,36 @@ export default async function handler(
       .sort({ Firstname: 1 })
       .toArray();
 
-    res.status(200).json({ data: users });
+    let finalUsers = [...users];
+
+    // 🔥 THIS IS THE REAL FIX
+    // Add ONLY the exact stored user if missing
+    if (currentUser) {
+      const existing = finalUsers.find(
+        (u) => u.ReferenceID === currentUser,
+      );
+
+      if (!existing) {
+        const oldUser = await db
+          .collection("users")
+          .findOne(
+            { ReferenceID: currentUser },
+            {
+              projection: {
+                Password: 0,
+                LoginAttempts: 0,
+                LockUntil: 0,
+              },
+            },
+          );
+
+        if (oldUser) {
+          finalUsers.push(oldUser);
+        }
+      }
+    }
+
+    res.status(200).json({ data: finalUsers });
   } catch (error) {
     console.error("fetch-users-by-role error:", error);
     res.status(500).json({ error: "Failed to fetch users" });
