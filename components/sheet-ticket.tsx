@@ -24,6 +24,122 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2Icon, User, UserRound } from "lucide-react";
 
+// ===== HANDLING TIME COMPUTATION HELPERS (DISPLAY ONLY) =====
+
+function toDate(value?: string) {
+  if (!value) return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDuration(ms: number) {
+  if (ms < 0) return "INVALID TIME";
+
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+function computeSimpleDiff(start?: string, end?: string) {
+  const s = toDate(start);
+  const e = toDate(end);
+
+  if (!s || !e) return "";
+  if (e < s) return "INVALID DATE";
+
+  return formatDuration(e.getTime() - s.getTime());
+}
+
+function computeCSRResponseTime(
+  ticketReceived?: string,
+  ticketEndorsed?: string,
+) {
+  return computeSimpleDiff(ticketReceived, ticketEndorsed);
+}
+
+function computeTSAResponseTime(
+  wrapUp: string,
+  tsaAck?: string,
+  tsaHandle?: string,
+  ticketEndorsed?: string,
+) {
+  const excluded = [
+    "CustomerFeedback/Recommendation",
+    "Job Inquiry",
+    "Job Applicants",
+    "Supplier/Vendor Product Offer",
+    "Internal Whistle Blower",
+    "Threats / Extortion / Intimidation",
+    "Prank Call",
+  ];
+
+  if (excluded.includes(wrapUp)) return "";
+  if (!tsaAck || !ticketEndorsed) return "";
+
+  return computeSimpleDiff(tsaAck, tsaHandle);
+}
+
+function computeTSMHandlingTime(
+  wrapUp: string,
+  tsmAck?: string,
+  tsmHandle?: string,
+  ticketReceived?: string,
+) {
+  const excluded = [
+    "CustomerFeedback/Recommendation",
+    "Job Inquiry",
+    "Job Applicants",
+    "Supplier/Vendor Product Offer",
+    "Internal Whistle Blower",
+    "Threats / Extortion / Intimidation",
+    "Prank Call",
+  ];
+
+  if (excluded.includes(wrapUp)) return "";
+  if (!tsmAck || !ticketReceived) return "";
+
+  return computeSimpleDiff(tsmAck, tsmHandle);
+}
+
+function computeNonQuotationHT(remarks: string, baseTime: string) {
+  const list = [
+    "NO STOCKS",
+    "INSUFFICIENT STOCKS",
+    "UNABLE TO CONTACT CUSTOMER",
+    "ITEM NOT CARRIED",
+    "WAITING FOR CLIENT CONFIRMATION",
+    "PENDING FOR PAYMENT",
+    "CUSTOMER REQUESTED CANCELLATION",
+    "ACCREDITATION/PARTNERSHIP",
+    "NO RESPONSE FROM CLIENT",
+    "ASSISTED",
+    "FOR SITE VISIT",
+    "NON STANDARD ITEM",
+    "PO RECEIVED",
+    "PENDING QUOTATION",
+    "FOR OCCULAR INSPECTION",
+  ];
+
+  return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
+}
+
+function computeQuotationHT(remarks: string, baseTime: string) {
+  const list = [
+    "QUOTATION FOR APPROVAL",
+    "CONVERTED TO SALE",
+    "DISAPPROVED QUOTATION",
+  ];
+
+  return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
+}
+
+function computeSpfHT(remarks: string, baseTime: string) {
+  return (remarks || "").toUpperCase() === "SPF" ? baseTime : "";
+}
+
 interface Option {
   value: string;
   title: string;
@@ -333,6 +449,30 @@ export function TicketSheet(props: TicketSheetProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const isJobApplicant = wrapUp === "Job Applicants";
   const isHrActive = Boolean(hrAcknowledgeDate);
+
+  // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
+
+  const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
+
+  const tsaTime = computeTSAResponseTime(
+    wrapUp,
+    tsaAcknowledgeDate,
+    tsaHandlingTime,
+    ticketEndorsed,
+  );
+
+  const tsmTime = computeTSMHandlingTime(
+    wrapUp,
+    tsmAcknowledgeDate,
+    tsmHandlingTime,
+    ticketReceived,
+  );
+
+  const nonQuotationHT = computeNonQuotationHT(remarks, tsmTime || tsaTime);
+
+  const quotationHT = computeQuotationHT(remarks, tsmTime || tsaTime);
+
+  const spfHT = computeSpfHT(remarks, tsmTime || tsaTime);
 
   // ================= FETCH MANAGERS =================
 
@@ -943,7 +1083,6 @@ export function TicketSheet(props: TicketSheetProps) {
                 />
               </Field>
 
-
               <Field>
                 <FieldLabel>Channel</FieldLabel>
                 <FieldDescription>
@@ -1393,6 +1532,41 @@ export function TicketSheet(props: TicketSheetProps) {
         </>
       )}
 
+      <div className="mt-6 p-4 border rounded bg-gray-50 text-sm space-y-1">
+        <h4 className="font-semibold mb-2">
+          Handling Time Computation (Preview Only)
+        </h4>
+
+        <div>
+          CSR Response Time: <b>{csrTime || "-"}</b>
+        </div>
+
+        <div>
+          TSA Response Time: <b>{tsaTime || "-"}</b>
+        </div>
+
+        <div>
+          TSM Handling Time: <b>{tsmTime || "-"}</b>
+        </div>
+
+        <hr className="my-2" />
+
+        <div>
+          Non-Quotation HT: <b>{nonQuotationHT || "-"}</b>
+        </div>
+
+        <div>
+          Quotation HT: <b>{quotationHT || "-"}</b>
+        </div>
+
+        <div>
+          SPF HT: <b>{spfHT || "-"}</b>
+        </div>
+
+        <p className="text-xs text-gray-500 mt-2">
+          * Values are computed in real-time and not saved to the database.
+        </p>
+      </div>
       {step === 6 && !isJobApplicant && (
         <>
           <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
@@ -1572,56 +1746,56 @@ export function TicketSheet(props: TicketSheetProps) {
               </div>
 
               {/* EXISTING CLOSE REASON SECTION */}
-{status === "Closed" && (
-  <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
-                <h4 className="font-semibold text-sm text-red-700">
-                  On Closing of Ticket (Required)
-                </h4>
+              {status === "Closed" && (
+                <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
+                  <h4 className="font-semibold text-sm text-red-700">
+                    On Closing of Ticket (Required)
+                  </h4>
 
-                <Field>
-                  <FieldLabel>1. Close Reason *</FieldLabel>
-                  <select
-                    value={closeReason}
-                    onChange={(e) => setCloseReason(e.target.value)}
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value="">Select a reason</option>
-                    <option value="Same Specs Provided">
-                      Same Specs Provided
-                    </option>
-                    <option value="Counter Offer">Counter Offer</option>
-                    <option value="Out of Stock">Out of Stock</option>
-                    <option value="Client Declined">Client Declined</option>
-                    <option value="Not Interested">Not Interested</option>
-                    <option value="Others">Others</option>
-                  </select>
-                </Field>
+                  <Field>
+                    <FieldLabel>1. Close Reason *</FieldLabel>
+                    <select
+                      value={closeReason}
+                      onChange={(e) => setCloseReason(e.target.value)}
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                    >
+                      <option value="">Select a reason</option>
+                      <option value="Same Specs Provided">
+                        Same Specs Provided
+                      </option>
+                      <option value="Counter Offer">Counter Offer</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                      <option value="Client Declined">Client Declined</option>
+                      <option value="Not Interested">Not Interested</option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </Field>
 
-                {closeReason === "Counter Offer" && (
-                  <>
-                    <Field>
-                      <FieldLabel>2. Add Counter Offer *</FieldLabel>
-                      <Textarea
-                        value={counterOffer}
-                        onChange={(e) => setCounterOffer(e.target.value)}
-                        placeholder="Enter counter offer..."
-                      />
-                    </Field>
+                  {closeReason === "Counter Offer" && (
+                    <>
+                      <Field>
+                        <FieldLabel>2. Add Counter Offer *</FieldLabel>
+                        <Textarea
+                          value={counterOffer}
+                          onChange={(e) => setCounterOffer(e.target.value)}
+                          placeholder="Enter counter offer..."
+                        />
+                      </Field>
 
-                    <Field>
-                      <FieldLabel>3. Client Specs *</FieldLabel>
-                      <Textarea
-                        value={clientSpecs}
-                        onChange={(e) => setClientSpecs(e.target.value)}
-                        placeholder="Enter client specifications..."
-                      />
-                    </Field>
-                  </>
-                )}
-             </div>
-            )}
-          </>
-        )}
+                      <Field>
+                        <FieldLabel>3. Client Specs *</FieldLabel>
+                        <Textarea
+                          value={clientSpecs}
+                          onChange={(e) => setClientSpecs(e.target.value)}
+                          placeholder="Enter client specifications..."
+                        />
+                      </Field>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
           {/* ================= CONVERTED ================= */}
           {status === "Converted into Sales" && (
