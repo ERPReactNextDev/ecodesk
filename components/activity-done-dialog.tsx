@@ -264,15 +264,7 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
           <Button
             onClick={handleConfirm}
             disabled={
-              loading ||
-              !!tsmTimeError ||
-              !!tsaTimeError ||
-              Boolean(tsmAcknowledgeDate && !tsmHandlingTime) ||
-              Boolean(!tsmAcknowledgeDate && tsmHandlingTime) ||
-              Boolean(tsaAcknowledgeDate && !tsaHandlingTime) ||
-              Boolean(!tsaAcknowledgeDate && tsaHandlingTime) ||
-              (!tsmAcknowledgeDate && !tsaAcknowledgeDate) ||
-              !isValidCloseReason
+              loading || !!tsmTimeError || !!tsaTimeError || !isValidCloseReason
             }
             className="bg-red-600 hover:bg-red-700"
           >

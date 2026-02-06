@@ -514,43 +514,69 @@ export function TicketSheet(props: TicketSheetProps) {
 
   // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
 
-  const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
+// ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
 
-  const tsmResponseTime = computeTSMResponseTime(
-    wrapUp,
-    tsmAcknowledgeDate,
-    ticketEndorsed,
-  );
+// CSR is always allowed
+const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
 
-  const tsaResponseTime = computeTSAResponseTime(
-    wrapUp,
-    tsaAcknowledgeDate,
-    tsaHandlingTime,
-    ticketEndorsed,
-  );
+// Check if TSM fields are COMPLETE (both required)
+const isTsmComplete = Boolean(tsmAcknowledgeDate && tsmHandlingTime);
 
-  const tsmHandlingTimeFinal = computeTSMHandlingTime(
-    wrapUp,
-    tsmAcknowledgeDate,
-    tsmHandlingTime,
-    ticketReceived,
-  );
+// Check if TSA fields are COMPLETE (both required)
+const isTsaComplete = Boolean(tsaAcknowledgeDate && tsaHandlingTime);
 
-  const tsaHandlingTimeFinal =
-    tsaAcknowledgeDate && tsaHandlingTime && ticketReceived
-      ? formatDuration(
-          new Date(tsaHandlingTime).getTime() -
-            new Date(ticketReceived).getTime(),
-        )
-      : "";
+// ----- TSM COMPUTATIONS -----
+const tsmResponseTime = isTsmComplete
+  ? computeTSMResponseTime(wrapUp, tsmAcknowledgeDate, ticketEndorsed)
+  : "";
 
-  const baseHT = tsaHandlingTimeFinal || tsmHandlingTimeFinal;
+const tsmHandlingTimeFinal = isTsmComplete
+  ? computeTSMHandlingTime(
+      wrapUp,
+      tsmAcknowledgeDate,
+      tsmHandlingTime,
+      ticketReceived,
+    )
+  : "";
 
-  const nonQuotationHT = computeNonQuotationHT(remarks, baseHT);
+// ----- TSA COMPUTATIONS -----
+const tsaResponseTime = isTsaComplete
+  ? computeTSAResponseTime(
+      wrapUp,
+      tsaAcknowledgeDate,
+      tsaHandlingTime,
+      ticketEndorsed,
+    )
+  : "";
 
-  const quotationHT = computeQuotationHT(remarks, baseHT);
+const tsaHandlingTimeFinal =
+  isTsaComplete && ticketReceived
+    ? formatDuration(
+        new Date(tsaHandlingTime).getTime() -
+          new Date(ticketReceived).getTime(),
+      )
+    : "";
 
-  const spfHT = computeSpfHT(remarks, baseHT);
+// Base Handling Time ONLY exists if one side is COMPLETE
+const baseHT = isTsaComplete
+  ? tsaHandlingTimeFinal
+  : isTsmComplete
+  ? tsmHandlingTimeFinal
+  : "";
+
+// Additional HT computations ONLY if baseHT is valid
+const nonQuotationHT = baseHT
+  ? computeNonQuotationHT(remarks, baseHT)
+  : "";
+
+const quotationHT = baseHT
+  ? computeQuotationHT(remarks, baseHT)
+  : "";
+
+const spfHT = baseHT
+  ? computeSpfHT(remarks, baseHT)
+  : "";
+
 
   // ================= FETCH MANAGERS =================
 
@@ -1619,9 +1645,9 @@ export function TicketSheet(props: TicketSheetProps) {
           CSR Response Time: <b>{csrTime || "-"}</b>
         </div>
 
-        {/* <div>
+        <div>
           TSM Response Time: <b>{tsmResponseTime || "-"}</b>
-        </div> */}
+        </div>
 
         <div>
           TSA Response Time: <b>{tsaResponseTime || "-"}</b>
@@ -1919,24 +1945,15 @@ export function TicketSheet(props: TicketSheetProps) {
             Back
           </Button>
 
-          <Button
-            onClick={onUpdate}
-            disabled={
-              loadingSave ||
-              loadingLoad ||
-              !!timeError ||
-              isManagerRequiredButMissing ||
-              ((status === "Closed" || status === "Converted into Sales") &&
-                (!!tsmTimeError ||
-                  !!tsaTimeError ||
-                  Boolean(tsmAcknowledgeDate && !tsmHandlingTime) ||
-                  Boolean(!tsmAcknowledgeDate && tsmHandlingTime) ||
-                  Boolean(tsaAcknowledgeDate && !tsaHandlingTime) ||
-                  Boolean(!tsaAcknowledgeDate && tsaHandlingTime) ||
-                  (!tsmAcknowledgeDate && !tsaAcknowledgeDate)))
-            }
-            className="cursor-pointer"
-          >
+<Button
+  onClick={onUpdate}
+  disabled={
+    loadingSave ||
+    loadingLoad ||
+    !!timeError ||
+    isManagerRequiredButMissing
+  }
+>
             {loadingSave ? "Saving..." : "Save"}
           </Button>
 
