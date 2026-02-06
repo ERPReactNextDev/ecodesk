@@ -196,6 +196,7 @@ function computeQuotationHT(remarks: string, baseTime: string) {
     "QUOTATION FOR APPROVAL",
     "CONVERTED TO SALE",
     "DISAPPROVED QUOTATION",
+    "SOLD"
   ];
 
   return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
@@ -539,13 +540,13 @@ export function TicketSheet(props: TicketSheetProps) {
     ticketReceived,
   );
 
-const tsaHandlingTimeFinal =
-  tsaAcknowledgeDate && tsaHandlingTime && ticketReceived
-    ? formatDuration(
-        new Date(tsaHandlingTime).getTime() -
-          new Date(ticketReceived).getTime(),
-      )
-    : "";
+  const tsaHandlingTimeFinal =
+    tsaAcknowledgeDate && tsaHandlingTime && ticketReceived
+      ? formatDuration(
+          new Date(tsaHandlingTime).getTime() -
+            new Date(ticketReceived).getTime(),
+        )
+      : "";
 
   const baseHT = tsaHandlingTimeFinal || tsmHandlingTimeFinal;
 
@@ -1640,9 +1641,11 @@ const tsaHandlingTimeFinal =
           Non-Quotation HT: <b>{nonQuotationHT || "-"}</b>
         </div>
 
-        <div>
-          Quotation HT: <b>{quotationHT || "-"}</b>
-        </div>
+        {remarks === "Sold" && (
+          <div>
+            Quotation HT: <b>{quotationHT || "-"}</b>
+          </div>
+        )}
 
         <div>
           SPF HT: <b>{spfHT || "-"}</b>
