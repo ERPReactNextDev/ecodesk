@@ -460,6 +460,13 @@ export function UpdateTicketDialog({
         counter_offer: counterOffer,
         client_specs: clientSpecs,
       }),
+
+      // 🔥 IF SAVING AS CONVERTED INTO SALES – CLEAR CLOSE FIELDS
+      ...(statusState === "Converted into Sales" && {
+        close_reason: "",
+        counter_offer: "",
+        client_specs: "",
+      }),
     };
 
     // 🔥 CLEAR STEPS 4–6 ONLY WHEN SAVING AT STEP 3 (JOB APPLICANTS)

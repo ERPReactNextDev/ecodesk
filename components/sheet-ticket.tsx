@@ -701,7 +701,7 @@ export function TicketSheet(props: TicketSheetProps) {
     if (status === "Closed") {
       if (!tsmAcknowledgeDate && !tsaAcknowledgeDate) {
         newErrors.status =
-          "Either TSM or TSA Acknowledgement Date is required when closing.";
+          "Either TSM or TSA Acknowledgement Date is required when closing or converting to sales.";
       }
 
       if (tsmAcknowledgeDate && !tsmHandlingTime) {
@@ -1555,7 +1555,7 @@ export function TicketSheet(props: TicketSheetProps) {
           </Field>
 
           {/* ================= CLOSED ================= */}
-          {status === "Closed" && (
+          {(status === "Closed" || status === "Converted into Sales") && (
             <>
               {/* HANDLING TIME SECTION - MOVED FROM STEP 3 */}
               <div className="mt-4 rounded-lg border border-blue-300 bg-blue-50 p-4 space-y-4">
@@ -1607,7 +1607,8 @@ export function TicketSheet(props: TicketSheetProps) {
               </div>
 
               {/* EXISTING CLOSE REASON SECTION */}
-              <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
+{status === "Closed" && (
+  <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
                 <h4 className="font-semibold text-sm text-red-700">
                   On Closing of Ticket (Required)
                 </h4>
@@ -1652,9 +1653,10 @@ export function TicketSheet(props: TicketSheetProps) {
                     </Field>
                   </>
                 )}
-              </div>
-            </>
-          )}
+             </div>
+            )}
+          </>
+        )}
 
           {/* ================= CONVERTED ================= */}
           {status === "Converted into Sales" && (
@@ -1704,7 +1706,7 @@ export function TicketSheet(props: TicketSheetProps) {
               loadingLoad ||
               !!timeError ||
               isManagerRequiredButMissing ||
-              (status === "Closed" &&
+              ((status === "Closed" || status === "Converted into Sales") &&
                 (!!tsmTimeError ||
                   !!tsaTimeError ||
                   Boolean(tsmAcknowledgeDate && !tsmHandlingTime) ||

@@ -31,6 +31,11 @@ interface DoneDialogProps {
   close_reason?: string;
   counter_offer?: string;
   client_specs?: string;
+
+  tsm_acknowledge_date?: string;
+  tsm_handling_time?: string;
+  tsa_acknowledge_date?: string;
+  tsa_handling_time?: string;
 }
 
 export const DoneDialog: React.FC<DoneDialogProps> = ({
@@ -41,6 +46,11 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
   close_reason,
   counter_offer,
   client_specs,
+
+  tsm_acknowledge_date,
+  tsm_handling_time,
+  tsa_acknowledge_date,
+  tsa_handling_time,
 }) => {
   const [closeReason, setCloseReason] = useState("");
   const [counterOffer, setCounterOffer] = useState("");
@@ -61,12 +71,22 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
       setCounterOffer(counter_offer || "");
       setClientSpecs(client_specs || "");
 
-      setTsmAcknowledgeDate("");
-      setTsmHandlingTime("");
-      setTsaAcknowledgeDate("");
-      setTsaHandlingTime("");
+      setTsmAcknowledgeDate(tsm_acknowledge_date || "");
+      setTsmHandlingTime(tsm_handling_time || "");
+
+      setTsaAcknowledgeDate(tsa_acknowledge_date || "");
+      setTsaHandlingTime(tsa_handling_time || "");
     }
-  }, [open, close_reason, counter_offer, client_specs]);
+  }, [
+    open,
+    close_reason,
+    counter_offer,
+    client_specs,
+    tsm_acknowledge_date,
+    tsm_handling_time,
+    tsa_acknowledge_date,
+    tsa_handling_time,
+  ]);
 
   useEffect(() => {
     if (closeReason === "Same Specs Provided") {
@@ -89,7 +109,7 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
 
     if (handle < ack) {
       setTsmTimeError(
-        "TSM Handling Time cannot be earlier than TSM Acknowledgement Time."
+        "TSM Handling Time cannot be earlier than TSM Acknowledgement Time.",
       );
     } else {
       setTsmTimeError(null);
@@ -107,7 +127,7 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
 
     if (handle < ack) {
       setTsaTimeError(
-        "TSA Handling Time cannot be earlier than TSA Acknowledgement Time."
+        "TSA Handling Time cannot be earlier than TSA Acknowledgement Time.",
       );
     } else {
       setTsaTimeError(null);
@@ -140,10 +160,8 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-
       {/* 🔥 MAIN CHANGE HERE – FLEX + MAX HEIGHT */}
       <DialogContent className="max-h-[90vh] flex flex-col">
-
         <DialogHeader>
           <DialogTitle>Mark Transaction as Closed</DialogTitle>
         </DialogHeader>
@@ -212,9 +230,7 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
                 className="w-full border rounded-md px-3 py-2 text-sm"
               >
                 <option value="">Select a reason</option>
-                <option value="Same Specs Provided">
-                  Same Specs Provided
-                </option>
+                <option value="Same Specs Provided">Same Specs Provided</option>
                 <option value="Counter Offer">Counter Offer</option>
                 <option value="Out of Stock">Out of Stock</option>
                 <option value="Client Declined">Client Declined</option>
@@ -263,7 +279,6 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
             {loading ? "Updating..." : "Confirm"}
           </Button>
         </DialogFooter>
-
       </DialogContent>
     </Dialog>
   );
