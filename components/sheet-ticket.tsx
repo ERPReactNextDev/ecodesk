@@ -171,7 +171,7 @@ function computeTSMHandlingTime(
 
 function computeNonQuotationHT(remarks: string, baseTime: string) {
   const list = [
-    "NO STOCKS",
+    "NO STOCKS / INSUFFICIENT STOCKS",
     "INSUFFICIENT STOCKS",
     "UNABLE TO CONTACT CUSTOMER",
     "ITEM NOT CARRIED",
@@ -1617,9 +1617,9 @@ export function TicketSheet(props: TicketSheetProps) {
           CSR Response Time: <b>{csrTime || "-"}</b>
         </div>
 
-        <div>
+        {/* <div>
           TSM Response Time: <b>{tsmResponseTime || "-"}</b>
-        </div>
+        </div> */}
 
         <div>
           TSA Response Time: <b>{tsaResponseTime || "-"}</b>
