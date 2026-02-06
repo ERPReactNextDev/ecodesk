@@ -176,7 +176,6 @@ function computeNonQuotationHT(remarks: string, baseTime: string) {
     "UNABLE TO CONTACT CUSTOMER",
     "ITEM NOT CARRIED",
     "WAITING FOR CLIENT CONFIRMATION",
-    "PENDING FOR PAYMENT",
     "CUSTOMER REQUESTED CANCELLATION",
     "ACCREDITATION/PARTNERSHIP",
     "NO RESPONSE FROM CLIENT",
@@ -192,12 +191,7 @@ function computeNonQuotationHT(remarks: string, baseTime: string) {
 }
 
 function computeQuotationHT(remarks: string, baseTime: string) {
-  const list = [
-    "QUOTATION FOR APPROVAL",
-    "CONVERTED TO SALE",
-    "DISAPPROVED QUOTATION",
-    "SOLD"
-  ];
+  const list = ["QUOTATION FOR APPROVAL", "SOLD"];
 
   return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
 }
@@ -1641,16 +1635,13 @@ export function TicketSheet(props: TicketSheetProps) {
           Non-Quotation HT: <b>{nonQuotationHT || "-"}</b>
         </div>
 
-        {remarks === "Sold" && (
-          <div>
-            Quotation HT: <b>{quotationHT || "-"}</b>
-          </div>
-        )}
+        <div>
+          Quotation HT: <b>{quotationHT || "-"}</b>
+        </div>
 
         <div>
           SPF HT: <b>{spfHT || "-"}</b>
         </div>
-
         <p className="text-xs text-gray-500 mt-2">
           * Values are computed in real-time and not saved to the database.
         </p>
