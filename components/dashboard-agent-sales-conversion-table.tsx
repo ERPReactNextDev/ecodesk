@@ -314,11 +314,13 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           map[referenceid].nonSalesCount += 1;
         }
 
-        // Conversion counting
+        // Always count qty sold whether SO or not
+        map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
+
+        // Conversion counting only for sales-related metrics
         if (status === "converted into sales") {
           map[referenceid].convertedCount += 1;
           map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
-          map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
         }
       });
 
