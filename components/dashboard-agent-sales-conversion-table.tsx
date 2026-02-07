@@ -53,6 +53,8 @@ interface Activity {
   customer_status?: string;
   ticket_received?: string;
   ticket_endorsed?: string;
+
+  wrap_up?: string;
 }
 
 interface Agent {
@@ -291,16 +293,24 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
         // 🔒 NORMALIZE TRAFFIC (IMPORTANT)
         const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
-
+        const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
         // PO RECEIVED rule
         if (remarks === "po received") {
-          // Always count as NON-SALES inquiry
           map[referenceid].nonSalesCount += 1;
-        } else if (normalizedTraffic === "sales") {
+        }
+        // 2️⃣ Customer Inquiry Non Sales always NON-SALES
+        else if (
+          normalizedWrapUp === "customer inquiry non-sales" ||
+          normalizedWrapUp === "customer inquiry non sales"
+        ) {
+          map[referenceid].nonSalesCount += 1;
+        }
+        // 3️⃣ Normal Traffic Rules
+        else if (normalizedTraffic === "sales") {
           map[referenceid].salesCount += 1;
-        } else {
-          // 🔥 DEFAULT FALLBACK
-          // Anything else = Non-Sales
+        }
+        // 4️⃣ Anything else = Non-Sales fallback
+        else {
           map[referenceid].nonSalesCount += 1;
         }
 
