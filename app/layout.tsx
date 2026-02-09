@@ -8,6 +8,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TicketReceived } from "@/components/popup-ticket-received";
 import { TicketHistory } from "@/components/popup-ticket-outbound";
+import PopupTicketDateTransferred from "@/components/popup-ticket-date-transferred";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ export default function RootLayout({
             <Suspense fallback={null}>
               <TicketReceived />
               <TicketHistory />
+              <PopupTicketDateTransferred />
             </Suspense>
             {children}
           </ThemeProvider>
