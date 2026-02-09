@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           referenceid: insertData.referenceid,
           tsm: insertData.tsm,
           status: insertData.status,
-          remarks: "Reassigned",
+          ticket_remarks: "Reassigned",
           date_updated: new Date().toISOString(),
         })
         .eq("ticket_reference_number", ticketRef);
