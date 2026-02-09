@@ -211,7 +211,7 @@ export function PopupTicketDateTransferred() {
                       {/* EXACT FORMAT YOU REQUESTED */}
                       <div className="text-sm space-y-3">
                         <p>
-                          The CSR Ticket{" "}
+                          {" "}
                           <span className="font-semibold text-green-600">
                             {t.ticket_reference_number}
                           </span>{" "}
