@@ -220,22 +220,25 @@ const AgentSalesTableCard = forwardRef<
     return Math.floor((end.getTime() - start.getTime()) / 60000);
   }
 
-  function computeQuotationHT(
-    tsa_acknowledge_date?: string,
-    tsa_handling_time?: string,
-    remarks?: string,
-  ): number | null {
-    if (!tsa_acknowledge_date || !tsa_handling_time) return null;
-    if ((remarks?.trim().toLowerCase() ?? "") !== "quotation for approval")
-      return null;
+function computeQuotationHT(
+  ticket_received?: string,
+  tsa_handling_time?: string,
+  remarks?: string,
+): number | null {
+  if (!ticket_received || !tsa_handling_time) return null;
 
-    const start = new Date(tsa_acknowledge_date);
-    const end = new Date(tsa_handling_time);
+  const r = remarks?.trim().toLowerCase() ?? "";
 
-    if (end < start) return null;
+  if (r !== "quotation for approval" && r !== "sold") return null;
 
-    return Math.floor((end.getTime() - start.getTime()) / 60000);
-  }
+  const start = new Date(ticket_received);
+  const end = new Date(tsa_handling_time);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+  if (end < start) return null;
+
+  return Math.floor((end.getTime() - start.getTime()) / 60000);
+}
 
   function computeSpfHT(
     ticket_received?: string,
