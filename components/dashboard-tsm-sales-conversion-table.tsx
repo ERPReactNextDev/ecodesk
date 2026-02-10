@@ -222,18 +222,32 @@ const AgentSalesTableCard = forwardRef<
     return null;
   }
 
-  function computeNonQuotationHTAligned(a: Activity): number | null {
-    const base = getBaseHandlingTime(a);
-    if (base === null) return null;
+function computeNonQuotationHTAligned(a: Activity): number | null {
+  const base = getBaseHandlingTime(a);
+  if (base === null) return null;
 
-    const r = normalizeRemarks(a.remarks);
+  const list = [
+    "NO STOCKS / INSUFFICIENT STOCKS",
+    "CUSTOMER REQUEST CANCELLATION",
+    "INSUFFICIENT STOCKS",
+    "UNABLE TO CONTACT CUSTOMER",
+    "ITEM NOT CARRIED",
+    "WAITING FOR CLIENT CONFIRMATION",
+    "CUSTOMER REQUESTED CANCELLATION",
+    "ACCREDITATION/PARTNERSHIP",
+    "NO RESPONSE FROM CLIENT",
+    "ASSISTED",
+    "FOR SITE VISIT",
+    "NON STANDARD ITEM",
+    "PO RECEIVED",
+    "PENDING QUOTATION",
+    "FOR OCCULAR INSPECTION",
+  ];
 
-    if (r === "quotation for approval" || r === "sold" || r === "for spf") {
-      return null;
-    }
+  const remarks = (a.remarks || "").toUpperCase();
 
-    return base;
-  }
+  return list.includes(remarks) ? base : null;
+}
 
   function computeQuotationHTAligned(a: Activity): number | null {
     const base = getBaseHandlingTime(a);
@@ -260,24 +274,6 @@ const AgentSalesTableCard = forwardRef<
 
     return null;
   }
-
-  const NON_QUOTATION_WRAPUPS = [
-    "no stocks",
-    "insufficient stocks",
-    "unable to contact customer",
-    "item not carried",
-    "waiting for client confirmation",
-    "pending for payment",
-    "customer requested cancellation",
-    "accreditation/partnership",
-    "no response from client",
-    "assisted",
-    "for site visit",
-    "non standard item",
-    "po received",
-    "pending quotation",
-    "for occular inspection",
-  ];
 
   const groupedData = useMemo(() => {
     const map: Record<
@@ -308,13 +304,13 @@ const AgentSalesTableCard = forwardRef<
       }
     > = {};
 
+    activities;
     activities
       .filter(
         (a) =>
           isDateInRange(a.ticket_received, dateCreatedFilterRange) &&
           a.manager &&
-          a.manager.trim() !== "" &&
-          (!a.remarks || !["po received"].includes(a.remarks.toLowerCase())),
+          a.manager.trim() !== "",
       )
       .forEach((a) => {
         const wrap = a.wrap_up?.toLowerCase().trim() || "";
