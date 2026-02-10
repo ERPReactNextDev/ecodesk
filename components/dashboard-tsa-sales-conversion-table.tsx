@@ -54,14 +54,29 @@ function normalizeRemarks(remarks?: string): string {
 
 // ===== NEW COMPUTATION BASED ON SHEET-TICKET LOGIC =====
 
-function computeTsaResponseTime(
-  ticket_endorsed?: string,
-  tsa_acknowledge_date?: string,
-): number | null {
-  if (!ticket_endorsed || !tsa_acknowledge_date) return null;
+// ===== ALIGNED COMPUTATION HELPERS (MATCH SHEET-TICKET) =====
 
-  const start = new Date(ticket_endorsed);
-  const end = new Date(tsa_acknowledge_date);
+const EXCLUDED_WRAPUPS = [
+  "customerfeedback/recommendation",
+  "job inquiry",
+  "job applicants",
+  "supplier/vendor product offer",
+  "internal whistle blower",
+  "threats / extortion / intimidation",
+  "prank call",
+];
+
+function isExcludedWrapUp(wrapUp?: string): boolean {
+  return EXCLUDED_WRAPUPS.includes((wrapUp || "").trim().toLowerCase());
+}
+
+function computeTsaResponseTimeAligned(a: Activity): number | null {
+  if (isExcludedWrapUp(a.wrap_up)) return null;
+
+  if (!a.ticket_endorsed || !a.tsa_acknowledge_date) return null;
+
+  const start = new Date(a.ticket_endorsed);
+  const end = new Date(a.tsa_acknowledge_date);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   if (end < start) return null;
@@ -69,34 +84,13 @@ function computeTsaResponseTime(
   return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
 
-function computeTsaHandlingTime(
-  tsa_acknowledge_date?: string,
-  tsa_handling_time?: string,
-): number | null {
-  if (!tsa_acknowledge_date || !tsa_handling_time) return null;
+// SAME LOGIC AS SHEET-TICKET DISPLAY:
+// TSA Handling = TSA Handling Time – Ticket Received
+function computeTsaHandlingTimeAligned(a: Activity): number | null {
+  if (!a.ticket_received || !a.tsa_handling_time) return null;
 
-  const start = new Date(tsa_acknowledge_date);
-  const end = new Date(tsa_handling_time);
-
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-  if (end < start) return null;
-
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
-}
-
-function computeNonQuotationHT(
-  ticket_received?: string,
-  tsa_handling_time?: string,
-  remarks?: string,
-): number | null {
-  const r = normalizeRemarks(remarks);
-
-  if (!ticket_received || !tsa_handling_time) return null;
-  if (r === "quotation for approval") return null;
-  if (r === "for spf") return null;
-
-  const start = new Date(ticket_received);
-  const end = new Date(tsa_handling_time);
+  const start = new Date(a.ticket_received);
+  const end = new Date(a.tsa_handling_time);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   if (end < start) return null;
@@ -104,36 +98,50 @@ function computeNonQuotationHT(
   return Math.floor((end.getTime() - start.getTime()) / 1000);
 }
 
-function computeQuotationHT(
-  tsa_acknowledge_date?: string,
-  tsa_handling_time?: string,
-  remarks?: string,
-): number | null {
-  if (!tsa_acknowledge_date || !tsa_handling_time) return null;
-  if (normalizeRemarks(remarks) !== "quotation for approval") return null;
+function getBaseHandlingTime(a: Activity): number | null {
+  const tsaHT = computeTsaHandlingTimeAligned(a);
+  if (tsaHT !== null) return tsaHT;
 
-  const start = new Date(tsa_acknowledge_date);
-  const end = new Date(tsa_handling_time);
-
-  if (end < start) return null;
-
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
+  return null;
 }
 
-function computeSpfHT(
-  ticket_received?: string,
-  tsa_handling_time?: string,
-  remarks?: string,
-): number | null {
-  if (!ticket_received || !tsa_handling_time) return null;
-  if (normalizeRemarks(remarks) !== "for spf") return null;
+function computeNonQuotationHTAligned(a: Activity): number | null {
+  const base = getBaseHandlingTime(a);
+  if (base === null) return null;
 
-  const start = new Date(ticket_received);
-  const end = new Date(tsa_handling_time);
+  const r = normalizeRemarks(a.remarks);
 
-  if (end < start) return null;
+  if (r === "quotation for approval" || r === "sold" || r === "for spf") {
+    return null;
+  }
 
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
+  return base;
+}
+
+function computeQuotationHTAligned(a: Activity): number | null {
+  const base = getBaseHandlingTime(a);
+  if (base === null) return null;
+
+  const r = normalizeRemarks(a.remarks);
+
+  if (r === "quotation for approval" || r === "sold") {
+    return base;
+  }
+
+  return null;
+}
+
+function computeSpfHTAligned(a: Activity): number | null {
+  const base = getBaseHandlingTime(a);
+  if (base === null) return null;
+
+  const r = normalizeRemarks(a.remarks);
+
+  if (r.includes("spf")) {
+    return base;
+  }
+
+  return null;
 }
 
 function formatDuration(seconds: number): string {
@@ -172,6 +180,8 @@ interface Activity {
   ticket_endorsed?: string;
   tsa_acknowledge_date?: string;
   tsa_handling_time?: string;
+
+  wrap_up?: string; // ← ADDED to support exclusion logic
 }
 
 interface Agent {
@@ -196,10 +206,7 @@ export interface AgentSalesConversionCardRef {
 }
 
 const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
-  (
-    { dateCreatedFilterRange, role, userReferenceId }: Props,
-    ref
-) => {
+  ({ dateCreatedFilterRange, role, userReferenceId }: Props, ref) => {
     const [activities, setActivities] = useState<Activity[]>([]);
     const [agents, setAgents] = useState<Agent[]>([]);
     const [loading, setLoading] = useState(false);
@@ -414,68 +421,40 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
             map[agent].qtySold += qtySold;
           }
 
-// TSA RESPONSE TIME
-const tsaResponse = computeTsaResponseTime(
-  a.ticket_endorsed,
-  a.tsa_acknowledge_date
-);
+          // TSA RESPONSE TIME (ALIGNED)
+          const tsaResponse = computeTsaResponseTimeAligned(a);
+          if (tsaResponse !== null) {
+            map[agent].tsaResponseTotal += tsaResponse;
+            map[agent].tsaResponseCount++;
+          }
 
-if (tsaResponse !== null) {
-  map[agent].tsaResponseTotal += tsaResponse;
-  map[agent].tsaResponseCount++;
-}
+          const tsaHandling = computeTsaHandlingTimeAligned(a);
+          if (tsaHandling !== null) {
+            map[agent].tsaHandlingTotal += tsaHandling;
+            map[agent].tsaHandlingCount++;
+          }
 
-// TSA HANDLING TIME
-const tsaHT = computeTsaHandlingTime(
-  a.tsa_acknowledge_date,
-  a.tsa_handling_time
-);
+          const nonQ = computeNonQuotationHTAligned(a);
+          if (nonQ !== null) {
+            map[agent].nonQuotationTotal += nonQ;
+            map[agent].nonQuotationCount++;
+          }
 
-if (tsaHT !== null) {
-  map[agent].tsaHandlingTotal += tsaHT;
-  map[agent].tsaHandlingCount++;
-}
+          const qHT = computeQuotationHTAligned(a);
+          if (qHT !== null) {
+            map[agent].quotationTotal += qHT;
+            map[agent].quotationCount++;
+          }
 
-// NON-QUOTATION HT
-const nonQ = computeNonQuotationHT(
-  a.ticket_received,
-  a.tsa_handling_time,
-  a.remarks
-);
+          const spf = computeSpfHTAligned(a);
+          if (spf !== null) {
+            map[agent].spfTotal += spf;
+            map[agent].spfCount++;
+          }
+        }); // ← THIS IS MISSING
 
-if (nonQ !== null) {
-  map[agent].nonQuotationTotal += nonQ;
-  map[agent].nonQuotationCount++;
-}
-
-// QUOTATION HT
-const qHT = computeQuotationHT(
-  a.tsa_acknowledge_date,
-  a.tsa_handling_time,
-  a.remarks
-);
-
-if (qHT !== null) {
-  map[agent].quotationTotal += qHT;
-  map[agent].quotationCount++;
-}
-
-// SPF HT
-const spfHT = computeSpfHT(
-  a.ticket_received,
-  a.tsa_handling_time,
-  a.remarks
-);
-
-if (spfHT !== null) {
-  map[agent].spfTotal += spfHT;
-  map[agent].spfCount++;
-}
-
-});   // ← THIS IS MISSING
-
-return Object.values(map);
-}, [activities, dateCreatedFilterRange]);
+      return Object.values(map);
+    }, [activities, dateCreatedFilterRange]);
 
     useImperativeHandle(ref, () => ({
       downloadCSV() {},
@@ -618,20 +597,22 @@ return Object.values(map);
                   <TableHead className="text-right">
                     Existing Inactive (Converted)
                   </TableHead>
-<TableHead className="text-right">TSA Response Time</TableHead>
-<TableHead className="text-right">TSA Handling Time</TableHead>
-<TableHead className="text-right">Non-Quotation HT</TableHead>
-<TableHead className="text-right">Quotation HT</TableHead>
-<TableHead className="text-right">SPF HT</TableHead>
-
+                  <TableHead className="text-right">
+                    TSA Response Time
+                  </TableHead>
+                  <TableHead className="text-right">
+                    TSA Handling Time
+                  </TableHead>
+                  <TableHead className="text-right">Non-Quotation HT</TableHead>
+                  <TableHead className="text-right">Quotation HT</TableHead>
+                  <TableHead className="text-right">SPF HT</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
-{(groupedData as any[])
-  .sort((a: any, b: any) => b.amount - a.amount)
-  .map((r: any, i: number) => {
-
+                {(groupedData as any[])
+                  .sort((a: any, b: any) => b.amount - a.amount)
+                  .map((r: any, i: number) => {
                     const agent = agents.find((a) => a.ReferenceID === r.agent);
                     return (
                       <TableRow key={r.agent}>
@@ -695,44 +676,50 @@ return Object.values(map);
                         <TableCell className="text-right">
                           {r.newExistingInactiveConvertedAmount}
                         </TableCell>
-<TableCell className="text-right">
-  {r.tsaResponseCount === 0
-    ? "-"
-    : formatDuration(
-        Math.floor(r.tsaResponseTotal / r.tsaResponseCount),
-      )}
-</TableCell>
+                        <TableCell className="text-right">
+                          {r.tsaResponseCount === 0
+                            ? "-"
+                            : formatDuration(
+                                Math.floor(
+                                  r.tsaResponseTotal / r.tsaResponseCount,
+                                ),
+                              )}
+                        </TableCell>
 
-<TableCell className="text-right">
-  {r.tsaHandlingCount === 0
-    ? "-"
-    : formatDuration(
-        Math.floor(r.tsaHandlingTotal / r.tsaHandlingCount),
-      )}
-</TableCell>
+                        <TableCell className="text-right">
+                          {r.tsaHandlingCount === 0
+                            ? "-"
+                            : formatDuration(
+                                Math.floor(
+                                  r.tsaHandlingTotal / r.tsaHandlingCount,
+                                ),
+                              )}
+                        </TableCell>
 
-<TableCell className="text-right">
-  {r.nonQuotationCount === 0
-    ? "-"
-    : formatDuration(
-        Math.floor(r.nonQuotationTotal / r.nonQuotationCount),
-      )}
-</TableCell>
-<TableCell className="text-right">
-  {r.quotationCount === 0
-    ? "-"
-    : formatDuration(
-        Math.floor(r.quotationTotal / r.quotationCount),
-      )}
-</TableCell>
+                        <TableCell className="text-right">
+                          {r.nonQuotationCount === 0
+                            ? "-"
+                            : formatDuration(
+                                Math.floor(
+                                  r.nonQuotationTotal / r.nonQuotationCount,
+                                ),
+                              )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.quotationCount === 0
+                            ? "-"
+                            : formatDuration(
+                                Math.floor(r.quotationTotal / r.quotationCount),
+                              )}
+                        </TableCell>
 
-<TableCell className="text-right">
-  {r.spfCount === 0
-    ? "-"
-    : formatDuration(
-        Math.floor(r.spfTotal / r.spfCount),
-      )}
-</TableCell>
+                        <TableCell className="text-right">
+                          {r.spfCount === 0
+                            ? "-"
+                            : formatDuration(
+                                Math.floor(r.spfTotal / r.spfCount),
+                              )}
+                        </TableCell>
                       </TableRow>
                     );
                   })}

@@ -70,7 +70,7 @@ function computeCSRResponseTime(
   if (end < start) return "INVALID DATE";
 
   const WORK_START = 8;
-  const WORK_END = 17;
+  const WORK_END = 19;
 
   let startWork = new Date(start);
   startWork.setHours(WORK_START, 0, 0, 0);
