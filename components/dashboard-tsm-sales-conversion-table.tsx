@@ -199,20 +199,15 @@ const AgentSalesTableCard = forwardRef<
   }
 
   // ===== EXACT SHEET-TICKET LOGIC FUNCTIONS =====
+  function normalizeRemarks(remarks?: string): string {
+    return remarks?.trim().toLowerCase() ?? "";
+  }
 
-  function computeNonQuotationHT(
-    ticket_received?: string,
-    tsa_handling_time?: string,
-    remarks?: string,
-  ): number | null {
-    const r = remarks?.trim().toLowerCase() ?? "";
+  function computeTsaHandlingTimeAligned(a: Activity): number | null {
+    if (!a.ticket_received || !a.tsa_handling_time) return null;
 
-    if (!ticket_received || !tsa_handling_time) return null;
-    if (r === "quotation for approval") return null;
-    if (r === "for spf") return null;
-
-    const start = new Date(ticket_received);
-    const end = new Date(tsa_handling_time);
+    const start = new Date(a.ticket_received);
+    const end = new Date(a.tsa_handling_time);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
     if (end < start) return null;
@@ -220,40 +215,50 @@ const AgentSalesTableCard = forwardRef<
     return Math.floor((end.getTime() - start.getTime()) / 60000);
   }
 
-function computeQuotationHT(
-  ticket_received?: string,
-  tsa_handling_time?: string,
-  remarks?: string,
-): number | null {
-  if (!ticket_received || !tsa_handling_time) return null;
+  function getBaseHandlingTime(a: Activity): number | null {
+    const tsaHT = computeTsaHandlingTimeAligned(a);
+    if (tsaHT !== null) return tsaHT;
 
-  const r = remarks?.trim().toLowerCase() ?? "";
+    return null;
+  }
 
-  if (r !== "quotation for approval" && r !== "sold") return null;
+  function computeNonQuotationHTAligned(a: Activity): number | null {
+    const base = getBaseHandlingTime(a);
+    if (base === null) return null;
 
-  const start = new Date(ticket_received);
-  const end = new Date(tsa_handling_time);
+    const r = normalizeRemarks(a.remarks);
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-  if (end < start) return null;
+    if (r === "quotation for approval" || r === "sold" || r === "for spf") {
+      return null;
+    }
 
-  return Math.floor((end.getTime() - start.getTime()) / 60000);
-}
+    return base;
+  }
 
-  function computeSpfHT(
-    ticket_received?: string,
-    tsa_handling_time?: string,
-    remarks?: string,
-  ): number | null {
-    if (!ticket_received || !tsa_handling_time) return null;
-    if ((remarks?.trim().toLowerCase() ?? "") !== "for spf") return null;
+  function computeQuotationHTAligned(a: Activity): number | null {
+    const base = getBaseHandlingTime(a);
+    if (base === null) return null;
 
-    const start = new Date(ticket_received);
-    const end = new Date(tsa_handling_time);
+    const r = normalizeRemarks(a.remarks);
 
-    if (end < start) return null;
+    if (r === "quotation for approval" || r === "sold") {
+      return base;
+    }
 
-    return Math.floor((end.getTime() - start.getTime()) / 60000);
+    return null;
+  }
+
+  function computeSpfHTAligned(a: Activity): number | null {
+    const base = getBaseHandlingTime(a);
+    if (base === null) return null;
+
+    const r = normalizeRemarks(a.remarks);
+
+    if (r.includes("spf")) {
+      return base;
+    }
+
+    return null;
   }
 
   const NON_QUOTATION_WRAPUPS = [
@@ -321,23 +326,11 @@ function computeQuotationHT(
 
         const isConverted = status === "converted into sales";
 
-        const nonQ = computeNonQuotationHT(
-          a.ticket_received,
-          a.tsa_handling_time,
-          a.remarks,
-        );
+        const nonQ = computeNonQuotationHTAligned(a);
 
-        const qHT = computeQuotationHT(
-          a.tsa_acknowledge_date,
-          a.tsa_handling_time,
-          a.remarks,
-        );
+        const qHT = computeQuotationHTAligned(a);
 
-        const spfHT = computeSpfHT(
-          a.ticket_received,
-          a.tsa_handling_time,
-          a.remarks,
-        );
+        const spfHT = computeSpfHTAligned(a);
 
         const manager = a.manager!.trim();
         const soAmount = Number(a.so_amount ?? 0);
@@ -374,10 +367,29 @@ function computeQuotationHT(
         }
 
         // Counts
-        if (traffic === "sales") map[manager].salesCount += 1;
-        else if (traffic === "non-sales") map[manager].nonSalesCount += 1;
+        const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
+        const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
 
-        if (status === "converted into sales") map[manager].convertedCount += 1;
+        if (normalizeRemarks(a.remarks) === "po received") {
+          map[manager].nonSalesCount += 1;
+        } else if (
+          normalizedWrapUp === "customer inquiry non-sales" ||
+          normalizedWrapUp === "customer inquiry non sales"
+        ) {
+          map[manager].nonSalesCount += 1;
+        } else if (normalizedTraffic === "sales") {
+          map[manager].salesCount += 1;
+        } else {
+          map[manager].nonSalesCount += 1;
+        }
+
+        if (
+          normalizedTraffic === "sales" &&
+          status === "converted into sales" &&
+          normalizeRemarks(a.remarks) !== "po received"
+        ) {
+          map[manager].convertedCount += 1;
+        }
 
         if (customerStatus === "new client") map[manager].newClientCount += 1;
         if (customerStatus === "new non-buying")
