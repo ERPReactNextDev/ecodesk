@@ -348,7 +348,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
       activities
         .filter(
           (a) =>
-            isDateInRange(a.date_created, dateCreatedFilterRange) && a.agent,
+            isDateInRange(a.ticket_received, dateCreatedFilterRange) && a.agent,
         )
         .forEach((a) => {
           const agent = a.agent!;
@@ -356,7 +356,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
           const qtySold = Number(a.qty_sold ?? 0);
           const traffic = a.traffic.toLowerCase();
           const status = a.status.toLowerCase();
-          const cs = a.customer_status.toLowerCase();
+          const cs = (a.customer_status || "").toLowerCase();
 
           if (!map[agent]) {
             map[agent] = {
@@ -398,12 +398,20 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
 
           // SALES / NON-SALES COUNT
           // SALES / NON-SALES COUNT
-          if (isValidSalesInquiry(a)) {
-            map[agent].salesCount++;
-          }
+          const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
+          const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
 
-          if (traffic === "non-sales") {
-            map[agent].nonSalesCount++;
+          if (normalizeRemarks(a.remarks) === "po received") {
+            map[agent].nonSalesCount += 1;
+          } else if (
+            normalizedWrapUp === "customer inquiry non-sales" ||
+            normalizedWrapUp === "customer inquiry non sales"
+          ) {
+            map[agent].nonSalesCount += 1;
+          } else if (isValidSalesInquiry(a)) {
+            map[agent].salesCount += 1;
+          } else {
+            map[agent].nonSalesCount += 1;
           }
 
           // CUSTOMER STATUS COUNTS (Sales inquiries only – Excel-aligned)
@@ -419,6 +427,18 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
             map[agent].convertedCount++;
             map[agent].amount += soAmount;
             map[agent].qtySold += qtySold;
+
+            if (cs === "new client")
+              map[agent].newClientConvertedAmount += soAmount;
+
+            if (cs === "new non-buying")
+              map[agent].newNonBuyingConvertedAmount += soAmount;
+
+            if (cs === "existing active")
+              map[agent].newExistingActiveConvertedAmount += soAmount;
+
+            if (cs === "existing inactive")
+              map[agent].newExistingInactiveConvertedAmount += soAmount;
           }
 
           // TSA RESPONSE TIME (ALIGNED)
@@ -665,10 +685,21 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                           {r.ExistingInactive}
                         </TableCell>
                         <TableCell className="text-right">
-                          {r.newClientConvertedAmount}
+                          ₱
+                          {r.newClientConvertedAmount.toLocaleString("en-PH", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </TableCell>
                         <TableCell className="text-right">
-                          {r.newNonBuyingConvertedAmount}
+                          ₱
+                          {r.newNonBuyingConvertedAmount.toLocaleString(
+                            "en-PH",
+                            {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            },
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           {r.newExistingActiveConvertedAmount}
