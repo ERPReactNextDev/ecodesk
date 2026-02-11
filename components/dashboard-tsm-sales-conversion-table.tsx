@@ -49,6 +49,62 @@ function formatHHMMSS(totalMinutes: number): string {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
 }
 
+function normalizeRemarks(remarks?: string): string {
+    return remarks?.trim().toLowerCase() ?? "";
+}
+
+function computeResponseSeconds(
+    ticket_endorsed?: string,
+    tsa_acknowledge_date?: string
+): number | null {
+    if (!ticket_endorsed || !tsa_acknowledge_date) return null;
+
+    const endorsed = new Date(ticket_endorsed);
+    const ack = new Date(tsa_acknowledge_date);
+
+    if (isNaN(endorsed.getTime()) || isNaN(ack.getTime())) return null;
+    if (ack < endorsed) return null;
+
+    return Math.floor((ack.getTime() - endorsed.getTime()) / 1000);
+}
+
+function computeHandlingSeconds(
+    tsa_acknowledge_date?: string,
+    tsa_handling_time?: string
+): number | null {
+    if (!tsa_acknowledge_date || !tsa_handling_time) return null;
+
+    const ack = new Date(tsa_acknowledge_date);
+    const handle = new Date(tsa_handling_time);
+
+    if (isNaN(ack.getTime()) || isNaN(handle.getTime())) return null;
+    if (handle < ack) return null;
+
+    return Math.floor((handle.getTime() - ack.getTime()) / 1000);
+}
+
+function computeNonQuotationSeconds(
+    ticket_received?: string,
+    tsa_handling_time?: string,
+    remarks?: string
+): number | null {
+    const r = normalizeRemarks(remarks);
+
+    if (!ticket_received || !tsa_handling_time) return null;
+
+    if (r === "quotation for approval") return null;
+    if (r === "for spf") return null;
+
+    const received = new Date(ticket_received);
+    const handle = new Date(tsa_handling_time);
+
+    if (isNaN(received.getTime()) || isNaN(handle.getTime())) return null;
+    if (handle < received) return null;
+
+    return Math.floor((handle.getTime() - received.getTime()) / 1000);
+}
+
+
 
 
 interface Activity {
@@ -127,50 +183,50 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, AgentSalesCo
         fetchManagers();
     }, []);
 
-useEffect(() => {
-    async function fetchActivities() {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await fetch("/api/act-fetch-activity-role", {
-                method: "GET",
-                cache: "no-store",
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-user-role": role,
-                    "x-reference-id": userReferenceId,
-                },
-            });
+    useEffect(() => {
+        async function fetchActivities() {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await fetch("/api/act-fetch-activity-role", {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-user-role": role,
+                        "x-reference-id": userReferenceId,
+                    },
+                });
 
-            if (!res.ok) {
+                if (!res.ok) {
+                    const json = await res.json();
+                    throw new Error(json.error || "Failed to fetch activities");
+                }
+
                 const json = await res.json();
-                throw new Error(json.error || "Failed to fetch activities");
+
+                // ✅ SAME STATUS FILTER AS ticket.tsx
+                const allowedStatuses = [
+                    "On-Progress",
+                    "Closed",
+                    "Endorsed",
+                    "Converted into Sales",
+                ];
+
+                setActivities(
+                    (json.data || []).filter((a: any) =>
+                        allowedStatuses.includes(a.status)
+                    )
+                );
+            } catch (err: any) {
+                setError(err.message || "Failed to fetch activities");
+            } finally {
+                setLoading(false);
             }
-
-            const json = await res.json();
-
-            // ✅ SAME STATUS FILTER AS ticket.tsx
-            const allowedStatuses = [
-                "On-Progress",
-                "Closed",
-                "Endorsed",
-                "Converted into Sales",
-            ];
-
-            setActivities(
-                (json.data || []).filter((a: any) =>
-                    allowedStatuses.includes(a.status)
-                )
-            );
-        } catch (err: any) {
-            setError(err.message || "Failed to fetch activities");
-        } finally {
-            setLoading(false);
         }
-    }
 
-    fetchActivities();
-}, [role, userReferenceId]);
+        fetchActivities();
+    }, [role, userReferenceId]);
 
 
     const isDateInRange = (dateStr?: string, range?: DateRange) => {
@@ -188,21 +244,6 @@ useEffect(() => {
         return true;
     };
 
-    function safeDiffMinutes(start?: string, end?: string): number {
-        if (!start || !end) return 0;
-
-        const s = new Date(start);
-        const e = new Date(end);
-
-        if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
-
-        const diff = (e.getTime() - s.getTime()) / 60000;
-
-        if (diff <= 0) return 0;
-        if (diff > 480) return 0; // 8 hours max
-
-        return Math.round(diff);
-    }
 
     const NON_QUOTATION_WRAPUPS = [
         "no stocks",
@@ -240,67 +281,31 @@ useEffect(() => {
                 newNonBuyingConvertedAmount: number;
                 newExistingActiveConvertedAmount: number;
                 newExistingInactiveConvertedAmount: number;
-                tsmAckTotal: number;
-                tsmAckCount: number;
-                tsmHandlingTotal: number;
-                tsmHandlingCount: number;
-                tsmNonQuotationTotal: number;
-                tsmNonQuotationCount: number;
+                totalResponseSeconds: number;
+                responseCount: number;
+
+                totalHandlingSeconds: number;
+                handlingCount: number;
+
+                totalNonQuotationSeconds: number;
+                nonQuotationCount: number;
             }
         > = {};
 
-activities
-  .filter(
-    (a) =>
-      isDateInRange(a.ticket_received, dateCreatedFilterRange) &&
-      a.manager &&
-      a.manager.trim() !== "" &&
-      (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
-  )
+        activities
+            .filter(
+                (a) =>
+                    isDateInRange(a.ticket_received, dateCreatedFilterRange) &&
+                    a.manager &&
+                    a.manager.trim() !== "" &&
+                    (!a.remarks || !["po received"].includes(a.remarks.toLowerCase()))
+            )
             .forEach((a) => {
-                const wrap = a.wrap_up?.toLowerCase().trim() || "";
-                const status = a.status?.toLowerCase() || "";
-
-                const isQuotation =
-                    status === "quotation for approval" ||
-                    status === "converted into sales";
-
-
-                const isConverted = status === "converted into sales";
-
-                // 1️⃣ TSM Acknowledge Time
-                // 1️⃣ TSA Response Time (Excel)
-                const ackTime = safeDiffMinutes(
-                    a.ticket_received,
-                    a.tsa_acknowledge_date
-                );
-                // 2️⃣ TSA Handling Time (Excel – Quotation only)
-                const handlingTime =
-    isQuotation
-                        ? safeDiffMinutes(
-                            a.tsa_acknowledge_date,
-                            a.tsa_handling_time
-                        )
-        : 0;
-
-                const isNonQuotation =
-                    status === "closed" &&
-                    NON_QUOTATION_WRAPUPS.some(w => wrap.includes(w));
-
-                const nonQuotationTime =
-    isNonQuotation
-                        ? safeDiffMinutes(
-                            a.tsa_acknowledge_date,
-                            a.tsa_handling_time
-                        )
-        : 0;
-
 
                 const manager = a.manager!.trim();
-                const soAmount = Number(a.so_amount ?? 0);
-                const traffic = a.traffic?.toLowerCase() ?? "";
-                const qtySold = Number(a.qty_sold ?? 0);
-                const customerStatus = a.customer_status?.toLowerCase() ?? "";
+
+                const wrap = a.wrap_up?.toLowerCase().trim() || "";
+                const status = a.status?.toLowerCase() || "";
 
                 // Init
                 if (!map[manager]) {
@@ -319,14 +324,59 @@ activities
                         newNonBuyingConvertedAmount: 0,
                         newExistingActiveConvertedAmount: 0,
                         newExistingInactiveConvertedAmount: 0,
-                        tsmAckTotal: 0,
-                        tsmAckCount: 0,
-                        tsmHandlingTotal: 0,
-                        tsmHandlingCount: 0,
-                        tsmNonQuotationTotal: 0,
-                        tsmNonQuotationCount: 0,
+                        totalResponseSeconds: 0,
+                        responseCount: 0,
+
+                        totalHandlingSeconds: 0,
+                        handlingCount: 0,
+
+                        totalNonQuotationSeconds: 0,
+                        nonQuotationCount: 0,
                     };
                 }
+
+                // TSA RESPONSE TIME
+                const responseSeconds = computeResponseSeconds(
+                    a.ticket_endorsed,
+                    a.tsa_acknowledge_date
+                );
+
+                if (responseSeconds !== null) {
+                    map[manager].totalResponseSeconds += responseSeconds;
+                    map[manager].responseCount++;
+                }
+
+                // TSA HANDLING TIME (Quotation only)
+                if (status === "quotation for approval") {
+                    const handlingSeconds = computeHandlingSeconds(
+                        a.tsa_acknowledge_date,
+                        a.tsa_handling_time
+                    );
+
+                    if (handlingSeconds !== null) {
+                        map[manager].totalHandlingSeconds += handlingSeconds;
+                        map[manager].handlingCount++;
+                    }
+                }
+
+                // TSA NON-QUOTATION TIME
+                const nonQuotationSeconds = computeNonQuotationSeconds(
+                    a.ticket_received,
+                    a.tsa_handling_time,
+                    a.remarks
+                );
+
+                if (nonQuotationSeconds !== null) {
+                    map[manager].totalNonQuotationSeconds += nonQuotationSeconds;
+                    map[manager].nonQuotationCount++;
+                }
+
+                const soAmount = Number(a.so_amount ?? 0);
+                const traffic = a.traffic?.toLowerCase() ?? "";
+                const qtySold = Number(a.qty_sold ?? 0);
+                const customerStatus = a.customer_status?.toLowerCase() ?? "";
+
+
 
                 // Counts
                 if (traffic === "sales") map[manager].salesCount += 1;
@@ -356,21 +406,6 @@ activities
                 if (customerStatus === "existing inactive" && status === "converted into sales")
                     map[manager].newExistingInactiveConvertedAmount += soAmount;
 
-                // KPI accumulation
-                if (ackTime > 0) {
-                    map[manager].tsmAckTotal += ackTime;
-                    map[manager].tsmAckCount += 1;
-                }
-
-                if (handlingTime > 0) {
-                    map[manager].tsmHandlingTotal += handlingTime;
-                    map[manager].tsmHandlingCount += 1;
-                }
-
-                if (nonQuotationTime > 0) {
-                    map[manager].tsmNonQuotationTotal += nonQuotationTime;
-                    map[manager].tsmNonQuotationCount += 1;
-                }
             });
 
         return Object.values(map);
@@ -607,28 +642,30 @@ activities
                                         newNonBuyingConvertedAmount,
                                         newExistingActiveConvertedAmount,
                                         newExistingInactiveConvertedAmount,
-                                        tsmAckTotal,
-                                        tsmAckCount,
-                                        tsmHandlingTotal,
-                                        tsmHandlingCount,
-                                        tsmNonQuotationTotal,
-                                        tsmNonQuotationCount,
+                                        totalResponseSeconds,
+                                        responseCount,
+                                        totalHandlingSeconds,
+                                        handlingCount,
+                                        totalNonQuotationSeconds,
+                                        nonQuotationCount,
                                     }, index) => {
                                         const managerDetails = managers.find((a) => a.ReferenceID === manager);
                                         const fullName = managerDetails ? `${managerDetails.Firstname} ${managerDetails.Lastname}` : "(Unknown Agent)";
                                         const rank = index + 1;
                                         const avgAck =
-                                            tsmAckCount === 0 ? "-" : Math.round(tsmAckTotal / tsmAckCount);
+                                            responseCount === 0
+                                                ? "-"
+                                                : Math.floor(totalResponseSeconds / responseCount / 60);
 
                                         const avgHandling =
-                                            tsmHandlingCount === 0
+                                            handlingCount === 0
                                                 ? "-"
-                                                : Math.round(tsmHandlingTotal / tsmHandlingCount);
+                                                : Math.floor(totalHandlingSeconds / handlingCount / 60);
 
                                         const avgNonQuotation =
-                                            tsmNonQuotationCount === 0
+                                            nonQuotationCount === 0
                                                 ? "-"
-                                                : Math.round(tsmNonQuotationTotal / tsmNonQuotationCount);
+                                                : Math.floor(totalNonQuotationSeconds / nonQuotationCount / 60);
 
                                         return (
                                             <TableRow key={manager} className="hover:bg-muted/50">
