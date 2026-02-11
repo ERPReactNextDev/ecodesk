@@ -81,7 +81,8 @@ function computeTsaResponseTimeAligned(a: Activity): number | null {
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   if (end < start) return null;
 
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
+  // return MINUTES (same unit as sheet-ticket)
+  return Math.floor((end.getTime() - start.getTime()) / 60000);
 }
 
 // SAME LOGIC AS SHEET-TICKET DISPLAY:
@@ -95,8 +96,10 @@ function computeTsaHandlingTimeAligned(a: Activity): number | null {
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   if (end < start) return null;
 
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
+  // minutes to match sheet-ticket.tsx
+  return Math.floor((end.getTime() - start.getTime()) / 60000);
 }
+
 
 function getBaseHandlingTime(a: Activity): number | null {
   const tsaHT = computeTsaHandlingTimeAligned(a);
@@ -109,13 +112,27 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
   const base = getBaseHandlingTime(a);
   if (base === null) return null;
 
-  const r = normalizeRemarks(a.remarks);
+  const list = [
+    "no stocks / insufficient stocks",
+    "customer request cancellation",
+    "insufficient stocks",
+    "unable to contact customer",
+    "item not carried",
+    "waiting for client confirmation",
+    "customer requested cancellation",
+    "accreditation/partnership",
+    "no response from client",
+    "assisted",
+    "for site visit",
+    "non standard item",
+    "po received",
+    "pending quotation",
+    "for occular inspection",
+  ];
 
-  if (r === "quotation for approval" || r === "sold" || r === "for spf") {
-    return null;
-  }
+  const remarks = normalizeRemarks(a.remarks);
 
-  return base;
+  return list.includes(remarks) ? base : null;
 }
 
 function computeQuotationHTAligned(a: Activity): number | null {
@@ -144,12 +161,9 @@ function computeSpfHTAligned(a: Activity): number | null {
   return null;
 }
 
-function formatDuration(seconds: number): string {
-  // round to nearest minute
-  const totalMinutes = Math.round(seconds / 60);
-
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
+function formatMinutesToHHMM(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
 
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
 }
@@ -710,7 +724,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                         <TableCell className="text-right">
                           {r.tsaResponseCount === 0
                             ? "-"
-                            : formatDuration(
+                            : formatMinutesToHHMM(
                                 Math.floor(
                                   r.tsaResponseTotal / r.tsaResponseCount,
                                 ),
@@ -720,7 +734,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                         <TableCell className="text-right">
                           {r.tsaHandlingCount === 0
                             ? "-"
-                            : formatDuration(
+                            : formatMinutesToHHMM(
                                 Math.floor(
                                   r.tsaHandlingTotal / r.tsaHandlingCount,
                                 ),
@@ -730,7 +744,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                         <TableCell className="text-right">
                           {r.nonQuotationCount === 0
                             ? "-"
-                            : formatDuration(
+                            : formatMinutesToHHMM(
                                 Math.floor(
                                   r.nonQuotationTotal / r.nonQuotationCount,
                                 ),
@@ -739,7 +753,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                         <TableCell className="text-right">
                           {r.quotationCount === 0
                             ? "-"
-                            : formatDuration(
+                            : formatMinutesToHHMM(
                                 Math.floor(r.quotationTotal / r.quotationCount),
                               )}
                         </TableCell>
@@ -747,7 +761,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                         <TableCell className="text-right">
                           {r.spfCount === 0
                             ? "-"
-                            : formatDuration(
+                            : formatMinutesToHHMM(
                                 Math.floor(r.spfTotal / r.spfCount),
                               )}
                         </TableCell>
