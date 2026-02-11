@@ -88,6 +88,8 @@ function computeTsaResponseTimeAligned(a: Activity): number | null {
 // SAME LOGIC AS SHEET-TICKET DISPLAY:
 // TSA Handling = TSA Handling Time – Ticket Received
 function computeTsaHandlingTimeAligned(a: Activity): number | null {
+  if (isExcludedWrapUp(a.wrap_up)) return null;
+
   if (!a.ticket_received || !a.tsa_handling_time) return null;
 
   const start = new Date(a.ticket_received);
@@ -362,7 +364,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
       activities
         .filter(
           (a) =>
-            isDateInRange(a.ticket_received, dateCreatedFilterRange) && a.agent,
+              isDateInRange(a.date_created, dateCreatedFilterRange) && a.agent,
         )
         .forEach((a) => {
           const agent = a.agent!;

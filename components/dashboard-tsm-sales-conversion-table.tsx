@@ -203,7 +203,23 @@ const AgentSalesTableCard = forwardRef<
     return remarks?.trim().toLowerCase() ?? "";
   }
 
+  const EXCLUDED_WRAPUPS = [
+    "customerfeedback/recommendation",
+    "job inquiry",
+    "job applicants",
+    "supplier/vendor product offer",
+    "internal whistle blower",
+    "threats / extortion / intimidation",
+    "prank call",
+  ];
+
+  function isExcludedWrapUp(wrapUp?: string): boolean {
+    return EXCLUDED_WRAPUPS.includes((wrapUp || "").trim().toLowerCase());
+  }
+
   function computeTsaHandlingTimeAligned(a: Activity): number | null {
+    if (isExcludedWrapUp(a.wrap_up)) return null;
+
     if (!a.ticket_received || !a.tsa_handling_time) return null;
 
     const start = new Date(a.ticket_received);
@@ -223,6 +239,8 @@ const AgentSalesTableCard = forwardRef<
   }
 
   function computeNonQuotationHTAligned(a: Activity): number | null {
+    if (isExcludedWrapUp(a.wrap_up)) return null;
+
     const base = getBaseHandlingTime(a);
     if (base === null) return null;
 
@@ -263,6 +281,8 @@ const AgentSalesTableCard = forwardRef<
   }
 
   function computeTsaResponseTimeAligned(a: Activity): number | null {
+    if (isExcludedWrapUp(a.wrap_up)) return null;
+
     if (!a.tsa_acknowledge_date || !a.ticket_endorsed) return null;
 
     const ack = new Date(a.tsa_acknowledge_date);
@@ -276,6 +296,8 @@ const AgentSalesTableCard = forwardRef<
   }
 
   function computeSpfHTAligned(a: Activity): number | null {
+    if (isExcludedWrapUp(a.wrap_up)) return null;
+
     const base = getBaseHandlingTime(a);
     if (base === null) return null;
 
@@ -324,7 +346,7 @@ const AgentSalesTableCard = forwardRef<
     activities
       .filter(
         (a) =>
-          isDateInRange(a.ticket_received, dateCreatedFilterRange) &&
+          isDateInRange(a.date_created, dateCreatedFilterRange) &&
           a.manager &&
           a.manager.trim() !== "",
       )
@@ -885,8 +907,6 @@ const AgentSalesTableCard = forwardRef<
                           <TableCell className="text-right font-mono">
                             {avgSpf === "-" ? "-" : formatHHMMSS(avgSpf)}
                           </TableCell>
-
-
                         </TableRow>
                       );
                     },
