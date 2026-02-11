@@ -222,32 +222,32 @@ const AgentSalesTableCard = forwardRef<
     return null;
   }
 
-function computeNonQuotationHTAligned(a: Activity): number | null {
-  const base = getBaseHandlingTime(a);
-  if (base === null) return null;
+  function computeNonQuotationHTAligned(a: Activity): number | null {
+    const base = getBaseHandlingTime(a);
+    if (base === null) return null;
 
-  const list = [
-    "NO STOCKS / INSUFFICIENT STOCKS",
-    "CUSTOMER REQUEST CANCELLATION",
-    "INSUFFICIENT STOCKS",
-    "UNABLE TO CONTACT CUSTOMER",
-    "ITEM NOT CARRIED",
-    "WAITING FOR CLIENT CONFIRMATION",
-    "CUSTOMER REQUESTED CANCELLATION",
-    "ACCREDITATION/PARTNERSHIP",
-    "NO RESPONSE FROM CLIENT",
-    "ASSISTED",
-    "FOR SITE VISIT",
-    "NON STANDARD ITEM",
-    "PO RECEIVED",
-    "PENDING QUOTATION",
-    "FOR OCCULAR INSPECTION",
-  ];
+    const list = [
+      "NO STOCKS / INSUFFICIENT STOCKS",
+      "CUSTOMER REQUEST CANCELLATION",
+      "INSUFFICIENT STOCKS",
+      "UNABLE TO CONTACT CUSTOMER",
+      "ITEM NOT CARRIED",
+      "WAITING FOR CLIENT CONFIRMATION",
+      "CUSTOMER REQUESTED CANCELLATION",
+      "ACCREDITATION/PARTNERSHIP",
+      "NO RESPONSE FROM CLIENT",
+      "ASSISTED",
+      "FOR SITE VISIT",
+      "NON STANDARD ITEM",
+      "PO RECEIVED",
+      "PENDING QUOTATION",
+      "FOR OCCULAR INSPECTION",
+    ];
 
-  const remarks = (a.remarks || "").toUpperCase();
+    const remarks = (a.remarks || "").toUpperCase();
 
-  return list.includes(remarks) ? base : null;
-}
+    return list.includes(remarks) ? base : null;
+  }
 
   function computeQuotationHTAligned(a: Activity): number | null {
     const base = getBaseHandlingTime(a);
@@ -260,6 +260,19 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
     }
 
     return null;
+  }
+
+  function computeTsaResponseTimeAligned(a: Activity): number | null {
+    if (!a.tsa_acknowledge_date || !a.ticket_endorsed) return null;
+
+    const ack = new Date(a.tsa_acknowledge_date);
+    const endorsed = new Date(a.ticket_endorsed);
+
+    if (isNaN(ack.getTime()) || isNaN(endorsed.getTime())) return null;
+
+    if (ack < endorsed) return null;
+
+    return Math.floor((ack.getTime() - endorsed.getTime()) / 60000);
   }
 
   function computeSpfHTAligned(a: Activity): number | null {
@@ -293,11 +306,14 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
         newNonBuyingConvertedAmount: number;
         newExistingActiveConvertedAmount: number;
         newExistingInactiveConvertedAmount: number;
-        nonQuotationTotal: number;
-        nonQuotationCount: number;
+        tsaResponseTotal: number;
+        tsaResponseCount: number;
 
-        quotationTotal: number;
-        quotationCount: number;
+        nonRfQTotal: number;
+        nonRfQCount: number;
+
+        rfqTotal: number;
+        rfqCount: number;
 
         spfTotal: number;
         spfCount: number;
@@ -326,6 +342,7 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
 
         const qHT = computeQuotationHTAligned(a);
 
+        const tsaResponse = computeTsaResponseTimeAligned(a);
         const spfHT = computeSpfHTAligned(a);
 
         const manager = a.manager!.trim();
@@ -351,11 +368,14 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
             newNonBuyingConvertedAmount: 0,
             newExistingActiveConvertedAmount: 0,
             newExistingInactiveConvertedAmount: 0,
-            nonQuotationTotal: 0,
-            nonQuotationCount: 0,
+            tsaResponseTotal: 0,
+            tsaResponseCount: 0,
 
-            quotationTotal: 0,
-            quotationCount: 0,
+            nonRfQTotal: 0,
+            nonRfQCount: 0,
+
+            rfqTotal: 0,
+            rfqCount: 0,
 
             spfTotal: 0,
             spfCount: 0,
@@ -424,14 +444,19 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
         )
           map[manager].newExistingInactiveConvertedAmount += soAmount;
 
+        if (tsaResponse !== null) {
+          map[manager].tsaResponseTotal += tsaResponse;
+          map[manager].tsaResponseCount++;
+        }
+
         if (nonQ !== null) {
-          map[manager].nonQuotationTotal += nonQ;
-          map[manager].nonQuotationCount++;
+          map[manager].nonRfQTotal += nonQ;
+          map[manager].nonRfQCount++;
         }
 
         if (qHT !== null) {
-          map[manager].quotationTotal += qHT;
-          map[manager].quotationCount++;
+          map[manager].rfqTotal += qHT;
+          map[manager].rfqCount++;
         }
 
         if (spfHT !== null) {
@@ -682,8 +707,11 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
                   <TableHead className="text-right">
                     Existing Inactive (Converted To Sales)
                   </TableHead>
-                  <TableHead className="text-right">Non-Quotation HT</TableHead>
-                  <TableHead className="text-right">Quotation HT</TableHead>
+                  <TableHead className="text-right">
+                    TSAs RESPONSE TIME
+                  </TableHead>
+                  <TableHead className="text-right">NON RFQ HT</TableHead>
+                  <TableHead className="text-right">RFQ HT</TableHead>
                   <TableHead className="text-right">SPF HT</TableHead>
                 </TableRow>
               </TableHeader>
@@ -709,11 +737,14 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
                         newExistingActiveConvertedAmount,
                         newExistingInactiveConvertedAmount,
 
-                        nonQuotationTotal,
-                        nonQuotationCount,
+                        tsaResponseTotal,
+                        tsaResponseCount,
 
-                        quotationTotal,
-                        quotationCount,
+                        nonRfQTotal,
+                        nonRfQCount,
+
+                        rfqTotal,
+                        rfqCount,
 
                         spfTotal,
                         spfCount,
@@ -727,15 +758,18 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
                         ? `${managerDetails.Firstname} ${managerDetails.Lastname}`
                         : "(Unknown Agent)";
                       const rank = index + 1;
-                      const avgNonQuotation =
-                        nonQuotationCount === 0
+                      const avgTsaResponse =
+                        tsaResponseCount === 0
                           ? "-"
-                          : Math.round(nonQuotationTotal / nonQuotationCount);
+                          : Math.round(tsaResponseTotal / tsaResponseCount);
 
-                      const avgQuotation =
-                        quotationCount === 0
+                      const avgNonRfQ =
+                        nonRfQCount === 0
                           ? "-"
-                          : Math.round(quotationTotal / quotationCount);
+                          : Math.round(nonRfQTotal / nonRfQCount);
+
+                      const avgRfQ =
+                        rfqCount === 0 ? "-" : Math.round(rfqTotal / rfqCount);
 
                       const avgSpf =
                         spfCount === 0 ? "-" : Math.round(spfTotal / spfCount);
@@ -835,20 +869,24 @@ function computeNonQuotationHTAligned(a: Activity): number | null {
                             )}
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                            {avgNonQuotation === "-"
+                            {avgTsaResponse === "-"
                               ? "-"
-                              : formatHHMMSS(avgNonQuotation)}
+                              : formatHHMMSS(avgTsaResponse)}
                           </TableCell>
 
                           <TableCell className="text-right font-mono">
-                            {avgQuotation === "-"
-                              ? "-"
-                              : formatHHMMSS(avgQuotation)}
+                            {avgNonRfQ === "-" ? "-" : formatHHMMSS(avgNonRfQ)}
+                          </TableCell>
+
+                          <TableCell className="text-right font-mono">
+                            {avgRfQ === "-" ? "-" : formatHHMMSS(avgRfQ)}
                           </TableCell>
 
                           <TableCell className="text-right font-mono">
                             {avgSpf === "-" ? "-" : formatHHMMSS(avgSpf)}
                           </TableCell>
+
+
                         </TableRow>
                       );
                     },
