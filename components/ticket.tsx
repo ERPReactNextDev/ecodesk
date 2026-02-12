@@ -1259,7 +1259,10 @@ export const Ticket: React.FC<TicketProps> = ({
                         address: item.address,
                         account_reference_number: item.account_reference_number,
                       }}
-                      onCreated={() => fetchActivities()}
+                      onCreated={async () => {
+                        await fetchActivities();
+                        await fetchCompanies(); // 🔥 refresh left Companies panel
+                      }}
                     />
 
                     {/* CLOSE */}
