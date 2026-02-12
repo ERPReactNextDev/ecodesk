@@ -238,9 +238,10 @@ export function UpdateTicketDialog({
   const [ticketReferenceNumber, setTicketReferenceNumber] = useState("");
 
   const [companyName, setCompanyName] = useState("");
-  const [contactPerson, setContactPerson] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
-  const [emailAddress, setEmailAddress] = useState("");
+  const [contactPersons, setContactPersons] = useState<string[]>([""]);
+  const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
+  const [emailAddresses, setEmailAddresses] = useState<string[]>([""]);
+
   const [clientSegment, setClientSegment] = useState("");
   const [trafficState, setTraffic] = useState("");
   const [sourceCompanyState, setSourceCompany] = useState("");
@@ -336,9 +337,9 @@ export function UpdateTicketDialog({
     setHrAcknowledgeDate(toDatetimeLocal(hr_acknowledge_date));
 
     setCompanyName(company_name || "");
-    setContactPerson(contact_person || "");
-    setContactNumber(contact_number || "");
-    setEmailAddress(email_address || "");
+    setContactPersons(contact_person ? contact_person.split(" / ") : [""]);
+    setContactNumbers(contact_number ? contact_number.split(" / ") : [""]);
+    setEmailAddresses(email_address ? email_address.split(" / ") : [""]);
 
     setDateCreated(toDatetimeLocal(date_created));
   }, [
@@ -417,9 +418,18 @@ export function UpdateTicketDialog({
       ticket_endorsed: ticketEndorsedState,
 
       company_name: companyName,
-      contact_number: contactNumber,
-      contact_person: contactPerson,
-      email_address: emailAddress,
+      contact_number: contactNumbers
+        .map((n) => n.trim())
+        .filter(Boolean)
+        .join(" / "),
+      contact_person: contactPersons
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .join(" / "),
+      email_address: emailAddresses
+        .map((e) => e.trim())
+        .filter(Boolean)
+        .join(" / "),
 
       // ✅ ADD THESE
       tsm_acknowledge_date: tsmAcknowledgeDate,
@@ -706,7 +716,9 @@ export function UpdateTicketDialog({
                       <Input
                         type="text"
                         value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
+                        onChange={(e) =>
+                          setCompanyName(e.target.value.toUpperCase())
+                        }
                         className="w-full"
                       />
                     </FieldSet>
@@ -714,15 +726,51 @@ export function UpdateTicketDialog({
 
                   <FieldGroup>
                     <FieldSet className="mt-4">
-                      <FieldLabel className="font-semibold text-sm">
-                        Contact Person
-                      </FieldLabel>
-                      <Input
-                        type="text"
-                        value={contactPerson}
-                        onChange={(e) => setContactPerson(e.target.value)}
-                        className="w-full"
-                      />
+                      <FieldGroup>
+                        <FieldSet className="mt-4">
+                          <FieldLabel className="font-semibold text-sm">
+                            Contact Person
+                          </FieldLabel>
+
+                          <div className="space-y-2">
+                            {contactPersons.map((person, idx) => (
+                              <div key={idx} className="flex gap-2">
+                                <Input
+                                  value={person}
+                                  onChange={(e) => {
+                                    const updated = [...contactPersons];
+                                    updated[idx] = e.target.value;
+                                    setContactPersons(updated);
+                                  }}
+                                  className="flex-1"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (contactPersons.length === 1) return;
+                                    const updated = [...contactPersons];
+                                    updated.splice(idx, 1);
+                                    setContactPersons(updated);
+                                  }}
+                                >
+                                  −
+                                </Button>
+                              </div>
+                            ))}
+
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() =>
+                                setContactPersons((prev) => [...prev, ""])
+                              }
+                            >
+                              + Add another person
+                            </Button>
+                          </div>
+                        </FieldSet>
+                      </FieldGroup>
                     </FieldSet>
                   </FieldGroup>
 
@@ -731,12 +779,44 @@ export function UpdateTicketDialog({
                       <FieldLabel className="font-semibold text-sm">
                         Contact Number
                       </FieldLabel>
-                      <Input
-                        type="text"
-                        value={contactNumber}
-                        onChange={(e) => setContactNumber(e.target.value)}
-                        className="w-full"
-                      />
+
+                      <div className="space-y-2">
+                        {contactNumbers.map((num, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <Input
+                              value={num}
+                              onChange={(e) => {
+                                const updated = [...contactNumbers];
+                                updated[idx] = e.target.value;
+                                setContactNumbers(updated);
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (contactNumbers.length === 1) return;
+                                const updated = [...contactNumbers];
+                                updated.splice(idx, 1);
+                                setContactNumbers(updated);
+                              }}
+                            >
+                              −
+                            </Button>
+                          </div>
+                        ))}
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() =>
+                            setContactNumbers((prev) => [...prev, ""])
+                          }
+                        >
+                          + Add another number
+                        </Button>
+                      </div>
                     </FieldSet>
                   </FieldGroup>
 
@@ -745,12 +825,45 @@ export function UpdateTicketDialog({
                       <FieldLabel className="font-semibold text-sm">
                         Email Address
                       </FieldLabel>
-                      <Input
-                        type="text"
-                        value={emailAddress}
-                        onChange={(e) => setEmailAddress(e.target.value)}
-                        className="w-full"
-                      />
+
+                      <div className="space-y-2">
+                        {emailAddresses.map((email, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <Input
+                              type="email"
+                              value={email}
+                              onChange={(e) => {
+                                const updated = [...emailAddresses];
+                                updated[idx] = e.target.value;
+                                setEmailAddresses(updated);
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (emailAddresses.length === 1) return;
+                                const updated = [...emailAddresses];
+                                updated.splice(idx, 1);
+                                setEmailAddresses(updated);
+                              }}
+                            >
+                              −
+                            </Button>
+                          </div>
+                        ))}
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() =>
+                            setEmailAddresses((prev) => [...prev, ""])
+                          }
+                        >
+                          + Add another email
+                        </Button>
+                      </div>
                     </FieldSet>
                   </FieldGroup>
 
