@@ -21,7 +21,6 @@ import {
   Item,
   ItemActions,
   ItemContent,
-  ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
 
@@ -37,8 +36,8 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
 }
 
 interface Activity {
-  source?: string;
-  date_created?: string;
+  source?: string | null;
+  date_created?: string | null;
 }
 
 interface SourceListProps {
@@ -46,9 +45,6 @@ interface SourceListProps {
   loading: boolean;
   error: string | null;
   dateCreatedFilterRange: DateRange | undefined;
-  setDateCreatedFilterRangeAction?: React.Dispatch<
-    React.SetStateAction<DateRange | undefined>
-  >; // optional if not used here
 }
 
 export interface SourceCardRef {
@@ -60,8 +56,8 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
     const [showTooltip, setShowTooltip] = useState(false);
 
     const isDateInRange = (
-      dateStr: string | undefined,
-      range: DateRange | undefined,
+      dateStr: string | undefined | null,
+      range: DateRange | undefined
     ) => {
       if (!range) return true;
       if (!dateStr) return false;
@@ -74,6 +70,7 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
       const fromDate = from
         ? new Date(from.getFullYear(), from.getMonth(), from.getDate())
         : null;
+
       const toDate = to
         ? new Date(
             to.getFullYear(),
@@ -82,7 +79,7 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
             23,
             59,
             59,
-            999,
+            999
           )
         : null;
 
@@ -93,8 +90,8 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
     };
 
     const filteredActivities = useMemo(() => {
-      return activities.filter((a) =>
-        isDateInRange(a.date_created, dateCreatedFilterRange),
+      return (activities || []).filter((a) =>
+        isDateInRange(a?.date_created, dateCreatedFilterRange)
       );
     }, [activities, dateCreatedFilterRange]);
 
@@ -102,10 +99,15 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
       const counts: Record<string, number> = {};
 
       filteredActivities.forEach((a) => {
-        if (a.source && a.source.trim() !== "" && a.source.trim() !== "-") {
-          const src = a.source.trim();
-          counts[src] = (counts[src] || 0) + 1;
-        }
+        const rawSource = a?.source;
+
+        if (!rawSource) return;
+
+        const src = rawSource.toString().trim();
+
+        if (src === "" || src === "-") return;
+
+        counts[src] = (counts[src] || 0) + 1;
       });
 
       return Object.entries(counts)
@@ -114,15 +116,16 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
     }, [filteredActivities]);
 
     const totalSourcesCount = useMemo(() => {
-      return filteredActivities.filter(
-        (a) => a.source && a.source.trim() !== "" && a.source.trim() !== "-",
-      ).length;
+      return filteredActivities.filter((a) => {
+        const s = a?.source?.toString().trim();
+        return s && s !== "-";
+      }).length;
     }, [filteredActivities]);
 
-    // Expose downloadCSV to parent via ref
     useImperativeHandle(ref, () => ({
       downloadCSV() {
         const header = ["Source", "Count"];
+
         const rows = sourceCountsArray.map(({ source, count }) => [
           source,
           count.toString(),
@@ -146,13 +149,14 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
       <Card>
         <CardHeader className="flex justify-between items-center">
           <CardTitle>Where Customer Find Us</CardTitle>
+
           <div
             className="relative cursor-pointer text-muted-foreground hover:text-foreground"
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
-            aria-label="Source usage explanation"
           >
             <Info size={18} />
+
             {showTooltip && (
               <TooltipInfo>
                 This list counts all source activities within the selected date
@@ -165,10 +169,13 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
 
         <CardContent className="flex-grow overflow-auto">
           {loading && <p>Loading sources...</p>}
+
           {error && <p className="text-destructive">{error}</p>}
+
           {!loading && !error && sourceCountsArray.length === 0 && (
             <p>No source data available</p>
           )}
+
           {!loading && !error && sourceCountsArray.length > 0 && (
             <div className="flex flex-col gap-4">
               {sourceCountsArray.map(({ source, count }) => (
@@ -176,6 +183,7 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
                   <ItemContent>
                     <ItemTitle>{source}</ItemTitle>
                   </ItemContent>
+
                   <ItemActions>
                     <Badge
                       variant="outline"
@@ -189,7 +197,9 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
             </div>
           )}
         </CardContent>
+
         <Separator />
+
         <CardFooter className="flex justify-end items-center text-sm">
           <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
             Total: {totalSourcesCount}
@@ -197,7 +207,7 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
         </CardFooter>
       </Card>
     );
-  },
+  }
 );
 
 export default SourceCard;
