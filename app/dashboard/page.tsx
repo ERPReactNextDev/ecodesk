@@ -536,7 +536,6 @@ function DashboardContent() {
               loading={loadingActivities}
               error={errorActivities}
               dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
           </div>
 
