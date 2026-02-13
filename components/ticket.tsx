@@ -349,26 +349,28 @@ export const Ticket: React.FC<TicketProps> = ({
     };
   }, [fetchActivities]);
 
-  const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
-    if (!range) return true;
+const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
+  if (!range) return true;
 
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return false;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
 
-    const { from, to } = range;
+  const { from, to } = range;
 
-    const fromDate = from
-      ? new Date(from.getFullYear(), from.getMonth(), from.getDate())
-      : null;
-    const toDate = to
-      ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
-      : null;
+  const fromDate = from
+    ? new Date(from.getFullYear(), from.getMonth(), from.getDate(), 0, 0, 0, 0)
+    : null;
 
-    if (fromDate && date < fromDate) return false;
-    if (toDate && date > toDate) return false;
+  const toDate = to
+    ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
+    : null;
 
-    return true;
-  };
+  // ✅ include both endpoints
+  if (fromDate && date < fromDate) return false;
+  if (toDate && date > toDate) return false;
+
+  return true;
+};
 
   const allowedStatuses = [
     "On-Progress",
