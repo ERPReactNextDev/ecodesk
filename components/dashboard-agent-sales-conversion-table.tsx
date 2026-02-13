@@ -72,7 +72,7 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef {}
+export interface AgentSalesConversionCardRef { }
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -295,24 +295,29 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
         const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
         // PO RECEIVED rule
-        if (remarks === "po received") {
+        // 🔒 Sales / Non-Sales counting based on wrap_up
+        const wrapUpLower = (a.wrap_up || "").toLowerCase().trim();
+        const remarksLower = (a.remarks || "").toLowerCase().trim();
+
+        if (remarksLower === "po received") {
+          // PO received is always non-sales
           map[referenceid].nonSalesCount += 1;
-        }
-        // 2️⃣ Customer Inquiry Non Sales always NON-SALES
-        else if (
-          normalizedWrapUp === "customer inquiry non-sales" ||
-          normalizedWrapUp === "customer inquiry non sales"
+        } else if (
+          wrapUpLower === "customer inquiry non-sales" ||
+          wrapUpLower === "customer inquiry non sales"
         ) {
           map[referenceid].nonSalesCount += 1;
-        }
-        // 3️⃣ Normal Traffic Rules
-        else if (normalizedTraffic === "sales") {
+        } else if (
+          wrapUpLower === "customer order" ||
+          wrapUpLower === "customer inquiry sales" ||
+          wrapUpLower === "follow up sales"
+        ) {
           map[referenceid].salesCount += 1;
-        }
-        // 4️⃣ Anything else = Non-Sales fallback
-        else {
+        } else {
+          // Anything else not listed above = Non-Sales fallback
           map[referenceid].nonSalesCount += 1;
         }
+
 
         // Always count qty sold whether SO or not
         map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
@@ -500,7 +505,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     return (
                       <TableRow key={row.referenceid}>
                         <TableCell className="text-center">
-                          <Badge>{index + 1}</Badge>
+                          <Badge className="h-10 min-w-10">{index + 1}</Badge>
                         </TableCell>
 
                         <TableCell>{fullName}</TableCell>
@@ -528,9 +533,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                           {row.salesCount === 0
                             ? "0.00%"
                             : (
-                                (row.convertedCount / row.salesCount) *
-                                100
-                              ).toFixed(2) + "%"}
+                              (row.convertedCount / row.salesCount) *
+                              100
+                            ).toFixed(2) + "%"}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.convertedCount === 0
@@ -564,8 +569,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   })}
               </TableBody>
 
-              
-              
+
+
             </Table>
           </div>
         )}

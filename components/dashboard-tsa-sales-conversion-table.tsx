@@ -33,19 +33,25 @@ import {
 } from "@/components/ui/popover";
 
 /* ===================== HELPERS ===================== */
-function isValidSalesInquiry(a: Activity) {
-  return (
-    a.traffic?.toLowerCase() === "sales" &&
-    normalizeRemarks(a.remarks) !== "po received"
-  );
+const SALES_WRAP_UPS = [
+  "customer order",
+  "customer inquiry sales",
+  "follow up sales",
+];
+
+function isSalesWrapUp(a: Activity): boolean {
+  const wrapUp = (a.wrap_up || "").toLowerCase().trim();
+  return SALES_WRAP_UPS.includes(wrapUp);
 }
 
-function isConvertedSale(a: Activity) {
-  return (
-    a.traffic?.toLowerCase() === "sales" &&
-    a.status?.toLowerCase() === "converted into sales" &&
-    normalizeRemarks(a.remarks) !== "po received"
-  );
+function isValidSalesInquiry(a: Activity): boolean {
+  if (normalizeRemarks(a.remarks) === "po received") return false;
+  return isSalesWrapUp(a);
+}
+
+function isConvertedSale(a: Activity): boolean {
+  if (!isSalesWrapUp(a)) return false;
+  return a.status?.toLowerCase() === "converted into sales";
 }
 
 function normalizeRemarks(remarks?: string): string {
@@ -298,24 +304,24 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
 
       const from = range.from
         ? new Date(
-            range.from.getFullYear(),
-            range.from.getMonth(),
-            range.from.getDate(),
-            0,
-            0,
-            0,
-          )
+          range.from.getFullYear(),
+          range.from.getMonth(),
+          range.from.getDate(),
+          0,
+          0,
+          0,
+        )
         : null;
 
       const to = range.to
         ? new Date(
-            range.to.getFullYear(),
-            range.to.getMonth(),
-            range.to.getDate(),
-            23,
-            59,
-            59,
-          )
+          range.to.getFullYear(),
+          range.to.getMonth(),
+          range.to.getDate(),
+          23,
+          59,
+          59,
+        )
         : null;
 
       if (from && date < from) return false;
@@ -445,18 +451,19 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
             return;
           }
 
-          // SALES / NON-SALES COUNT
-          const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
-          const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
+          // SALES / NON-SALES COUNT (WRAP_UP BASED ONLY)
+          const wrapUp = (a.wrap_up || "").toLowerCase().trim();
 
-          if (
-            normalizedWrapUp === "customer inquiry non-sales" ||
-            normalizedWrapUp === "customer inquiry non sales"
-          ) {
+          // PO RECEIVED → ALWAYS NON-SALES
+          if (normalizeRemarks(a.remarks) === "po received") {
             map[agent].nonSalesCount += 1;
-          } else if (isValidSalesInquiry(a)) {
+          }
+          // SALES
+          else if (isSalesWrapUp(a)) {
             map[agent].salesCount += 1;
-          } else {
+          }
+          // EVERYTHING ELSE → NON-SALES
+          else {
             map[agent].nonSalesCount += 1;
           }
 
@@ -531,7 +538,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
     }, [activities, dateCreatedFilterRange]);
 
     useImperativeHandle(ref, () => ({
-      downloadCSV() {},
+      downloadCSV() { },
     }));
 
     /* ===================== RENDER ===================== */
@@ -766,8 +773,8 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                           {r.salesCount === 0
                             ? "-"
                             : ((r.convertedCount / r.salesCount) * 100).toFixed(
-                                2,
-                              ) + "%"}
+                              2,
+                            ) + "%"}
                         </TableCell>
 
                         <TableCell className="text-right">
@@ -809,45 +816,45 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                           {r.tsaResponseCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                                Math.floor(
-                                  r.tsaResponseTotal / r.tsaResponseCount,
-                                ),
-                              )}
+                              Math.floor(
+                                r.tsaResponseTotal / r.tsaResponseCount,
+                              ),
+                            )}
                         </TableCell>
 
                         <TableCell className="text-right">
                           {r.tsaHandlingCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                                Math.floor(
-                                  r.tsaHandlingTotal / r.tsaHandlingCount,
-                                ),
-                              )}
+                              Math.floor(
+                                r.tsaHandlingTotal / r.tsaHandlingCount,
+                              ),
+                            )}
                         </TableCell>
 
                         <TableCell className="text-right">
                           {r.nonQuotationCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                                Math.floor(
-                                  r.nonQuotationTotal / r.nonQuotationCount,
-                                ),
-                              )}
+                              Math.floor(
+                                r.nonQuotationTotal / r.nonQuotationCount,
+                              ),
+                            )}
                         </TableCell>
                         <TableCell className="text-right">
                           {r.quotationCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                                Math.floor(r.quotationTotal / r.quotationCount),
-                              )}
+                              Math.floor(r.quotationTotal / r.quotationCount),
+                            )}
                         </TableCell>
 
                         <TableCell className="text-right">
                           {r.spfCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                                Math.floor(r.spfTotal / r.spfCount),
-                              )}
+                              Math.floor(r.spfTotal / r.spfCount),
+                            )}
                         </TableCell>
                       </TableRow>
                     );

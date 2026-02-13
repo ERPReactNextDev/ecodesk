@@ -73,14 +73,14 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
 
       const toDate = to
         ? new Date(
-            to.getFullYear(),
-            to.getMonth(),
-            to.getDate(),
-            23,
-            59,
-            59,
-            999
-          )
+          to.getFullYear(),
+          to.getMonth(),
+          to.getDate(),
+          23,
+          59,
+          59,
+          999
+        )
         : null;
 
       if (fromDate && date < fromDate) return false;
@@ -101,11 +101,12 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
       filteredActivities.forEach((a) => {
         const rawSource = a?.source;
 
-        if (!rawSource) return;
+        // allow everything except truly empty / dash
+        if (rawSource === null || rawSource === undefined) return;
 
         const src = rawSource.toString().trim();
 
-        if (src === "" || src === "-") return;
+        if (src.length === 0 || src === "-") return;
 
         counts[src] = (counts[src] || 0) + 1;
       });
@@ -114,6 +115,7 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
         .map(([source, count]) => ({ source, count }))
         .sort((a, b) => b.count - a.count);
     }, [filteredActivities]);
+
 
     const totalSourcesCount = useMemo(() => {
       return filteredActivities.filter((a) => {
