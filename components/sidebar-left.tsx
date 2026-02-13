@@ -58,6 +58,7 @@ const data = {
   ],
   favorites: [
     { name: "Inquiries", url: "/inquiries", icon: BarChart2 },
+    { name: "Table Checker", url: "/checker", icon: BarChart2 },
     { name: "Customer Database", url: "/customer-database", icon: Phone },
     // { name: "Shopify Order", url: "/shopify-order", icon: Package },
   ],

@@ -349,26 +349,28 @@ export const Ticket: React.FC<TicketProps> = ({
     };
   }, [fetchActivities]);
 
-  const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
-    if (!range) return true;
+const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
+  if (!range) return true;
 
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return false;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
 
-    const { from, to } = range;
+  const { from, to } = range;
 
-    const fromDate = from
-      ? new Date(from.getFullYear(), from.getMonth(), from.getDate())
-      : null;
-    const toDate = to
-      ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
-      : null;
+  const fromDate = from
+    ? new Date(from.getFullYear(), from.getMonth(), from.getDate(), 0, 0, 0, 0)
+    : null;
 
-    if (fromDate && date < fromDate) return false;
-    if (toDate && date > toDate) return false;
+  const toDate = to
+    ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
+    : null;
 
-    return true;
-  };
+  // ✅ include both endpoints
+  if (fromDate && date < fromDate) return false;
+  if (toDate && date > toDate) return false;
+
+  return true;
+};
 
   const allowedStatuses = [
     "On-Progress",
@@ -916,26 +918,6 @@ export const Ticket: React.FC<TicketProps> = ({
     }
   }
 
-  // 🔥 TABLE DATE FORMATTER (1/16/25 8:00am)
-const formatTableDate = (value?: string) => {
-  if (!value) return "-";
-
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return "-";
-
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const year = d.getFullYear().toString().slice(-2);
-
-  let hours = d.getHours();
-  const minutes = d.getMinutes().toString().padStart(2, "0");
-  const ampm = hours >= 12 ? "pm" : "am";
-
-  hours = hours % 12;
-  hours = hours === 0 ? 12 : hours;
-
-  return `${month}/${day}/${year} ${hours}:${minutes}${ampm}`;
-};
   const getAgentNameByReferenceID = (
     refId: string | null | undefined,
   ): string => {
@@ -1074,152 +1056,6 @@ const formatTableDate = (value?: string) => {
           Total On-Progress Activities: {filteredAndSortedData.length}
         </div>
 
-{/* ================= FULL TABLE VIEW (STICKY COMPANY + HORIZONTAL SCROLL) ================= */}
-<div className="overflow-x-auto overflow-y-auto max-h-[400px] border rounded-lg mb-4 custom-scrollbar">
-
-  <table className="min-w-[2000px] text-xs border-collapse relative">
-
-    {/* ================= TABLE HEADER ================= */}
-    <thead className="bg-gray-100 sticky top-0 z-20">
-      <tr>
-        <th className="border px-2 py-2 bg-gray-100">#</th>
-
-        {/* 🔥 STICKY COMPANY COLUMN */}
-        <th className="border px-2 py-2 bg-gray-100 sticky left-0 z-30">
-          Company
-        </th>
-
-        <th className="border px-2 py-2 bg-gray-100">Contact Person</th>
-        <th className="border px-2 py-2 bg-gray-100">Contact Number</th>
-        <th className="border px-2 py-2 bg-gray-100">Email</th>
-        <th className="border px-2 py-2 bg-gray-100">Gender</th>
-        <th className="border px-2 py-2 bg-gray-100">Traffic</th>
-        <th className="border px-2 py-2 bg-gray-100">Source Company</th>
-        <th className="border px-2 py-2 bg-gray-100">Ticket Received</th>
-        <th className="border px-2 py-2 bg-gray-100">Ticket Endorsed</th>
-        <th className="border px-2 py-2 bg-gray-100">Channel</th>
-        <th className="border px-2 py-2 bg-gray-100">Source</th>
-        <th className="border px-2 py-2 bg-gray-100">Wrap Up</th>
-        <th className="border px-2 py-2 bg-gray-100">Customer Type</th>
-        <th className="border px-2 py-2 bg-gray-100">Customer Status</th>
-        <th className="border px-2 py-2 bg-gray-100">Remarks</th>
-        <th className="border px-2 py-2 bg-gray-100">Inquiry</th>
-        <th className="border px-2 py-2 bg-gray-100">Item Code</th>
-        <th className="border px-2 py-2 bg-gray-100">Item Description</th>
-        <th className="border px-2 py-2 bg-gray-100">PO Number</th>
-        <th className="border px-2 py-2 bg-gray-100">SO Number</th>
-        <th className="border px-2 py-2 bg-gray-100">SO Amount</th>
-        <th className="border px-2 py-2 bg-gray-100">Quotation #</th>
-        <th className="border px-2 py-2 bg-gray-100">Quotation Amount</th>
-        <th className="border px-2 py-2 bg-gray-100">Qty Sold</th>
-        <th className="border px-2 py-2 bg-gray-100">Department</th>
-        <th className="border px-2 py-2 bg-gray-100">Manager</th>
-        <th className="border px-2 py-2 bg-gray-100">Agent</th>
-        <th className="border px-2 py-2 bg-gray-100">Status</th>
-        <th className="border px-2 py-2 bg-gray-100">TSM Ack</th>
-        <th className="border px-2 py-2 bg-gray-100">TSM Handle</th>
-        <th className="border px-2 py-2 bg-gray-100">TSA Ack</th>
-        <th className="border px-2 py-2 bg-gray-100">TSA Handle</th>
-        <th className="border px-2 py-2 bg-gray-100">Close Reason</th>
-        <th className="border px-2 py-2 bg-gray-100">Counter Offer</th>
-        <th className="border px-2 py-2 bg-gray-100">Client Specs</th>
-        <th className="border px-2 py-2 bg-gray-100">Updated</th>
-      </tr>
-    </thead>
-
-{/* ================= TABLE BODY ================= */}
-<tbody>
-  {paginatedActivities.map((item, index) => (
-    <tr key={`table-${item._id}`} className="hover:bg-gray-50">
-
-      <td className="border px-2 py-2">
-        {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
-      </td>
-
-      {/* 🔥 STICKY COMPANY CELL */}
-      <td className="border px-2 py-2 font-semibold bg-white sticky left-0 z-10 min-w-[200px]">
-        {item.company_name || "-"}
-      </td>
-
-      <td className="border px-2 py-2">{item.contact_person || "-"}</td>
-      <td className="border px-2 py-2">{item.contact_number || "-"}</td>
-      <td className="border px-2 py-2">{item.email_address || "-"}</td>
-      <td className="border px-2 py-2">{item.gender || "-"}</td>
-      <td className="border px-2 py-2">{item.traffic || "-"}</td>
-      <td className="border px-2 py-2">{item.source_company || "-"}</td>
-
-      <td className="border px-2 py-2">
-        {formatTableDate(item.ticket_received)}
-      </td>
-
-      <td className="border px-2 py-2">
-        {formatTableDate(item.ticket_endorsed)}
-      </td>
-
-      <td className="border px-2 py-2">{item.channel || "-"}</td>
-      <td className="border px-2 py-2">{item.source || "-"}</td>
-      <td className="border px-2 py-2">{item.wrap_up || "-"}</td>
-      <td className="border px-2 py-2">{item.customer_type || "-"}</td>
-      <td className="border px-2 py-2">{item.customer_status || "-"}</td>
-      <td className="border px-2 py-2">{item.remarks || "-"}</td>
-      <td className="border px-2 py-2">{item.inquiry || "-"}</td>
-      <td className="border px-2 py-2">{item.item_code || "-"}</td>
-      <td className="border px-2 py-2">{item.item_description || "-"}</td>
-      <td className="border px-2 py-2">{item.po_number || "-"}</td>
-      <td className="border px-2 py-2">{item.so_number || "-"}</td>
-      <td className="border px-2 py-2">{item.so_amount || "-"}</td>
-      <td className="border px-2 py-2">{item.quotation_number || "-"}</td>
-      <td className="border px-2 py-2">{item.quotation_amount || "-"}</td>
-      <td className="border px-2 py-2">{item.qty_sold || "-"}</td>
-      <td className="border px-2 py-2">{item.department || "-"}</td>
-
-      <td className="border px-2 py-2">
-        {getAgentNameByReferenceID(item.manager)}
-      </td>
-
-      <td className="border px-2 py-2">
-        {getAgentNameByReferenceID(item.agent)}
-      </td>
-
-      <td className="border px-2 py-2 font-semibold">
-        {item.status}
-      </td>
-
-      <td className="border px-2 py-2">
-        {formatTableDate(item.tsm_acknowledge_date)}
-      </td>
-
-      <td className="border px-2 py-2">
-        {formatTableDate(item.tsm_handling_time)}
-      </td>
-
-      <td className="border px-2 py-2">
-        {formatTableDate(item.tsa_acknowledge_date)}
-      </td>
-
-      <td className="border px-2 py-2">
-        {formatTableDate(item.tsa_handling_time)}
-      </td>
-
-      <td className="border px-2 py-2">{item.close_reason || "-"}</td>
-      <td className="border px-2 py-2">{item.counter_offer || "-"}</td>
-      <td className="border px-2 py-2">{item.client_specs || "-"}</td>
-
-      <td className="border px-2 py-2">
-        {formatTableDate(item.date_updated)}
-      </td>
-
-    </tr>
-  ))}
-</tbody>
-
-</table>
-</div>
-{/* ================= END FULL TABLE VIEW ================= */}
-
-
-
-
         <div className="flex mb-3 space-x-2 items-center">
           <input
             type="search"
@@ -1315,11 +1151,8 @@ const formatTableDate = (value?: string) => {
                   {/* Contact Person Section */}
                   <div className="mt-4 mb-3">
                     {item.contact_person && (
-                      <div className="text-sm leading-relaxed">
-                        <div className="text-gray-600">Contact Person:</div>
-                        <div className="text-green-700 font-semibold capitalize">
-                          {item.contact_person}
-                        </div>
+                      <div className="text-xs leading-relaxed">
+                        <div className="text-gray-600">Contact Person: {item.contact_person}</div>
                       </div>
                     )}
                   </div>

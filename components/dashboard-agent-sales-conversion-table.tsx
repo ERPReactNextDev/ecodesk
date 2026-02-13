@@ -27,6 +27,7 @@ import {
   TableBody,
   TableCaption,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -72,7 +73,7 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef {}
+export interface AgentSalesConversionCardRef { }
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -528,9 +529,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                           {row.salesCount === 0
                             ? "0.00%"
                             : (
-                                (row.convertedCount / row.salesCount) *
-                                100
-                              ).toFixed(2) + "%"}
+                              (row.convertedCount / row.salesCount) *
+                              100
+                            ).toFixed(2) + "%"}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.convertedCount === 0
@@ -564,7 +565,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   })}
               </TableBody>
 
-              <tfoot>
+              <TableFooter>
                 <TableRow className="font-semibold bg-muted/40">
                   <TableCell />
                   <TableCell>Total</TableCell>
@@ -609,7 +610,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     {formatMs(totalRowResponseAverage)}
                   </TableCell>
                 </TableRow>
-              </tfoot>
+              </TableFooter>
+
             </Table>
           </div>
         )}
