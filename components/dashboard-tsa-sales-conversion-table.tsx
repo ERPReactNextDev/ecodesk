@@ -183,6 +183,7 @@ function formatDate(date?: Date | null): string {
 
 interface Activity {
   agent?: string;
+  referenceid?: string; // ✅ ADD THIS
   date_created?: string;
   date_updated?: string;
   so_amount?: number | string;
@@ -358,6 +359,10 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
 
           spfTotal: number;
           spfCount: number;
+
+          csrSet: Set<string>;
+
+          
         }
       > = {};
 
@@ -366,130 +371,148 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
           (a) =>
               isDateInRange(a.date_created, dateCreatedFilterRange) && a.agent,
         )
-        .forEach((a) => {
-          const agent = a.agent!;
-          const soAmount = Number(a.so_amount ?? 0);
-          const qtySold = Number(a.qty_sold ?? 0);
-          const traffic = a.traffic.toLowerCase();
-          const status = a.status.toLowerCase();
-          const cs = (a.customer_status || "").toLowerCase();
+        
+.forEach((a) => {
+  // 🔹 Always declare agent FIRST
+  const agent = a.agent!;
+  const soAmount = Number(a.so_amount ?? 0);
+  const qtySold = Number(a.qty_sold ?? 0);
+  const traffic = (a.traffic || "").toLowerCase();
+  const status = (a.status || "").toLowerCase();
+  const cs = (a.customer_status || "").toLowerCase();
 
-          if (!map[agent]) {
-            map[agent] = {
-              agent,
-              salesCount: 0,
-              nonSalesCount: 0,
-              convertedCount: 0,
-              amount: 0,
-              qtySold: 0,
+  // 🔹 Initialize map entry FIRST
+  if (!map[agent]) {
+    map[agent] = {
+      agent,
+      salesCount: 0,
+      nonSalesCount: 0,
+      convertedCount: 0,
+      amount: 0,
+      qtySold: 0,
 
-              newClientCount: 0,
-              newNonBuyingCount: 0,
-              ExistingActiveCount: 0,
-              ExistingInactive: 0,
+      newClientCount: 0,
+      newNonBuyingCount: 0,
+      ExistingActiveCount: 0,
+      ExistingInactive: 0,
 
-              newClientConvertedAmount: 0,
-              newNonBuyingConvertedAmount: 0,
-              newExistingActiveConvertedAmount: 0,
-              newExistingInactiveConvertedAmount: 0,
+      newClientConvertedAmount: 0,
+      newNonBuyingConvertedAmount: 0,
+      newExistingActiveConvertedAmount: 0,
+      newExistingInactiveConvertedAmount: 0,
 
-              tsaResponseTotal: 0,
-              tsaResponseCount: 0,
+      tsaResponseTotal: 0,
+      tsaResponseCount: 0,
 
-              tsaHandlingTotal: 0,
-              tsaHandlingCount: 0,
+      tsaHandlingTotal: 0,
+      tsaHandlingCount: 0,
 
-              nonQuotationTotal: 0,
-              nonQuotationCount: 0,
+      nonQuotationTotal: 0,
+      nonQuotationCount: 0,
 
-              quotationTotal: 0,
-              quotationCount: 0,
+      quotationTotal: 0,
+      quotationCount: 0,
 
-              spfTotal: 0,
-              spfCount: 0,
-            };
-          }
+      spfTotal: 0,
+      spfCount: 0,
 
-          if (normalizeRemarks(a.remarks) === "po received") return;
+      csrSet: new Set<string>(),
+    };
+  }
 
-          // SALES / NON-SALES COUNT
-          // SALES / NON-SALES COUNT
-          const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
-          const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
+  // 🔹 Now safe to track CSR
+  if (a.referenceid) {
+    map[agent].csrSet.add(a.referenceid);
+  }
 
-          if (normalizeRemarks(a.remarks) === "po received") {
-            map[agent].nonSalesCount += 1;
-          } else if (
-            normalizedWrapUp === "customer inquiry non-sales" ||
-            normalizedWrapUp === "customer inquiry non sales"
-          ) {
-            map[agent].nonSalesCount += 1;
-          } else if (isValidSalesInquiry(a)) {
-            map[agent].salesCount += 1;
-          } else {
-            map[agent].nonSalesCount += 1;
-          }
+  // 🔹 Exclude PO received early if needed
+  if (normalizeRemarks(a.remarks) === "po received") {
+    map[agent].nonSalesCount += 1;
+    return;
+  }
 
-          // CUSTOMER STATUS COUNTS (Sales inquiries only – Excel-aligned)
-          if (isValidSalesInquiry(a)) {
-            if (cs === "new client") map[agent].newClientCount++;
-            if (cs === "new non-buying") map[agent].newNonBuyingCount++;
-            if (cs === "existing active") map[agent].ExistingActiveCount++;
-            if (cs === "existing inactive") map[agent].ExistingInactive++;
-          }
+  // SALES / NON-SALES COUNT
+  const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
+  const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
 
-          // ✅ ONLY TRUE SALES CONVERSIONS
-          if (isConvertedSale(a)) {
-            map[agent].convertedCount++;
-            map[agent].amount += soAmount;
-            map[agent].qtySold += qtySold;
+  if (
+    normalizedWrapUp === "customer inquiry non-sales" ||
+    normalizedWrapUp === "customer inquiry non sales"
+  ) {
+    map[agent].nonSalesCount += 1;
+  } else if (isValidSalesInquiry(a)) {
+    map[agent].salesCount += 1;
+  } else {
+    map[agent].nonSalesCount += 1;
+  }
 
-            if (cs === "new client")
-              map[agent].newClientConvertedAmount += soAmount;
+  // CUSTOMER STATUS COUNTS (Sales inquiries only)
+  if (isValidSalesInquiry(a)) {
+    if (cs === "new client") map[agent].newClientCount++;
+    if (cs === "new non-buying") map[agent].newNonBuyingCount++;
+    if (cs === "existing active") map[agent].ExistingActiveCount++;
+    if (cs === "existing inactive") map[agent].ExistingInactive++;
+  }
 
-            if (cs === "new non-buying")
-              map[agent].newNonBuyingConvertedAmount += soAmount;
+  // TRUE SALES CONVERSIONS
+  if (isConvertedSale(a)) {
+    map[agent].convertedCount++;
+    map[agent].amount += soAmount;
+    map[agent].qtySold += qtySold;
 
-            if (cs === "existing active")
-              map[agent].newExistingActiveConvertedAmount += soAmount;
+    if (cs === "new client")
+      map[agent].newClientConvertedAmount += soAmount;
 
-            if (cs === "existing inactive")
-              map[agent].newExistingInactiveConvertedAmount += soAmount;
-          }
+    if (cs === "new non-buying")
+      map[agent].newNonBuyingConvertedAmount += soAmount;
 
-          // TSA RESPONSE TIME (ALIGNED)
-          const tsaResponse = computeTsaResponseTimeAligned(a);
-          if (tsaResponse !== null) {
-            map[agent].tsaResponseTotal += tsaResponse;
-            map[agent].tsaResponseCount++;
-          }
+    if (cs === "existing active")
+      map[agent].newExistingActiveConvertedAmount += soAmount;
 
-          const tsaHandling = computeTsaHandlingTimeAligned(a);
-          if (tsaHandling !== null) {
-            map[agent].tsaHandlingTotal += tsaHandling;
-            map[agent].tsaHandlingCount++;
-          }
+    if (cs === "existing inactive")
+      map[agent].newExistingInactiveConvertedAmount += soAmount;
+  }
 
-          const nonQ = computeNonQuotationHTAligned(a);
-          if (nonQ !== null) {
-            map[agent].nonQuotationTotal += nonQ;
-            map[agent].nonQuotationCount++;
-          }
+  // TSA RESPONSE TIME
+  const tsaResponse = computeTsaResponseTimeAligned(a);
+  if (tsaResponse !== null) {
+    map[agent].tsaResponseTotal += tsaResponse;
+    map[agent].tsaResponseCount++;
+  }
 
-          const qHT = computeQuotationHTAligned(a);
-          if (qHT !== null) {
-            map[agent].quotationTotal += qHT;
-            map[agent].quotationCount++;
-          }
+  // TSA HANDLING TIME
+  const tsaHandling = computeTsaHandlingTimeAligned(a);
+  if (tsaHandling !== null) {
+    map[agent].tsaHandlingTotal += tsaHandling;
+    map[agent].tsaHandlingCount++;
+  }
 
-          const spf = computeSpfHTAligned(a);
-          if (spf !== null) {
-            map[agent].spfTotal += spf;
-            map[agent].spfCount++;
-          }
-        }); // ← THIS IS MISSING
+  // NON QUOTATION HT
+  const nonQ = computeNonQuotationHTAligned(a);
+  if (nonQ !== null) {
+    map[agent].nonQuotationTotal += nonQ;
+    map[agent].nonQuotationCount++;
+  }
 
-      return Object.values(map);
+  // QUOTATION HT
+  const qHT = computeQuotationHTAligned(a);
+  if (qHT !== null) {
+    map[agent].quotationTotal += qHT;
+    map[agent].quotationCount++;
+  }
+
+  // SPF HT
+  const spf = computeSpfHTAligned(a);
+  if (spf !== null) {
+    map[agent].spfTotal += spf;
+    map[agent].spfCount++;
+  }
+});
+
+return Object.values(map).map((row) => ({
+  ...row,
+  csrList: Array.from(row.csrSet),
+}));
     }, [activities, dateCreatedFilterRange]);
 
     useImperativeHandle(ref, () => ({
@@ -655,11 +678,35 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                         <TableCell>
                           <Badge>{i + 1}</Badge>
                         </TableCell>
-                        <TableCell className="capitalize">
-                          {agent
-                            ? `${agent.Firstname} ${agent.Lastname}`
-                            : "(Unknown)"}
-                        </TableCell>
+<TableCell className="capitalize">
+  <details className="cursor-pointer">
+    <summary className="font-semibold">
+      {agent
+        ? `${agent.Firstname} ${agent.Lastname}`
+        : "(Unknown)"}
+    </summary>
+
+    <div className="mt-2 text-xs text-muted-foreground space-y-1">
+      <div className="font-medium">CSRs who endorsed:</div>
+
+      {r.csrList?.length === 0 && <div>No CSR found</div>}
+
+      {r.csrList?.map((csrId: string) => {
+        const csr = agents.find(
+          (a) => a.ReferenceID === csrId,
+        );
+
+        return (
+          <div key={csrId}>
+            {csr
+              ? `${csr.Firstname} ${csr.Lastname}`
+              : csrId}
+          </div>
+        );
+      })}
+    </div>
+  </details>
+</TableCell>
 
                         <TableCell className="text-right">
                           {r.salesCount}
