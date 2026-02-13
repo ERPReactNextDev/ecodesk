@@ -1025,7 +1025,7 @@ export const Ticket: React.FC<TicketProps> = ({
                         <strong>Email Address:</strong> {c.email_address || "-"}
                       </p>
                       {!c.company_name?.trim() &&
-                      c.contact_person?.trim() ? null : (
+                        c.contact_person?.trim() ? null : (
                         <p className="capitalize">
                           <strong>Contact Person:</strong>{" "}
                           {c.contact_person || "-"}

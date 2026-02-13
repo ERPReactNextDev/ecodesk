@@ -698,7 +698,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                     return (
                       <TableRow key={r.agent}>
                         <TableCell>
-                          <Badge>{i + 1}</Badge>
+                          <Badge className="h-10 min-w-10">{i + 1}</Badge>
                         </TableCell>
                         <TableCell className="capitalize">
                           <details className="cursor-pointer">
