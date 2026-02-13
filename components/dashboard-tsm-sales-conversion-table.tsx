@@ -70,6 +70,7 @@ interface Activity {
   tsa_acknowledge_date?: string;
   tsa_handling_time?: string;
   company_name?: string;
+  contact_person?: string;
 }
 
 interface Agent {
@@ -417,9 +418,18 @@ const AgentSalesTableCard = forwardRef<
           map[manager].csrSet.add(a.referenceid);
         }
 
-        if (a.company_name && a.company_name.trim() !== "") {
-          map[manager].companySet.add(a.company_name.trim());
-        }
+const companyRaw = a.company_name?.trim();
+const contactRaw = a.contact_person?.trim();
+
+if (
+  companyRaw &&
+  companyRaw !== "" &&
+  !["na", "n/a"].includes(companyRaw.toLowerCase())
+) {
+  map[manager].companySet.add(companyRaw);
+} else if (contactRaw && contactRaw !== "") {
+  map[manager].companySet.add(contactRaw);
+}
 
         // Counts
         const normalizedTraffic = (a.traffic || "").toLowerCase().trim();

@@ -200,6 +200,7 @@ interface Activity {
 
   wrap_up?: string; // ← ADDED to support exclusion logic
   company_name?: string;
+  contact_person?: string;
   
 }
 
@@ -429,9 +430,19 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
     map[agent].csrSet.add(a.referenceid);
   }
 
-  if (a.company_name && a.company_name.trim() !== "") {
-  map[agent].companySet.add(a.company_name.trim());
+const companyRaw = a.company_name?.trim();
+const contactRaw = a.contact_person?.trim();
+
+if (
+  companyRaw &&
+  companyRaw !== "" &&
+  !["na", "n/a"].includes(companyRaw.toLowerCase())
+) {
+  map[agent].companySet.add(companyRaw);
+} else if (contactRaw && contactRaw !== "") {
+  map[agent].companySet.add(contactRaw);
 }
+
 
   // 🔹 Exclude PO received early if needed
   if (normalizeRemarks(a.remarks) === "po received") {
