@@ -916,6 +916,26 @@ export const Ticket: React.FC<TicketProps> = ({
     }
   }
 
+  // 🔥 TABLE DATE FORMATTER (1/16/25 8:00am)
+const formatTableDate = (value?: string) => {
+  if (!value) return "-";
+
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "-";
+
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const year = d.getFullYear().toString().slice(-2);
+
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "pm" : "am";
+
+  hours = hours % 12;
+  hours = hours === 0 ? 12 : hours;
+
+  return `${month}/${day}/${year} ${hours}:${minutes}${ampm}`;
+};
   const getAgentNameByReferenceID = (
     refId: string | null | undefined,
   ): string => {
@@ -1107,65 +1127,96 @@ export const Ticket: React.FC<TicketProps> = ({
       </tr>
     </thead>
 
-    {/* ================= TABLE BODY ================= */}
-    <tbody>
-      {paginatedActivities.map((item, index) => (
-        <tr key={`table-${item._id}`} className="hover:bg-gray-50">
+{/* ================= TABLE BODY ================= */}
+<tbody>
+  {paginatedActivities.map((item, index) => (
+    <tr key={`table-${item._id}`} className="hover:bg-gray-50">
 
-          <td className="border px-2 py-2">
-            {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
-          </td>
+      <td className="border px-2 py-2">
+        {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
+      </td>
 
-          {/* 🔥 STICKY COMPANY CELL */}
-          <td className="border px-2 py-2 font-semibold bg-white sticky left-0 z-10 min-w-[200px]">
-            {item.company_name}
-          </td>
+      {/* 🔥 STICKY COMPANY CELL */}
+      <td className="border px-2 py-2 font-semibold bg-white sticky left-0 z-10 min-w-[200px]">
+        {item.company_name || "-"}
+      </td>
 
-          <td className="border px-2 py-2">{item.contact_person}</td>
-          <td className="border px-2 py-2">{item.contact_number}</td>
-          <td className="border px-2 py-2">{item.email_address}</td>
-          <td className="border px-2 py-2">{item.gender}</td>
-          <td className="border px-2 py-2">{item.traffic}</td>
-          <td className="border px-2 py-2">{item.source_company}</td>
-          <td className="border px-2 py-2">{item.ticket_received}</td>
-          <td className="border px-2 py-2">{item.ticket_endorsed}</td>
-          <td className="border px-2 py-2">{item.channel}</td>
-          <td className="border px-2 py-2">{item.source}</td>
-          <td className="border px-2 py-2">{item.wrap_up}</td>
-          <td className="border px-2 py-2">{item.customer_type}</td>
-          <td className="border px-2 py-2">{item.customer_status}</td>
-          <td className="border px-2 py-2">{item.remarks}</td>
-          <td className="border px-2 py-2">{item.inquiry}</td>
-          <td className="border px-2 py-2">{item.item_code}</td>
-          <td className="border px-2 py-2">{item.item_description}</td>
-          <td className="border px-2 py-2">{item.po_number}</td>
-          <td className="border px-2 py-2">{item.so_number}</td>
-          <td className="border px-2 py-2">{item.so_amount}</td>
-          <td className="border px-2 py-2">{item.quotation_number}</td>
-          <td className="border px-2 py-2">{item.quotation_amount}</td>
-          <td className="border px-2 py-2">{item.qty_sold}</td>
-          <td className="border px-2 py-2">{item.department}</td>
-          <td className="border px-2 py-2">{getAgentNameByReferenceID(item.manager)}</td>
-          <td className="border px-2 py-2">{getAgentNameByReferenceID(item.agent)}</td>
-          <td className="border px-2 py-2 font-semibold">{item.status}</td>
-          <td className="border px-2 py-2">{item.tsm_acknowledge_date}</td>
-          <td className="border px-2 py-2">{item.tsm_handling_time}</td>
-          <td className="border px-2 py-2">{item.tsa_acknowledge_date}</td>
-          <td className="border px-2 py-2">{item.tsa_handling_time}</td>
-          <td className="border px-2 py-2">{item.close_reason}</td>
-          <td className="border px-2 py-2">{item.counter_offer}</td>
-          <td className="border px-2 py-2">{item.client_specs}</td>
-          <td className="border px-2 py-2">
-            {new Date(item.date_updated).toLocaleString()}
-          </td>
+      <td className="border px-2 py-2">{item.contact_person || "-"}</td>
+      <td className="border px-2 py-2">{item.contact_number || "-"}</td>
+      <td className="border px-2 py-2">{item.email_address || "-"}</td>
+      <td className="border px-2 py-2">{item.gender || "-"}</td>
+      <td className="border px-2 py-2">{item.traffic || "-"}</td>
+      <td className="border px-2 py-2">{item.source_company || "-"}</td>
 
-        </tr>
-      ))}
-    </tbody>
+      <td className="border px-2 py-2">
+        {formatTableDate(item.ticket_received)}
+      </td>
 
-  </table>
+      <td className="border px-2 py-2">
+        {formatTableDate(item.ticket_endorsed)}
+      </td>
+
+      <td className="border px-2 py-2">{item.channel || "-"}</td>
+      <td className="border px-2 py-2">{item.source || "-"}</td>
+      <td className="border px-2 py-2">{item.wrap_up || "-"}</td>
+      <td className="border px-2 py-2">{item.customer_type || "-"}</td>
+      <td className="border px-2 py-2">{item.customer_status || "-"}</td>
+      <td className="border px-2 py-2">{item.remarks || "-"}</td>
+      <td className="border px-2 py-2">{item.inquiry || "-"}</td>
+      <td className="border px-2 py-2">{item.item_code || "-"}</td>
+      <td className="border px-2 py-2">{item.item_description || "-"}</td>
+      <td className="border px-2 py-2">{item.po_number || "-"}</td>
+      <td className="border px-2 py-2">{item.so_number || "-"}</td>
+      <td className="border px-2 py-2">{item.so_amount || "-"}</td>
+      <td className="border px-2 py-2">{item.quotation_number || "-"}</td>
+      <td className="border px-2 py-2">{item.quotation_amount || "-"}</td>
+      <td className="border px-2 py-2">{item.qty_sold || "-"}</td>
+      <td className="border px-2 py-2">{item.department || "-"}</td>
+
+      <td className="border px-2 py-2">
+        {getAgentNameByReferenceID(item.manager)}
+      </td>
+
+      <td className="border px-2 py-2">
+        {getAgentNameByReferenceID(item.agent)}
+      </td>
+
+      <td className="border px-2 py-2 font-semibold">
+        {item.status}
+      </td>
+
+      <td className="border px-2 py-2">
+        {formatTableDate(item.tsm_acknowledge_date)}
+      </td>
+
+      <td className="border px-2 py-2">
+        {formatTableDate(item.tsm_handling_time)}
+      </td>
+
+      <td className="border px-2 py-2">
+        {formatTableDate(item.tsa_acknowledge_date)}
+      </td>
+
+      <td className="border px-2 py-2">
+        {formatTableDate(item.tsa_handling_time)}
+      </td>
+
+      <td className="border px-2 py-2">{item.close_reason || "-"}</td>
+      <td className="border px-2 py-2">{item.counter_offer || "-"}</td>
+      <td className="border px-2 py-2">{item.client_specs || "-"}</td>
+
+      <td className="border px-2 py-2">
+        {formatTableDate(item.date_updated)}
+      </td>
+
+    </tr>
+  ))}
+</tbody>
+
+</table>
 </div>
 {/* ================= END FULL TABLE VIEW ================= */}
+
 
 
 
