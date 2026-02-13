@@ -27,7 +27,6 @@ import {
   TableBody,
   TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -296,24 +295,29 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
         const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
         // PO RECEIVED rule
-        if (remarks === "po received") {
+        // 🔒 Sales / Non-Sales counting based on wrap_up
+        const wrapUpLower = (a.wrap_up || "").toLowerCase().trim();
+        const remarksLower = (a.remarks || "").toLowerCase().trim();
+
+        if (remarksLower === "po received") {
+          // PO received is always non-sales
           map[referenceid].nonSalesCount += 1;
-        }
-        // 2️⃣ Customer Inquiry Non Sales always NON-SALES
-        else if (
-          normalizedWrapUp === "customer inquiry non-sales" ||
-          normalizedWrapUp === "customer inquiry non sales"
+        } else if (
+          wrapUpLower === "customer inquiry non-sales" ||
+          wrapUpLower === "customer inquiry non sales"
         ) {
           map[referenceid].nonSalesCount += 1;
-        }
-        // 3️⃣ Normal Traffic Rules
-        else if (normalizedTraffic === "sales") {
+        } else if (
+          wrapUpLower === "customer order" ||
+          wrapUpLower === "customer inquiry sales" ||
+          wrapUpLower === "follow up sales"
+        ) {
           map[referenceid].salesCount += 1;
-        }
-        // 4️⃣ Anything else = Non-Sales fallback
-        else {
+        } else {
+          // Anything else not listed above = Non-Sales fallback
           map[referenceid].nonSalesCount += 1;
         }
+
 
         // Always count qty sold whether SO or not
         map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
@@ -501,7 +505,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     return (
                       <TableRow key={row.referenceid}>
                         <TableCell className="text-center">
-                          <Badge>{index + 1}</Badge>
+                          <Badge className="h-10 min-w-10">{index + 1}</Badge>
                         </TableCell>
 
                         <TableCell>{fullName}</TableCell>
@@ -565,52 +569,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   })}
               </TableBody>
 
-              <TableFooter>
-                <TableRow className="font-semibold bg-muted/40">
-                  <TableCell />
-                  <TableCell>Total</TableCell>
 
-                  <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">
-                    {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    ₱{totalAmount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">{totalQty}</TableCell>
-                  <TableCell className="text-right">{totalConverted}</TableCell>
-
-                  <TableCell className="text-right">
-                    {totalConversionPct.toFixed(2)}%
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    {totalAveUnit.toFixed(2)}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    {totalAveValue.toFixed(2)}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    ₱{totalNewClient.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalNewNonBuying.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingActive.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingInactive.toLocaleString()}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    {formatMs(totalRowResponseAverage)}
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
 
             </Table>
           </div>
