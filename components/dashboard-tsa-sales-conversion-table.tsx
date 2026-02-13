@@ -715,17 +715,19 @@ companyList: Array.from(row.companySet),
       })}
     </div>
 
-    <div className="font-medium mt-2">Companies Handled:</div>
+<div className="font-medium mt-2">Companies Handled:</div>
 
-{r.companyList?.length === 0 && (
-  <div>No companies found</div>
-)}
+<div className="max-h-40 overflow-y-auto pr-2 border rounded-md p-2 bg-muted/30">
+  {r.companyList?.length === 0 && (
+    <div>No companies found</div>
+  )}
 
-{r.companyList?.map((company: string) => (
-  <div key={company}>
-    {company}
-  </div>
-))}
+  {r.companyList?.map((company: string) => (
+    <div key={company} className="truncate">
+      {company}
+    </div>
+  ))}
+</div>
 
   </details>
 </TableCell>
