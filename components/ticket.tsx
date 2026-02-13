@@ -1140,39 +1140,10 @@ export const Ticket: React.FC<TicketProps> = ({
                   {/* Contact Person Section */}
                   <div className="mt-4 mb-3">
                     {item.contact_person && (
-                      <div className="text-sm leading-relaxed">
-                        <div className="text-gray-600">Contact Person:</div>
-                        <div className="text-green-700 font-semibold capitalize">
-                          {item.contact_person}
-                        </div>
+                      <div className="text-xs leading-relaxed">
+                        <div className="text-gray-600">Contact Person: {item.contact_person}</div>
                       </div>
                     )}
-                  </div>
-
-                  <div className="text-muted-foreground space-y-1">
-                    <div>
-                      Updated:{" "}
-                      {new Date(item.date_updated).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </div>
-
-                    <div className="text-[10px] text-slate-500">
-                      Created:{" "}
-                      {new Date(item.date_created).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </div>
                   </div>
 
                   <div className="text-muted-foreground space-y-1">
