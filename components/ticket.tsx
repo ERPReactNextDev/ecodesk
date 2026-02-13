@@ -574,6 +574,10 @@ export const Ticket: React.FC<TicketProps> = ({
     close_reason: string;
     counter_offer: string;
     client_specs: string;
+    tsm_acknowledge_date: string;
+    tsm_handling_time: string;
+    tsa_acknowledge_date: string;
+    tsa_handling_time: string;
   }) => {
     try {
       setUpdatingId(selectedActivityId);
@@ -596,6 +600,11 @@ export const Ticket: React.FC<TicketProps> = ({
         close_reason: payload.close_reason,
         counter_offer: payload.counter_offer,
         client_specs: payload.client_specs,
+
+        tsm_acknowledge_date: payload.tsm_acknowledge_date,
+        tsm_handling_time: payload.tsm_handling_time,
+        tsa_acknowledge_date: payload.tsa_acknowledge_date,
+        tsa_handling_time: payload.tsa_handling_time,
       };
 
       const res = await fetch(
@@ -1247,7 +1256,10 @@ export const Ticket: React.FC<TicketProps> = ({
                         address: item.address,
                         account_reference_number: item.account_reference_number,
                       }}
-                      onCreated={() => fetchActivities()}
+                      onCreated={async () => {
+                        await fetchActivities();
+                        await fetchCompanies(); // 🔥 refresh left Companies panel
+                      }}
                     />
 
                     {/* CLOSE */}
@@ -1320,9 +1332,14 @@ export const Ticket: React.FC<TicketProps> = ({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onConfirm={handleConfirmDone}
+        loading={updatingId === selectedActivityId}
         close_reason={selectedActivity?.close_reason}
         counter_offer={selectedActivity?.counter_offer}
         client_specs={selectedActivity?.client_specs}
+        tsm_acknowledge_date={selectedActivity?.tsm_acknowledge_date}
+        tsm_handling_time={selectedActivity?.tsm_handling_time}
+        tsa_acknowledge_date={selectedActivity?.tsa_acknowledge_date}
+        tsa_handling_time={selectedActivity?.tsa_handling_time}
       />
 
       {exporting && (

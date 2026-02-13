@@ -1,3 +1,4 @@
+//sales conversion table
 "use client";
 
 import React, {
@@ -26,6 +27,7 @@ import {
   TableBody,
   TableCaption,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -52,6 +54,8 @@ interface Activity {
   customer_status?: string;
   ticket_received?: string;
   ticket_endorsed?: string;
+
+  wrap_up?: string;
 }
 
 interface Agent {
@@ -69,7 +73,7 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef {}
+export interface AgentSalesConversionCardRef { }
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -290,24 +294,34 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
         // 🔒 NORMALIZE TRAFFIC (IMPORTANT)
         const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
-
+        const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
         // PO RECEIVED rule
         if (remarks === "po received") {
-          // Always count as NON-SALES inquiry
           map[referenceid].nonSalesCount += 1;
-        } else if (normalizedTraffic === "sales") {
+        }
+        // 2️⃣ Customer Inquiry Non Sales always NON-SALES
+        else if (
+          normalizedWrapUp === "customer inquiry non-sales" ||
+          normalizedWrapUp === "customer inquiry non sales"
+        ) {
+          map[referenceid].nonSalesCount += 1;
+        }
+        // 3️⃣ Normal Traffic Rules
+        else if (normalizedTraffic === "sales") {
           map[referenceid].salesCount += 1;
-        } else {
-          // 🔥 DEFAULT FALLBACK
-          // Anything else = Non-Sales
+        }
+        // 4️⃣ Anything else = Non-Sales fallback
+        else {
           map[referenceid].nonSalesCount += 1;
         }
 
-        // Conversion counting
+        // Always count qty sold whether SO or not
+        map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
+
+        // Conversion counting only for sales-related metrics
         if (status === "converted into sales") {
           map[referenceid].convertedCount += 1;
           map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
-          map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
         }
       });
 
@@ -352,15 +366,14 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
   const formatMs = (ms: number) => {
-    // round to nearest minute
-    const totalMinutes = Math.round(ms / (1000 * 60));
+    const totalSeconds = Math.round(ms / 1000);
 
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
 
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
-
   const totalRowResponseAverage =
     totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
@@ -516,23 +529,19 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                           {row.salesCount === 0
                             ? "0.00%"
                             : (
-                                (row.convertedCount / row.salesCount) *
-                                100
-                              ).toFixed(2) + "%"}
+                              (row.convertedCount / row.salesCount) *
+                              100
+                            ).toFixed(2) + "%"}
                         </TableCell>
-
                         <TableCell className="text-right">
                           {row.convertedCount === 0
-                            ? "0"
-                            : (row.qtySold / row.convertedCount).toFixed(0)}
+                            ? "0.00"
+                            : (row.qtySold / row.convertedCount).toFixed(2)}
                         </TableCell>
-
                         <TableCell className="text-right">
                           {row.convertedCount === 0
-                            ? "0"
-                            : (
-                                row.amount / row.convertedCount
-                              ).toLocaleString()}
+                            ? "0.00"
+                            : (row.amount / row.convertedCount).toFixed(2)}
                         </TableCell>
 
                         <TableCell className="text-right">
@@ -556,7 +565,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   })}
               </TableBody>
 
-              <tfoot>
+              <TableFooter>
                 <TableRow className="font-semibold bg-muted/40">
                   <TableCell />
                   <TableCell>Total</TableCell>
@@ -577,11 +586,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   </TableCell>
 
                   <TableCell className="text-right">
-                    {totalAveUnit.toFixed(0)}
+                    {totalAveUnit.toFixed(2)}
                   </TableCell>
 
                   <TableCell className="text-right">
-                    {totalAveValue.toLocaleString()}
+                    {totalAveValue.toFixed(2)}
                   </TableCell>
 
                   <TableCell className="text-right">
@@ -601,7 +610,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     {formatMs(totalRowResponseAverage)}
                   </TableCell>
                 </TableRow>
-              </tfoot>
+              </TableFooter>
+
             </Table>
           </div>
         )}

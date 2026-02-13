@@ -5,7 +5,6 @@ import { MongoClient, ObjectId } from "mongodb";
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB = process.env.MONGODB_DB;
 
-// Runtime check for env vars
 if (!MONGODB_URI) {
   throw new Error(
     "Please define the MONGODB_URI environment variable inside .env.local"
@@ -63,20 +62,20 @@ export default async function handler(
 
     const filter = { _id: new ObjectId(body._id) };
 
-    // 🔹 Prepare update payload
     const updateData: any = { ...body };
     delete updateData._id;
 
-    // ================================
-    // ✅ FIXED DATE HANDLING LOGIC
-    // ================================
+    // ===========================================================
+    // ✅ FINAL FIX BASED ON YOUR ACTUAL DB FORMAT
+    // ===========================================================
 
-    // Always update date_updated whenever a record is modified
-    updateData.date_updated = new Date();
+    // date_updated is stored as ISO string
+    updateData.date_updated = new Date().toISOString();
 
-    // If date_created is provided from the client, store it directly as a Date object
+    // date_created in your DB is STRING ("YYYY-MM-DDTHH:mm")
+    // so we must NOT convert it
     if (updateData.date_created) {
-      updateData.date_created = new Date(updateData.date_created);
+      updateData.date_created = updateData.date_created;
     }
 
     const result = await collection.updateOne(

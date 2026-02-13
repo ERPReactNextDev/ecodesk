@@ -24,6 +24,183 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2Icon, User, UserRound } from "lucide-react";
 
+// ===== HANDLING TIME COMPUTATION HELPERS (DISPLAY ONLY) =====
+
+function toDate(value?: string) {
+  if (!value) return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDuration(ms: number) {
+  if (ms < 0) return "INVALID TIME";
+
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+function computeSimpleDiff(start?: string, end?: string) {
+  const s = toDate(start);
+  const e = toDate(end);
+
+  if (!s || !e) return "";
+  if (e < s) return "INVALID DATE";
+
+  return formatDuration(e.getTime() - s.getTime());
+}
+
+function computeCSRResponseTime(
+  ticketReceived?: string,
+  ticketEndorsed?: string,
+) {
+  const start = toDate(ticketReceived);
+  const end = toDate(ticketEndorsed);
+
+  if (!start || !end) return "";
+
+  // Sunday check (Excel WEEKDAY = 7)
+  if (start.getDay() === 0 || end.getDay() === 0) {
+    return "0h 0m 0s";
+  }
+
+  if (end < start) return "INVALID DATE";
+
+  const WORK_START = 8;
+  const WORK_END = 19;
+
+  let startWork = new Date(start);
+  startWork.setHours(WORK_START, 0, 0, 0);
+
+  let endWork = new Date(end);
+  endWork.setHours(WORK_END, 0, 0, 0);
+
+  const effectiveStart = start > startWork ? start : startWork;
+  const effectiveEnd = end < endWork ? end : endWork;
+
+  if (effectiveEnd < effectiveStart) return "INVALID TIME";
+
+  return formatDuration(effectiveEnd.getTime() - effectiveStart.getTime());
+}
+
+function computeTSAResponseTime(
+  wrapUp: string,
+  tsaAck?: string,
+  tsaHandle?: string,
+  ticketEndorsed?: string,
+) {
+  const excluded = [
+    "CustomerFeedback/Recommendation",
+    "Job Inquiry",
+    "Job Applicants",
+    "Supplier/Vendor Product Offer",
+    "Internal Whistle Blower",
+    "Threats / Extortion / Intimidation",
+    "Prank Call",
+  ];
+
+  if (excluded.includes(wrapUp)) return "";
+
+  const ack = toDate(tsaAck);
+  const endorsed = toDate(ticketEndorsed);
+
+  if (!ack || !endorsed) return "";
+
+  if (ack < endorsed) return "INVALID DATE";
+
+  return formatDuration(ack.getTime() - endorsed.getTime());
+}
+
+function computeTSMResponseTime(
+  wrapUp: string,
+  tsmAck?: string,
+  ticketEndorsed?: string,
+) {
+  const excluded = [
+    "CustomerFeedback/Recommendation",
+    "Job Inquiry",
+    "Job Applicants",
+    "Supplier/Vendor Product Offer",
+    "Internal Whistle Blower",
+    "Threats / Extortion / Intimidation",
+    "Prank Call",
+  ];
+
+  if (excluded.includes(wrapUp)) return "";
+
+  const ack = toDate(tsmAck);
+  const endorsed = toDate(ticketEndorsed);
+
+  if (!ack || !endorsed) return "";
+
+  if (ack < endorsed) return "INVALID DATE";
+
+  return formatDuration(ack.getTime() - endorsed.getTime());
+}
+
+function computeTSMHandlingTime(
+  wrapUp: string,
+  tsmAck?: string,
+  tsmHandle?: string,
+  ticketReceived?: string,
+) {
+  const excluded = [
+    "CustomerFeedback/Recommendation",
+    "Job Inquiry",
+    "Job Applicants",
+    "Supplier/Vendor Product Offer",
+    "Internal Whistle Blower",
+    "Threats / Extortion / Intimidation",
+    "Prank Call",
+  ];
+
+  if (excluded.includes(wrapUp)) return "";
+
+  const ack = toDate(tsmAck);
+  const received = toDate(ticketReceived);
+
+  if (!ack || !received) return "";
+
+  if (ack < received) return "INVALID DATE";
+
+  return formatDuration(ack.getTime() - received.getTime());
+}
+
+function computeNonQuotationHT(remarks: string, baseTime: string) {
+  const list = [
+    "NO STOCKS / INSUFFICIENT STOCKS",
+    "CUSTOMER REQUEST CANCELLATION",
+    "INSUFFICIENT STOCKS",
+    "UNABLE TO CONTACT CUSTOMER",
+    "ITEM NOT CARRIED",
+    "WAITING FOR CLIENT CONFIRMATION",
+    "CUSTOMER REQUESTED CANCELLATION",
+    "ACCREDITATION/PARTNERSHIP",
+    "NO RESPONSE FROM CLIENT",
+    "ASSISTED",
+    "FOR SITE VISIT",
+    "NON STANDARD ITEM",
+    "PO RECEIVED",
+    "PENDING QUOTATION",
+    "FOR OCCULAR INSPECTION",
+  ];
+
+  return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
+}
+
+function computeQuotationHT(remarks: string, baseTime: string) {
+  const list = ["QUOTATION FOR APPROVAL", "SOLD"];
+
+  return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
+}
+
+function computeSpfHT(remarks: string, baseTime: string) {
+  return (remarks || "").toUpperCase().includes("SPF") ? baseTime : "";
+}
+
 interface Option {
   value: string;
   title: string;
@@ -117,7 +294,7 @@ interface TicketSheetProps {
   loading: boolean;
   handleBack: () => void;
   handleNext: () => void;
-  handleUpdate: () => void;
+handleUpdate: (agentReassigned: boolean) => void;
 }
 
 // Reusable Radio Group
@@ -325,6 +502,7 @@ export function TicketSheet(props: TicketSheetProps) {
   const [managersList, setManagersList] = useState<User[]>([]);
   const [managersAvailable, setManagersAvailable] = useState(0);
   const [agentsList, setAgentsList] = useState<User[]>([]);
+
   const [loadingManagers, setLoadingManagers] = useState(false);
   const [loadingAgents, setLoadingAgents] = useState(false);
 
@@ -333,6 +511,65 @@ export function TicketSheet(props: TicketSheetProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const isJobApplicant = wrapUp === "Job Applicants";
   const isHrActive = Boolean(hrAcknowledgeDate);
+
+  // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
+
+  // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
+
+  // CSR is always allowed
+  const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
+
+  // Check if TSM fields are COMPLETE (both required)
+  const isTsmComplete = Boolean(tsmAcknowledgeDate && tsmHandlingTime);
+
+  // Check if TSA fields are COMPLETE (both required)
+  const isTsaComplete = Boolean(tsaAcknowledgeDate && tsaHandlingTime);
+
+  // ----- TSM COMPUTATIONS -----
+  const tsmResponseTime = isTsmComplete
+    ? computeTSMResponseTime(wrapUp, tsmAcknowledgeDate, ticketEndorsed)
+    : "";
+
+  const tsmHandlingTimeFinal = isTsmComplete
+    ? computeTSMHandlingTime(
+        wrapUp,
+        tsmAcknowledgeDate,
+        tsmHandlingTime,
+        ticketReceived,
+      )
+    : "";
+
+  // ----- TSA COMPUTATIONS -----
+  const tsaResponseTime = isTsaComplete
+    ? computeTSAResponseTime(
+        wrapUp,
+        tsaAcknowledgeDate,
+        tsaHandlingTime,
+        ticketEndorsed,
+      )
+    : "";
+
+  const tsaHandlingTimeFinal =
+    isTsaComplete && ticketReceived
+      ? formatDuration(
+          new Date(tsaHandlingTime).getTime() -
+            new Date(ticketReceived).getTime(),
+        )
+      : "";
+
+  // Base Handling Time ONLY exists if one side is COMPLETE
+  const baseHT = isTsaComplete
+    ? tsaHandlingTimeFinal
+    : isTsmComplete
+      ? tsmHandlingTimeFinal
+      : "";
+
+  // Additional HT computations ONLY if baseHT is valid
+  const nonQuotationHT = baseHT ? computeNonQuotationHT(remarks, baseHT) : "";
+
+  const quotationHT = baseHT ? computeQuotationHT(remarks, baseHT) : "";
+
+  const spfHT = baseHT ? computeSpfHT(remarks, baseHT) : "";
 
   // ================= FETCH MANAGERS =================
 
@@ -350,7 +587,7 @@ export function TicketSheet(props: TicketSheetProps) {
     fetch(
       `/api/fetch-users-by-role?role=Territory Sales Manager&department=${encodeURIComponent(
         department,
-      )}`,
+      )}&currentUser=${manager || ""}`,
     )
       .then((res) => res.json())
       .then((json) => {
@@ -396,7 +633,7 @@ export function TicketSheet(props: TicketSheetProps) {
     fetch(
       `/api/fetch-users-by-role?role=Territory Sales Associate&department=Sales&tsm=${encodeURIComponent(
         manager,
-      )}`,
+      )}&currentUser=${agent || ""}`,
     )
       .then((res) => res.json())
       .then((json) => {
@@ -425,6 +662,48 @@ export function TicketSheet(props: TicketSheetProps) {
     }
   }, [ticketReceived, ticketEndorsed]);
 
+  // TSM validation - same logic pattern as Ticket Received/Endorsed
+  useEffect(() => {
+    if (!tsmAcknowledgeDate || !tsmHandlingTime) {
+      setTsmTimeError(null);
+      return;
+    }
+
+    const ack = new Date(tsmAcknowledgeDate);
+    const handle = new Date(tsmHandlingTime);
+
+    if (!isNaN(ack.getTime()) && !isNaN(handle.getTime())) {
+      if (handle < ack) {
+        setTsmTimeError(
+          "TSM Handling Time cannot be earlier than TSM Acknowledgement Time.",
+        );
+      } else {
+        setTsmTimeError(null);
+      }
+    }
+  }, [tsmAcknowledgeDate, tsmHandlingTime]);
+
+  // TSA validation - same logic pattern as Ticket Received/Endorsed
+  useEffect(() => {
+    if (!tsaAcknowledgeDate || !tsaHandlingTime) {
+      setTsaTimeError(null);
+      return;
+    }
+
+    const ack = new Date(tsaAcknowledgeDate);
+    const handle = new Date(tsaHandlingTime);
+
+    if (!isNaN(ack.getTime()) && !isNaN(handle.getTime())) {
+      if (handle < ack) {
+        setTsaTimeError(
+          "TSA Handling Time cannot be earlier than TSA Acknowledgement Time.",
+        );
+      } else {
+        setTsaTimeError(null);
+      }
+    }
+  }, [tsaAcknowledgeDate, tsaHandlingTime]);
+
   // 2️⃣ Close Reason → Auto dash logic
   useEffect(() => {
     if (closeReason === "Same Specs Provided") {
@@ -436,6 +715,17 @@ export function TicketSheet(props: TicketSheetProps) {
     }
   }, [closeReason]);
 
+  // Auto clear agent when status changes to Endorsed
+  useEffect(() => {
+    // Intentionally left empty to keep selected agent value
+  }, []);
+
+  // Remove glow when agent is selected
+  useEffect(() => {
+    if (agent) {
+      setHighlightAgent(false);
+    }
+  }, [agent]);
   // 3️⃣ Channel → Source auto dash logic
   useEffect(() => {
     const channelsWithSource = [
@@ -490,7 +780,11 @@ export function TicketSheet(props: TicketSheetProps) {
   }>({});
 
   const [timeError, setTimeError] = useState<string | null>(null);
+  const [tsmTimeError, setTsmTimeError] = useState<string | null>(null);
+  const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
   const isManagerRequiredButMissing = managersAvailable > 0 && !manager;
+  const [highlightAgent, setHighlightAgent] = useState(false);
+  const [agentReassigned, setAgentReassigned] = useState(false);
 
   // Options
   const departmentOptions: Option[] = [
@@ -619,12 +913,15 @@ export function TicketSheet(props: TicketSheetProps) {
 
   const validateStep3 = () => {
     const newErrors: typeof errors = {};
-    if (!ticketReceived)
+
+    if (!ticketReceived) {
       newErrors.ticketReceived = "Ticket Received is required.";
-    if (!ticketEndorsed)
+    }
+
+    if (!ticketEndorsed) {
       newErrors.ticketEndorsed = "Ticket Endorsed is required.";
-    if (!channel) newErrors.channel = "Channel is required.";
-    if (!wrapUp) newErrors.wrapUp = "Wrap Up is required.";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -652,6 +949,19 @@ export function TicketSheet(props: TicketSheetProps) {
     }
 
     if (status === "Closed") {
+      if (!tsmAcknowledgeDate && !tsaAcknowledgeDate) {
+        newErrors.status =
+          "Either TSM or TSA Acknowledgement Date is required when closing or converting to sales.";
+      }
+
+      if (tsmAcknowledgeDate && !tsmHandlingTime) {
+        newErrors.status = "TSM Handling Time is required.";
+      }
+
+      if (tsaAcknowledgeDate && !tsaHandlingTime) {
+        newErrors.status = "TSA Handling Time is required.";
+      }
+
       if (!closeReason.trim()) {
         newErrors.status = "Close reason is required.";
       }
@@ -669,6 +979,7 @@ export function TicketSheet(props: TicketSheetProps) {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
   // Override handleNext to add validation on step 3 and 6
   const onNext = () => {
     if (step === 3) {
@@ -695,19 +1006,29 @@ export function TicketSheet(props: TicketSheetProps) {
   const [loadingLoad, setLoadingLoad] = useState(false);
 
   // Override handleUpdate to validate status before saving
-  const onUpdate = async () => {
-    if (!validateStep6()) return;
-    setErrors({});
-    handleUpdate();
-  };
+const onUpdate = async () => {
+  if (!validateStep6()) return;
 
-  const isStep3NextDisabled =
-    !ticketReceived ||
-    !ticketEndorsed ||
-    !gender ||
-    !channel ||
-    !wrapUp ||
-    !!timeError;
+  setErrors({});
+
+  await handleUpdate(agentReassigned);
+
+  // FORCE update to Supabase ONLY when Reassign button was clicked
+  if (agentReassigned === true) {
+    try {
+      const { updateReassignRemarks } = await import("@/utils/supabase-reassign");
+
+      await updateReassignRemarks(ticketReferenceNumber, true);
+
+      console.log("Remarks successfully set to Reassigned");
+    } catch (err) {
+      console.error("Failed to update reassigned remarks:", err);
+    }
+  }
+};
+
+
+  const isStep3NextDisabled = !ticketReceived || !ticketEndorsed || !!timeError;
 
   // Helper: common buttons with validation on Next
   const Navigation = () => (
@@ -749,7 +1070,7 @@ export function TicketSheet(props: TicketSheetProps) {
             setClientSpecs("");
 
             // ❗ STATUS IS NOT CLEARED
-            handleUpdate();
+            handleUpdate(false);
           }}
           disabled={!!timeError}
           className="cursor-pointer"
@@ -772,7 +1093,10 @@ export function TicketSheet(props: TicketSheetProps) {
     <>
       {step === 2 && (
         <>
-          <h2 className="text-sm font-semibold mt-3">Step 2 — Department</h2>
+          <h2 className="text-sm font-semibold mt-3">
+            Step 2 — Department{" "}
+            <span className="text-red-600 text-xs italic">*required</span>
+          </h2>
           <FieldGroup>
             <Field>
               <FieldContent>
@@ -848,7 +1172,15 @@ export function TicketSheet(props: TicketSheetProps) {
                 />
               </Field>
               <Field>
-                <FieldLabel>Ticket Received</FieldLabel>
+                {(!ticketReceived || !ticketEndorsed) && (
+                  <p className="text-sm text-green-600 mb-2">
+                    Both Ticket Received and Ticket Endorsed are required.
+                  </p>
+                )}
+                <FieldLabel>
+                  Ticket Received{" "}
+                  <span className="text-red-600 text-xs italic">*required</span>
+                </FieldLabel>
                 <FieldDescription>
                   Date and time when the ticket was initially received or
                   logged.
@@ -861,7 +1193,10 @@ export function TicketSheet(props: TicketSheetProps) {
                 />
               </Field>
               <Field>
-                <FieldLabel>Ticket Endorsed</FieldLabel>
+                <FieldLabel>
+                  Ticket Endorsed{" "}
+                  <span className="text-red-600 text-xs italic">*required</span>
+                </FieldLabel>
                 <FieldDescription>
                   Date and time when the ticket was endorsed to the assigned
                   department.
@@ -872,42 +1207,6 @@ export function TicketSheet(props: TicketSheetProps) {
                   onChange={(e) => setTicketEndorsed(e.target.value)}
                   error={errors.ticketEndorsed || timeError || undefined}
                 />
-              </Field>
-
-              <Field>
-                <FieldLabel>Gender</FieldLabel>
-                <FieldDescription>
-                  Select the customer's gender for segmentation and analysis
-                  purposes.
-                </FieldDescription>
-
-                <RadioGroup
-                  value={gender}
-                  onValueChange={setGender}
-                  className="flex flex-row gap-6"
-                >
-                  <FieldLabel className="cursor-pointer">
-                    <Field orientation="horizontal" className="items-center">
-                      <FieldContent className="flex items-center gap-2">
-                        <User className="text-blue-600" size={18} />
-                        <FieldTitle>Male</FieldTitle>
-                      </FieldContent>
-
-                      <RadioGroupItem value="Male" />
-                    </Field>
-                  </FieldLabel>
-
-                  <FieldLabel className="cursor-pointer">
-                    <Field orientation="horizontal" className="items-center">
-                      <FieldContent className="flex items-center gap-2">
-                        <UserRound className="text-pink-600" size={18} />
-                        <FieldTitle>Female</FieldTitle>
-                      </FieldContent>
-
-                      <RadioGroupItem value="Female" />
-                    </Field>
-                  </FieldLabel>
-                </RadioGroup>
               </Field>
 
               <Field>
@@ -1062,46 +1361,6 @@ export function TicketSheet(props: TicketSheetProps) {
                   />
                 </Field>
               )}
-
-              {!isJobApplicant && (
-                <>
-                  <Field>
-                    <FieldLabel>TSM Acknowledgement Date</FieldLabel>
-                    <InputField
-                      type="datetime-local"
-                      value={tsmAcknowledgeDate}
-                      onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel>TSM Handling Time</FieldLabel>
-                    <InputField
-                      type="datetime-local"
-                      value={tsmHandlingTime}
-                      onChange={(e) => setTsmHandlingTime(e.target.value)}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel>TSA Acknowledgement Date</FieldLabel>
-                    <InputField
-                      type="datetime-local"
-                      value={tsaAcknowledgeDate}
-                      onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel>TSA Handling Time</FieldLabel>
-                    <InputField
-                      type="datetime-local"
-                      value={tsaHandlingTime}
-                      onChange={(e) => setTsaHandlingTime(e.target.value)}
-                    />
-                  </Field>
-                </>
-              )}
             </FieldSet>
           </FieldGroup>
           <Navigation />
@@ -1112,7 +1371,8 @@ export function TicketSheet(props: TicketSheetProps) {
         <>
           {/* Customer Status */}
           <h2 className="text-sm font-semibold mt-4">
-            Step 4 — Customer Details
+            Step 4 — Customer Details{" "}
+            <span className="text-red-600 text-xs italic">*required</span>
           </h2>
           <RadioGroup value={customerStatus} onValueChange={setCustomerStatus}>
             {customerStatusOptions.map((item) => (
@@ -1398,6 +1658,44 @@ export function TicketSheet(props: TicketSheetProps) {
         </>
       )}
 
+      <div className="mt-6 p-4 border rounded bg-gray-50 text-sm space-y-1">
+        <h4 className="font-semibold mb-2">
+          Handling Time Computation (Preview Only)
+        </h4>
+
+        <div>
+          CSR Response Time: <b>{csrTime || "-"}</b>
+        </div>
+
+        {/* <div>
+          TSM Response Time: <b>{tsmResponseTime || "-"}</b>
+        </div> */}
+
+        <div>
+          TSA Response Time: <b>{tsaResponseTime || "-"}</b>
+        </div>
+
+        <div>
+          TSA Handling Time: <b>{tsaHandlingTimeFinal || "-"}</b>
+        </div>
+
+        <hr className="my-2" />
+
+        <div>
+          Non-Quotation HT: <b>{nonQuotationHT || "-"}</b>
+        </div>
+
+        <div>
+          Quotation HT: <b>{quotationHT || "-"}</b>
+        </div>
+
+        <div>
+          SPF HT: <b>{spfHT || "-"}</b>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          * Values are computed in real-time and not saved to the database.
+        </p>
+      </div>
       {step === 6 && !isJobApplicant && (
         <>
           <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
@@ -1459,7 +1757,13 @@ export function TicketSheet(props: TicketSheetProps) {
                   onValueChange={(value) => setAgent(value)}
                   disabled={!manager}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger
+                    className={`w-full transition-all duration-300 ${
+                      highlightAgent
+                        ? "ring-2 ring-green-500 animate-pulse"
+                        : ""
+                    }`}
+                  >
                     <SelectValue placeholder="Select an Agent" />
                   </SelectTrigger>
 
@@ -1516,62 +1820,177 @@ export function TicketSheet(props: TicketSheetProps) {
           {/* ================= STATUS ================= */}
           <Field>
             <FieldLabel>Status</FieldLabel>
-            <RadioOptionsGroup
-              options={statusOptions}
-              value={status}
-              onChange={setStatus}
-              error={errors.status}
-            />
+
+            <FieldGroup>
+              <FieldSet>
+                <RadioGroup value={status} onValueChange={setStatus}>
+                  {/* CLOSED OPTION */}
+                  <FieldLabel>
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle>Closed</FieldTitle>
+                        <FieldDescription>
+                          The process or item has been completed and finalized.
+                        </FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value="Closed" />
+                    </Field>
+                  </FieldLabel>
+
+                  {/* ENDORSED OPTION */}
+                  <FieldLabel>
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle>Endorsed</FieldTitle>
+                        <FieldDescription>
+                          The item has been reviewed and forwarded for further
+                          action.
+                        </FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value="Endorsed" />
+                    </Field>
+                  </FieldLabel>
+
+                  {/* 👉 RE-ASSIGN BUTTON EXACTLY IN THE MIDDLE */}
+                  {status === "Endorsed" && (
+                    <div className="flex justify-center my-2">
+                      <Button
+                        onClick={() => {
+                          setAgent("");
+                          setHighlightAgent(true);
+                          setAgentReassigned(true); // track that reassign was clicked
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                      >
+                        Re-Assign Agent
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* CONVERTED INTO SALES OPTION */}
+                  <FieldLabel>
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle>Converted into Sales</FieldTitle>
+                        <FieldDescription>
+                          The item has progressed and resulted in a successful
+                          sale.
+                        </FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value="Converted into Sales" />
+                    </Field>
+                  </FieldLabel>
+                </RadioGroup>
+
+                {errors.status && (
+                  <p className="text-sm text-red-600 mt-1">{errors.status}</p>
+                )}
+              </FieldSet>
+            </FieldGroup>
           </Field>
 
           {/* ================= CLOSED ================= */}
-          {status === "Closed" && (
-            <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
-              <h4 className="font-semibold text-sm text-red-700">
-                On Closing of Ticket (Required)
-              </h4>
+          {(status === "Closed" || status === "Converted into Sales") && (
+            <>
+              {/* HANDLING TIME SECTION - MOVED FROM STEP 3 */}
+              <div className="mt-4 rounded-lg border border-blue-300 bg-blue-50 p-4 space-y-4">
+                <h4 className="font-semibold text-sm text-blue-700">
+                  Handling Time Details (Required on Closing)
+                </h4>
 
-              <Field>
-                <FieldLabel>1. Close Reason *</FieldLabel>
-                <select
-                  value={closeReason}
-                  onChange={(e) => setCloseReason(e.target.value)}
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="">Select a reason</option>
-                  <option value="Same Specs Provided">
-                    Same Specs Provided
-                  </option>
-                  <option value="Counter Offer">Counter Offer</option>
-                  <option value="Out of Stock">Out of Stock</option>
-                  <option value="Client Declined">Client Declined</option>
-                  <option value="Not Interested">Not Interested</option>
-                  <option value="Others">Others</option>
-                </select>
-              </Field>
+                <Field>
+                  <FieldLabel>TSM Acknowledgement Date *</FieldLabel>
+                  <InputField
+                    type="datetime-local"
+                    value={tsmAcknowledgeDate}
+                    onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
+                  />
+                </Field>
 
-              {closeReason === "Counter Offer" && (
-                <>
+                <Field>
+                  <FieldLabel>TSM Handling Time *</FieldLabel>
+                  <InputField
+                    type="datetime-local"
+                    value={tsmHandlingTime}
+                    onChange={(e) => setTsmHandlingTime(e.target.value)}
+                    error={tsmTimeError || undefined}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel>TSA Acknowledgement Date *</FieldLabel>
+                  <InputField
+                    type="datetime-local"
+                    value={tsaAcknowledgeDate}
+                    onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel>TSA Handling Time *</FieldLabel>
+                  <InputField
+                    type="datetime-local"
+                    value={tsaHandlingTime}
+                    onChange={(e) => setTsaHandlingTime(e.target.value)}
+                    error={tsaTimeError || undefined}
+                  />
+                </Field>
+
+                <p className="text-xs text-gray-600 italic">
+                  Note: Either TSM or TSA acknowledgement details must be
+                  completed before closing the ticket.
+                </p>
+              </div>
+
+              {/* EXISTING CLOSE REASON SECTION */}
+              {status === "Closed" && (
+                <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
+                  <h4 className="font-semibold text-sm text-red-700">
+                    On Closing of Ticket (Required)
+                  </h4>
+
                   <Field>
-                    <FieldLabel>2. Add Counter Offer *</FieldLabel>
-                    <Textarea
-                      value={counterOffer}
-                      onChange={(e) => setCounterOffer(e.target.value)}
-                      placeholder="Enter counter offer..."
-                    />
+                    <FieldLabel>1. Close Reason *</FieldLabel>
+                    <select
+                      value={closeReason}
+                      onChange={(e) => setCloseReason(e.target.value)}
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                    >
+                      <option value="">Select a reason</option>
+                      <option value="Same Specs Provided">
+                        Same Specs Provided
+                      </option>
+                      <option value="Counter Offer">Counter Offer</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                      <option value="Client Declined">Client Declined</option>
+                      <option value="Not Interested">Not Interested</option>
+                      <option value="Others">Others</option>
+                    </select>
                   </Field>
 
-                  <Field>
-                    <FieldLabel>3. Client Specs *</FieldLabel>
-                    <Textarea
-                      value={clientSpecs}
-                      onChange={(e) => setClientSpecs(e.target.value)}
-                      placeholder="Enter client specifications..."
-                    />
-                  </Field>
-                </>
+                  {closeReason === "Counter Offer" && (
+                    <>
+                      <Field>
+                        <FieldLabel>2. Add Counter Offer *</FieldLabel>
+                        <Textarea
+                          value={counterOffer}
+                          onChange={(e) => setCounterOffer(e.target.value)}
+                          placeholder="Enter counter offer..."
+                        />
+                      </Field>
+
+                      <Field>
+                        <FieldLabel>3. Client Specs *</FieldLabel>
+                        <Textarea
+                          value={clientSpecs}
+                          onChange={(e) => setClientSpecs(e.target.value)}
+                          placeholder="Enter client specifications..."
+                        />
+                      </Field>
+                    </>
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
 
           {/* ================= CONVERTED ================= */}
@@ -1623,7 +2042,6 @@ export function TicketSheet(props: TicketSheetProps) {
               !!timeError ||
               isManagerRequiredButMissing
             }
-            className="cursor-pointer"
           >
             {loadingSave ? "Saving..." : "Save"}
           </Button>

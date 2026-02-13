@@ -1,13 +1,36 @@
 "use client";
 
-import React, { useState, useMemo, forwardRef, useImperativeHandle, useEffect, } from "react";
+import React, {
+  useState,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+  useEffect,
+} from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
-import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 /* ===================== HELPERS ===================== */
 function isValidSalesInquiry(a: Activity) {
@@ -25,127 +48,127 @@ function isConvertedSale(a: Activity) {
   );
 }
 
-
 function normalizeRemarks(remarks?: string): string {
   return remarks?.trim().toLowerCase() ?? "";
 }
 
-/* ===================== TSA RESPONSE TIME ===================== */
-function computeResponseSeconds(
-  ticket_endorsed?: string,
-  tsa_acknowledge_date?: string
-): number | null {
-  if (!ticket_endorsed || !tsa_acknowledge_date) return null;
+// ===== NEW COMPUTATION BASED ON SHEET-TICKET LOGIC =====
 
-  const start = new Date(ticket_endorsed);
-  const end = new Date(tsa_acknowledge_date);
+// ===== ALIGNED COMPUTATION HELPERS (MATCH SHEET-TICKET) =====
+
+const EXCLUDED_WRAPUPS = [
+  "customerfeedback/recommendation",
+  "job inquiry",
+  "job applicants",
+  "supplier/vendor product offer",
+  "internal whistle blower",
+  "threats / extortion / intimidation",
+  "prank call",
+];
+
+function isExcludedWrapUp(wrapUp?: string): boolean {
+  return EXCLUDED_WRAPUPS.includes((wrapUp || "").trim().toLowerCase());
+}
+
+function computeTsaResponseTimeAligned(a: Activity): number | null {
+  if (isExcludedWrapUp(a.wrap_up)) return null;
+
+  if (!a.ticket_endorsed || !a.tsa_acknowledge_date) return null;
+
+  const start = new Date(a.ticket_endorsed);
+  const end = new Date(a.tsa_acknowledge_date);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   if (end < start) return null;
 
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
+  // return MINUTES (same unit as sheet-ticket)
+  return Math.floor((end.getTime() - start.getTime()) / 60000);
 }
 
+// SAME LOGIC AS SHEET-TICKET DISPLAY:
+// TSA Handling = TSA Handling Time – Ticket Received
+function computeTsaHandlingTimeAligned(a: Activity): number | null {
+  if (isExcludedWrapUp(a.wrap_up)) return null;
 
+  if (!a.ticket_received || !a.tsa_handling_time) return null;
 
-/* ===================== TSA RESPONSE TIME ===================== */
-
-
-
-/* ===================== QUOTATION HANDLING TIME ===================== */
-function computeQuotationSeconds(
-  tsa_acknowledge_date?: string,
-  tsa_handling_time?: string,
-  remarks?: string
-): number | null {
-  if (!tsa_acknowledge_date || !tsa_handling_time || !remarks) return null;
-
-  if (normalizeRemarks(remarks) !== "quotation for approval") return null;
-
-  const start = new Date(tsa_acknowledge_date);
-  const end = new Date(tsa_handling_time);
-
-  if (end < start) return null;
-
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
-}
-
-
-/* ===================== QUOTATION HANDLING TIME ===================== */
-
-
-
-/* ===================== NON-QUOTATION HANDLING TIME ===================== */
-
-function computeNonQuotationSeconds(
-  ticket_received?: string,
-  tsa_handling_time?: string,
-  remarks?: string
-): number | null {
-  const r = normalizeRemarks(remarks);
-
-  if (!ticket_received || !tsa_handling_time) return null;
-  if (r === "quotation for approval") return null;
-  if (r === "for spf") return null;
-
-  const start = new Date(ticket_received);
-  const end = new Date(tsa_handling_time);
+  const start = new Date(a.ticket_received);
+  const end = new Date(a.tsa_handling_time);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   if (end < start) return null;
 
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
+  // minutes to match sheet-ticket.tsx
+  return Math.floor((end.getTime() - start.getTime()) / 60000);
 }
 
 
+function getBaseHandlingTime(a: Activity): number | null {
+  const tsaHT = computeTsaHandlingTimeAligned(a);
+  if (tsaHT !== null) return tsaHT;
 
+  return null;
+}
 
+function computeNonQuotationHTAligned(a: Activity): number | null {
+  const base = getBaseHandlingTime(a);
+  if (base === null) return null;
 
+  const list = [
+    "no stocks / insufficient stocks",
+    "customer request cancellation",
+    "insufficient stocks",
+    "unable to contact customer",
+    "item not carried",
+    "waiting for client confirmation",
+    "customer requested cancellation",
+    "accreditation/partnership",
+    "no response from client",
+    "assisted",
+    "for site visit",
+    "non standard item",
+    "po received",
+    "pending quotation",
+    "for occular inspection",
+  ];
 
+  const remarks = normalizeRemarks(a.remarks);
 
-/* ===================== NON-QUOTATION HANDLING TIME ===================== */
+  return list.includes(remarks) ? base : null;
+}
 
+function computeQuotationHTAligned(a: Activity): number | null {
+  const base = getBaseHandlingTime(a);
+  if (base === null) return null;
 
+  const r = normalizeRemarks(a.remarks);
 
-/* ===================== SPF HANDLING DURATION ===================== */
-
-function computeSPFSeconds(
-  ticket_received?: string,
-  tsa_handling_time?: string,
-  remarks?: string
-): number | null {
-  if (
-    !ticket_received ||
-    !tsa_handling_time ||
-    normalizeRemarks(remarks) !== "for spf"
-  ) {
-    return null;
+  if (r === "quotation for approval" || r === "sold") {
+    return base;
   }
 
-  const start = new Date(ticket_received);
-  const end = new Date(tsa_handling_time);
-
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-  if (end < start) return null;
-
-  return Math.floor((end.getTime() - start.getTime()) / 1000);
+  return null;
 }
 
+function computeSpfHTAligned(a: Activity): number | null {
+  const base = getBaseHandlingTime(a);
+  if (base === null) return null;
 
+  const r = normalizeRemarks(a.remarks);
 
-/* ===================== SPF HANDLING DURATION ===================== */
+  if (r.includes("spf")) {
+    return base;
+  }
 
+  return null;
+}
 
-function formatDuration(seconds: number): string {
-  // round to nearest minute
-  const totalMinutes = Math.round(seconds / 60);
-
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
+function formatMinutesToHHMM(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
 
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
 }
-
 
 /* ===================== INTERFACES ===================== */
 
@@ -173,6 +196,8 @@ interface Activity {
   ticket_endorsed?: string;
   tsa_acknowledge_date?: string;
   tsa_handling_time?: string;
+
+  wrap_up?: string; // ← ADDED to support exclusion logic
 }
 
 interface Agent {
@@ -196,468 +221,568 @@ export interface AgentSalesConversionCardRef {
   downloadCSV: () => void;
 }
 
-const AgentSalesTableCard = forwardRef<
-  AgentSalesConversionCardRef,
-  Props
->(({ dateCreatedFilterRange, role, userReferenceId }, ref) => {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [agentsLoading, setAgentsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
+  ({ dateCreatedFilterRange, role, userReferenceId }: Props, ref) => {
+    const [activities, setActivities] = useState<Activity[]>([]);
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [agentsLoading, setAgentsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  /* ===================== FETCH ===================== */
+    /* ===================== FETCH ===================== */
 
-  useEffect(() => {
-    async function fetchAgents() {
-      setAgentsLoading(true);
-      try {
-        const res = await fetch("/api/fetch-agent");
-        const data = await res.json();
-        setAgents(data);
-      } catch {
-        setAgents([]);
-      } finally {
-        setAgentsLoading(false);
+    useEffect(() => {
+      async function fetchAgents() {
+        setAgentsLoading(true);
+        try {
+          const res = await fetch("/api/fetch-agent");
+          const data = await res.json();
+          setAgents(data);
+        } catch {
+          setAgents([]);
+        } finally {
+          setAgentsLoading(false);
+        }
       }
-    }
-    fetchAgents();
-  }, []);
+      fetchAgents();
+    }, []);
 
-useEffect(() => {
-  async function fetchActivities() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/act-fetch-activity-role", {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-role": role,
-          "x-reference-id": userReferenceId,
-        },
-      });
+    useEffect(() => {
+      async function fetchActivities() {
+        setLoading(true);
+        try {
+          const res = await fetch("/api/act-fetch-activity-role", {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+              "Content-Type": "application/json",
+              "x-user-role": role,
+              "x-reference-id": userReferenceId,
+            },
+          });
 
+          const json = await res.json();
 
-      const json = await res.json();
+          // ✅ SAME STATUS FILTER AS ticket.tsx
+          const allowedStatuses = [
+            "On-Progress",
+            "Closed",
+            "Endorsed",
+            "Converted into Sales",
+          ];
 
-      // ✅ SAME STATUS FILTER AS ticket.tsx
-      const allowedStatuses = [
-        "On-Progress",
-        "Closed",
-        "Endorsed",
-        "Converted into Sales",
-      ];
-
-      const filtered = (json.data || []).filter((a: any) =>
-        allowedStatuses.includes(a.status)
-      );
-
-      setActivities(filtered);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  fetchActivities();
-}, [role, userReferenceId]);
-
-
-  /* ===================== DATE FILTER ===================== */
-
-  const isDateInRange = (dateStr?: string, range?: DateRange) => {
-    if (!range || !dateStr) return true;
-
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return false;
-
-    const from = range.from
-      ? new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0)
-      : null;
-
-    const to = range.to
-      ? new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate(), 23, 59, 59)
-      : null;
-
-    if (from && date < from) return false;
-    if (to && date > to) return false;
-
-    return true;
-  };
-
-  /* ===================== GROUPED DATA ===================== */
-
-  const groupedData = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        agent: string;
-        salesCount: number;
-        nonSalesCount: number;
-        convertedCount: number;
-        amount: number;
-        qtySold: number;
-
-        newClientCount: number;
-        newNonBuyingCount: number;
-        ExistingActiveCount: number;
-        ExistingInactive: number;
-
-        newClientConvertedAmount: number;
-        newNonBuyingConvertedAmount: number;
-        newExistingActiveConvertedAmount: number;
-        newExistingInactiveConvertedAmount: number;
-        // TSA RESPONSE TIME
-        totalResponseSeconds: number;
-        responseCount: number;
-        // QUOTATION HANDLING TIME
-        quotationTotalSeconds: number;
-        quotationCount: number;
-        // NON-QUOTATION HANDLING TIME
-        nonQuotationTotalSeconds: number;
-        nonQuotationCount: number;
-        // SPF HANDLING DURATION
-        spfTotalSeconds: number;
-        spfCount: number;
-
-      }
-    > = {};
-
-    activities
-      .filter(
-        (a) =>
-          isDateInRange(a.date_created, dateCreatedFilterRange) &&
-          a.agent
-      )
-      .forEach((a) => {
-        const agent = a.agent!;
-        const soAmount = Number(a.so_amount ?? 0);
-        const qtySold = Number(a.qty_sold ?? 0);
-        const traffic = a.traffic.toLowerCase();
-        const status = a.status.toLowerCase();
-        const cs = a.customer_status.toLowerCase();
-
-        if (!map[agent]) {
-          map[agent] = {
-            agent,
-            salesCount: 0,
-            nonSalesCount: 0,
-            convertedCount: 0,
-            amount: 0,
-            qtySold: 0,
-
-            newClientCount: 0,
-            newNonBuyingCount: 0,
-            ExistingActiveCount: 0,
-            ExistingInactive: 0,
-
-            newClientConvertedAmount: 0,
-            newNonBuyingConvertedAmount: 0,
-            newExistingActiveConvertedAmount: 0,
-            newExistingInactiveConvertedAmount: 0,
-
-            totalResponseSeconds: 0,
-            responseCount: 0,
-
-            quotationTotalSeconds: 0,
-            quotationCount: 0,
-
-            nonQuotationTotalSeconds: 0,
-            nonQuotationCount: 0,
-
-            spfTotalSeconds: 0,
-            spfCount: 0,
-
-          };
-        }
-
-        if (normalizeRemarks(a.remarks) === "po received") return;
-
-        // SALES / NON-SALES COUNT
-        // SALES / NON-SALES COUNT
-        if (isValidSalesInquiry(a)) {
-          map[agent].salesCount++;
-        }
-
-        if (traffic === "non-sales") {
-          map[agent].nonSalesCount++;
-        }
-
-        // CUSTOMER STATUS COUNTS (Sales inquiries only – Excel-aligned)
-        if (isValidSalesInquiry(a)) {
-  if (cs === "new client") map[agent].newClientCount++;
-  if (cs === "new non-buying") map[agent].newNonBuyingCount++;
-  if (cs === "existing active") map[agent].ExistingActiveCount++;
-  if (cs === "existing inactive") map[agent].ExistingInactive++;
-}
-
-        // ✅ ONLY TRUE SALES CONVERSIONS
-        if (isConvertedSale(a)) {
-          map[agent].convertedCount++;
-  map[agent].amount += soAmount;
-  map[agent].qtySold += qtySold;
-}
-
-
-        // TSA RESPONSE TIME COMPUTATION
-        if (a.ticket_endorsed && a.tsa_acknowledge_date) {
-          const responseSeconds = computeResponseSeconds(
-            a.ticket_endorsed,
-            a.tsa_acknowledge_date
+          const filtered = (json.data || []).filter((a: any) =>
+            allowedStatuses.includes(a.status),
           );
 
-          if (responseSeconds !== null) {
-            map[agent].totalResponseSeconds += responseSeconds;
-            map[agent].responseCount++;
+          setActivities(filtered);
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      fetchActivities();
+    }, [role, userReferenceId]);
+
+    /* ===================== DATE FILTER ===================== */
+
+    const isDateInRange = (dateStr?: string, range?: DateRange) => {
+      if (!range || !dateStr) return true;
+
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return false;
+
+      const from = range.from
+        ? new Date(
+            range.from.getFullYear(),
+            range.from.getMonth(),
+            range.from.getDate(),
+            0,
+            0,
+            0,
+          )
+        : null;
+
+      const to = range.to
+        ? new Date(
+            range.to.getFullYear(),
+            range.to.getMonth(),
+            range.to.getDate(),
+            23,
+            59,
+            59,
+          )
+        : null;
+
+      if (from && date < from) return false;
+      if (to && date > to) return false;
+
+      return true;
+    };
+
+    /* ===================== GROUPED DATA ===================== */
+
+    const groupedData = useMemo(() => {
+      const map: Record<
+        string,
+        {
+          agent: string;
+          salesCount: number;
+          nonSalesCount: number;
+          convertedCount: number;
+          amount: number;
+          qtySold: number;
+
+          newClientCount: number;
+          newNonBuyingCount: number;
+          ExistingActiveCount: number;
+          ExistingInactive: number;
+
+          newClientConvertedAmount: number;
+          newNonBuyingConvertedAmount: number;
+          newExistingActiveConvertedAmount: number;
+          newExistingInactiveConvertedAmount: number;
+          tsaResponseTotal: number;
+          tsaResponseCount: number;
+
+          tsaHandlingTotal: number;
+          tsaHandlingCount: number;
+
+          nonQuotationTotal: number;
+          nonQuotationCount: number;
+
+          quotationTotal: number;
+          quotationCount: number;
+
+          spfTotal: number;
+          spfCount: number;
+        }
+      > = {};
+
+      activities
+        .filter(
+          (a) =>
+              isDateInRange(a.date_created, dateCreatedFilterRange) && a.agent,
+        )
+        .forEach((a) => {
+          const agent = a.agent!;
+          const soAmount = Number(a.so_amount ?? 0);
+          const qtySold = Number(a.qty_sold ?? 0);
+          const traffic = a.traffic.toLowerCase();
+          const status = a.status.toLowerCase();
+          const cs = (a.customer_status || "").toLowerCase();
+
+          if (!map[agent]) {
+            map[agent] = {
+              agent,
+              salesCount: 0,
+              nonSalesCount: 0,
+              convertedCount: 0,
+              amount: 0,
+              qtySold: 0,
+
+              newClientCount: 0,
+              newNonBuyingCount: 0,
+              ExistingActiveCount: 0,
+              ExistingInactive: 0,
+
+              newClientConvertedAmount: 0,
+              newNonBuyingConvertedAmount: 0,
+              newExistingActiveConvertedAmount: 0,
+              newExistingInactiveConvertedAmount: 0,
+
+              tsaResponseTotal: 0,
+              tsaResponseCount: 0,
+
+              tsaHandlingTotal: 0,
+              tsaHandlingCount: 0,
+
+              nonQuotationTotal: 0,
+              nonQuotationCount: 0,
+
+              quotationTotal: 0,
+              quotationCount: 0,
+
+              spfTotal: 0,
+              spfCount: 0,
+            };
           }
-        }
 
-        // QUOTATION HANDLING TIME COMPUTATION
-        const quotationSeconds = computeQuotationSeconds(
-          a.tsa_acknowledge_date,
-          a.tsa_handling_time,
-          a.remarks
-        );
+          if (normalizeRemarks(a.remarks) === "po received") return;
 
-        if (quotationSeconds !== null) {
-          map[agent].quotationTotalSeconds += quotationSeconds;
-          map[agent].quotationCount++;
-        }
+          // SALES / NON-SALES COUNT
+          // SALES / NON-SALES COUNT
+          const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
+          const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
 
+          if (normalizeRemarks(a.remarks) === "po received") {
+            map[agent].nonSalesCount += 1;
+          } else if (
+            normalizedWrapUp === "customer inquiry non-sales" ||
+            normalizedWrapUp === "customer inquiry non sales"
+          ) {
+            map[agent].nonSalesCount += 1;
+          } else if (isValidSalesInquiry(a)) {
+            map[agent].salesCount += 1;
+          } else {
+            map[agent].nonSalesCount += 1;
+          }
 
-        // NON-QUOTATION HANDLING TIME COMPUTATION
-const nonQuotationSeconds = computeNonQuotationSeconds(
-  a.ticket_received,        // ✅ TAMA
-  a.tsa_handling_time,
-  a.remarks
-);
-        if (nonQuotationSeconds !== null) {
-          map[agent].nonQuotationTotalSeconds += nonQuotationSeconds;
-          map[agent].nonQuotationCount++;
-        }
+          // CUSTOMER STATUS COUNTS (Sales inquiries only – Excel-aligned)
+          if (isValidSalesInquiry(a)) {
+            if (cs === "new client") map[agent].newClientCount++;
+            if (cs === "new non-buying") map[agent].newNonBuyingCount++;
+            if (cs === "existing active") map[agent].ExistingActiveCount++;
+            if (cs === "existing inactive") map[agent].ExistingInactive++;
+          }
 
+          // ✅ ONLY TRUE SALES CONVERSIONS
+          if (isConvertedSale(a)) {
+            map[agent].convertedCount++;
+            map[agent].amount += soAmount;
+            map[agent].qtySold += qtySold;
 
-        // SPF HANDLING DURATION COMPUTATION
-        const spfSeconds = computeSPFSeconds(
-          a.ticket_received,        // ✅ TAMA
-          a.tsa_handling_time,
-          a.remarks
-        );
+            if (cs === "new client")
+              map[agent].newClientConvertedAmount += soAmount;
 
-        if (spfSeconds !== null) {
-          map[agent].spfTotalSeconds += spfSeconds;
-          map[agent].spfCount++;
-        }
+            if (cs === "new non-buying")
+              map[agent].newNonBuyingConvertedAmount += soAmount;
 
-      });
+            if (cs === "existing active")
+              map[agent].newExistingActiveConvertedAmount += soAmount;
 
-    return Object.values(map);
-  }, [activities, dateCreatedFilterRange]);
+            if (cs === "existing inactive")
+              map[agent].newExistingInactiveConvertedAmount += soAmount;
+          }
 
-  useImperativeHandle(ref, () => ({
-    downloadCSV() { },
-  }));
+          // TSA RESPONSE TIME (ALIGNED)
+          const tsaResponse = computeTsaResponseTimeAligned(a);
+          if (tsaResponse !== null) {
+            map[agent].tsaResponseTotal += tsaResponse;
+            map[agent].tsaResponseCount++;
+          }
 
-  /* ===================== RENDER ===================== */
+          const tsaHandling = computeTsaHandlingTimeAligned(a);
+          if (tsaHandling !== null) {
+            map[agent].tsaHandlingTotal += tsaHandling;
+            map[agent].tsaHandlingCount++;
+          }
 
-  return (
-    <Card>
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle>Territory Sales Associate Conversion</CardTitle>
-        <div className="text-sm text-muted-foreground">
+          const nonQ = computeNonQuotationHTAligned(a);
+          if (nonQ !== null) {
+            map[agent].nonQuotationTotal += nonQ;
+            map[agent].nonQuotationCount++;
+          }
+
+          const qHT = computeQuotationHTAligned(a);
+          if (qHT !== null) {
+            map[agent].quotationTotal += qHT;
+            map[agent].quotationCount++;
+          }
+
+          const spf = computeSpfHTAligned(a);
+          if (spf !== null) {
+            map[agent].spfTotal += spf;
+            map[agent].spfCount++;
+          }
+        }); // ← THIS IS MISSING
+
+      return Object.values(map);
+    }, [activities, dateCreatedFilterRange]);
+
+    useImperativeHandle(ref, () => ({
+      downloadCSV() {},
+    }));
+
+    /* ===================== RENDER ===================== */
+
+    return (
+      <Card>
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle>Territory Sales Associate Conversion</CardTitle>
+          <div className="text-sm text-muted-foreground">
             {dateCreatedFilterRange?.from || dateCreatedFilterRange?.to ? (
               <>
-                {dateCreatedFilterRange.from ? formatDate(dateCreatedFilterRange.from) : "Any"}{" "}
+                {dateCreatedFilterRange.from
+                  ? formatDate(dateCreatedFilterRange.from)
+                  : "Any"}{" "}
                 -{" "}
-                {dateCreatedFilterRange.to ? formatDate(dateCreatedFilterRange.to) : "Any"}
+                {dateCreatedFilterRange.to
+                  ? formatDate(dateCreatedFilterRange.to)
+                  : "Any"}
               </>
             ) : (
               <span>All Dates</span>
             )}
           </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="cursor-pointer">
-              <Info size={18} />
-            </button>
-          </PopoverTrigger>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="cursor-pointer">
+                <Info size={18} />
+              </button>
+            </PopoverTrigger>
 
-          <PopoverContent className="w-[420px] text-sm">
-            <div className="space-y-3">
-              <h4 className="font-semibold">Computation Guide</h4>
+            <PopoverContent className="w-[420px] text-sm">
+              <div className="space-y-3">
+                <h4 className="font-semibold">Computation Guide</h4>
 
-              <ul className="space-y-2">
-                <li>
-                  <b>Sales</b> – Number of records where <i>Traffic = Sales</i>
-                </li>
+                <ul className="space-y-2">
+                  <li>
+                    <b>Sales</b> – Number of records where{" "}
+                    <i>Traffic = Sales</i>
+                  </li>
 
-                <li>
-                  <b>Non-Sales</b> – Number of records where <i>Traffic = Non-Sales</i>
-                </li>
+                  <li>
+                    <b>Non-Sales</b> – Number of records where{" "}
+                    <i>Traffic = Non-Sales</i>
+                  </li>
 
-                <li>
-                  <b>Amount</b> – Total <i>SO Amount</i> per agent
-                </li>
+                  <li>
+                    <b>Amount</b> – Total <i>SO Amount</i> per agent
+                  </li>
 
-                <li>
-                  <b>QTY Sold</b> – Total quantity sold per agent
-                </li>
+                  <li>
+                    <b>QTY Sold</b> – Total quantity sold per agent
+                  </li>
 
-                <li>
-                  <b>Converted Sales</b> – Number of records with status
-                  <i> “Converted into Sales”</i>
-                </li>
+                  <li>
+                    <b>Converted Sales</b> – Number of records with status
+                    <i> “Converted into Sales”</i>
+                  </li>
 
-                <li>
-                  <b>% Inquiry to Sales</b> –
-                  (Converted Sales ÷ Sales) × 100
-                </li>
+                  <li>
+                    <b>% Inquiry to Sales</b> – (Converted Sales ÷ Sales) × 100
+                  </li>
 
-                <li>
-                  <b>TSA Response Time</b> –
-                  <i>TSA Handling Time − Ticket Endorsed</i>
-                </li>
+                  <li>
+                    <b>TSA Response Time</b> –
+                    <i>TSA Handling Time − Ticket Endorsed</i>
+                  </li>
 
                   <li>
                     <b>Quotation Handling Time</b> –
-                    <i>TSA Handling Time − TSA Acknowledge Date</i><br />
+                    <i>TSA Handling Time − TSA Acknowledge Date</i>
+                    <br />
                     <span className="text-muted-foreground">
-                      Applies when:<br />
-                      • Remarks = “Quotation for Approval”
+                      Applies when:
+                      <br />• Remarks = “Quotation for Approval”
                     </span>
                   </li>
 
-                <li>
-                  <b>Non-Quotation Handling Time</b> –
-                  <i>TSA Handling Time − Ticket Received</i><br />
-                  <span className="text-muted-foreground">
-                    Applies to non-quotation remarks such as:<br />
-                    No Stocks, Unable to Contact Customer, Item Not Carried, Waiting for
-                    Client Confirmation, and similar cases
-                  </span>
-                </li>
+                  <li>
+                    <b>Non-Quotation Handling Time</b> –
+                    <i>TSA Handling Time − Ticket Received</i>
+                    <br />
+                    <span className="text-muted-foreground">
+                      Applies to non-quotation remarks such as:
+                      <br />
+                      No Stocks, Unable to Contact Customer, Item Not Carried,
+                      Waiting for Client Confirmation, and similar cases
+                    </span>
+                  </li>
 
-                <li>
-                  <b>SPF Handling Duration</b> –
-                  <i>TSA Handling Time − Ticket Received</i><br />
-                  <span className="text-muted-foreground">
-                    Applies only when Remarks = “For SPF”
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </PopoverContent>
-        </Popover>
+                  <li>
+                    <b>SPF Handling Duration</b> –
+                    <i>TSA Handling Time − Ticket Received</i>
+                    <br />
+                    <span className="text-muted-foreground">
+                      Applies only when Remarks = “For SPF”
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </CardHeader>
 
-      </CardHeader>
+        <CardContent>
+          {(loading || agentsLoading) && <p>Loading...</p>}
+          {error && <p className="text-destructive">{error}</p>}
 
-      <CardContent>
-        {(loading || agentsLoading) && <p>Loading...</p>}
-        {error && <p className="text-destructive">{error}</p>}
+          {!loading && groupedData.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rank</TableHead>
+                  <TableHead>Agent Name</TableHead>
+                  <TableHead className="text-right">Sales</TableHead>
+                  <TableHead className="text-right">Non-Sales</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">QTY Sold</TableHead>
+                  <TableHead className="text-right">Converted Sales</TableHead>
+                  <TableHead className="text-right">
+                    % Inquiry to Sales
+                  </TableHead>
+                  <TableHead className="text-right">New Client</TableHead>
+                  <TableHead className="text-right">New Non-Buying</TableHead>
+                  <TableHead className="text-right">Existing Active</TableHead>
+                  <TableHead className="text-right">
+                    Existing Inactive
+                  </TableHead>
+                  <TableHead className="text-right">
+                    New Client (Converted)
+                  </TableHead>
+                  <TableHead className="text-right">
+                    New Non-Buying (Converted)
+                  </TableHead>
+                  <TableHead className="text-right">
+                    Existing Active (Converted)
+                  </TableHead>
+                  <TableHead className="text-right">
+                    Existing Inactive (Converted)
+                  </TableHead>
+                  <TableHead className="text-right">
+                    TSA Response Time
+                  </TableHead>
+                  <TableHead className="text-right">
+                    TSA Handling Time
+                  </TableHead>
+                  <TableHead className="text-right">Non-Quotation HT</TableHead>
+                  <TableHead className="text-right">Quotation HT</TableHead>
+                  <TableHead className="text-right">SPF HT</TableHead>
+                </TableRow>
+              </TableHeader>
 
-        {!loading && groupedData.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Rank</TableHead>
-                <TableHead>Agent Name</TableHead>
-                <TableHead className="text-right">Sales</TableHead>
-                <TableHead className="text-right">Non-Sales</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">QTY Sold</TableHead>
-                <TableHead className="text-right">Converted Sales</TableHead>
-                <TableHead className="text-right">% Inquiry to Sales</TableHead>
-                <TableHead className="text-right">New Client</TableHead>
-                <TableHead className="text-right">New Non-Buying</TableHead>
-                <TableHead className="text-right">Existing Active</TableHead>
-                <TableHead className="text-right">Existing Inactive</TableHead>
-                <TableHead className="text-right">New Client (Converted)</TableHead>
-                <TableHead className="text-right">New Non-Buying (Converted)</TableHead>
-                <TableHead className="text-right">Existing Active (Converted)</TableHead>
-                <TableHead className="text-right">Existing Inactive (Converted)</TableHead>
-                <TableHead className="text-right">TSA Response Time</TableHead>
-                <TableHead className="text-right">Quotation Handling Time</TableHead>
-                <TableHead className="text-right">Non-Quotation Handling Time</TableHead>
-                <TableHead className="text-right">SPF Handling Duration</TableHead>
-              </TableRow>
-            </TableHeader>
+              <TableBody>
+                {(groupedData as any[])
+                  .sort((a: any, b: any) => b.amount - a.amount)
+                  .map((r: any, i: number) => {
+                    const agent = agents.find((a) => a.ReferenceID === r.agent);
+                    return (
+                      <TableRow key={r.agent}>
+                        <TableCell>
+                          <Badge>{i + 1}</Badge>
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {agent
+                            ? `${agent.Firstname} ${agent.Lastname}`
+                            : "(Unknown)"}
+                        </TableCell>
 
-            <TableBody>
-              {groupedData
-                .sort((a, b) => b.amount - a.amount)
-                .map((r, i) => {
-                  const agent = agents.find((a) => a.ReferenceID === r.agent);
-                  return (
-                    <TableRow key={r.agent}>
-                      <TableCell><Badge>{i + 1}</Badge></TableCell>
-                      <TableCell className="capitalize">
-                        {agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown)"}
-                      </TableCell>
+                        <TableCell className="text-right">
+                          {r.salesCount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.nonSalesCount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ₱
+                          {r.amount.toLocaleString("en-PH", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.qtySold}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.convertedCount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.salesCount === 0
+                            ? "-"
+                            : ((r.convertedCount / r.salesCount) * 100).toFixed(
+                                2,
+                              ) + "%"}
+                        </TableCell>
 
-                      <TableCell className="text-right">{r.salesCount}</TableCell>
-                      <TableCell className="text-right">{r.nonSalesCount}</TableCell>
-                      <TableCell className="text-right">₱{r.amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2, })}</TableCell>
-                      <TableCell className="text-right">{r.qtySold}</TableCell>
-                      <TableCell className="text-right">{r.convertedCount}</TableCell>
-                      <TableCell className="text-right">
-                        {r.salesCount === 0
-                          ? "-"
-                          : ((r.convertedCount / r.salesCount) * 100).toFixed(2) + "%"}
-                      </TableCell>
-
-                      <TableCell className="text-right">{r.newClientCount}</TableCell>
-                      <TableCell className="text-right">{r.newNonBuyingCount}</TableCell>
-                      <TableCell className="text-right">{r.ExistingActiveCount}</TableCell>
-                      <TableCell className="text-right">{r.ExistingInactive}</TableCell>
-                      <TableCell className="text-right">{r.newClientConvertedAmount}</TableCell>
-                      <TableCell className="text-right">{r.newNonBuyingConvertedAmount}</TableCell>
-                      <TableCell className="text-right">{r.newExistingActiveConvertedAmount}</TableCell>
-                      <TableCell className="text-right">{r.newExistingInactiveConvertedAmount}</TableCell>
-                      <TableCell className="text-right">
-                        {r.responseCount === 0
-                          ? "-"
-                          : formatDuration(
-                            Math.floor(r.totalResponseSeconds / r.responseCount)
+                        <TableCell className="text-right">
+                          {r.newClientCount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.newNonBuyingCount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.ExistingActiveCount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.ExistingInactive}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ₱
+                          {r.newClientConvertedAmount.toLocaleString("en-PH", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ₱
+                          {r.newNonBuyingConvertedAmount.toLocaleString(
+                            "en-PH",
+                            {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            },
                           )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {r.quotationCount === 0
-                          ? "-"
-                          : formatDuration(Math.floor(r.quotationTotalSeconds / r.quotationCount))}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {r.nonQuotationCount === 0
-                          ? "-"
-                          : formatDuration(
-                            Math.floor(
-                              r.nonQuotationTotalSeconds / r.nonQuotationCount
-                            )
-                          )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {r.spfCount === 0
-                          ? "-"
-                          : formatDuration(
-                            Math.floor(r.spfTotalSeconds / r.spfCount)
-                          )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.newExistingActiveConvertedAmount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.newExistingInactiveConvertedAmount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.tsaResponseCount === 0
+                            ? "-"
+                            : formatMinutesToHHMM(
+                                Math.floor(
+                                  r.tsaResponseTotal / r.tsaResponseCount,
+                                ),
+                              )}
+                        </TableCell>
 
-      <Separator />
+                        <TableCell className="text-right">
+                          {r.tsaHandlingCount === 0
+                            ? "-"
+                            : formatMinutesToHHMM(
+                                Math.floor(
+                                  r.tsaHandlingTotal / r.tsaHandlingCount,
+                                ),
+                              )}
+                        </TableCell>
 
-      <CardFooter className="flex justify-end">
-        <Badge>Report Generated</Badge>
-      </CardFooter>
-    </Card>
-  );
-});
+                        <TableCell className="text-right">
+                          {r.nonQuotationCount === 0
+                            ? "-"
+                            : formatMinutesToHHMM(
+                                Math.floor(
+                                  r.nonQuotationTotal / r.nonQuotationCount,
+                                ),
+                              )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {r.quotationCount === 0
+                            ? "-"
+                            : formatMinutesToHHMM(
+                                Math.floor(r.quotationTotal / r.quotationCount),
+                              )}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          {r.spfCount === 0
+                            ? "-"
+                            : formatMinutesToHHMM(
+                                Math.floor(r.spfTotal / r.spfCount),
+                              )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+
+        <Separator />
+
+        <CardFooter className="flex justify-end">
+          <Badge>Report Generated</Badge>
+        </CardFooter>
+      </Card>
+    );
+  },
+);
 
 export default AgentSalesTableCard;
