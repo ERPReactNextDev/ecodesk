@@ -73,6 +73,8 @@ export const Checker: React.FC<TicketProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterReference, setFilterReference] = useState<string>("All");
+    const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState<string>("");
 
     const columns = [
         "referenceid",
@@ -162,28 +164,39 @@ export const Checker: React.FC<TicketProps> = ({
     const uniqueReferenceIds = Array.from(new Set(activities.map((a) => a.referenceid)));
 
     // Apply filters: referenceId + dateCreated
-    const filteredActivities = activities.filter((a) => {
-        const matchesReference = filterReference === "All" || a.referenceid === filterReference;
+    const filteredActivities = activities
+        .filter((a) => {
+            const matchesReference = filterReference === "All" || a.referenceid === filterReference;
 
-        let matchesDate = true;
-        if (dateCreatedFilterRange?.from || dateCreatedFilterRange?.to) {
-            const createdDate = new Date(a.date_created);
+            let matchesDate = true;
+            if (dateCreatedFilterRange?.from || dateCreatedFilterRange?.to) {
+                const createdDate = new Date(a.date_created);
 
-            if (dateCreatedFilterRange.from) {
-                const fromDate = new Date(dateCreatedFilterRange.from);
-                fromDate.setHours(0, 0, 0, 0); // start of day
-                if (createdDate < fromDate) matchesDate = false;
+                if (dateCreatedFilterRange.from) {
+                    const fromDate = new Date(dateCreatedFilterRange.from);
+                    fromDate.setHours(0, 0, 0, 0);
+                    if (createdDate < fromDate) matchesDate = false;
+                }
+
+                if (dateCreatedFilterRange.to) {
+                    const toDate = new Date(dateCreatedFilterRange.to);
+                    toDate.setHours(23, 59, 59, 999);
+                    if (createdDate > toDate) matchesDate = false;
+                }
             }
 
-            if (dateCreatedFilterRange.to) {
-                const toDate = new Date(dateCreatedFilterRange.to);
-                toDate.setHours(23, 59, 59, 999); // end of day, inclusive
-                if (createdDate > toDate) matchesDate = false;
-            }
-        }
+            return matchesReference && matchesDate;
+        })
+        .filter((a) => {
+            if (!searchQuery) return true;
 
-        return matchesReference && matchesDate;
-    });
+            const lowerQuery = searchQuery.toLowerCase();
+            // check all columns for match
+            return columns.some((field) => {
+                const value = (a as any)[field];
+                return value && value.toString().toLowerCase().includes(lowerQuery);
+            });
+        });
 
     const handleCellChange = async (activityId: string, field: string, value: string) => {
         // Update local state first for instant feedback
@@ -241,20 +254,34 @@ export const Checker: React.FC<TicketProps> = ({
             </div>
 
             {/* ReferenceID Filter */}
-            <div className="mb-2">
-                <label className="mr-2 font-semibold text-sm">Filter by ReferenceID:</label>
-                <select
-                    value={filterReference}
-                    onChange={(e) => setFilterReference(e.target.value)}
-                    className="border px-2 py-1 text-sm"
-                >
-                    <option value="All">All</option>
-                    {uniqueReferenceIds.map((ref) => (
-                        <option key={ref} value={ref}>
-                            {ref}
-                        </option>
-                    ))}
-                </select>
+            <div className="mb-2 flex items-center space-x-4">
+                {/* ReferenceID Filter */}
+                <div className="flex items-center space-x-2">
+                    <label className="font-semibold text-sm">Filter by ReferenceID:</label>
+                    <select
+                        value={filterReference}
+                        onChange={(e) => setFilterReference(e.target.value)}
+                        className="border px-2 py-1 text-sm"
+                    >
+                        <option value="All">All</option>
+                        {uniqueReferenceIds.map((ref) => (
+                            <option key={ref} value={ref}>
+                                {ref}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Search Bar */}
+                <div className="flex items-center">
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border px-2 py-1 text-sm w-64"
+                    />
+                </div>
             </div>
 
             {/* Table */}
@@ -275,7 +302,11 @@ export const Checker: React.FC<TicketProps> = ({
                     </thead>
                     <tbody>
                         {filteredActivities.map((act) => (
-                            <tr key={act._id} className="even:bg-gray-50">
+                            <tr
+                                key={act._id}
+                                className={`even:bg-gray-50 ${focusedRowId === act._id ? "bg-green-200" : ""
+                                    }`}
+                            >
                                 {columns.map((field) => (
                                     <td key={field} className="border p-2">
                                         <input
@@ -284,8 +315,10 @@ export const Checker: React.FC<TicketProps> = ({
                                             onChange={(e) =>
                                                 handleCellChange(act._id, field, e.target.value)
                                             }
+                                            onFocus={() => setFocusedRowId(act._id)}
+                                            onBlur={() => setFocusedRowId(null)}
                                             className="w-full text-sm border px-2 py-1"
-                                            style={{ minWidth: "180px" }} // sync sa column width
+                                            style={{ minWidth: "180px" }}
                                         />
                                     </td>
                                 ))}
