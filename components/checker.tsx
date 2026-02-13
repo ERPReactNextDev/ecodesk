@@ -164,7 +164,14 @@ export const Checker: React.FC<TicketProps> = ({
     const uniqueReferenceIds = Array.from(new Set(activities.map((a) => a.referenceid)));
 
     // Apply filters: referenceId + dateCreated
-    const filteredActivities = activities
+    // Role-based filter
+    const visibleActivities = activities.filter((a) => {
+        if (role === "Admin") return true; // Admin sees all
+        return a.referenceid === referenceid; // Others see only their referenceid
+    });
+
+    // Apply filters: referenceId + dateCreated + search
+    const filteredActivities = visibleActivities
         .filter((a) => {
             const matchesReference = filterReference === "All" || a.referenceid === filterReference;
 
@@ -197,6 +204,7 @@ export const Checker: React.FC<TicketProps> = ({
                 return value && value.toString().toLowerCase().includes(lowerQuery);
             });
         });
+
 
     const handleCellChange = async (activityId: string, field: string, value: string) => {
         // Update local state first for instant feedback

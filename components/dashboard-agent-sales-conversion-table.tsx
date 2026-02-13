@@ -27,7 +27,6 @@ import {
   TableBody,
   TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -73,7 +72,7 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef { }
+export interface AgentSalesConversionCardRef {}
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -529,9 +528,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                           {row.salesCount === 0
                             ? "0.00%"
                             : (
-                              (row.convertedCount / row.salesCount) *
-                              100
-                            ).toFixed(2) + "%"}
+                                (row.convertedCount / row.salesCount) *
+                                100
+                              ).toFixed(2) + "%"}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.convertedCount === 0
@@ -565,53 +564,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   })}
               </TableBody>
 
-              <TableFooter>
-                <TableRow className="font-semibold bg-muted/40">
-                  <TableCell />
-                  <TableCell>Total</TableCell>
-
-                  <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">
-                    {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    ₱{totalAmount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">{totalQty}</TableCell>
-                  <TableCell className="text-right">{totalConverted}</TableCell>
-
-                  <TableCell className="text-right">
-                    {totalConversionPct.toFixed(2)}%
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    {totalAveUnit.toFixed(2)}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    {totalAveValue.toFixed(2)}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    ₱{totalNewClient.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalNewNonBuying.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingActive.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingInactive.toLocaleString()}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    {formatMs(totalRowResponseAverage)}
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-
+              
+              
             </Table>
           </div>
         )}
