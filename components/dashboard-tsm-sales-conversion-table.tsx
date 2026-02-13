@@ -418,18 +418,18 @@ const AgentSalesTableCard = forwardRef<
           map[manager].csrSet.add(a.referenceid);
         }
 
-const companyRaw = a.company_name?.trim();
-const contactRaw = a.contact_person?.trim();
+        const companyRaw = a.company_name?.trim();
+        const contactRaw = a.contact_person?.trim();
 
-if (
-  companyRaw &&
-  companyRaw !== "" &&
-  !["na", "n/a"].includes(companyRaw.toLowerCase())
-) {
-  map[manager].companySet.add(companyRaw);
-} else if (contactRaw && contactRaw !== "") {
-  map[manager].companySet.add(contactRaw);
-}
+        if (
+          companyRaw &&
+          companyRaw !== "" &&
+          !["na", "n/a"].includes(companyRaw.toLowerCase())
+        ) {
+          map[manager].companySet.add(companyRaw);
+        } else if (contactRaw && contactRaw !== "") {
+          map[manager].companySet.add(contactRaw);
+        }
 
         // Counts
         const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
