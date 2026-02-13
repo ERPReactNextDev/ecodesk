@@ -199,6 +199,8 @@ interface Activity {
   tsa_handling_time?: string;
 
   wrap_up?: string; // ← ADDED to support exclusion logic
+  company_name?: string;
+  
 }
 
 interface Agent {
@@ -361,6 +363,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
           spfCount: number;
 
           csrSet: Set<string>;
+          companySet: Set<string>;
 
           
         }
@@ -417,6 +420,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
       spfCount: 0,
 
       csrSet: new Set<string>(),
+      companySet: new Set<string>(),
     };
   }
 
@@ -424,6 +428,10 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
   if (a.referenceid) {
     map[agent].csrSet.add(a.referenceid);
   }
+
+  if (a.company_name && a.company_name.trim() !== "") {
+  map[agent].companySet.add(a.company_name.trim());
+}
 
   // 🔹 Exclude PO received early if needed
   if (normalizeRemarks(a.remarks) === "po received") {
@@ -511,7 +519,8 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
 
 return Object.values(map).map((row) => ({
   ...row,
-  csrList: Array.from(row.csrSet),
+csrList: Array.from(row.csrSet),
+companyList: Array.from(row.companySet),
 }));
     }, [activities, dateCreatedFilterRange]);
 
@@ -705,6 +714,19 @@ return Object.values(map).map((row) => ({
         );
       })}
     </div>
+
+    <div className="font-medium mt-2">Companies Handled:</div>
+
+{r.companyList?.length === 0 && (
+  <div>No companies found</div>
+)}
+
+{r.companyList?.map((company: string) => (
+  <div key={company}>
+    {company}
+  </div>
+))}
+
   </details>
 </TableCell>
 
