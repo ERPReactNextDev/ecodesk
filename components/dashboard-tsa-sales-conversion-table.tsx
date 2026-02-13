@@ -102,7 +102,6 @@ function computeTsaHandlingTimeAligned(a: Activity): number | null {
   return Math.floor((end.getTime() - start.getTime()) / 60000);
 }
 
-
 function getBaseHandlingTime(a: Activity): number | null {
   const tsaHT = computeTsaHandlingTimeAligned(a);
   if (tsaHT !== null) return tsaHT;
@@ -183,6 +182,7 @@ function formatDate(date?: Date | null): string {
 
 interface Activity {
   agent?: string;
+  referenceid?: string; // ✅ ADD THIS
   date_created?: string;
   date_updated?: string;
   so_amount?: number | string;
@@ -198,6 +198,8 @@ interface Activity {
   tsa_handling_time?: string;
 
   wrap_up?: string; // ← ADDED to support exclusion logic
+  company_name?: string;
+  contact_person?: string;
 }
 
 interface Agent {
@@ -358,22 +360,28 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
 
           spfTotal: number;
           spfCount: number;
+
+          csrSet: Set<string>;
+          companySet: Set<string>;
         }
       > = {};
 
       activities
         .filter(
           (a) =>
-              isDateInRange(a.date_created, dateCreatedFilterRange) && a.agent,
+            isDateInRange(a.date_created, dateCreatedFilterRange) && a.agent,
         )
+
         .forEach((a) => {
+          // 🔹 Always declare agent FIRST
           const agent = a.agent!;
           const soAmount = Number(a.so_amount ?? 0);
           const qtySold = Number(a.qty_sold ?? 0);
-          const traffic = a.traffic.toLowerCase();
-          const status = a.status.toLowerCase();
+          const traffic = (a.traffic || "").toLowerCase();
+          const status = (a.status || "").toLowerCase();
           const cs = (a.customer_status || "").toLowerCase();
 
+          // 🔹 Initialize map entry FIRST
           if (!map[agent]) {
             map[agent] = {
               agent,
@@ -407,19 +415,41 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
 
               spfTotal: 0,
               spfCount: 0,
+
+              csrSet: new Set<string>(),
+              companySet: new Set<string>(),
             };
           }
 
-          if (normalizeRemarks(a.remarks) === "po received") return;
+          // 🔹 Now safe to track CSR
+          if (a.referenceid) {
+            map[agent].csrSet.add(a.referenceid);
+          }
 
-          // SALES / NON-SALES COUNT
+          const companyRaw = a.company_name?.trim();
+          const contactRaw = a.contact_person?.trim();
+
+          if (
+            companyRaw &&
+            companyRaw !== "" &&
+            !["na", "n/a"].includes(companyRaw.toLowerCase())
+          ) {
+            map[agent].companySet.add(companyRaw);
+          } else if (contactRaw && contactRaw !== "") {
+            map[agent].companySet.add(contactRaw);
+          }
+
+          // 🔹 Exclude PO received early if needed
+          if (normalizeRemarks(a.remarks) === "po received") {
+            map[agent].nonSalesCount += 1;
+            return;
+          }
+
           // SALES / NON-SALES COUNT
           const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
           const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
 
-          if (normalizeRemarks(a.remarks) === "po received") {
-            map[agent].nonSalesCount += 1;
-          } else if (
+          if (
             normalizedWrapUp === "customer inquiry non-sales" ||
             normalizedWrapUp === "customer inquiry non sales"
           ) {
@@ -430,7 +460,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
             map[agent].nonSalesCount += 1;
           }
 
-          // CUSTOMER STATUS COUNTS (Sales inquiries only – Excel-aligned)
+          // CUSTOMER STATUS COUNTS (Sales inquiries only)
           if (isValidSalesInquiry(a)) {
             if (cs === "new client") map[agent].newClientCount++;
             if (cs === "new non-buying") map[agent].newNonBuyingCount++;
@@ -438,7 +468,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
             if (cs === "existing inactive") map[agent].ExistingInactive++;
           }
 
-          // ✅ ONLY TRUE SALES CONVERSIONS
+          // TRUE SALES CONVERSIONS
           if (isConvertedSale(a)) {
             map[agent].convertedCount++;
             map[agent].amount += soAmount;
@@ -457,39 +487,47 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
               map[agent].newExistingInactiveConvertedAmount += soAmount;
           }
 
-          // TSA RESPONSE TIME (ALIGNED)
+          // TSA RESPONSE TIME
           const tsaResponse = computeTsaResponseTimeAligned(a);
           if (tsaResponse !== null) {
             map[agent].tsaResponseTotal += tsaResponse;
             map[agent].tsaResponseCount++;
           }
 
+          // TSA HANDLING TIME
           const tsaHandling = computeTsaHandlingTimeAligned(a);
           if (tsaHandling !== null) {
             map[agent].tsaHandlingTotal += tsaHandling;
             map[agent].tsaHandlingCount++;
           }
 
+          // NON QUOTATION HT
           const nonQ = computeNonQuotationHTAligned(a);
           if (nonQ !== null) {
             map[agent].nonQuotationTotal += nonQ;
             map[agent].nonQuotationCount++;
           }
 
+          // QUOTATION HT
           const qHT = computeQuotationHTAligned(a);
           if (qHT !== null) {
             map[agent].quotationTotal += qHT;
             map[agent].quotationCount++;
           }
 
+          // SPF HT
           const spf = computeSpfHTAligned(a);
           if (spf !== null) {
             map[agent].spfTotal += spf;
             map[agent].spfCount++;
           }
-        }); // ← THIS IS MISSING
+        });
 
-      return Object.values(map);
+      return Object.values(map).map((row) => ({
+        ...row,
+        csrList: Array.from(row.csrSet),
+        companyList: Array.from(row.companySet),
+      }));
     }, [activities, dateCreatedFilterRange]);
 
     useImperativeHandle(ref, () => ({
@@ -656,9 +694,53 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                           <Badge>{i + 1}</Badge>
                         </TableCell>
                         <TableCell className="capitalize">
-                          {agent
-                            ? `${agent.Firstname} ${agent.Lastname}`
-                            : "(Unknown)"}
+                          <details className="cursor-pointer">
+                            <summary className="font-semibold">
+                              {agent
+                                ? `${agent.Firstname} ${agent.Lastname}`
+                                : "(Unknown)"}
+                            </summary>
+
+                            <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                              <div className="font-medium">
+                                CSRs who endorsed:
+                              </div>
+
+                              {r.csrList?.length === 0 && (
+                                <div>No CSR found</div>
+                              )}
+
+                              {r.csrList?.map((csrId: string) => {
+                                const csr = agents.find(
+                                  (a) => a.ReferenceID === csrId,
+                                );
+
+                                return (
+                                  <div key={csrId}>
+                                    {csr
+                                      ? `${csr.Firstname} ${csr.Lastname}`
+                                      : csrId}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            <div className="font-medium mt-2">
+                              Companies Handled:
+                            </div>
+
+                            <div className="max-h-40 overflow-y-auto pr-2 border rounded-md p-2 bg-muted/30">
+                              {r.companyList?.length === 0 && (
+                                <div>No companies found</div>
+                              )}
+
+                              {r.companyList?.map((company: string) => (
+                                <div key={company} className="truncate">
+                                  {company}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
                         </TableCell>
 
                         <TableCell className="text-right">
