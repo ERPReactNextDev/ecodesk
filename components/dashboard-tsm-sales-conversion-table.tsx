@@ -50,6 +50,7 @@ function formatHHMMSS(totalMinutes: number): string {
 }
 
 interface Activity {
+   referenceid?: string; 
   manager?: string;
   date_created?: string;
   date_updated?: string;
@@ -339,6 +340,8 @@ const AgentSalesTableCard = forwardRef<
 
         spfTotal: number;
         spfCount: number;
+
+        csrSet: Set<string>;
       }
     > = {};
 
@@ -368,6 +371,8 @@ const AgentSalesTableCard = forwardRef<
         const spfHT = computeSpfHTAligned(a);
 
         const manager = a.manager!.trim();
+
+
         const soAmount = Number(a.so_amount ?? 0);
         const traffic = a.traffic?.toLowerCase() ?? "";
         const qtySold = Number(a.qty_sold ?? 0);
@@ -375,6 +380,8 @@ const AgentSalesTableCard = forwardRef<
 
         // Init
         if (!map[manager]) {
+
+          
           map[manager] = {
             manager,
             salesCount: 0,
@@ -401,8 +408,14 @@ const AgentSalesTableCard = forwardRef<
 
             spfTotal: 0,
             spfCount: 0,
+
+            csrSet: new Set<string>(),
           };
         }
+
+        if (a.referenceid) {
+  map[manager].csrSet.add(a.referenceid);
+}
 
         // Counts
         const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
@@ -487,7 +500,10 @@ const AgentSalesTableCard = forwardRef<
         }
       });
 
-    return Object.values(map);
+return Object.values(map).map((row) => ({
+  ...row,
+  csrList: Array.from(row.csrSet),   // ✅ convert Set → array
+}));
   }, [activities, dateCreatedFilterRange]);
 
   const totalSoAmount = groupedData.reduce((sum, row) => sum + row.amount, 0);
@@ -737,181 +753,216 @@ const AgentSalesTableCard = forwardRef<
                   <TableHead className="text-right">SPF HT</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {groupedData
-                  .slice()
-                  .sort((a, b) => b.amount - a.amount)
-                  .map(
-                    (
-                      {
-                        manager,
-                        salesCount,
-                        nonSalesCount,
-                        convertedCount,
-                        newClientCount,
-                        qtySold,
-                        amount,
-                        newNonBuyingCount,
-                        ExistingActiveCount,
-                        ExistingInactive,
-                        newClientConvertedAmount,
-                        newNonBuyingConvertedAmount,
-                        newExistingActiveConvertedAmount,
-                        newExistingInactiveConvertedAmount,
+<TableBody>
+  {groupedData
+    .slice()
+    .sort((a, b) => b.amount - a.amount)
+    .map((row, index) => {
 
-                        tsaResponseTotal,
-                        tsaResponseCount,
+      const {
+        manager,
+        salesCount,
+        nonSalesCount,
+        convertedCount,
+        newClientCount,
+        qtySold,
+        amount,
+        newNonBuyingCount,
+        ExistingActiveCount,
+        ExistingInactive,
+        newClientConvertedAmount,
+        newNonBuyingConvertedAmount,
+        newExistingActiveConvertedAmount,
+        newExistingInactiveConvertedAmount,
+        tsaResponseTotal,
+        tsaResponseCount,
+        nonRfQTotal,
+        nonRfQCount,
+        rfqTotal,
+        rfqCount,
+        spfTotal,
+        spfCount,
+        csrList,
+      } = row;
 
-                        nonRfQTotal,
-                        nonRfQCount,
+      const managerDetails = managers.find(
+        (a) => a.ReferenceID === manager,
+      );
 
-                        rfqTotal,
-                        rfqCount,
+      const fullName = managerDetails
+        ? `${managerDetails.Firstname} ${managerDetails.Lastname}`
+        : "(Unknown Agent)";
 
-                        spfTotal,
-                        spfCount,
-                      },
-                      index,
-                    ) => {
-                      const managerDetails = managers.find(
-                        (a) => a.ReferenceID === manager,
-                      );
-                      const fullName = managerDetails
-                        ? `${managerDetails.Firstname} ${managerDetails.Lastname}`
-                        : "(Unknown Agent)";
-                      const rank = index + 1;
-                      const avgTsaResponse =
-                        tsaResponseCount === 0
-                          ? "-"
-                          : Math.round(tsaResponseTotal / tsaResponseCount);
+      const rank = index + 1;
 
-                      const avgNonRfQ =
-                        nonRfQCount === 0
-                          ? "-"
-                          : Math.round(nonRfQTotal / nonRfQCount);
+      const avgTsaResponse =
+        tsaResponseCount === 0
+          ? "-"
+          : Math.round(tsaResponseTotal / tsaResponseCount);
 
-                      const avgRfQ =
-                        rfqCount === 0 ? "-" : Math.round(rfqTotal / rfqCount);
+      const avgNonRfQ =
+        nonRfQCount === 0
+          ? "-"
+          : Math.round(nonRfQTotal / nonRfQCount);
 
-                      const avgSpf =
-                        spfCount === 0 ? "-" : Math.round(spfTotal / spfCount);
+      const avgRfQ =
+        rfqCount === 0
+          ? "-"
+          : Math.round(rfqTotal / rfqCount);
 
-                      return (
-                        <TableRow key={manager} className="hover:bg-muted/50">
-                          <TableCell className="font-medium text-center">
-                            <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                              {rank}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="capitalize">
-                            {fullName}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {salesCount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {nonSalesCount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-left">
-                            ₱
-                            {amount.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {qtySold.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {convertedCount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {(() => {
-                              const totalInquiry = salesCount + nonSalesCount;
+      const avgSpf =
+        spfCount === 0
+          ? "-"
+          : Math.round(spfTotal / spfCount);
 
-                              return totalInquiry === 0
-                                ? "0.00%"
-                                : (
-                                    (convertedCount / totalInquiry) *
-                                    100
-                                  ).toFixed(2) + "%";
-                            })()}
-                          </TableCell>
+      return (
+        <TableRow key={manager} className="hover:bg-muted/50">
+          <TableCell className="font-medium text-center">
+            <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+              {rank}
+            </Badge>
+          </TableCell>
 
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {newClientCount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {newNonBuyingCount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {ExistingActiveCount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {ExistingInactive.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            ₱
-                            {newClientConvertedAmount.toLocaleString(
-                              undefined,
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              },
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            ₱
-                            {newNonBuyingConvertedAmount.toLocaleString(
-                              undefined,
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              },
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            ₱
-                            {newExistingActiveConvertedAmount.toLocaleString(
-                              undefined,
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              },
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            ₱
-                            {newExistingInactiveConvertedAmount.toLocaleString(
-                              undefined,
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              },
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {avgTsaResponse === "-"
-                              ? "-"
-                              : formatHHMMSS(avgTsaResponse)}
-                          </TableCell>
+          <TableCell className="capitalize">
+            <details className="cursor-pointer">
+              <summary className="font-semibold">
+                {fullName}
+              </summary>
 
-                          <TableCell className="text-right font-mono">
-                            {avgNonRfQ === "-" ? "-" : formatHHMMSS(avgNonRfQ)}
-                          </TableCell>
+              <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                <div className="font-medium">CSRs who encoded:</div>
 
-                          <TableCell className="text-right font-mono">
-                            {avgRfQ === "-" ? "-" : formatHHMMSS(avgRfQ)}
-                          </TableCell>
+                {csrList?.length === 0 && (
+                  <div>No CSR found</div>
+                )}
 
-                          <TableCell className="text-right font-mono">
-                            {avgSpf === "-" ? "-" : formatHHMMSS(avgSpf)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    },
-                  )}
-              </TableBody>
+                {csrList?.map((csrId: string) => {
+                  const csr = managers.find(
+                    (a) => a.ReferenceID === csrId,
+                  );
+
+                  return (
+                    <div key={csrId}>
+                      {csr
+                        ? `${csr.Firstname} ${csr.Lastname}`
+                        : csrId}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {salesCount.toLocaleString()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {nonSalesCount.toLocaleString()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-left">
+            ₱
+            {amount.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {qtySold.toLocaleString()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {convertedCount.toLocaleString()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {(() => {
+              const totalInquiry = salesCount + nonSalesCount;
+
+              return totalInquiry === 0
+                ? "0.00%"
+                : ((convertedCount / totalInquiry) * 100).toFixed(2) + "%";
+            })()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {newClientCount.toLocaleString()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {newNonBuyingCount.toLocaleString()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {ExistingActiveCount.toLocaleString()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            {ExistingInactive.toLocaleString()}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            ₱
+            {newClientConvertedAmount.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            ₱
+            {newNonBuyingConvertedAmount.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            ₱
+            {newExistingActiveConvertedAmount.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </TableCell>
+
+          <TableCell className="font-mono tabular-nums text-right">
+            ₱
+            {newExistingInactiveConvertedAmount.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </TableCell>
+
+          <TableCell className="text-right font-mono">
+            {avgTsaResponse === "-"
+              ? "-"
+              : formatHHMMSS(avgTsaResponse)}
+          </TableCell>
+
+          <TableCell className="text-right font-mono">
+            {avgNonRfQ === "-"
+              ? "-"
+              : formatHHMMSS(avgNonRfQ)}
+          </TableCell>
+
+          <TableCell className="text-right font-mono">
+            {avgRfQ === "-"
+              ? "-"
+              : formatHHMMSS(avgRfQ)}
+          </TableCell>
+
+          <TableCell className="text-right font-mono">
+            {avgSpf === "-"
+              ? "-"
+              : formatHHMMSS(avgSpf)}
+          </TableCell>
+        </TableRow>
+      );
+    })}
+</TableBody>
+
 
               <tfoot>
                 <TableRow className="bg-muted/30 font-semibold">
