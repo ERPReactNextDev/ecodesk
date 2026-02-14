@@ -349,26 +349,28 @@ export const Ticket: React.FC<TicketProps> = ({
     };
   }, [fetchActivities]);
 
-  const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
-    if (!range) return true;
+const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
+  if (!range) return true;
 
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return false;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
 
-    const { from, to } = range;
+  const { from, to } = range;
 
-    const fromDate = from
-      ? new Date(from.getFullYear(), from.getMonth(), from.getDate())
-      : null;
-    const toDate = to
-      ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
-      : null;
+  const fromDate = from
+    ? new Date(from.getFullYear(), from.getMonth(), from.getDate(), 0, 0, 0, 0)
+    : null;
 
-    if (fromDate && date < fromDate) return false;
-    if (toDate && date > toDate) return false;
+  const toDate = to
+    ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
+    : null;
 
-    return true;
-  };
+  // ✅ include both endpoints
+  if (fromDate && date < fromDate) return false;
+  if (toDate && date > toDate) return false;
+
+  return true;
+};
 
   const allowedStatuses = [
     "On-Progress",
@@ -1025,7 +1027,7 @@ export const Ticket: React.FC<TicketProps> = ({
                         <strong>Email Address:</strong> {c.email_address || "-"}
                       </p>
                       {!c.company_name?.trim() &&
-                      c.contact_person?.trim() ? null : (
+                        c.contact_person?.trim() ? null : (
                         <p className="capitalize">
                           <strong>Contact Person:</strong>{" "}
                           {c.contact_person || "-"}
@@ -1149,11 +1151,8 @@ export const Ticket: React.FC<TicketProps> = ({
                   {/* Contact Person Section */}
                   <div className="mt-4 mb-3">
                     {item.contact_person && (
-                      <div className="text-sm leading-relaxed">
-                        <div className="text-gray-600">Contact Person:</div>
-                        <div className="text-green-700 font-semibold capitalize">
-                          {item.contact_person}
-                        </div>
+                      <div className="text-xs leading-relaxed">
+                        <div className="text-gray-600">Contact Person: {item.contact_person}</div>
                       </div>
                     )}
                   </div>
@@ -1259,7 +1258,10 @@ export const Ticket: React.FC<TicketProps> = ({
                         address: item.address,
                         account_reference_number: item.account_reference_number,
                       }}
-                      onCreated={() => fetchActivities()}
+                      onCreated={async () => {
+                        await fetchActivities();
+                        await fetchCompanies(); // 🔥 refresh left Companies panel
+                      }}
                     />
 
                     {/* CLOSE */}

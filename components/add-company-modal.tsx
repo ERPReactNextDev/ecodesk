@@ -58,7 +58,10 @@ export function AddCompanyModal({
   const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
 
   // names
-  const [contactPersons, setContactPersons] = useState<string[]>([""]);
+const [contactPersons, setContactPersons] = useState<
+  { title: string; name: string }[]
+>([{ title: "Mr.", name: "" }]);
+
 
   const [existingCompanies, setExistingCompanies] = useState<
     {
@@ -116,10 +119,10 @@ export function AddCompanyModal({
   useEffect(() => {
     const name = formData.company_name.toLowerCase().trim();
 
-    const person = contactPersons
-      .map((p) => p.toLowerCase().trim())
-      .filter(Boolean)
-      .join(" / ");
+const person = contactPersons
+  .map((p) => `${p.title} ${p.name}`.toLowerCase().trim())
+  .filter(Boolean)
+  .join(" / ");
 
     const numbers = contactNumbers
       .map((n) => n.toLowerCase().trim())
@@ -153,7 +156,8 @@ export function AddCompanyModal({
       formData.address.trim() ||
       formData.industry ||
       formData.email_address.trim() ||
-      contactPersons.some((p) => p.trim()) ||
+contactPersons.some((p) => p.name.trim())
+ ||
       contactNumbers.some((n) => n.trim());
 
     const emailValid =
@@ -229,10 +233,10 @@ export function AddCompanyModal({
         .filter(Boolean)
         .join(" / ");
 
-      const joinedPersons = contactPersons
-        .map((p) => p.trim())
-        .filter(Boolean)
-        .join(" / ");
+const joinedPersons = contactPersons
+  .map((p) => `${p.title} ${p.name}`.trim())
+  .filter((p) => p !== "")
+  .join(" / ");
 
       const res = await fetch("/api/com-save-company", {
         method: "POST",
@@ -281,7 +285,7 @@ export function AddCompanyModal({
     });
     setContactNumbers([""]);
     setDuplicate({ contact: false });
-    setContactPersons([""]);
+setContactPersons([{ title: "Mr.", name: "" }]);
   };
 
   return (
@@ -324,38 +328,61 @@ export function AddCompanyModal({
               <FieldLabel>Customer Name *</FieldLabel>
 
               <div className="space-y-2">
-                {contactPersons.map((name, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <Input
-                      value={name}
-                      onChange={(e) => {
-                        const updated = [...contactPersons];
-                        updated[idx] = e.target.value;
-                        setContactPersons(updated);
-                      }}
-                      placeholder="Customer Name"
-                      className="flex-grow"
-                    />
+{contactPersons.map((person, idx) => (
+  <div key={idx} className="flex gap-2 items-center">
+    {/* Title Dropdown */}
+    <Select
+      value={person.title}
+      onValueChange={(value) => {
+        const updated = [...contactPersons];
+        updated[idx].title = value;
+        setContactPersons(updated);
+      }}
+    >
+      <SelectTrigger className="w-24">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="Mr.">Mr.</SelectItem>
+        <SelectItem value="Mrs.">Mrs.</SelectItem>
+        <SelectItem value="Ms.">Ms.</SelectItem>
+      </SelectContent>
+    </Select>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        if (contactPersons.length === 1) return;
-                        const updated = [...contactPersons];
-                        updated.splice(idx, 1);
-                        setContactPersons(updated);
-                      }}
-                    >
-                      −
-                    </Button>
-                  </div>
-                ))}
+    {/* Name Input */}
+    <Input
+      value={person.name}
+      onChange={(e) => {
+        const updated = [...contactPersons];
+        updated[idx].name = e.target.value;
+        setContactPersons(updated);
+      }}
+      placeholder="Customer Name"
+      className="flex-grow"
+    />
+
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => {
+        if (contactPersons.length === 1) return;
+        const updated = [...contactPersons];
+        updated.splice(idx, 1);
+        setContactPersons(updated);
+      }}
+    >
+      −
+    </Button>
+  </div>
+))}
+
 
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => setContactPersons((prev) => [...prev, ""])}
+onClick={() =>
+  setContactPersons((prev) => [...prev, { title: "Mr.", name: "" }])
+}
                 >
                   + Add another name
                 </Button>

@@ -72,7 +72,7 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef {}
+export interface AgentSalesConversionCardRef { }
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -205,28 +205,26 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
       }
     > = {};
 
+    const SALES_WRAPUPS = ["customer order", "customer inquiry sales", "follow up sales"];
+
     activities
       .filter((a) => {
-        if (!isDateInRange(a.date_created, dateCreatedFilterRange))
-          return false;
+        if (!isDateInRange(a.date_created, dateCreatedFilterRange)) return false;
         if (!a.referenceid || a.referenceid.trim() === "") return false;
-
-        if (role !== "Admin") {
-          return a.referenceid === userReferenceId;
-        }
-
+        if (role !== "Admin") return a.referenceid === userReferenceId;
         return true;
       })
       .forEach((a) => {
         const referenceid = a.referenceid!.trim();
         const soAmount = Number(a.so_amount ?? 0);
-        const traffic = a.traffic?.toLowerCase() ?? "";
         const qtySold = Number(a.qty_sold ?? 0);
         const status = a.status?.toLowerCase() ?? "";
-        const remarks = a.remarks?.toLowerCase() ?? "";
         const customerStatus = a.customer_status;
         const received = a.ticket_received;
         const endorsed = a.ticket_endorsed;
+
+        const remarksLower = (a.remarks || "").toLowerCase().trim();
+        const wrapUpLower = (a.wrap_up || "").toLowerCase().trim();
 
         if (!map[referenceid]) {
           map[referenceid] = {
@@ -247,41 +245,42 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           };
         }
 
-        // Sales per customer status
-        if (status === "converted into sales" && remarks !== "po received") {
+        // ✅ Sales / Non-Sales logic
+        if (remarksLower === "po received" || !SALES_WRAPUPS.includes(wrapUpLower)) {
+          // PO Received or wrap_up not in sales list → Non-Sales
+          map[referenceid].nonSalesCount += 1;
+        } else {
+          // Wrap_up matches sales list → Sales
+          map[referenceid].salesCount += 1;
+        }
+
+        // Always count qty sold
+        map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
+
+        // Sales amounts per customer status
+        if (status === "converted into sales" && remarksLower !== "po received") {
           if (customerStatus === "New Client") {
             map[referenceid].newClientSales += isNaN(soAmount) ? 0 : soAmount;
           }
-
           if (customerStatus === "New Non-Buying") {
-            map[referenceid].newNonBuyingSales += isNaN(soAmount)
-              ? 0
-              : soAmount;
+            map[referenceid].newNonBuyingSales += isNaN(soAmount) ? 0 : soAmount;
           }
-
           if (customerStatus === "Existing Active") {
-            map[referenceid].existingActiveSales += isNaN(soAmount)
-              ? 0
-              : soAmount;
+            map[referenceid].existingActiveSales += isNaN(soAmount) ? 0 : soAmount;
+          }
+          if (customerStatus === "Existing Inactive") {
+            map[referenceid].existingInactiveSales += isNaN(soAmount) ? 0 : soAmount;
           }
 
-          if (customerStatus === "Existing Inactive") {
-            map[referenceid].existingInactiveSales += isNaN(soAmount)
-              ? 0
-              : soAmount;
-          }
+          // Total converted count & amount
+          map[referenceid].convertedCount += 1;
+          map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
         }
 
-        // CSR RESPONSE TIME
-        if (
-          received &&
-          endorsed &&
-          isDateInRange(received, dateCreatedFilterRange) &&
-          isDateInRange(endorsed, dateCreatedFilterRange)
-        ) {
+        // CSR Response Time
+        if (received && endorsed) {
           const r = new Date(received);
           const e = new Date(endorsed);
-
           if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
             const diff = e.getTime() - r.getTime();
             if (diff <= MAX_RESPONSE_TIME_MS) {
@@ -289,38 +288,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
               map[referenceid].responseCount += 1;
             }
           }
-        }
-
-        // 🔒 NORMALIZE TRAFFIC (IMPORTANT)
-        const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
-        const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
-        // PO RECEIVED rule
-        if (remarks === "po received") {
-          map[referenceid].nonSalesCount += 1;
-        }
-        // 2️⃣ Customer Inquiry Non Sales always NON-SALES
-        else if (
-          normalizedWrapUp === "customer inquiry non-sales" ||
-          normalizedWrapUp === "customer inquiry non sales"
-        ) {
-          map[referenceid].nonSalesCount += 1;
-        }
-        // 3️⃣ Normal Traffic Rules
-        else if (normalizedTraffic === "sales") {
-          map[referenceid].salesCount += 1;
-        }
-        // 4️⃣ Anything else = Non-Sales fallback
-        else {
-          map[referenceid].nonSalesCount += 1;
-        }
-
-        // Always count qty sold whether SO or not
-        map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
-
-        // Conversion counting only for sales-related metrics
-        if (status === "converted into sales") {
-          map[referenceid].convertedCount += 1;
-          map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
         }
       });
 
@@ -500,7 +467,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     return (
                       <TableRow key={row.referenceid}>
                         <TableCell className="text-center">
-                          <Badge>{index + 1}</Badge>
+                          <Badge className="h-10 min-w-10">{index + 1}</Badge>
                         </TableCell>
 
                         <TableCell>{fullName}</TableCell>
@@ -528,9 +495,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                           {row.salesCount === 0
                             ? "0.00%"
                             : (
-                                (row.convertedCount / row.salesCount) *
-                                100
-                              ).toFixed(2) + "%"}
+                              (row.convertedCount / row.salesCount) *
+                              100
+                            ).toFixed(2) + "%"}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.convertedCount === 0
@@ -565,51 +532,31 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
               </TableBody>
 
               <tfoot>
-                <TableRow className="font-semibold bg-muted/40">
-                  <TableCell />
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell className="text-center">-</TableCell>
                   <TableCell>Total</TableCell>
-
                   <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">
-                    {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    ₱{totalAmount.toLocaleString()}
-                  </TableCell>
+                  <TableCell className="text-right">{groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}</TableCell>
+                  <TableCell className="text-right">₱{totalAmount.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{totalQty}</TableCell>
                   <TableCell className="text-right">{totalConverted}</TableCell>
-
                   <TableCell className="text-right">
-                    {totalConversionPct.toFixed(2)}%
+                    {totalSales === 0 ? "0.00%" : totalConversionPct.toFixed(2) + "%"}
                   </TableCell>
-
                   <TableCell className="text-right">
                     {totalAveUnit.toFixed(2)}
                   </TableCell>
-
                   <TableCell className="text-right">
                     {totalAveValue.toFixed(2)}
                   </TableCell>
-
-                  <TableCell className="text-right">
-                    ₱{totalNewClient.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalNewNonBuying.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingActive.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingInactive.toLocaleString()}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    {formatMs(totalRowResponseAverage)}
-                  </TableCell>
+                  <TableCell className="text-right">₱{totalNewClient.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalNewNonBuying.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalExistingActive.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalExistingInactive.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{formatMs(totalAveResponse)}</TableCell>
                 </TableRow>
               </tfoot>
+
             </Table>
           </div>
         )}

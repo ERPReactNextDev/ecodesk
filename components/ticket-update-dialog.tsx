@@ -34,7 +34,16 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { CancelDialog } from "./activity-cancel-dialog";
 import { TicketSheet } from "./sheet-ticket";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import { Input } from "@/components/ui/input";
+
 
 const toDatetimeLocal = (value?: string) => {
   if (!value) return "";
@@ -104,13 +113,15 @@ interface UpdateActivityDialogProps {
   referenceid: string;
   type_client?: string;
 
+  //marked
   contact_number: string;
   email_address: string;
   contact_person: string;
   address: string;
   company_name: string;
-
   account_reference_number: string;
+
+
   ticket_received?: string;
   ticket_endorsed?: string;
   traffic?: string;
@@ -238,9 +249,12 @@ export function UpdateTicketDialog({
   const [ticketReferenceNumber, setTicketReferenceNumber] = useState("");
 
   const [companyName, setCompanyName] = useState("");
-  const [contactPerson, setContactPerson] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
-  const [emailAddress, setEmailAddress] = useState("");
+  const [contactPersons, setContactPersons] = useState<
+    { title: string; name: string }[]
+  >([{ title: "Mr.", name: "" }]);
+  const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
+  const [emailAddresses, setEmailAddresses] = useState<string[]>([""]);
+
   const [clientSegment, setClientSegment] = useState("");
   const [trafficState, setTraffic] = useState("");
   const [sourceCompanyState, setSourceCompany] = useState("");
@@ -336,9 +350,29 @@ export function UpdateTicketDialog({
     setHrAcknowledgeDate(toDatetimeLocal(hr_acknowledge_date));
 
     setCompanyName(company_name || "");
-    setContactPerson(contact_person || "");
-    setContactNumber(contact_number || "");
-    setEmailAddress(email_address || "");
+    setContactPersons(
+      contact_person
+        ? contact_person.split(" / ").map((full) => {
+            const parts = full.trim().split(" ");
+            const possibleTitle = parts[0];
+            const titles = ["Mr.", "Mrs.", "Ms."];
+
+            if (titles.includes(possibleTitle)) {
+              return {
+                title: possibleTitle,
+                name: parts.slice(1).join(" "),
+              };
+            }
+
+            return {
+              title: "Mr.",
+              name: full,
+            };
+          })
+        : [{ title: "Mr.", name: "" }],
+    );
+    setContactNumbers(contact_number ? contact_number.split(" / ") : [""]);
+    setEmailAddresses(email_address ? email_address.split(" / ") : [""]);
 
     setDateCreated(toDatetimeLocal(date_created));
   }, [
@@ -417,9 +451,18 @@ export function UpdateTicketDialog({
       ticket_endorsed: ticketEndorsedState,
 
       company_name: companyName,
-      contact_number: contactNumber,
-      contact_person: contactPerson,
-      email_address: emailAddress,
+      contact_number: contactNumbers
+        .map((n) => n.trim())
+        .filter(Boolean)
+        .join(" / "),
+      contact_person: contactPersons
+        .map((p) => `${p.title} ${p.name}`.trim())
+        .filter((p) => p !== "")
+        .join(" / "),
+      email_address: emailAddresses
+        .map((e) => e.trim())
+        .filter(Boolean)
+        .join(" / "),
 
       // ✅ ADD THESE
       tsm_acknowledge_date: tsmAcknowledgeDate,
@@ -566,12 +609,34 @@ export function UpdateTicketDialog({
         }
       }
 
-      toast.success("Activity saved successfully!");
-      onCreated(newActivity);
-      setStep(1);
-      setSheetOpen(false);
-    } catch {
-      toast.error("Server error. Please try again.");
+// 🔥 ALSO UPDATE COMPANY TABLE (SYNC STEP 1 FIELDS)
+await fetch("/api/com-update-account", {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    account_reference_number,
+    company_name: companyName,
+    contact_person: contactPersons
+      .map((p) => `${p.title} ${p.name}`.trim())
+      .filter((p) => p !== "")
+      .join(" / "),
+    contact_number: contactNumbers
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .join(" / "),
+    email_address: emailAddresses
+      .map((e) => e.trim())
+      .filter(Boolean)
+      .join(" / "),
+    address,
+  }),
+});
+
+toast.success("Activity and Company updated successfully!");
+onCreated(newActivity);
+setStep(1);
+setSheetOpen(false);
+
     } finally {
       setLoading(false);
     }
@@ -706,7 +771,9 @@ export function UpdateTicketDialog({
                       <Input
                         type="text"
                         value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
+                        onChange={(e) =>
+                          setCompanyName(e.target.value.toUpperCase())
+                        }
                         className="w-full"
                       />
                     </FieldSet>
@@ -714,15 +781,79 @@ export function UpdateTicketDialog({
 
                   <FieldGroup>
                     <FieldSet className="mt-4">
-                      <FieldLabel className="font-semibold text-sm">
-                        Contact Person
-                      </FieldLabel>
-                      <Input
-                        type="text"
-                        value={contactPerson}
-                        onChange={(e) => setContactPerson(e.target.value)}
-                        className="w-full"
-                      />
+                      <FieldGroup>
+                        <FieldSet className="mt-4">
+                          <FieldLabel className="font-semibold text-sm">
+                            Contact Person
+                          </FieldLabel>
+
+<div className="space-y-2">
+  {contactPersons.map((person, idx) => (
+    <div key={idx} className="flex gap-2 items-center">
+      {/* Title Dropdown */}
+      <Select
+        value={person.title}
+        onValueChange={(value) => {
+          const updated = [...contactPersons];
+          updated[idx].title = value;
+          setContactPersons(updated);
+        }}
+      >
+        <SelectTrigger className="w-24">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="Mr.">Mr.</SelectItem>
+          <SelectItem value="Mrs.">Mrs.</SelectItem>
+          <SelectItem value="Ms.">Ms.</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Name Input */}
+      <Input
+        value={person.name}
+        onChange={(e) => {
+          const updated = [...contactPersons];
+          updated[idx].name = e.target.value;
+          setContactPersons(updated);
+        }}
+        className="flex-1"
+      />
+
+      {/* Remove Button */}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => {
+          if (contactPersons.length === 1) return;
+          const updated = [...contactPersons];
+          updated.splice(idx, 1);
+          setContactPersons(updated);
+        }}
+      >
+        −
+      </Button>
+    </div>
+  ))}
+
+  {/* Add Button */}
+  <Button
+    type="button"
+    variant="secondary"
+    onClick={() =>
+      setContactPersons((prev) => [
+        ...prev,
+        { title: "Mr.", name: "" },
+      ])
+    }
+  >
+    + Add another person
+  </Button>
+</div>
+
+
+                        </FieldSet>
+                      </FieldGroup>
                     </FieldSet>
                   </FieldGroup>
 
@@ -731,12 +862,44 @@ export function UpdateTicketDialog({
                       <FieldLabel className="font-semibold text-sm">
                         Contact Number
                       </FieldLabel>
-                      <Input
-                        type="text"
-                        value={contactNumber}
-                        onChange={(e) => setContactNumber(e.target.value)}
-                        className="w-full"
-                      />
+
+                      <div className="space-y-2">
+                        {contactNumbers.map((num, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <Input
+                              value={num}
+                              onChange={(e) => {
+                                const updated = [...contactNumbers];
+                                updated[idx] = e.target.value;
+                                setContactNumbers(updated);
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (contactNumbers.length === 1) return;
+                                const updated = [...contactNumbers];
+                                updated.splice(idx, 1);
+                                setContactNumbers(updated);
+                              }}
+                            >
+                              −
+                            </Button>
+                          </div>
+                        ))}
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() =>
+                            setContactNumbers((prev) => [...prev, ""])
+                          }
+                        >
+                          + Add another number
+                        </Button>
+                      </div>
                     </FieldSet>
                   </FieldGroup>
 
@@ -745,12 +908,45 @@ export function UpdateTicketDialog({
                       <FieldLabel className="font-semibold text-sm">
                         Email Address
                       </FieldLabel>
-                      <Input
-                        type="text"
-                        value={emailAddress}
-                        onChange={(e) => setEmailAddress(e.target.value)}
-                        className="w-full"
-                      />
+
+                      <div className="space-y-2">
+                        {emailAddresses.map((email, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <Input
+                              type="email"
+                              value={email}
+                              onChange={(e) => {
+                                const updated = [...emailAddresses];
+                                updated[idx] = e.target.value;
+                                setEmailAddresses(updated);
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (emailAddresses.length === 1) return;
+                                const updated = [...emailAddresses];
+                                updated.splice(idx, 1);
+                                setEmailAddresses(updated);
+                              }}
+                            >
+                              −
+                            </Button>
+                          </div>
+                        ))}
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() =>
+                            setEmailAddresses((prev) => [...prev, ""])
+                          }
+                        >
+                          + Add another email
+                        </Button>
+                      </div>
                     </FieldSet>
                   </FieldGroup>
 

@@ -46,7 +46,7 @@ interface Activity {
     date_updated?: string;
     so_amount?: number | string;
     remarks?: string;
-    traffic: string;
+    wrap_up?: string; // ✅ IMPORTANT
     qty_sold: number | string;
     status: string;
 }
@@ -73,6 +73,22 @@ function getWeekNumber(date: Date) {
     if (day <= 14) return 2;
     if (day <= 21) return 3;
     return 4;
+}
+
+function getSalesDate(a: any): Date | null {
+    const raw =
+        a.tsmHandlingTime ||
+        a.tsm_handling_time ||
+        a.ticketEndorsed ||
+        a.ticket_endorsed ||
+        a.date_updated;
+
+    if (!raw) return null;
+
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return null;
+
+    return d;
 }
 
 /* ---------------- Component ---------------- */
@@ -141,94 +157,85 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
         return true;
     };
-    function getSalesDate(a: any): Date | null {
-    const raw =
-        a.tsmHandlingTime ||
-        a.tsm_handling_time ||
-        a.ticketEndorsed ||
-        a.ticket_endorsed ||
-        a.date_updated;
 
-    if (!raw) return null;
-
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) return null;
-
-    return d;
-    }
     /* -------- Grouped Data -------- */
-const groupedData = useMemo(() => {
-  const map: Record<
-    string,
-    {
-      referenceid: string;
-      salesCount: number;
-      nonSalesCount: number;
-      convertedCount: number;
-      qtySold: number;
-      week1: number;
-      week2: number;
-      week3: number;
-      week4: number;
-    }
-  > = {};
+    const groupedData = useMemo(() => {
+        const SALES_WRAP_UPS = [
+            "customer order",
+            "customer inquiry sales",
+            "follow up sales",
+        ];
 
-  activities
-    .map(a => ({ a, salesDate: getSalesDate(a) }))
-    .filter(({ a, salesDate }) =>
-      salesDate &&
-      isDateInRange(salesDate.toISOString(), dateCreatedFilterRange) &&
-      a.referenceid
-    )
-    .forEach(({ a, salesDate }) => {
-      const ref = a.referenceid!.trim();
-      const amount = Number(a.so_amount ?? 0);
-      const qty = Number(a.qty_sold ?? 0);
-      const traffic = a.traffic?.toLowerCase() ?? "";
-      const status = a.status?.toLowerCase() ?? "";
-      const remarks = a.remarks?.toLowerCase() ?? "";
+        const map: Record<
+            string,
+            {
+                referenceid: string;
+                salesCount: number;
+                nonSalesCount: number;
+                convertedCount: number;
+                qtySold: number;
+                week1: number;
+                week2: number;
+                week3: number;
+                week4: number;
+            }
+        > = {};
 
-      const week = getWeekNumber(salesDate!);
+        activities
+            .map((a) => ({ a, salesDate: getSalesDate(a) }))
+            .filter(
+                ({ a, salesDate }) =>
+                    salesDate &&
+                    isDateInRange(salesDate.toISOString(), dateCreatedFilterRange) &&
+                    a.referenceid
+            )
+            .forEach(({ a, salesDate }) => {
+                const ref = a.referenceid!.trim();
+                const amount = Number(a.so_amount ?? 0);
+                const qty = Number(a.qty_sold ?? 0);
+                const status = a.status?.toLowerCase() ?? "";
+                const wrapUp = a.wrap_up?.toLowerCase().trim() ?? "";
+                const week = getWeekNumber(salesDate!);
 
-      if (!map[ref]) {
-        map[ref] = {
-          referenceid: ref,
-          salesCount: 0,
-          nonSalesCount: 0,
-          convertedCount: 0,
-          qtySold: 0,
-          week1: 0,
-          week2: 0,
-          week3: 0,
-          week4: 0,
-        };
-      }
+                if (!map[ref]) {
+                    map[ref] = {
+                        referenceid: ref,
+                        salesCount: 0,
+                        nonSalesCount: 0,
+                        convertedCount: 0,
+                        qtySold: 0,
+                        week1: 0,
+                        week2: 0,
+                        week3: 0,
+                        week4: 0,
+                    };
+                }
 
-      // PO RECEIVED → NON-SALES ONLY
-      if (remarks === "po received") {
-        map[ref].nonSalesCount++;
-        return;
-      }
+                // ✅ SALES / NON-SALES RULES
+                if (wrapUp === "po received") {
+                    map[ref].nonSalesCount++;
+                } else if (SALES_WRAP_UPS.includes(wrapUp)) {
+                    map[ref].salesCount++;
+                } else {
+                    map[ref].nonSalesCount++;
+                }
 
-      if (traffic === "sales") map[ref].salesCount++;
-      if (traffic === "non-sales") map[ref].nonSalesCount++;
+                // ✅ CONVERTED SALES
+                if (status === "converted into sales") {
+                    map[ref].convertedCount++;
+                    map[ref].qtySold += isNaN(qty) ? 0 : qty;
 
-      if (status === "converted into sales") {
-        map[ref].convertedCount++;
-        map[ref].qtySold += isNaN(qty) ? 0 : qty;
+                    if (!isNaN(amount)) {
+                        if (week === 1) map[ref].week1 += amount;
+                        if (week === 2) map[ref].week2 += amount;
+                        if (week === 3) map[ref].week3 += amount;
+                        if (week === 4) map[ref].week4 += amount;
+                    }
+                }
+            });
 
-        if (!isNaN(amount)) {
-          if (week === 1) map[ref].week1 += amount;
-          if (week === 2) map[ref].week2 += amount;
-          if (week === 3) map[ref].week3 += amount;
-          if (week === 4) map[ref].week4 += amount;
-        }
-      }
-    });
-
-  return Object.values(map);
-}, [activities, dateCreatedFilterRange]);
-
+        return Object.values(map);
+    }, [activities, dateCreatedFilterRange]);
 
     const totalSoAmount = groupedData.reduce(
         (sum, r) => sum + r.week1 + r.week2 + r.week3 + r.week4,
@@ -287,95 +294,81 @@ const groupedData = useMemo(() => {
                                     const agent = agents.find(
                                         (a) => a.ReferenceID === row.referenceid
                                     );
+
                                     return (
-                                        <TableRow key={row.referenceid} className="hover:bg-muted/50">
+                                        <TableRow key={row.referenceid}>
                                             <TableCell>
-                                                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">{i + 1}</Badge>
+                                                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono">
+                                                    {i + 1}
+                                                </Badge>
                                             </TableCell>
-                                            <TableCell className="capitalize">
-                                                {agent
-                                                    ? `${agent.Firstname} ${agent.Lastname}`
-                                                    : "(Unknown)"}
+                                            <TableCell>
+                                                {agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown)"}
                                             </TableCell>
-                                            <TableCell className="font-mono tabular-nums text-right">
-                                                {row.salesCount}
+                                            <TableCell className="text-right">{row.salesCount}</TableCell>
+                                            <TableCell className="text-right">{row.nonSalesCount}</TableCell>
+                                            <TableCell className="text-right">{row.qtySold}</TableCell>
+                                            <TableCell className="text-right">{row.convertedCount}</TableCell>
+                                            <TableCell className="text-right">
+                                                ₱{row.week1.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </TableCell>
-                                            <TableCell className="font-mono tabular-nums text-right">
-                                                {row.nonSalesCount}
+                                            <TableCell className="text-right">
+                                                ₱{row.week2.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </TableCell>
-                                            <TableCell className="font-mono tabular-nums text-right">
-                                                {row.qtySold}
+                                            <TableCell className="text-right">
+                                                ₱{row.week3.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </TableCell>
-                                            <TableCell className="font-mono tabular-nums text-right">
-                                                {row.convertedCount}
-                                            </TableCell>
-                                            <TableCell className="font-mono tabular-nums text-right">
-                                                ₱{row.week1.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </TableCell>
-                                            <TableCell className="font-mono tabular-nums text-right">
-                                                ₱{row.week2.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </TableCell>
-                                            <TableCell className="font-mono tabular-nums text-right">
-                                                ₱{row.week3.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </TableCell>
-                                            <TableCell className="font-mono tabular-nums text-right">
-                                                ₱{row.week4.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            <TableCell className="text-right">
+                                                ₱{row.week4.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </TableCell>
                                         </TableRow>
                                     );
                                 })}
                         </TableBody>
+
+                        {/* ---------------- FOOTER TOTALS ---------------- */}
                         <tfoot>
-                            <TableRow className="bg-muted/30 font-semibold">
-                                <TableCell className="text-center">-</TableCell>
-                                <TableCell className="text-right">Total</TableCell>
-                                <TableCell className="font-mono tabular-nums text-right">
-                                    {groupedData.reduce((sum, row) => sum + row.salesCount, 0).toLocaleString()}
+                            <TableRow className="font-bold bg-muted/50">
+                                <TableCell>-</TableCell>
+                                <TableCell>Total</TableCell>
+                                <TableCell className="text-right">
+                                    {groupedData.reduce((sum, r) => sum + r.salesCount, 0)}
                                 </TableCell>
-                                <TableCell className="font-mono tabular-nums text-right">
-                                    {groupedData.reduce((sum, row) => sum + row.nonSalesCount, 0).toLocaleString()}
+                                <TableCell className="text-right">
+                                    {groupedData.reduce((sum, r) => sum + r.nonSalesCount, 0)}
                                 </TableCell>
-                                <TableCell className="font-mono tabular-nums text-right">
-                                    {groupedData.reduce((sum, row) => sum + row.qtySold, 0).toLocaleString()}
+                                <TableCell className="text-right">
+                                    {groupedData.reduce((sum, r) => sum + r.qtySold, 0)}
                                 </TableCell>
-                                <TableCell className="font-mono tabular-nums text-right">
-                                    {groupedData.reduce((sum, row) => sum + row.convertedCount, 0).toLocaleString()}
+                                <TableCell className="text-right">
+                                    {groupedData.reduce((sum, r) => sum + r.convertedCount, 0)}
                                 </TableCell>
-
-                                {/* Week 1 Total */}
-                                <TableCell className="font-mono tabular-nums text-right">
-                                    ₱{groupedData.reduce((sum, row) => sum + row.week1, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <TableCell className="text-right">
+                                    ₱{groupedData.reduce((sum, r) => sum + r.week1, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 </TableCell>
-
-                                {/* Week 2 Total */}
-                                <TableCell className="font-mono tabular-nums text-right">
-                                    ₱{groupedData.reduce((sum, row) => sum + row.week2, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <TableCell className="text-right">
+                                    ₱{groupedData.reduce((sum, r) => sum + r.week2, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 </TableCell>
-
-                                {/* Week 3 Total */}
-                                <TableCell className="font-mono tabular-nums text-right">
-                                    ₱{groupedData.reduce((sum, row) => sum + row.week3, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <TableCell className="text-right">
+                                    ₱{groupedData.reduce((sum, r) => sum + r.week3, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 </TableCell>
-
-                                {/* Week 4 Total */}
-                                <TableCell className="font-mono tabular-nums text-right">
-                                    ₱{groupedData.reduce((sum, row) => sum + row.week4, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <TableCell className="text-right">
+                                    ₱{groupedData.reduce((sum, r) => sum + r.week4, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 </TableCell>
                             </TableRow>
                         </tfoot>
-
                     </Table>
+
                 )}
             </CardContent>
 
             <Separator />
 
             <CardFooter className="flex justify-end">
-                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                    Total Amount:{" "}
-                    ₱{totalSoAmount.toLocaleString(undefined, {
+                <Badge className="h-10 px-4 font-mono">
+                    Total Amount: ₱
+                    {totalSoAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
                     })}
                 </Badge>
             </CardFooter>
