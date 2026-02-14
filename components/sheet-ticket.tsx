@@ -70,7 +70,7 @@ function computeCSRResponseTime(
   if (end < start) return "INVALID DATE";
 
   const WORK_START = 8;
-  const WORK_END = 17;
+  const WORK_END = 19;
 
   let startWork = new Date(start);
   startWork.setHours(WORK_START, 0, 0, 0);
@@ -294,7 +294,7 @@ interface TicketSheetProps {
   loading: boolean;
   handleBack: () => void;
   handleNext: () => void;
-  handleUpdate: () => void;
+handleUpdate: (agentReassigned: boolean) => void;
 }
 
 // Reusable Radio Group
@@ -514,69 +514,62 @@ export function TicketSheet(props: TicketSheetProps) {
 
   // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
 
-// ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
+  // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
 
-// CSR is always allowed
-const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
+  // CSR is always allowed
+  const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
 
-// Check if TSM fields are COMPLETE (both required)
-const isTsmComplete = Boolean(tsmAcknowledgeDate && tsmHandlingTime);
+  // Check if TSM fields are COMPLETE (both required)
+  const isTsmComplete = Boolean(tsmAcknowledgeDate && tsmHandlingTime);
 
-// Check if TSA fields are COMPLETE (both required)
-const isTsaComplete = Boolean(tsaAcknowledgeDate && tsaHandlingTime);
+  // Check if TSA fields are COMPLETE (both required)
+  const isTsaComplete = Boolean(tsaAcknowledgeDate && tsaHandlingTime);
 
-// ----- TSM COMPUTATIONS -----
-const tsmResponseTime = isTsmComplete
-  ? computeTSMResponseTime(wrapUp, tsmAcknowledgeDate, ticketEndorsed)
-  : "";
+  // ----- TSM COMPUTATIONS -----
+  const tsmResponseTime = isTsmComplete
+    ? computeTSMResponseTime(wrapUp, tsmAcknowledgeDate, ticketEndorsed)
+    : "";
 
-const tsmHandlingTimeFinal = isTsmComplete
-  ? computeTSMHandlingTime(
-      wrapUp,
-      tsmAcknowledgeDate,
-      tsmHandlingTime,
-      ticketReceived,
-    )
-  : "";
-
-// ----- TSA COMPUTATIONS -----
-const tsaResponseTime = isTsaComplete
-  ? computeTSAResponseTime(
-      wrapUp,
-      tsaAcknowledgeDate,
-      tsaHandlingTime,
-      ticketEndorsed,
-    )
-  : "";
-
-const tsaHandlingTimeFinal =
-  isTsaComplete && ticketReceived
-    ? formatDuration(
-        new Date(tsaHandlingTime).getTime() -
-          new Date(ticketReceived).getTime(),
+  const tsmHandlingTimeFinal = isTsmComplete
+    ? computeTSMHandlingTime(
+        wrapUp,
+        tsmAcknowledgeDate,
+        tsmHandlingTime,
+        ticketReceived,
       )
     : "";
 
-// Base Handling Time ONLY exists if one side is COMPLETE
-const baseHT = isTsaComplete
-  ? tsaHandlingTimeFinal
-  : isTsmComplete
-  ? tsmHandlingTimeFinal
-  : "";
+  // ----- TSA COMPUTATIONS -----
+  const tsaResponseTime = isTsaComplete
+    ? computeTSAResponseTime(
+        wrapUp,
+        tsaAcknowledgeDate,
+        tsaHandlingTime,
+        ticketEndorsed,
+      )
+    : "";
 
-// Additional HT computations ONLY if baseHT is valid
-const nonQuotationHT = baseHT
-  ? computeNonQuotationHT(remarks, baseHT)
-  : "";
+  const tsaHandlingTimeFinal =
+    isTsaComplete && ticketReceived
+      ? formatDuration(
+          new Date(tsaHandlingTime).getTime() -
+            new Date(ticketReceived).getTime(),
+        )
+      : "";
 
-const quotationHT = baseHT
-  ? computeQuotationHT(remarks, baseHT)
-  : "";
+  // Base Handling Time ONLY exists if one side is COMPLETE
+  const baseHT = isTsaComplete
+    ? tsaHandlingTimeFinal
+    : isTsmComplete
+      ? tsmHandlingTimeFinal
+      : "";
 
-const spfHT = baseHT
-  ? computeSpfHT(remarks, baseHT)
-  : "";
+  // Additional HT computations ONLY if baseHT is valid
+  const nonQuotationHT = baseHT ? computeNonQuotationHT(remarks, baseHT) : "";
 
+  const quotationHT = baseHT ? computeQuotationHT(remarks, baseHT) : "";
+
+  const spfHT = baseHT ? computeSpfHT(remarks, baseHT) : "";
 
   // ================= FETCH MANAGERS =================
 
@@ -722,6 +715,17 @@ const spfHT = baseHT
     }
   }, [closeReason]);
 
+  // Auto clear agent when status changes to Endorsed
+  useEffect(() => {
+    // Intentionally left empty to keep selected agent value
+  }, []);
+
+  // Remove glow when agent is selected
+  useEffect(() => {
+    if (agent) {
+      setHighlightAgent(false);
+    }
+  }, [agent]);
   // 3️⃣ Channel → Source auto dash logic
   useEffect(() => {
     const channelsWithSource = [
@@ -779,6 +783,8 @@ const spfHT = baseHT
   const [tsmTimeError, setTsmTimeError] = useState<string | null>(null);
   const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
   const isManagerRequiredButMissing = managersAvailable > 0 && !manager;
+  const [highlightAgent, setHighlightAgent] = useState(false);
+  const [agentReassigned, setAgentReassigned] = useState(false);
 
   // Options
   const departmentOptions: Option[] = [
@@ -1000,11 +1006,27 @@ const spfHT = baseHT
   const [loadingLoad, setLoadingLoad] = useState(false);
 
   // Override handleUpdate to validate status before saving
-  const onUpdate = async () => {
-    if (!validateStep6()) return;
-    setErrors({});
-    handleUpdate();
-  };
+const onUpdate = async () => {
+  if (!validateStep6()) return;
+
+  setErrors({});
+
+  await handleUpdate(agentReassigned);
+
+  // FORCE update to Supabase ONLY when Reassign button was clicked
+  if (agentReassigned === true) {
+    try {
+      const { updateReassignRemarks } = await import("@/utils/supabase-reassign");
+
+      await updateReassignRemarks(ticketReferenceNumber, true);
+
+      console.log("Remarks successfully set to Reassigned");
+    } catch (err) {
+      console.error("Failed to update reassigned remarks:", err);
+    }
+  }
+};
+
 
   const isStep3NextDisabled = !ticketReceived || !ticketEndorsed || !!timeError;
 
@@ -1048,7 +1070,7 @@ const spfHT = baseHT
             setClientSpecs("");
 
             // ❗ STATUS IS NOT CLEARED
-            handleUpdate();
+            handleUpdate(false);
           }}
           disabled={!!timeError}
           className="cursor-pointer"
@@ -1735,7 +1757,13 @@ const spfHT = baseHT
                   onValueChange={(value) => setAgent(value)}
                   disabled={!manager}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger
+                    className={`w-full transition-all duration-300 ${
+                      highlightAgent
+                        ? "ring-2 ring-green-500 animate-pulse"
+                        : ""
+                    }`}
+                  >
                     <SelectValue placeholder="Select an Agent" />
                   </SelectTrigger>
 
@@ -1792,12 +1820,73 @@ const spfHT = baseHT
           {/* ================= STATUS ================= */}
           <Field>
             <FieldLabel>Status</FieldLabel>
-            <RadioOptionsGroup
-              options={statusOptions}
-              value={status}
-              onChange={setStatus}
-              error={errors.status}
-            />
+
+            <FieldGroup>
+              <FieldSet>
+                <RadioGroup value={status} onValueChange={setStatus}>
+                  {/* CLOSED OPTION */}
+                  <FieldLabel>
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle>Closed</FieldTitle>
+                        <FieldDescription>
+                          The process or item has been completed and finalized.
+                        </FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value="Closed" />
+                    </Field>
+                  </FieldLabel>
+
+                  {/* ENDORSED OPTION */}
+                  <FieldLabel>
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle>Endorsed</FieldTitle>
+                        <FieldDescription>
+                          The item has been reviewed and forwarded for further
+                          action.
+                        </FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value="Endorsed" />
+                    </Field>
+                  </FieldLabel>
+
+                  {/* 👉 RE-ASSIGN BUTTON EXACTLY IN THE MIDDLE */}
+                  {status === "Endorsed" && (
+                    <div className="flex justify-center my-2">
+                      <Button
+                        onClick={() => {
+                          setAgent("");
+                          setHighlightAgent(true);
+                          setAgentReassigned(true); // track that reassign was clicked
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                      >
+                        Re-Assign Agent
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* CONVERTED INTO SALES OPTION */}
+                  <FieldLabel>
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle>Converted into Sales</FieldTitle>
+                        <FieldDescription>
+                          The item has progressed and resulted in a successful
+                          sale.
+                        </FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value="Converted into Sales" />
+                    </Field>
+                  </FieldLabel>
+                </RadioGroup>
+
+                {errors.status && (
+                  <p className="text-sm text-red-600 mt-1">{errors.status}</p>
+                )}
+              </FieldSet>
+            </FieldGroup>
           </Field>
 
           {/* ================= CLOSED ================= */}
@@ -1945,15 +2034,15 @@ const spfHT = baseHT
             Back
           </Button>
 
-<Button
-  onClick={onUpdate}
-  disabled={
-    loadingSave ||
-    loadingLoad ||
-    !!timeError ||
-    isManagerRequiredButMissing
-  }
->
+          <Button
+            onClick={onUpdate}
+            disabled={
+              loadingSave ||
+              loadingLoad ||
+              !!timeError ||
+              isManagerRequiredButMissing
+            }
+          >
             {loadingSave ? "Saving..." : "Save"}
           </Button>
 
