@@ -268,6 +268,7 @@ const AgentSalesTableCard = forwardRef<
       "FOR OCCULAR INSPECTION",
     ];
 
+
     const remarks = (a.remarks || "").toUpperCase();
 
     return list.includes(remarks) ? base : null;
