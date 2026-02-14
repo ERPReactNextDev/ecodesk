@@ -419,11 +419,11 @@ const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
     // Sort filtered data
     data = data.slice().sort((a, b) => {
       // 🔥 1️⃣ ENDORSED ALWAYS ON TOP
-      // const aIsEndorsed = a.status === "Endorsed";
-      // const bIsEndorsed = b.status === "Endorsed";
+      const aIsEndorsed = a.status === "Endorsed";
+      const bIsEndorsed = b.status === "Endorsed";
 
-      // if (aIsEndorsed && !bIsEndorsed) return -1;
-      // if (!aIsEndorsed && bIsEndorsed) return 1;
+      if (aIsEndorsed && !bIsEndorsed) return -1;
+      if (!aIsEndorsed && bIsEndorsed) return 1;
 
       // 🔁 2️⃣ NORMAL SORT (DATE / FIELD)
       let aVal = (a as any)[sortField];
