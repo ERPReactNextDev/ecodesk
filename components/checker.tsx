@@ -73,7 +73,7 @@ export const Checker: React.FC<TicketProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterReference, setFilterReference] = useState<string>("All");
-    const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
+    const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>("");
 
     const columns = [
@@ -96,7 +96,6 @@ export const Checker: React.FC<TicketProps> = ({
         "item_description",
         "quotation_number",
         "quotation_amount",
-
         "so_number",
         "so_amount",
         "qty_sold",
@@ -107,7 +106,6 @@ export const Checker: React.FC<TicketProps> = ({
         "tsa_handling_time",
         "tsm_acknowledge_date",
         "tsm_handling_time",
-
         "activity_reference_number",
         "date_created",
         "date_updated",
@@ -161,19 +159,20 @@ export const Checker: React.FC<TicketProps> = ({
         fetchActivities();
     }, [fetchActivities]);
 
-    const uniqueReferenceIds = Array.from(new Set(activities.map((a) => a.referenceid)));
+    const uniqueReferenceIds = Array.from(
+        new Set(activities.map((a) => a.referenceid))
+    );
 
-    // Apply filters: referenceId + dateCreated
-    // Role-based filter
     const visibleActivities = activities.filter((a) => {
-        if (role === "Admin") return true; // Admin sees all
-        return a.referenceid === referenceid; // Others see only their referenceid
+        if (role === "Admin") return true;
+        return a.referenceid === referenceid;
     });
 
-    // Apply filters: referenceId + dateCreated + search
     const filteredActivities = visibleActivities
         .filter((a) => {
-            const matchesReference = filterReference === "All" || a.referenceid === filterReference;
+            const matchesReference =
+                filterReference === "All" ||
+                a.referenceid === filterReference;
 
             let matchesDate = true;
             if (dateCreatedFilterRange?.from || dateCreatedFilterRange?.to) {
@@ -198,52 +197,39 @@ export const Checker: React.FC<TicketProps> = ({
             if (!searchQuery) return true;
 
             const lowerQuery = searchQuery.toLowerCase();
-            // check all columns for match
             return columns.some((field) => {
                 const value = (a as any)[field];
-                return value && value.toString().toLowerCase().includes(lowerQuery);
+                return (
+                    value &&
+                    value.toString().toLowerCase().includes(lowerQuery)
+                );
             });
         });
 
-
-    const handleCellChange = async (activityId: string, field: string, value: string) => {
-        // Update local state first for instant feedback
+    const handleCellChange = async (
+        activityId: string,
+        field: string,
+        value: string
+    ) => {
         setActivities((prev) =>
             prev.map((a) =>
-                a._id === activityId
-                    ? { ...a, [field]: value }
-                    : a
+                a._id === activityId ? { ...a, [field]: value } : a
             )
         );
 
-        // Trim activityId to avoid accidental spaces causing "Activity not found"
         const trimmedId = activityId.trim();
 
         try {
-            const res = await fetch("/api/act-update-activity", {
+            await fetch("/api/act-update-activity", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ _id: trimmedId, updates: { [field]: value } }),
+                body: JSON.stringify({
+                    _id: trimmedId,
+                    updates: { [field]: value },
+                }),
             });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                console.error("Update failed (HTTP error):", res.status, data.error || data);
-                // Optionally, revert local change if needed
-                return;
-            }
-
-            if (data.error) {
-                console.error("Update failed (API error):", data.error);
-                // Optionally, revert local change if needed
-                return;
-            }
-
-            console.log(`Update successful for ${field} of activity ${trimmedId}`);
         } catch (err) {
             console.error("Error updating activity:", err);
-            // Optionally, revert local change if needed
         }
     };
 
@@ -256,19 +242,20 @@ export const Checker: React.FC<TicketProps> = ({
 
     return (
         <div>
-            {/* Summary */}
             <div className="mb-2 text-sm font-semibold">
                 Showing {totalActivities} activities | {totalColumns} columns
             </div>
 
-            {/* ReferenceID Filter */}
             <div className="mb-2 flex items-center space-x-4">
-                {/* ReferenceID Filter */}
                 <div className="flex items-center space-x-2">
-                    <label className="font-semibold text-sm">Filter by ReferenceID:</label>
+                    <label className="font-semibold text-sm">
+                        Filter by ReferenceID:
+                    </label>
                     <select
                         value={filterReference}
-                        onChange={(e) => setFilterReference(e.target.value)}
+                        onChange={(e) =>
+                            setFilterReference(e.target.value)
+                        }
                         className="border px-2 py-1 text-sm"
                     >
                         <option value="All">All</option>
@@ -280,19 +267,19 @@ export const Checker: React.FC<TicketProps> = ({
                     </select>
                 </div>
 
-                {/* Search Bar */}
                 <div className="flex items-center">
                     <input
                         type="text"
                         placeholder="Search..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) =>
+                            setSearchQuery(e.target.value)
+                        }
                         className="border px-2 py-1 text-sm w-64"
                     />
                 </div>
             </div>
 
-            {/* Table */}
             <div className="overflow-auto max-h-[80vh]">
                 <table className="w-full border-collapse border border-gray-300 text-sm">
                     <thead>
@@ -300,33 +287,49 @@ export const Checker: React.FC<TicketProps> = ({
                             {columns.map((col) => (
                                 <th
                                     key={col}
-                                    className="border p-3"
-                                    style={{ minWidth: "180px" }} // fixed width per column
+                                    className="border p-3 sticky top-0 bg-gray-100 z-10"
+                                    style={{ minWidth: "180px" }}
                                 >
                                     {col}
                                 </th>
                             ))}
                         </tr>
                     </thead>
+
                     <tbody>
                         {filteredActivities.map((act) => (
                             <tr
                                 key={act._id}
-                                className={`even:bg-gray-50 ${focusedRowId === act._id ? "bg-green-200" : ""
+                                onClick={() =>
+                                    setSelectedRowId(act._id)
+                                }
+                                className={`cursor-pointer even:bg-gray-50 ${selectedRowId === act._id
+                                        ? "bg-yellow-200"
+                                        : ""
                                     }`}
                             >
                                 {columns.map((field) => (
-                                    <td key={field} className="border p-2">
+                                    <td
+                                        key={field}
+                                        className="border p-2"
+                                    >
                                         <input
                                             type="text"
-                                            value={((act as any)[field] as string) || ""}
-                                            onChange={(e) =>
-                                                handleCellChange(act._id, field, e.target.value)
+                                            value={
+                                                ((act as any)[field] as string) ||
+                                                ""
                                             }
-                                            onFocus={() => setFocusedRowId(act._id)}
-                                            onBlur={() => setFocusedRowId(null)}
+                                            onChange={(e) =>
+                                                handleCellChange(
+                                                    act._id,
+                                                    field,
+                                                    e.target.value
+                                                )
+                                            }
                                             className="w-full text-sm border px-2 py-1"
-                                            style={{ minWidth: "180px" }}
+                                            style={{
+                                                minWidth: "180px",
+                                            }}
                                         />
                                     </td>
                                 ))}
