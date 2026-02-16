@@ -156,6 +156,28 @@ export function MetricsCard({
     const avgTransactionValueTotal =
         totalConverted > 0 ? totalSoAmount / totalConverted : 0;
 
+    const channelPriority = [
+        "Google Maps",
+        "Website",
+        "FB Main",
+        "FB ES Home",
+        "Viber",
+        "Text Message",
+        "Shopify",
+        "Voice Call",
+        "Email",
+        "Whatsapp",
+    ];
+
+    const sortedGroupedData = groupedData.slice().sort((a, b) => {
+        const indexA = channelPriority.indexOf(a.channel);
+        const indexB = channelPriority.indexOf(b.channel);
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+    });
+
     return (
         <Card>
             <CardHeader className="flex justify-between items-center">
@@ -208,53 +230,49 @@ export function MetricsCard({
                                 <TableHead>Channel</TableHead>
                                 <TableHead className="text-right">Traffic</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
-                                <TableHead className="text-right">Qty Sold</TableHead>
                                 <TableHead className="text-right">Converted Sales</TableHead>
+                                <TableHead className="text-right">Qty Sold</TableHead>
                                 <TableHead className="text-right">ATU</TableHead>
                                 <TableHead className="text-right">ATV</TableHead>
                             </TableRow>
                         </TableHeader>
 
-                        <TableBody>
-                            {groupedData.map((row) => (
-                                <TableRow key={row.channel}>
-                                    <TableCell className="font-medium pt-4 pb-4 text-left">{row.channel}</TableCell>
-
-                                    <TableCell className="text-right font-mono tabular-nums">{row.traffic}</TableCell>
-
-                                    <TableCell className="text-right font-mono tabular-nums">
-                                        ₱{row.soAmountTotal.toLocaleString()}
-                                    </TableCell>
-
-                                    <TableCell className="text-right font-mono tabular-nums">
-                                        {row.qtySoldTotal.toLocaleString()}
-                                    </TableCell>
-
-                                    <TableCell className="text-right font-mono tabular-nums">
-                                        {row.convertedCount.toLocaleString()}
-                                    </TableCell>
-
-                                    <TableCell className="text-right font-mono tabular-nums">
-                                        {row.avgTransactionUnit.toFixed(2)}
-                                    </TableCell>
-
-                                    <TableCell className="text-right font-mono tabular-nums">
-                                        {row.avgTransactionValue.toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                        <tfoot className="bg-gray-100 font-semibold">
+                        <TableHeader className="bg-gray-100 font-semibold">
                             <TableRow>
                                 <TableCell>Total</TableCell>
                                 <TableCell className="text-right">{totalTraffic}</TableCell>
-                                <TableCell className="text-right font-mono tabular-nums">₱{totalSoAmount.toLocaleString()}</TableCell>
-                                <TableCell className="text-right font-mono tabular-nums">{totalQtySold.toLocaleString()}</TableCell>
-                                <TableCell className="text-right font-mono tabular-nums">{totalConverted.toLocaleString()}</TableCell>
-                                <TableCell className="text-right font-mono tabular-nums">{avgTransactionUnitTotal.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono tabular-nums">{avgTransactionValueTotal.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">
+                                    ₱{totalSoAmount.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">
+                                    {totalConverted.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">
+                                    {totalQtySold.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">
+                                    {Math.round(avgTransactionUnitTotal).toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-right font-mono tabular-nums">
+                                    ₱{Math.round(avgTransactionValueTotal).toLocaleString()}
+                                </TableCell>
                             </TableRow>
-                        </tfoot>
+                        </TableHeader>
+
+                        <TableBody>
+                            {sortedGroupedData.map((row) => (
+                                <TableRow key={row.channel}>
+                                    <TableCell className="font-medium pt-4 pb-4 text-left">{row.channel}</TableCell>
+                                    <TableCell className="text-right font-mono tabular-nums">{row.traffic}</TableCell>
+                                    <TableCell className="text-right font-mono tabular-nums">₱{row.soAmountTotal.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right font-mono tabular-nums">{row.convertedCount.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right font-mono tabular-nums">{row.qtySoldTotal.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right font-mono tabular-nums">{Math.round(row.avgTransactionUnit).toLocaleString()}</TableCell>
+                                    <TableCell className="text-right font-mono tabular-nums">₱{Math.round(row.avgTransactionValue).toLocaleString()}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+
                     </Table>
                 )}
             </CardContent>
