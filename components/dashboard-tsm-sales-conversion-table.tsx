@@ -767,9 +767,9 @@ const AgentSalesTableCard = forwardRef<
                   <TableHead className="text-right">
                     TSAs RESPONSE TIME
                   </TableHead>
-                  <TableHead className="text-right">NON RFQ HT</TableHead>
-                  <TableHead className="text-right">RFQ HT</TableHead>
-                  <TableHead className="text-right">SPF HT</TableHead>
+                  <TableHead className="text-right">NON RFQ Handling Time</TableHead>
+                  <TableHead className="text-right">RFQ Handling Time</TableHead>
+                  <TableHead className="text-right">SPF Handling Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

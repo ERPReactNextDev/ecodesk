@@ -686,12 +686,12 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                   <TableHead className="text-right">
                     TSA Response Time
                   </TableHead>
-                  <TableHead className="text-right">
+                  {/* <TableHead className="text-right">
                     TSA Handling Time
-                  </TableHead>
-                  <TableHead className="text-right">Non-Quotation HT</TableHead>
-                  <TableHead className="text-right">Quotation HT</TableHead>
-                  <TableHead className="text-right">SPF HT</TableHead>
+                  </TableHead> */}
+                  <TableHead className="text-right">Non-Quotation Handling Time</TableHead>
+                  <TableHead className="text-right">Quotation Handling Time</TableHead>
+                  <TableHead className="text-right">SPF Handling Time</TableHead>
                 </TableRow>
               </TableHeader>
 
