@@ -691,7 +691,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                   </TableHead> */}
                   <TableHead className="text-right">Non-Quotation Handling Time</TableHead>
                   <TableHead className="text-right">Quotation Handling Time</TableHead>
-                  <TableHead className="text-right">SPF Handling Time</TableHead>
+                  <TableHead className="text-right">SPF Handling</TableHead>
                 </TableRow>
               </TableHeader>
 

@@ -767,9 +767,9 @@ const AgentSalesTableCard = forwardRef<
                   <TableHead className="text-right">
                     TSAs RESPONSE TIME
                   </TableHead>
-                  <TableHead className="text-right">NON RFQ Handling Time</TableHead>
+                  {/* <TableHead className="text-right">NON RFQ Handling Time</TableHead> */}
                   <TableHead className="text-right">RFQ Handling Time</TableHead>
-                  <TableHead className="text-right">SPF Handling Time</TableHead>
+                  {/* <TableHead className="text-right">SPF Handling Time</TableHead> */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -984,17 +984,17 @@ const AgentSalesTableCard = forwardRef<
                             : formatHHMMSS(avgTsaResponse)}
                         </TableCell>
 
-                        <TableCell className="text-right font-mono">
+                        {/* <TableCell className="text-right font-mono">
                           {avgNonRfQ === "-" ? "-" : formatHHMMSS(avgNonRfQ)}
-                        </TableCell>
+                        </TableCell> */}
 
                         <TableCell className="text-right font-mono">
                           {avgRfQ === "-" ? "-" : formatHHMMSS(avgRfQ)}
                         </TableCell>
 
-                        <TableCell className="text-right font-mono">
+                        {/* <TableCell className="text-right font-mono">
                           {avgSpf === "-" ? "-" : formatHHMMSS(avgSpf)}
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     );
                   })}
