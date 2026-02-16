@@ -17,6 +17,7 @@ interface Activity {
   tsa_handling_time?: string; // new
   ticket_received?: string; // new
   remarks?: string; // new
+  customer_status?: string;
 }
 
 interface Agent {
@@ -92,6 +93,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     return true;
   };
 
+
   const groupedAgents = useMemo(() => {
     const map: Record<
       string,
@@ -105,7 +107,14 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         quotationHandlingTimes: number[]; // new
         nonQuotationHandlingTimes: number[]; // NEW
         spfHandlingTimes: number[]; // ✅ NEW
-
+        newClientCount: number;
+        newNonBuyingCount: number;
+        existingActiveCount: number;
+        existingInactiveCount: number;
+        newClientConvertedAmount: number;
+        newNonBuyingConvertedAmount: number;
+        existingActiveConvertedAmount: number;
+        existingInactiveConvertedAmount: number;
       }
     > = {};
 
@@ -128,6 +137,14 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             quotationHandlingTimes: [], // new
             nonQuotationHandlingTimes: [],
             spfHandlingTimes: [],
+            newClientCount: 0,
+            newNonBuyingCount: 0,
+            existingActiveCount: 0,
+            existingInactiveCount: 0,
+            newClientConvertedAmount: 0,
+            newNonBuyingConvertedAmount: 0,
+            existingActiveConvertedAmount: 0,
+            existingInactiveConvertedAmount: 0,
           };
         }
 
@@ -143,6 +160,39 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
 
         if (a.status === "Converted into Sales") {
           map[a.agent || name].convertedSalesCount += 1;
+        }
+
+        // ✅ Count customer_status
+        switch (a.customer_status?.trim()) {
+          case "New Client":
+            map[a.agent || name].newClientCount += 1;
+            break;
+          case "New Non-Buying":
+            map[a.agent || name].newNonBuyingCount += 1;
+            break;
+          case "Existing Active":
+            map[a.agent || name].existingActiveCount += 1;
+            break;
+          case "Existing Inactive":
+            map[a.agent || name].existingInactiveCount += 1;
+            break;
+        }
+
+        if (a.status === "Converted into Sales") {
+          switch (a.customer_status?.trim()) {
+            case "New Client":
+              map[a.agent || name].newClientConvertedAmount += Number(a.so_amount) || 0;
+              break;
+            case "New Non-Buying":
+              map[a.agent || name].newNonBuyingConvertedAmount += Number(a.so_amount) || 0;
+              break;
+            case "Existing Active":
+              map[a.agent || name].existingActiveConvertedAmount += Number(a.so_amount) || 0;
+              break;
+            case "Existing Inactive":
+              map[a.agent || name].existingInactiveConvertedAmount += Number(a.so_amount) || 0;
+              break;
+          }
         }
 
         if (a.tsa_acknowledge_date && a.ticket_endorsed) {
@@ -174,8 +224,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           a.ticket_received &&
           a.remarks &&
           a.remarks !== "Quotation For Approval" &&
-          a.remarks !== "Sold" &&
-          a.remarks !== "For SPF"
+          a.remarks !== "Sold"
         ) {
           const tsaTime = new Date(a.tsa_handling_time).getTime();
           const ticketReceived = new Date(a.ticket_received).getTime();
@@ -225,7 +274,23 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             a.spfHandlingTimes.length
             : 0;
 
-        return { ...a, avgResponseTime, avgQuotationHandlingTime, avgNonQuotationHandlingTime, avgSPFHandlingTime };
+        return {
+          ...a,
+          avgResponseTime,
+          avgQuotationHandlingTime,
+          avgNonQuotationHandlingTime,
+          avgSPFHandlingTime,
+          newClientCount: a.newClientCount,
+          newNonBuyingCount: a.newNonBuyingCount,
+          existingActiveCount: a.existingActiveCount,
+          existingInactiveCount: a.existingInactiveCount,
+          newClientConvertedAmount: a.newClientConvertedAmount,
+          newNonBuyingConvertedAmount: a.newNonBuyingConvertedAmount,
+          existingActiveConvertedAmount: a.existingActiveConvertedAmount,
+          existingInactiveConvertedAmount: a.existingInactiveConvertedAmount,
+
+        };
+
       });
   }, [activities, agents, dateCreatedFilterRange, searchTerm]);
 
@@ -313,6 +378,14 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 <TableHead>Amount</TableHead>
                 <TableHead>Converted into Sales</TableHead>
                 <TableHead>% Inquiry to Sales</TableHead>
+                <TableHead>New Client</TableHead>
+                <TableHead>New Non Buying</TableHead>
+                <TableHead>Existing Active</TableHead>
+                <TableHead>Existing Inactive</TableHead>
+                <TableHead>New Client (Converted)</TableHead>
+                <TableHead>New Non-Buying (Converted)</TableHead>
+                <TableHead>Existing Active (Converted)</TableHead>
+                <TableHead>Existing Inactive (Converted)</TableHead>
                 <TableHead>TSA Response Time</TableHead>
                 <TableHead>Non-Quotation HT</TableHead>
                 <TableHead>Quotation HT</TableHead>
@@ -332,12 +405,21 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 </TableCell>
                 <TableCell>{totalConvertedSales}</TableCell>
                 <TableCell>{totalInquiryToSalesPercent.toFixed(2)}%</TableCell>
+                <TableCell>{groupedAgents.reduce((sum, a) => sum + a.newClientCount, 0)}</TableCell>
+                <TableCell>{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingCount, 0)}</TableCell>
+                <TableCell>{groupedAgents.reduce((sum, a) => sum + a.existingActiveCount, 0)}</TableCell>
+                <TableCell>{groupedAgents.reduce((sum, a) => sum + a.existingInactiveCount, 0)}</TableCell>
+                {/* ✅ New Converted Amount Totals */}
+                <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newClientConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
                 <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
                 <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
                 <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
-
               </TableRow>
+
 
               {groupedAgents.map((a, index) => {
                 const inquiryToSalesPercent =
@@ -354,6 +436,14 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                     </TableCell>
                     <TableCell>{a.convertedSalesCount}</TableCell>
                     <TableCell>{inquiryToSalesPercent.toFixed(2)}%</TableCell>
+                    <TableCell>{a.newClientCount}</TableCell>
+                    <TableCell>{a.newNonBuyingCount}</TableCell>
+                    <TableCell>{a.existingActiveCount}</TableCell>
+                    <TableCell>{a.existingInactiveCount}</TableCell>
+                    <TableCell>₱{a.newClientConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>₱{a.newNonBuyingConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>₱{a.existingActiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>₱{a.existingInactiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
                     <TableCell>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
                     <TableCell>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
