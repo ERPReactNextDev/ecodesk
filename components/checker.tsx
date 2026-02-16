@@ -75,11 +75,17 @@ export const Checker: React.FC<TicketProps> = ({
     const [filterReference, setFilterReference] = useState<string>("All");
     const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>("");
+    const [filterAgent, setFilterAgent] = useState<string>("All");
+    const [filterCustomerStatus, setFilterCustomerStatus] = useState<string>("All");
 
     const columns = [
         "referenceid",
         "ticket_received",
+        "tsa_handling_time",
+        "quotation_handling_time",
         "ticket_endorsed",
+        "tsa_acknowledge_date",
+        "response_time", // ✅ new computed column
         "company_name",
         "contact_person",
         "gender",
@@ -102,8 +108,6 @@ export const Checker: React.FC<TicketProps> = ({
         "delivery_date",
         "manager",
         "agent",
-        "tsa_acknowledge_date",
-        "tsa_handling_time",
         "tsm_acknowledge_date",
         "tsm_handling_time",
         "activity_reference_number",
@@ -163,17 +167,29 @@ export const Checker: React.FC<TicketProps> = ({
         new Set(activities.map((a) => a.referenceid))
     );
 
-    const visibleActivities = activities.filter((a) => {
-        if (role === "Admin") return true;
-        return a.referenceid === referenceid;
-    });
+    const uniqueAgents = Array.from(
+        new Set(activities.map((a) => a.agent).filter(Boolean))
+    );
 
-    const filteredActivities = visibleActivities
+    const uniqueCustomerStatuses = Array.from(
+        new Set(activities.map((a) => a.customer_status).filter(Boolean))
+    );
+
+    const filteredActivities = activities
         .filter((a) => {
+            // 🔹 Filter by ReferenceID
             const matchesReference =
-                filterReference === "All" ||
-                a.referenceid === filterReference;
+                filterReference === "All" || a.referenceid === filterReference;
 
+            // 🔹 Filter by Agent
+            const matchesAgent =
+                filterAgent === "All" || a.agent === filterAgent;
+
+            // 🔹 Filter by Customer Status
+            const matchesCustomerStatus =
+                filterCustomerStatus === "All" || a.customer_status === filterCustomerStatus;
+
+            // 🔹 Filter by date range
             let matchesDate = true;
             if (dateCreatedFilterRange?.from || dateCreatedFilterRange?.to) {
                 const createdDate = new Date(a.date_created);
@@ -191,18 +207,15 @@ export const Checker: React.FC<TicketProps> = ({
                 }
             }
 
-            return matchesReference && matchesDate;
+            return matchesReference && matchesAgent && matchesCustomerStatus && matchesDate;
         })
         .filter((a) => {
+            // 🔹 Search filter
             if (!searchQuery) return true;
-
             const lowerQuery = searchQuery.toLowerCase();
             return columns.some((field) => {
                 const value = (a as any)[field];
-                return (
-                    value &&
-                    value.toString().toLowerCase().includes(lowerQuery)
-                );
+                return value && value.toString().toLowerCase().includes(lowerQuery);
             });
         });
 
@@ -247,15 +260,12 @@ export const Checker: React.FC<TicketProps> = ({
             </div>
 
             <div className="mb-2 flex items-center space-x-4">
+                {/* Filter by ReferenceID */}
                 <div className="flex items-center space-x-2">
-                    <label className="font-semibold text-sm">
-                        Filter by ReferenceID:
-                    </label>
+                    <label className="font-semibold text-sm">Filter by ReferenceID:</label>
                     <select
                         value={filterReference}
-                        onChange={(e) =>
-                            setFilterReference(e.target.value)
-                        }
+                        onChange={(e) => setFilterReference(e.target.value)}
                         className="border px-2 py-1 text-sm"
                     >
                         <option value="All">All</option>
@@ -267,14 +277,47 @@ export const Checker: React.FC<TicketProps> = ({
                     </select>
                 </div>
 
+                {/* Filter by Agent */}
+                <div className="flex items-center space-x-2">
+                    <label className="font-semibold text-sm">Filter by Agent:</label>
+                    <select
+                        value={filterAgent}
+                        onChange={(e) => setFilterAgent(e.target.value)}
+                        className="border px-2 py-1 text-sm"
+                    >
+                        <option value="All">All</option>
+                        {uniqueAgents.map((agent) => (
+                            <option key={agent} value={agent}>
+                                {agent}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Filter by Customer Status */}
+                <div className="flex items-center space-x-2">
+                    <label className="font-semibold text-sm">Filter by Customer Status:</label>
+                    <select
+                        value={filterCustomerStatus}
+                        onChange={(e) => setFilterCustomerStatus(e.target.value)}
+                        className="border px-2 py-1 text-sm"
+                    >
+                        <option value="All">All</option>
+                        {uniqueCustomerStatuses.map((status) => (
+                            <option key={status} value={status}>
+                                {status}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Search input */}
                 <div className="flex items-center">
                     <input
                         type="text"
                         placeholder="Search..."
                         value={searchQuery}
-                        onChange={(e) =>
-                            setSearchQuery(e.target.value)
-                        }
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         className="border px-2 py-1 text-sm w-64"
                     />
                 </div>
@@ -297,44 +340,62 @@ export const Checker: React.FC<TicketProps> = ({
                     </thead>
 
                     <tbody>
-                        {filteredActivities.map((act) => (
-                            <tr
-                                key={act._id}
-                                onClick={() =>
-                                    setSelectedRowId(act._id)
-                                }
-                                className={`cursor-pointer even:bg-gray-50 ${selectedRowId === act._id
-                                        ? "bg-yellow-200"
-                                        : ""
-                                    }`}
-                            >
-                                {columns.map((field) => (
-                                    <td
-                                        key={field}
-                                        className="border p-2"
-                                    >
-                                        <input
-                                            type="text"
-                                            value={
-                                                ((act as any)[field] as string) ||
-                                                ""
-                                            }
-                                            onChange={(e) =>
-                                                handleCellChange(
-                                                    act._id,
-                                                    field,
-                                                    e.target.value
-                                                )
-                                            }
-                                            className="w-full text-sm border px-2 py-1"
-                                            style={{
-                                                minWidth: "180px",
-                                            }}
-                                        />
-                                    </td>
-                                ))}
-                            </tr>
-                        ))}
+                        {filteredActivities.map((act) => {
+                            // Compute response_time in minutes
+                            let responseTime = "";
+                            if (act.tsa_acknowledge_date && act.ticket_endorsed) {
+                                const endorsed = new Date(act.ticket_endorsed).getTime();
+                                const acknowledged = new Date(act.tsa_acknowledge_date).getTime();
+                                const diffMs = acknowledged - endorsed;
+                                const diffMinutes = diffMs / (1000 * 60);
+                                responseTime = diffMinutes.toFixed(2) + "";
+                            }
+
+                            // Compute quotation_handling_time in hours
+                            let quotationHandlingTime = "";
+                            if (
+                                act.tsa_handling_time &&
+                                act.ticket_received &&
+                                (act.remarks === "Quotation For Approval" || act.remarks === "Sold")
+                            ) {
+                                const tsaTime = new Date(act.tsa_handling_time).getTime();
+                                const ticketReceived = new Date(act.ticket_received).getTime();
+                                const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
+                                quotationHandlingTime = diffHours.toFixed(2);
+                            }
+
+                            return (
+                                <tr
+                                    key={act._id}
+                                    onClick={() => setSelectedRowId(act._id)}
+                                    className={`cursor-pointer even:bg-gray-50 ${selectedRowId === act._id ? "bg-yellow-200" : ""
+                                        }`}
+                                >
+                                    {columns.map((field) => (
+                                        <td key={field} className="border p-2">
+                                            <input
+                                                type="text"
+                                                value={
+                                                    field === "response_time"
+                                                        ? responseTime
+                                                        : field === "quotation_handling_time"
+                                                            ? quotationHandlingTime
+                                                            : ((act as any)[field] as string) || ""
+                                                }
+                                                onChange={(e) =>
+                                                    field !== "response_time" &&
+                                                    field !== "quotation_handling_time" &&
+                                                    handleCellChange(act._id, field, e.target.value)
+                                                }
+                                                disabled={field === "response_time" || field === "quotation_handling_time"}
+                                                className="w-full text-sm border px-2 py-1"
+                                            />
+
+                                        </td>
+                                    ))}
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
