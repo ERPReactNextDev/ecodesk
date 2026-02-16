@@ -765,7 +765,7 @@ const AgentSalesTableCard = forwardRef<
                     Existing Inactive (Converted To Sales)
                   </TableHead>
                   <TableHead className="text-right">
-                    TSAs RESPONSE TIME
+                    TSAs Response Time
                   </TableHead>
                   {/* <TableHead className="text-right">NON RFQ Handling Time</TableHead> */}
                   <TableHead className="text-right">RFQ Handling Time</TableHead>
