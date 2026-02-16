@@ -169,10 +169,15 @@ function computeSpfHTAligned(a: Activity): number | null {
 }
 
 function formatMinutesToHHMM(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
+  if (!minutes || minutes <= 0) return "00:00:00";
 
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+  const totalSeconds = Math.floor(minutes * 60);
+
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 /* ===================== INTERFACES ===================== */
@@ -684,9 +689,9 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                   <TableHead className="text-right">
                     TSA Handling Time
                   </TableHead>
-                  <TableHead className="text-right">Non-Quotation HT</TableHead>
-                  <TableHead className="text-right">Quotation HT</TableHead>
-                  <TableHead className="text-right">SPF HT</TableHead>
+                  <TableHead className="text-right">Non-Quotation Handling Time</TableHead>
+                  <TableHead className="text-right">Quotation Handling Time</TableHead>
+                  <TableHead className="text-right">SPF Handling Time</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -812,13 +817,13 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                         <TableCell className="text-right">
                           {r.newExistingInactiveConvertedAmount}
                         </TableCell>
+
+                        {/* FIXED — removed Math.floor */}
                         <TableCell className="text-right">
                           {r.tsaResponseCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                              Math.floor(
-                                r.tsaResponseTotal / r.tsaResponseCount,
-                              ),
+                              r.tsaResponseTotal / r.tsaResponseCount,
                             )}
                         </TableCell>
 
@@ -826,9 +831,7 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                           {r.tsaHandlingCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                              Math.floor(
-                                r.tsaHandlingTotal / r.tsaHandlingCount,
-                              ),
+                              r.tsaHandlingTotal / r.tsaHandlingCount,
                             )}
                         </TableCell>
 
@@ -836,16 +839,15 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                           {r.nonQuotationCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                              Math.floor(
-                                r.nonQuotationTotal / r.nonQuotationCount,
-                              ),
+                              r.nonQuotationTotal / r.nonQuotationCount,
                             )}
                         </TableCell>
+
                         <TableCell className="text-right">
                           {r.quotationCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                              Math.floor(r.quotationTotal / r.quotationCount),
+                              r.quotationTotal / r.quotationCount,
                             )}
                         </TableCell>
 
@@ -853,15 +855,148 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
                           {r.spfCount === 0
                             ? "-"
                             : formatMinutesToHHMM(
-                              Math.floor(r.spfTotal / r.spfCount),
+                              r.spfTotal / r.spfCount,
                             )}
                         </TableCell>
                       </TableRow>
                     );
                   })}
-              </TableBody>
-            </Table>
+</TableBody>
+
+<tfoot>
+  <TableRow className="bg-muted/30 font-semibold">
+    <TableCell>-</TableCell>
+    <TableCell>Total</TableCell>
+
+    <TableCell className="text-right">
+      {groupedData.reduce((sum, r) => sum + r.salesCount, 0)}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {groupedData.reduce((sum, r) => sum + r.nonSalesCount, 0)}
+    </TableCell>
+
+    <TableCell className="text-right">
+      ₱
+      {groupedData.reduce((sum, r) => sum + r.amount, 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {groupedData.reduce((sum, r) => sum + r.qtySold, 0)}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {groupedData.reduce((sum, r) => sum + r.convertedCount, 0)}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {(() => {
+        const totalSales = groupedData.reduce((sum, r) => sum + r.salesCount, 0);
+        const totalConverted = groupedData.reduce((sum, r) => sum + r.convertedCount, 0);
+
+        return totalSales === 0
+          ? "-"
+          : ((totalConverted / totalSales) * 100).toFixed(2) + "%";
+      })()}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {groupedData.reduce((sum, r) => sum + r.newClientCount, 0)}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {groupedData.reduce((sum, r) => sum + r.newNonBuyingCount, 0)}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {groupedData.reduce((sum, r) => sum + r.ExistingActiveCount, 0)}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {groupedData.reduce((sum, r) => sum + r.ExistingInactive, 0)}
+    </TableCell>
+
+    <TableCell className="text-right">
+      ₱
+      {groupedData.reduce((sum, r) => sum + r.newClientConvertedAmount, 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}
+    </TableCell>
+
+    <TableCell className="text-right">
+      ₱
+      {groupedData.reduce((sum, r) => sum + r.newNonBuyingConvertedAmount, 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}
+    </TableCell>
+
+    <TableCell className="text-right">
+      ₱
+      {groupedData.reduce((sum, r) => sum + r.newExistingActiveConvertedAmount, 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}
+    </TableCell>
+
+    <TableCell className="text-right">
+      ₱
+      {groupedData.reduce((sum, r) => sum + r.newExistingInactiveConvertedAmount, 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {(() => {
+        const total = groupedData.reduce((sum, r) => sum + r.tsaResponseTotal, 0);
+        const count = groupedData.reduce((sum, r) => sum + r.tsaResponseCount, 0);
+        return count === 0 ? "-" : formatMinutesToHHMM(total / count);
+      })()}
+    </TableCell>
+
+    <TableCell className="text-right">
+  {(() => {
+    const total = groupedData.reduce((sum, r) => sum + r.tsaHandlingTotal, 0);
+    const count = groupedData.reduce((sum, r) => sum + r.tsaHandlingCount, 0);
+    return count === 0 ? "-" : formatMinutesToHHMM(total / count);
+  })()}
+</TableCell>
+
+    <TableCell className="text-right">
+      {(() => {
+        const total = groupedData.reduce((sum, r) => sum + r.nonQuotationTotal, 0);
+        const count = groupedData.reduce((sum, r) => sum + r.nonQuotationCount, 0);
+        return count === 0 ? "-" : formatMinutesToHHMM(total / count);
+      })()}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {(() => {
+        const total = groupedData.reduce((sum, r) => sum + r.quotationTotal, 0);
+        const count = groupedData.reduce((sum, r) => sum + r.quotationCount, 0);
+        return count === 0 ? "-" : formatMinutesToHHMM(total / count);
+      })()}
+    </TableCell>
+
+    <TableCell className="text-right">
+      {(() => {
+        const total = groupedData.reduce((sum, r) => sum + r.spfTotal, 0);
+        const count = groupedData.reduce((sum, r) => sum + r.spfCount, 0);
+        return count === 0 ? "-" : formatMinutesToHHMM(total / count);
+      })()}
+    </TableCell>
+
+  </TableRow>
+</tfoot>
+
+</Table>
           )}
+
         </CardContent>
 
         <Separator />

@@ -42,12 +42,15 @@ function TooltipInfo({ children }: { children: React.ReactNode }) {
 function formatHHMMSS(totalMinutes: number): string {
   if (!totalMinutes || totalMinutes <= 0) return "00:00:00";
 
-  // totalMinutes already rounded earlier (safeDiffMinutes)
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
+  const totalSeconds = Math.floor(totalMinutes * 60);
 
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
+
 
 interface Activity {
   referenceid?: string;
@@ -264,6 +267,7 @@ const AgentSalesTableCard = forwardRef<
       "PENDING QUOTATION",
       "FOR OCCULAR INSPECTION",
     ];
+
 
     const remarks = (a.remarks || "").toUpperCase();
 
@@ -761,11 +765,11 @@ const AgentSalesTableCard = forwardRef<
                     Existing Inactive (Converted To Sales)
                   </TableHead>
                   <TableHead className="text-right">
-                    TSAs RESPONSE TIME
+                    TSAs Response Time
                   </TableHead>
-                  <TableHead className="text-right">NON RFQ HT</TableHead>
-                  <TableHead className="text-right">RFQ HT</TableHead>
-                  <TableHead className="text-right">SPF HT</TableHead>
+                  {/* <TableHead className="text-right">NON RFQ Handling Time</TableHead> */}
+                  <TableHead className="text-right">RFQ Handling Time</TableHead>
+                  {/* <TableHead className="text-right">SPF Handling Time</TableHead> */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -813,18 +817,19 @@ const AgentSalesTableCard = forwardRef<
                     const avgTsaResponse =
                       tsaResponseCount === 0
                         ? "-"
-                        : Math.round(tsaResponseTotal / tsaResponseCount);
+                        : tsaResponseTotal / tsaResponseCount;
 
                     const avgNonRfQ =
                       nonRfQCount === 0
                         ? "-"
-                        : Math.round(nonRfQTotal / nonRfQCount);
+                        : nonRfQTotal / nonRfQCount;
 
                     const avgRfQ =
-                      rfqCount === 0 ? "-" : Math.round(rfqTotal / rfqCount);
+                      rfqCount === 0 ? "-" : rfqTotal / rfqCount;
 
                     const avgSpf =
-                      spfCount === 0 ? "-" : Math.round(spfTotal / spfCount);
+                      spfCount === 0 ? "-" : spfTotal / spfCount;
+
 
                     return (
                       <TableRow key={manager} className="hover:bg-muted/50">
@@ -911,8 +916,8 @@ const AgentSalesTableCard = forwardRef<
                             return totalInquiry === 0
                               ? "0.00%"
                               : ((convertedCount / totalInquiry) * 100).toFixed(
-                                  2,
-                                ) + "%";
+                                2,
+                              ) + "%";
                           })()}
                         </TableCell>
 
@@ -979,17 +984,17 @@ const AgentSalesTableCard = forwardRef<
                             : formatHHMMSS(avgTsaResponse)}
                         </TableCell>
 
-                        <TableCell className="text-right font-mono">
+                        {/* <TableCell className="text-right font-mono">
                           {avgNonRfQ === "-" ? "-" : formatHHMMSS(avgNonRfQ)}
-                        </TableCell>
+                        </TableCell> */}
 
                         <TableCell className="text-right font-mono">
                           {avgRfQ === "-" ? "-" : formatHHMMSS(avgRfQ)}
                         </TableCell>
 
-                        <TableCell className="text-right font-mono">
+                        {/* <TableCell className="text-right font-mono">
                           {avgSpf === "-" ? "-" : formatHHMMSS(avgSpf)}
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     );
                   })}
@@ -1041,7 +1046,7 @@ const AgentSalesTableCard = forwardRef<
                       return totalInquiry === 0
                         ? "0.00%"
                         : ((totalConverted / totalInquiry) * 100).toFixed(2) +
-                            "%";
+                        "%";
                     })()}
                   </TableCell>
 
@@ -1103,19 +1108,92 @@ const AgentSalesTableCard = forwardRef<
                         maximumFractionDigits: 2,
                       })}
                   </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    ₱
-                    {groupedData
-                      .reduce(
-                        (sum, row) =>
-                          sum + row.newExistingInactiveConvertedAmount,
-                        0,
-                      )
-                      .toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                  </TableCell>
+<TableCell className="font-mono tabular-nums text-right">
+  ₱
+  {groupedData
+    .reduce(
+      (sum, row) =>
+        sum + row.newExistingInactiveConvertedAmount,
+      0,
+    )
+    .toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}
+</TableCell>
+
+<TableCell className="font-mono tabular-nums text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, row) => sum + row.tsaResponseTotal,
+      0,
+    );
+
+    const count = groupedData.reduce(
+      (sum, row) => sum + row.tsaResponseCount,
+      0,
+    );
+
+    return count === 0
+      ? "-"
+      : formatHHMMSS(total / count);
+  })()}
+</TableCell>
+
+{/* <TableCell className="font-mono tabular-nums text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, row) => sum + row.nonRfQTotal,
+      0,
+    );
+
+    const count = groupedData.reduce(
+      (sum, row) => sum + row.nonRfQCount,
+      0,
+    );
+
+    return count === 0
+      ? "-"
+      : formatHHMMSS(total / count);
+  })()}
+</TableCell> */}
+
+<TableCell className="font-mono tabular-nums text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, row) => sum + row.rfqTotal,
+      0,
+    );
+
+    const count = groupedData.reduce(
+      (sum, row) => sum + row.rfqCount,
+      0,
+    );
+
+    return count === 0
+      ? "-"
+      : formatHHMMSS(total / count);
+  })()}
+</TableCell>
+
+{/* <TableCell className="font-mono tabular-nums text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, row) => sum + row.spfTotal,
+      0,
+    );
+
+    const count = groupedData.reduce(
+      (sum, row) => sum + row.spfCount,
+      0,
+    );
+
+    return count === 0
+      ? "-"
+      : formatHHMMSS(total / count);
+  })()}
+</TableCell> */}
+
                 </TableRow>
               </tfoot>
             </Table>

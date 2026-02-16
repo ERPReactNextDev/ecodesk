@@ -645,6 +645,11 @@ export function TicketSheet(props: TicketSheetProps) {
 
   // 1️⃣ Ticket Received vs Ticket Endorsed validation
   useEffect(() => {
+    // 🔥 AUTO SYNC DATE CREATED = TICKET RECEIVED
+    if (ticketReceived) {
+      setDateCreated(ticketReceived);
+    }
+
     if (!ticketReceived || !ticketEndorsed) {
       setTimeError(null);
       return;
@@ -661,6 +666,7 @@ export function TicketSheet(props: TicketSheetProps) {
       }
     }
   }, [ticketReceived, ticketEndorsed]);
+
 
   // TSM validation - same logic pattern as Ticket Received/Endorsed
   useEffect(() => {
@@ -1159,18 +1165,19 @@ const onUpdate = async () => {
           </h2>
           <FieldGroup>
             <FieldSet>
-              <Field>
+              {/* <Field>
                 <FieldLabel>Date Created</FieldLabel>
                 <FieldDescription>
-                  Manually set the original date and time this ticket was
-                  created.
+                  Automatically set based on Ticket Received.
                 </FieldDescription>
-                <InputField
+
+                <Input
                   type="datetime-local"
                   value={dateCreated}
-                  onChange={(e) => setDateCreated(e.target.value)}
+                  disabled
                 />
-              </Field>
+              </Field> */}
+
               <Field>
                 {(!ticketReceived || !ticketEndorsed) && (
                   <p className="text-sm text-green-600 mb-2">
