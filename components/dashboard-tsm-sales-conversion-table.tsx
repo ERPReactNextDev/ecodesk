@@ -1108,19 +1108,92 @@ const AgentSalesTableCard = forwardRef<
                         maximumFractionDigits: 2,
                       })}
                   </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    ₱
-                    {groupedData
-                      .reduce(
-                        (sum, row) =>
-                          sum + row.newExistingInactiveConvertedAmount,
-                        0,
-                      )
-                      .toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                  </TableCell>
+<TableCell className="font-mono tabular-nums text-right">
+  ₱
+  {groupedData
+    .reduce(
+      (sum, row) =>
+        sum + row.newExistingInactiveConvertedAmount,
+      0,
+    )
+    .toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}
+</TableCell>
+
+<TableCell className="font-mono tabular-nums text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, row) => sum + row.tsaResponseTotal,
+      0,
+    );
+
+    const count = groupedData.reduce(
+      (sum, row) => sum + row.tsaResponseCount,
+      0,
+    );
+
+    return count === 0
+      ? "-"
+      : formatHHMMSS(total / count);
+  })()}
+</TableCell>
+
+{/* <TableCell className="font-mono tabular-nums text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, row) => sum + row.nonRfQTotal,
+      0,
+    );
+
+    const count = groupedData.reduce(
+      (sum, row) => sum + row.nonRfQCount,
+      0,
+    );
+
+    return count === 0
+      ? "-"
+      : formatHHMMSS(total / count);
+  })()}
+</TableCell> */}
+
+<TableCell className="font-mono tabular-nums text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, row) => sum + row.rfqTotal,
+      0,
+    );
+
+    const count = groupedData.reduce(
+      (sum, row) => sum + row.rfqCount,
+      0,
+    );
+
+    return count === 0
+      ? "-"
+      : formatHHMMSS(total / count);
+  })()}
+</TableCell>
+
+{/* <TableCell className="font-mono tabular-nums text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, row) => sum + row.spfTotal,
+      0,
+    );
+
+    const count = groupedData.reduce(
+      (sum, row) => sum + row.spfCount,
+      0,
+    );
+
+    return count === 0
+      ? "-"
+      : formatHHMMSS(total / count);
+  })()}
+</TableCell> */}
+
                 </TableRow>
               </tfoot>
             </Table>
