@@ -466,7 +466,6 @@ const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
   const filteredCompanies = companies
     .filter((c) => {
       if (excludedCompanyStatuses.includes(c.status)) return false;
-      if (c.type_client !== "CSR Client") return false;
 
       const term = normalize(searchTerm);
       if (!term) return true;
