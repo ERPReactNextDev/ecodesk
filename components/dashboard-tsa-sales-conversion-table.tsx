@@ -93,7 +93,6 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     return true;
   };
 
-
   const groupedAgents = useMemo(() => {
     const map: Record<
       string,
@@ -224,7 +223,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           a.ticket_received &&
           a.remarks &&
           a.remarks !== "Quotation For Approval" &&
-          a.remarks !== "Sold"
+          a.remarks !== "Sold" &&
+          a.remarks !== "For SPF"
         ) {
           const tsaTime = new Date(a.tsa_handling_time).getTime();
           const ticketReceived = new Date(a.ticket_received).getTime();
