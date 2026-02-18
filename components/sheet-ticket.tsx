@@ -197,6 +197,26 @@ function computeQuotationHT(remarks: string, baseTime: string) {
   return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
 }
 
+function getMinDateTimeLocal(daysBack: number) {
+  const now = new Date();
+
+  const min = new Date(now);
+  min.setDate(now.getDate() - daysBack);
+  min.setSeconds(0);
+  min.setMilliseconds(0);
+
+  return min.toISOString().slice(0, 16);
+}
+
+function getMaxDateTimeLocal() {
+  const now = new Date();
+
+  now.setSeconds(0);
+  now.setMilliseconds(0);
+
+  return now.toISOString().slice(0, 16);
+}
+
 function computeSpfHT(remarks: string, baseTime: string) {
   return (remarks || "").toUpperCase().includes("SPF") ? baseTime : "";
 }
@@ -294,7 +314,7 @@ interface TicketSheetProps {
   loading: boolean;
   handleBack: () => void;
   handleNext: () => void;
-handleUpdate: (agentReassigned: boolean) => void;
+  handleUpdate: (agentReassigned: boolean) => void;
 }
 
 // Reusable Radio Group
@@ -369,6 +389,10 @@ const InputField = ({
   description,
   rows,
   error,
+
+  // ✅ ADD THESE
+  min,
+  max,
 }: {
   type?: string;
   value: string;
@@ -379,9 +403,14 @@ const InputField = ({
   description?: string;
   rows?: number;
   error?: string;
+
+  // ✅ ADD THESE
+  min?: string;
+  max?: string;
 }) => (
   <Field>
     {description && <FieldDescription>{description}</FieldDescription>}
+
     {type === "textarea" ? (
       <>
         <Textarea
@@ -391,6 +420,7 @@ const InputField = ({
           placeholder={placeholder}
           className="capitalize"
         />
+
         {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
       </>
     ) : (
@@ -400,7 +430,11 @@ const InputField = ({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          // ✅ THIS IS THE FIX
+          min={min}
+          max={max}
         />
+
         {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
       </>
     )}
@@ -666,7 +700,6 @@ export function TicketSheet(props: TicketSheetProps) {
       }
     }
   }, [ticketReceived, ticketEndorsed]);
-
 
   // TSM validation - same logic pattern as Ticket Received/Endorsed
   useEffect(() => {
@@ -1012,27 +1045,27 @@ export function TicketSheet(props: TicketSheetProps) {
   const [loadingLoad, setLoadingLoad] = useState(false);
 
   // Override handleUpdate to validate status before saving
-const onUpdate = async () => {
-  if (!validateStep6()) return;
+  const onUpdate = async () => {
+    if (!validateStep6()) return;
 
-  setErrors({});
+    setErrors({});
 
-  await handleUpdate(agentReassigned);
+    await handleUpdate(agentReassigned);
 
-  // FORCE update to Supabase ONLY when Reassign button was clicked
-  if (agentReassigned === true) {
-    try {
-      const { updateReassignRemarks } = await import("@/utils/supabase-reassign");
+    // FORCE update to Supabase ONLY when Reassign button was clicked
+    if (agentReassigned === true) {
+      try {
+        const { updateReassignRemarks } =
+          await import("@/utils/supabase-reassign");
 
-      await updateReassignRemarks(ticketReferenceNumber, true);
+        await updateReassignRemarks(ticketReferenceNumber, true);
 
-      console.log("Remarks successfully set to Reassigned");
-    } catch (err) {
-      console.error("Failed to update reassigned remarks:", err);
+        console.log("Remarks successfully set to Reassigned");
+      } catch (err) {
+        console.error("Failed to update reassigned remarks:", err);
+      }
     }
-  }
-};
-
+  };
 
   const isStep3NextDisabled = !ticketReceived || !ticketEndorsed || !!timeError;
 
@@ -1196,6 +1229,8 @@ const onUpdate = async () => {
                   type="datetime-local"
                   value={ticketReceived}
                   onChange={(e) => setTicketReceived(e.target.value)}
+                  min={getMinDateTimeLocal(7)}
+
                   error={errors.ticketReceived || timeError || undefined}
                 />
               </Field>
@@ -1212,6 +1247,8 @@ const onUpdate = async () => {
                   type="datetime-local"
                   value={ticketEndorsed}
                   onChange={(e) => setTicketEndorsed(e.target.value)}
+                  min={getMinDateTimeLocal(7)}
+
                   error={errors.ticketEndorsed || timeError || undefined}
                 />
               </Field>
@@ -1911,6 +1948,8 @@ const onUpdate = async () => {
                     type="datetime-local"
                     value={tsmAcknowledgeDate}
                     onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+
                   />
                 </Field>
 
@@ -1920,6 +1959,8 @@ const onUpdate = async () => {
                     type="datetime-local"
                     value={tsmHandlingTime}
                     onChange={(e) => setTsmHandlingTime(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+
                     error={tsmTimeError || undefined}
                   />
                 </Field>
@@ -1929,6 +1970,8 @@ const onUpdate = async () => {
                     type="datetime-local"
                     value={tsaAcknowledgeDate}
                     onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+
                   />
                 </Field>
 
@@ -1938,6 +1981,8 @@ const onUpdate = async () => {
                     type="datetime-local"
                     value={tsaHandlingTime}
                     onChange={(e) => setTsaHandlingTime(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+
                     error={tsaTimeError || undefined}
                   />
                 </Field>
