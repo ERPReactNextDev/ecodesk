@@ -440,6 +440,27 @@ const InputField = ({
     )}
   </Field>
 );
+// CTRL+F: TIME_OF_DAY_CARD_COLOR
+
+function getTimeOfDayCardStyle(datetime?: string) {
+  if (!datetime) return "border-gray-200 bg-gray-50";
+
+  const hour = new Date(datetime).getHours();
+
+  if (hour >= 6 && hour < 8) return "border-orange-400 bg-orange-100";
+
+  if (hour >= 8 && hour < 12) return "border-yellow-400 bg-yellow-100";
+
+  if (hour >= 12 && hour < 15) return "border-blue-400 bg-blue-100";
+
+  if (hour >= 15 && hour < 17) return "border-green-400 bg-green-100";
+
+  if (hour >= 17 && hour < 18) return "border-purple-400 bg-purple-100";
+
+  if (hour >= 18 && hour < 21) return "border-indigo-400 bg-indigo-100";
+
+  return "border-slate-400 bg-slate-200";
+}
 
 export function TicketSheet(props: TicketSheetProps) {
   const {
@@ -1211,47 +1232,58 @@ export function TicketSheet(props: TicketSheetProps) {
                 />
               </Field> */}
 
-              <Field>
-                {(!ticketReceived || !ticketEndorsed) && (
-                  <p className="text-sm text-green-600 mb-2">
-                    Both Ticket Received and Ticket Endorsed are required.
-                  </p>
-                )}
-                <FieldLabel>
-                  Ticket Received{" "}
-                  <span className="text-red-600 text-xs italic">*required</span>
-                </FieldLabel>
-                <FieldDescription>
-                  Date and time when the ticket was initially received or
-                  logged.
-                </FieldDescription>
-                <InputField
-                  type="datetime-local"
-                  value={ticketReceived}
-                  onChange={(e) => setTicketReceived(e.target.value)}
-                  min={getMinDateTimeLocal(7)}
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketReceived)}`}
+              >
+                <Field>
+                  {(!ticketReceived || !ticketEndorsed) && (
+                    <p className="text-sm text-green-600 mb-2">
+                      Both Ticket Received and Ticket Endorsed are required.
+                    </p>
+                  )}
+                  <FieldLabel>
+                    Ticket Received{" "}
+                    <span className="text-red-600 text-xs italic">
+                      *required
+                    </span>
+                  </FieldLabel>
+                  <FieldDescription>
+                    Date and time when the ticket was initially received or
+                    logged.
+                  </FieldDescription>
+                  <InputField
+                    type="datetime-local"
+                    value={ticketReceived}
+                    onChange={(e) => setTicketReceived(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+                    error={errors.ticketReceived || timeError || undefined}
+                  />
+                </Field>
+              </div>
 
-                  error={errors.ticketReceived || timeError || undefined}
-                />
-              </Field>
-              <Field>
-                <FieldLabel>
-                  Ticket Endorsed{" "}
-                  <span className="text-red-600 text-xs italic">*required</span>
-                </FieldLabel>
-                <FieldDescription>
-                  Date and time when the ticket was endorsed to the assigned
-                  department.
-                </FieldDescription>
-                <InputField
-                  type="datetime-local"
-                  value={ticketEndorsed}
-                  onChange={(e) => setTicketEndorsed(e.target.value)}
-                  min={getMinDateTimeLocal(7)}
-
-                  error={errors.ticketEndorsed || timeError || undefined}
-                />
-              </Field>
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketEndorsed)}`}
+              >
+                <Field>
+                  <FieldLabel>
+                    Ticket Endorsed{" "}
+                    <span className="text-red-600 text-xs italic">
+                      *required
+                    </span>
+                  </FieldLabel>
+                  <FieldDescription>
+                    Date and time when the ticket was endorsed to the assigned
+                    department.
+                  </FieldDescription>
+                  <InputField
+                    type="datetime-local"
+                    value={ticketEndorsed}
+                    onChange={(e) => setTicketEndorsed(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+                    error={errors.ticketEndorsed || timeError || undefined}
+                  />
+                </Field>
+              </div>
 
               <Field>
                 <FieldLabel>Channel</FieldLabel>
@@ -1949,7 +1981,6 @@ export function TicketSheet(props: TicketSheetProps) {
                     value={tsmAcknowledgeDate}
                     onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
                     min={getMinDateTimeLocal(7)}
-
                   />
                 </Field>
 
@@ -1960,7 +1991,6 @@ export function TicketSheet(props: TicketSheetProps) {
                     value={tsmHandlingTime}
                     onChange={(e) => setTsmHandlingTime(e.target.value)}
                     min={getMinDateTimeLocal(7)}
-
                     error={tsmTimeError || undefined}
                   />
                 </Field>
@@ -1971,7 +2001,6 @@ export function TicketSheet(props: TicketSheetProps) {
                     value={tsaAcknowledgeDate}
                     onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
                     min={getMinDateTimeLocal(7)}
-
                   />
                 </Field>
 
@@ -1982,7 +2011,6 @@ export function TicketSheet(props: TicketSheetProps) {
                     value={tsaHandlingTime}
                     onChange={(e) => setTsaHandlingTime(e.target.value)}
                     min={getMinDateTimeLocal(7)}
-
                     error={tsaTimeError || undefined}
                   />
                 </Field>
@@ -2108,3 +2136,4 @@ export function TicketSheet(props: TicketSheetProps) {
     </>
   );
 }
+
