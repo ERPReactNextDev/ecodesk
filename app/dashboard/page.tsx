@@ -49,7 +49,7 @@ import AgentSalesTableCard from "@/components/dashboard-agent-sales-conversion-t
 import AgentSalesTableWeeklyCard from "@/components/dashboard-agent-sales-conversion-table-weekly";
 import TSASalesTableCard from "@/components/dashboard-tsa-sales-conversion-table";
 import TSMSalesTableCard from "@/components/dashboard-tsm-sales-conversion-table";
-
+import ManagerSalesTableCard from "@/components/dashboard-manager-sales-conversion-table";
 //
 import CountTickets from "@/components/dashboard-agent-ticket-table";
 
@@ -494,6 +494,14 @@ function DashboardContent() {
             />
 
             <TSMSalesTableCard
+              ref={tsmSalesTrafficCardRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              role={userDetails.role}
+              userReferenceId={userDetails.referenceid}
+            />
+
+            <ManagerSalesTableCard
               ref={tsmSalesTrafficCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}

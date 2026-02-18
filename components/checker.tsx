@@ -6,6 +6,7 @@ import { type DateRange } from "react-day-picker";
 interface Ticket {
     _id: string;
     referenceid: string;
+    department_head: string;
     account_reference_number: string;
     status: string;
     activity_reference_number: string;
@@ -76,10 +77,12 @@ export const Checker: React.FC<TicketProps> = ({
     const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [filterAgent, setFilterAgent] = useState<string>("All");
+    const [filterManager, setFilterManager] = useState<string>("All");
     const [filterCustomerStatus, setFilterCustomerStatus] = useState<string>("All");
 
     const columns = [
         "referenceid",
+        "department_head",
         "ticket_received",
         "tsa_handling_time",
         "quotation_handling_time",
@@ -171,25 +174,34 @@ export const Checker: React.FC<TicketProps> = ({
         new Set(activities.map((a) => a.agent).filter(Boolean))
     );
 
+    const uniqueManagers = Array.from(
+        new Set(activities.map((a) => a.manager).filter(Boolean))
+    );
+
+
     const uniqueCustomerStatuses = Array.from(
         new Set(activities.map((a) => a.customer_status).filter(Boolean))
     );
 
     const filteredActivities = activities
         .filter((a) => {
-            // 🔹 Filter by ReferenceID
+            // Filter by ReferenceID
             const matchesReference =
                 filterReference === "All" || a.referenceid === filterReference;
 
-            // 🔹 Filter by Agent
+            // Filter by Agent
             const matchesAgent =
                 filterAgent === "All" || a.agent === filterAgent;
 
-            // 🔹 Filter by Customer Status
+            // Filter by Customer Status
             const matchesCustomerStatus =
                 filterCustomerStatus === "All" || a.customer_status === filterCustomerStatus;
 
-            // 🔹 Filter by date range
+            // 🔹 Filter by Manager
+            const matchesManager =
+                filterManager === "All" || a.manager === filterManager;
+
+            // Filter by date range
             let matchesDate = true;
             if (dateCreatedFilterRange?.from || dateCreatedFilterRange?.to) {
                 const createdDate = new Date(a.date_created);
@@ -207,8 +219,9 @@ export const Checker: React.FC<TicketProps> = ({
                 }
             }
 
-            return matchesReference && matchesAgent && matchesCustomerStatus && matchesDate;
+            return matchesReference && matchesAgent && matchesCustomerStatus && matchesManager && matchesDate;
         })
+
         .filter((a) => {
             // 🔹 Search filter
             if (!searchQuery) return true;
@@ -293,6 +306,24 @@ export const Checker: React.FC<TicketProps> = ({
                         ))}
                     </select>
                 </div>
+
+                {/* Filter by Manager */}
+                <div className="flex items-center space-x-2">
+                    <label className="font-semibold text-sm">Filter by Manager:</label>
+                    <select
+                        value={filterManager}
+                        onChange={(e) => setFilterManager(e.target.value)}
+                        className="border px-2 py-1 text-sm"
+                    >
+                        <option value="All">All</option>
+                        {uniqueManagers.map((mgr) => (
+                            <option key={mgr} value={mgr}>
+                                {mgr}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
 
                 {/* Filter by Customer Status */}
                 <div className="flex items-center space-x-2">

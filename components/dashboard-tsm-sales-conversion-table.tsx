@@ -1,79 +1,23 @@
 "use client";
 
-import React, {
-  useState,
-  useMemo,
-  forwardRef,
-  useImperativeHandle,
-  useEffect,
-} from "react";
-import { Info } from "lucide-react";
+import React, { useState, useEffect, forwardRef, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
 import { type DateRange } from "react-day-picker";
 
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-function TooltipInfo({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="absolute top-full right-0 mt-1 w-180 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
-      {children}
-    </div>
-  );
-}
-
-function formatHHMMSS(totalMinutes: number): string {
-  if (!totalMinutes || totalMinutes <= 0) return "00:00:00";
-
-  const totalSeconds = Math.floor(totalMinutes * 60);
-
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-
 interface Activity {
-  referenceid?: string;
   manager?: string;
+  referenceid?: string;
   date_created?: string;
-  date_updated?: string;
-
-  so_amount?: number | string;
-  remarks?: string;
-  traffic: string;
-  qty_sold: number | string;
-  status: string;
-  customer_status: string;
-
-  ticket_received?: string;
-  ticket_endorsed?: string;
   wrap_up?: string;
-
-  // ✅ TSA timestamps (Excel-based)
+  so_amount?: number | string;
+  status?: string;
   tsa_acknowledge_date?: string;
+  ticket_endorsed?: string;
   tsa_handling_time?: string;
-  company_name?: string;
-  contact_person?: string;
+  ticket_received?: string;
+  remarks?: string;
+  customer_status?: string;
 }
 
 interface Agent {
@@ -82,56 +26,41 @@ interface Agent {
   Lastname: string;
 }
 
-interface AgentSalesConversionCardProps {
+interface Props {
   dateCreatedFilterRange: DateRange | undefined;
-  setDateCreatedFilterRangeAction: React.Dispatch<
-    React.SetStateAction<DateRange | undefined>
-  >;
-
-  // ✅ SAME AS ticket.tsx / TSA table
-  role: string;
+  setDateCreatedFilterRangeAction: React.Dispatch<React.SetStateAction<DateRange | undefined>>;
   userReferenceId: string;
+  role: string;
 }
 
-export interface AgentSalesConversionCardRef {
-  downloadCSV: () => void;
-}
+const SALES_WRAP_UPS = ["Customer Order", "Customer Inquiry Sales", "Follow Up Sales"];
 
-const AgentSalesTableCard = forwardRef<
-  AgentSalesConversionCardRef,
-  AgentSalesConversionCardProps
->(({ dateCreatedFilterRange, role, userReferenceId }, ref) => {
-  const [showTooltip, setShowTooltip] = useState(false);
+const AgentListCard = forwardRef((_props: Props, ref) => {
+  const { role, userReferenceId, dateCreatedFilterRange } = _props;
 
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [managers, setManagers] = useState<Agent[]>([]);
-  const [managersLoading, setManagersLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    async function fetchManagers() {
-      setManagersLoading(true);
+    async function fetchAgents() {
       try {
         const res = await fetch("/api/fetch-agent");
-        if (!res.ok) throw new Error("Failed to fetch managers");
         const data = await res.json();
-        setManagers(data);
-      } catch (err) {
-        console.error(err);
-        setManagers([]);
-      } finally {
-        setManagersLoading(false);
+        setAgents(data);
+      } catch (err: any) {
+        setAgents([]);
+        console.error("Failed to fetch agents:", err);
       }
     }
-    fetchManagers();
+    fetchAgents();
   }, []);
 
   useEffect(() => {
     async function fetchActivities() {
       setLoading(true);
-      setError(null);
       try {
         const res = await fetch("/api/act-fetch-activity-role", {
           method: "GET",
@@ -142,1076 +71,296 @@ const AgentSalesTableCard = forwardRef<
             "x-reference-id": userReferenceId,
           },
         });
-
-        if (!res.ok) {
-          const json = await res.json();
-          throw new Error(json.error || "Failed to fetch activities");
-        }
-
         const json = await res.json();
-
-        // ✅ SAME STATUS FILTER AS ticket.tsx
-        const allowedStatuses = [
-          "On-Progress",
-          "Closed",
-          "Endorsed",
-          "Converted into Sales",
-        ];
-
-        setActivities(
-          (json.data || []).filter((a: any) =>
-            allowedStatuses.includes(a.status),
-          ),
-        );
+        setActivities(json.data || []);
       } catch (err: any) {
         setError(err.message || "Failed to fetch activities");
       } finally {
         setLoading(false);
       }
     }
-
     fetchActivities();
   }, [role, userReferenceId]);
 
+  // ===== Utility: parse date with forced year 2026 if wrong =====
+  const parseDateFixYear = (dateStr?: string) => {
+    if (!dateStr) return new Date(NaN);
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return new Date(NaN);
+    if (d.getFullYear() < 2026) d.setFullYear(2026);
+    return d;
+  };
+
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
-    if (!range) return true;
-    if (!dateStr) return false;
-
-    const date = new Date(dateStr);
+    if (!range || !dateStr) return true;
+    const date = parseDateFixYear(dateStr);
     if (isNaN(date.getTime())) return false;
-
-    const { from, to } = range;
-
-    if (from && date < new Date(from.setHours(0, 0, 0, 0))) return false;
-    if (to && date > new Date(to.setHours(23, 59, 59, 999))) return false;
-
+    const from = range.from ? new Date(range.from.setHours(0, 0, 0, 0)) : null;
+    const to = range.to ? new Date(range.to.setHours(23, 59, 59, 999)) : null;
+    if (from && date < from) return false;
+    if (to && date > to) return false;
     return true;
   };
 
-  function safeDiffMinutes(start?: string, end?: string): number {
-    if (!start || !end) return 0;
+  const groupedManager = useMemo(() => {
+    const map: Record<string, any> = {};
 
-    const s = new Date(start);
-    const e = new Date(end);
-
-    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
-
-    const diff = (e.getTime() - s.getTime()) / 60000;
-
-    if (diff <= 0) return 0;
-    if (diff > 480) return 0; // 8 hours max
-
-    return Math.round(diff);
-  }
-
-  // ===== EXACT SHEET-TICKET LOGIC FUNCTIONS =====
-  function normalizeRemarks(remarks?: string): string {
-    return remarks?.trim().toLowerCase() ?? "";
-  }
-
-  const EXCLUDED_WRAPUPS = [
-    "customerfeedback/recommendation",
-    "job inquiry",
-    "job applicants",
-    "supplier/vendor product offer",
-    "internal whistle blower",
-    "threats / extortion / intimidation",
-    "prank call",
-  ];
-
-  function isExcludedWrapUp(wrapUp?: string): boolean {
-    return EXCLUDED_WRAPUPS.includes((wrapUp || "").trim().toLowerCase());
-  }
-
-  function computeTsaHandlingTimeAligned(a: Activity): number | null {
-    if (isExcludedWrapUp(a.wrap_up)) return null;
-
-    if (!a.ticket_received || !a.tsa_handling_time) return null;
-
-    const start = new Date(a.ticket_received);
-    const end = new Date(a.tsa_handling_time);
-
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-    if (end < start) return null;
-
-    return Math.floor((end.getTime() - start.getTime()) / 60000);
-  }
-
-  function getBaseHandlingTime(a: Activity): number | null {
-    const tsaHT = computeTsaHandlingTimeAligned(a);
-    if (tsaHT !== null) return tsaHT;
-
-    return null;
-  }
-
-  function computeNonQuotationHTAligned(a: Activity): number | null {
-    if (isExcludedWrapUp(a.wrap_up)) return null;
-
-    const base = getBaseHandlingTime(a);
-    if (base === null) return null;
-
-    const list = [
-      "NO STOCKS / INSUFFICIENT STOCKS",
-      "CUSTOMER REQUEST CANCELLATION",
-      "INSUFFICIENT STOCKS",
-      "UNABLE TO CONTACT CUSTOMER",
-      "ITEM NOT CARRIED",
-      "WAITING FOR CLIENT CONFIRMATION",
-      "CUSTOMER REQUESTED CANCELLATION",
-      "ACCREDITATION/PARTNERSHIP",
-      "NO RESPONSE FROM CLIENT",
-      "ASSISTED",
-      "FOR SITE VISIT",
-      "NON STANDARD ITEM",
-      "PO RECEIVED",
-      "PENDING QUOTATION",
-      "FOR OCCULAR INSPECTION",
-    ];
-
-
-    const remarks = (a.remarks || "").toUpperCase();
-
-    return list.includes(remarks) ? base : null;
-  }
-
-  function computeQuotationHTAligned(a: Activity): number | null {
-    const base = getBaseHandlingTime(a);
-    if (base === null) return null;
-
-    const r = normalizeRemarks(a.remarks);
-
-    if (r === "quotation for approval" || r === "sold") {
-      return base;
-    }
-
-    return null;
-  }
-
-  function computeTsaResponseTimeAligned(a: Activity): number | null {
-    if (isExcludedWrapUp(a.wrap_up)) return null;
-
-    if (!a.tsa_acknowledge_date || !a.ticket_endorsed) return null;
-
-    const ack = new Date(a.tsa_acknowledge_date);
-    const endorsed = new Date(a.ticket_endorsed);
-
-    if (isNaN(ack.getTime()) || isNaN(endorsed.getTime())) return null;
-
-    if (ack < endorsed) return null;
-
-    return Math.floor((ack.getTime() - endorsed.getTime()) / 60000);
-  }
-
-  function computeSpfHTAligned(a: Activity): number | null {
-    if (isExcludedWrapUp(a.wrap_up)) return null;
-
-    const base = getBaseHandlingTime(a);
-    if (base === null) return null;
-
-    const r = normalizeRemarks(a.remarks);
-
-    if (r.includes("spf")) {
-      return base;
-    }
-
-    return null;
-  }
-
-  const groupedData = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        manager: string;
-        salesCount: number;
-        nonSalesCount: number;
-        convertedCount: number;
-        amount: number;
-        qtySold: number;
-        newClientCount: number;
-        newNonBuyingCount: number;
-        ExistingActiveCount: number;
-        ExistingInactive: number;
-        newClientConvertedAmount: number;
-        newNonBuyingConvertedAmount: number;
-        newExistingActiveConvertedAmount: number;
-        newExistingInactiveConvertedAmount: number;
-        tsaResponseTotal: number;
-        tsaResponseCount: number;
-
-        nonRfQTotal: number;
-        nonRfQCount: number;
-
-        rfqTotal: number;
-        rfqCount: number;
-
-        spfTotal: number;
-        spfCount: number;
-
-        csrSet: Set<string>;
-        companySet: Set<string>;
-      }
-    > = {};
-
-    activities;
     activities
-      .filter(
-        (a) =>
-          isDateInRange(a.date_created, dateCreatedFilterRange) &&
-          a.manager &&
-          a.manager.trim() !== "",
-      )
+      .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
       .forEach((a) => {
-        const wrap = a.wrap_up?.toLowerCase().trim() || "";
-        const status = a.status?.toLowerCase() || "";
+        const agentObj = agents.find((ag) => ag.ReferenceID === a.manager);
+        const name = agentObj ? `${agentObj.Firstname} ${agentObj.Lastname}` : null;
+        if (!name || name.toLowerCase() === "unknown") return;
 
-        const isQuotation =
-          status === "quotation for approval" ||
-          status === "converted into sales";
-
-        const isConverted = status === "converted into sales";
-
-        const nonQ = computeNonQuotationHTAligned(a);
-
-        const qHT = computeQuotationHTAligned(a);
-
-        const tsaResponse = computeTsaResponseTimeAligned(a);
-        const spfHT = computeSpfHTAligned(a);
-
-        const manager = a.manager!.trim();
-
-        const soAmount = Number(a.so_amount ?? 0);
-        const traffic = a.traffic?.toLowerCase() ?? "";
-        const qtySold = Number(a.qty_sold ?? 0);
-        const customerStatus = a.customer_status?.toLowerCase() ?? "";
-
-        // Init
-        if (!map[manager]) {
-          map[manager] = {
-            manager,
+        if (!map[a.manager || name]) {
+          map[a.manager || name] = {
+            agentName: name,
             salesCount: 0,
             nonSalesCount: 0,
-            convertedCount: 0,
             amount: 0,
-            qtySold: 0,
+            convertedSalesCount: 0,
+            responseTimes: [],
+            quotationHandlingTimes: [],
+            nonQuotationHandlingTimes: [],
+            spfHandlingTimes: [],
             newClientCount: 0,
             newNonBuyingCount: 0,
-            ExistingActiveCount: 0,
-            ExistingInactive: 0,
+            existingActiveCount: 0,
+            existingInactiveCount: 0,
             newClientConvertedAmount: 0,
             newNonBuyingConvertedAmount: 0,
-            newExistingActiveConvertedAmount: 0,
-            newExistingInactiveConvertedAmount: 0,
-            tsaResponseTotal: 0,
-            tsaResponseCount: 0,
-
-            nonRfQTotal: 0,
-            nonRfQCount: 0,
-
-            rfqTotal: 0,
-            rfqCount: 0,
-
-            spfTotal: 0,
-            spfCount: 0,
-
-            csrSet: new Set<string>(),
-            companySet: new Set<string>(),
+            existingActiveConvertedAmount: 0,
+            existingInactiveConvertedAmount: 0,
           };
         }
 
-        if (a.referenceid) {
-          map[manager].csrSet.add(a.referenceid);
-        }
-
-        const companyRaw = a.company_name?.trim();
-        const contactRaw = a.contact_person?.trim();
-
-        if (
-          companyRaw &&
-          companyRaw !== "" &&
-          !["na", "n/a"].includes(companyRaw.toLowerCase())
-        ) {
-          map[manager].companySet.add(companyRaw);
-        } else if (contactRaw && contactRaw !== "") {
-          map[manager].companySet.add(contactRaw);
-        }
-
-        // Counts
-        const normalizedTraffic = (a.traffic || "").toLowerCase().trim();
-        const normalizedWrapUp = (a.wrap_up || "").toLowerCase().trim();
-
-        if (normalizeRemarks(a.remarks) === "po received") {
-          map[manager].nonSalesCount += 1;
-        } else if (
-          normalizedWrapUp === "customer inquiry non-sales" ||
-          normalizedWrapUp === "customer inquiry non sales"
-        ) {
-          map[manager].nonSalesCount += 1;
-        } else if (normalizedTraffic === "sales") {
-          map[manager].salesCount += 1;
+        const wrapUpNormalized = a.wrap_up?.trim() || "";
+        if (SALES_WRAP_UPS.includes(wrapUpNormalized)) {
+          map[a.manager || name].salesCount += 1;
         } else {
-          map[manager].nonSalesCount += 1;
+          map[a.manager || name].nonSalesCount += 1;
         }
 
-        if (
-          normalizedTraffic === "sales" &&
-          status === "converted into sales" &&
-          normalizeRemarks(a.remarks) !== "po received"
-        ) {
-          map[manager].convertedCount += 1;
+        const amount = Number(a.so_amount) || 0;
+        map[a.manager || name].amount += amount;
+
+        if (a.status === "Converted into Sales") {
+          map[a.manager || name].convertedSalesCount += 1;
         }
 
-        if (customerStatus === "new client") map[manager].newClientCount += 1;
-        if (customerStatus === "new non-buying")
-          map[manager].newNonBuyingCount += 1;
-        if (customerStatus === "existing active")
-          map[manager].ExistingActiveCount += 1;
-        if (customerStatus === "existing inactive")
-          map[manager].ExistingInactive += 1;
-
-        // Totals
-        map[manager].amount += isNaN(soAmount) ? 0 : soAmount;
-        map[manager].qtySold += isNaN(qtySold) ? 0 : qtySold;
-
-        // Converted amounts
-        if (
-          customerStatus === "new client" &&
-          status === "converted into sales"
-        )
-          map[manager].newClientConvertedAmount += soAmount;
-
-        if (
-          customerStatus === "new non-buying" &&
-          status === "converted into sales"
-        )
-          map[manager].newNonBuyingConvertedAmount += soAmount;
-
-        if (
-          customerStatus === "existing active" &&
-          status === "converted into sales"
-        )
-          map[manager].newExistingActiveConvertedAmount += soAmount;
-
-        if (
-          customerStatus === "existing inactive" &&
-          status === "converted into sales"
-        )
-          map[manager].newExistingInactiveConvertedAmount += soAmount;
-
-        if (tsaResponse !== null) {
-          map[manager].tsaResponseTotal += tsaResponse;
-          map[manager].tsaResponseCount++;
+        switch (a.customer_status?.trim()) {
+          case "New Client":
+            map[a.manager || name].newClientCount += 1;
+            if (a.status === "Converted into Sales") map[a.manager || name].newClientConvertedAmount += amount;
+            break;
+          case "New Non-Buying":
+            map[a.manager || name].newNonBuyingCount += 1;
+            if (a.status === "Converted into Sales") map[a.manager || name].newNonBuyingConvertedAmount += amount;
+            break;
+          case "Existing Active":
+            map[a.manager || name].existingActiveCount += 1;
+            if (a.status === "Converted into Sales") map[a.manager || name].existingActiveConvertedAmount += amount;
+            break;
+          case "Existing Inactive":
+            map[a.manager || name].existingInactiveCount += 1;
+            if (a.status === "Converted into Sales") map[a.manager || name].existingInactiveConvertedAmount += amount;
+            break;
         }
 
-        if (nonQ !== null) {
-          map[manager].nonRfQTotal += nonQ;
-          map[manager].nonRfQCount++;
+        // ----- TSA Response Time -----
+        if (a.tsa_acknowledge_date && a.ticket_endorsed) {
+          const ack = parseDateFixYear(a.tsa_acknowledge_date).getTime();
+          const end = parseDateFixYear(a.ticket_endorsed).getTime();
+          if (!isNaN(ack) && !isNaN(end) && ack >= end) {
+            map[a.manager || name].responseTimes.push((ack - end) / (1000 * 60 * 60));
+          }
         }
 
-        if (qHT !== null) {
-          map[manager].rfqTotal += qHT;
-          map[manager].rfqCount++;
-        }
+        // ----- Quotation / Non-Quotation / SPF Handling -----
+        const tsaTime = parseDateFixYear(a.tsa_handling_time).getTime();
+        const ticketReceived = parseDateFixYear(a.ticket_received).getTime();
+        if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
+          const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
 
-        if (spfHT !== null) {
-          map[manager].spfTotal += spfHT;
-          map[manager].spfCount++;
-        }
-      });
-
-    return Object.values(map).map((row) => ({
-      ...row,
-      csrList: Array.from(row.csrSet),
-      companyList: Array.from(row.companySet),
-    }));
-  }, [activities, dateCreatedFilterRange]);
-
-  const totalSoAmount = groupedData.reduce((sum, row) => sum + row.amount, 0);
-
-  useImperativeHandle(ref, () => ({
-    downloadCSV: () => {
-      const headers = [
-        "Rank",
-        "TSM Name",
-        "Sales",
-        "Non-Sales",
-        "Total Amount",
-        "QTY Sold",
-        "Converted Sales",
-        "% Conversion Inquiry to Sales",
-        "New Client",
-        "New Non-Buying",
-        "Existing Active",
-        "Existing Inactive",
-        "New Client (Converted To Sales)",
-        "New Non-Buying (Converted To Sales)",
-        "Existing Active (Converted To Sales)",
-        "Existing Inactive (Converted To Sales)",
-      ];
-
-      const rows = groupedData
-        .slice()
-        .sort((a, b) => b.amount - a.amount)
-        .map((row, index) => {
-          const managerDetails = managers.find(
-            (m) => m.ReferenceID === row.manager,
-          );
-
-          const fullName = managerDetails
-            ? `${managerDetails.Firstname} ${managerDetails.Lastname}`
-            : "(Unknown Manager)";
-
-          const totalInquiry = row.salesCount + row.nonSalesCount;
-
-          const conversionRate =
-            totalInquiry === 0
-              ? "0.00%"
-              : ((row.convertedCount / totalInquiry) * 100).toFixed(2) + "%";
-
-          return [
-            (index + 1).toString(),
-            fullName,
-            row.salesCount.toString(),
-            row.nonSalesCount.toString(),
-            row.amount.toFixed(2),
-            row.qtySold.toString(),
-            row.convertedCount.toString(),
-            conversionRate,
-            row.newClientCount.toString(),
-            row.newNonBuyingCount.toString(),
-            row.ExistingActiveCount.toString(),
-            row.ExistingInactive.toString(),
-            row.newClientConvertedAmount.toFixed(2),
-            row.newNonBuyingConvertedAmount.toFixed(2),
-            row.newExistingActiveConvertedAmount.toFixed(2),
-            row.newExistingInactiveConvertedAmount.toFixed(2),
+          const remarksLower = a.remarks?.trim().toLowerCase();
+          const nonQuotationRemarks = [
+            "no stocks / insufficient stocks",
+            "item not carried",
+            "unable to contact customer",
+            "customer request cancellation",
+            "accreditation / partnership",
+            "no response for client",
+            "assisted",
+            "dissaproved quotation",
+            "for site visit",
+            "non standard item",
+            "po received",
+            "not converted to sales",
+            "for occular inspection",
+            "waiting for client confirmation",
+            "pending quotation"
           ];
-        });
 
-      const csvContent =
-        [headers, ...rows]
-          .map((row) =>
-            row
-              .map((item) => `"${String(item).replace(/"/g, '""')}"`)
-              .join(","),
-          )
-          .join("\n") + "\n";
-
-      const blob = new Blob([csvContent], {
-        type: "text/csv;charset=utf-8;",
+          if (remarksLower === "quotation for approval" || remarksLower === "sold") {
+            map[a.manager || name].quotationHandlingTimes.push(diffHours);
+          } else if (remarksLower === "for spf") {
+            map[a.manager || name].spfHandlingTimes.push(diffHours);
+          } else if (remarksLower && nonQuotationRemarks.includes(remarksLower)) {
+            map[a.manager || name].nonQuotationHandlingTimes.push(diffHours);
+          }
+        }
       });
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "tsm_sales_conversion.csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    },
-  }));
+    return Object.values(map)
+      .filter((a) => a.agentName.toLowerCase().includes(searchTerm.toLowerCase()))
+      .map((a) => {
+        const avg = (arr: number[]) =>
+          arr.length > 0 ? arr.reduce((sum, t) => sum + t, 0) / arr.length : 0;
+        return {
+          ...a,
+          avgResponseTime: avg(a.responseTimes),
+          avgQuotationHandlingTime: avg(a.quotationHandlingTimes),
+          avgNonQuotationHandlingTime: avg(a.nonQuotationHandlingTimes),
+          avgSPFHandlingTime: avg(a.spfHandlingTimes),
+        };
+      });
+  }, [activities, agents, dateCreatedFilterRange, searchTerm]);
+
+  const formatHoursToHMS = (hours: number) => {
+    const totalSeconds = Math.round(hours * 3600); // ROUND instead of floor
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const totalSales = groupedManager.reduce((sum, a) => sum + a.salesCount, 0);
+  const totalNonSales = groupedManager.reduce((sum, a) => sum + a.nonSalesCount, 0);
+  const totalAmount = groupedManager.reduce((sum, a) => sum + a.amount, 0);
+  const totalConvertedSales = groupedManager.reduce((sum, a) => sum + a.convertedSalesCount, 0);
+  const totalInquiryToSalesPercent = totalSales > 0 ? (totalConvertedSales / totalSales) * 100 : 0;
+
+  const AVERAGE = (values: number[]): number =>
+    values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
+
+  const avgTSAResponseTime = AVERAGE(
+    groupedManager.map(a => a.avgResponseTime).filter(v => v > 0)
+  );
+
+  const avgQuotationHandlingTime = AVERAGE(
+    groupedManager.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
+  );
+
+  const avgNonQuotationHandlingTime = AVERAGE(
+    groupedManager.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
+  );
+
+  const avgSPFHandlingTime = AVERAGE(
+    groupedManager.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
+  );
 
   return (
     <Card>
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle>Territory Sales Manager Conversion</CardTitle>
-
-        <div
-          className="relative cursor-pointer text-muted-foreground hover:text-foreground"
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-          aria-label="Agent sales conversion info"
-        >
-          <Info size={18} />
-          {showTooltip && (
-            <TooltipInfo>
-              <div className="space-y-2">
-                <p className="font-semibold">Column Computation Guide</p>
-
-                <p>
-                  <strong>Sales</strong> – Count of activities where{" "}
-                  <em>traffic</em> is <em>Sales</em>.
-                </p>
-
-                <p>
-                  <strong>Non-Sales</strong> – Count of activities where{" "}
-                  <em>traffic</em> is <em>Non-Sales</em>.
-                </p>
-
-                <p>
-                  <strong>QTY Sold</strong> – Total quantity sold per agent (sum
-                  of <em>qty_sold</em>).
-                </p>
-
-                <p>
-                  <strong>Converted Sales</strong> – Count of activities with{" "}
-                  <em>status</em> "Converted into Sales".
-                </p>
-
-                <p>
-                  <strong>% Conversion Inquiry to Sales</strong> – (Converted
-                  Sales ÷ Sales) × 100%.
-                </p>
-
-                <p>
-                  <strong>Avg Transaction Unit</strong> – (QTY Sold ÷ Converted
-                  Sales).
-                </p>
-
-                <p>
-                  <strong>Avg Transaction Value</strong> – (Total Amount ÷
-                  Converted Sales).
-                </p>
-
-                <p>
-                  <strong>Total Amount</strong> – Sum of all sales order amounts
-                  (<em>so_amount</em>) per agent.
-                </p>
-
-                <p>
-                  <strong>New Client</strong> – Count of activities with{" "}
-                  <em>customer_status</em> "New Client".
-                </p>
-
-                <p>
-                  <strong>New Client (Converted To Sales)</strong> – Total{" "}
-                  <em>so_amount</em> for "New Client" with status "Converted
-                  into Sales".
-                </p>
-
-                <p>
-                  <strong>New Non-Buying</strong> – Count of activities with{" "}
-                  <em>customer_status</em> "New Non-Buying".
-                </p>
-
-                <p>
-                  <strong>New Non-Buying (Converted To Sales)</strong> – Total{" "}
-                  <em>so_amount</em> for "New Non-Buying" with status "Converted
-                  into Sales".
-                </p>
-
-                <p>
-                  <strong>Existing Active</strong> – Count of activities with{" "}
-                  <em>customer_status</em> "Existing Active".
-                </p>
-
-                <p>
-                  <strong>Existing Active (Converted To Sales)</strong> – Total{" "}
-                  <em>so_amount</em> for "Existing Active" with status
-                  "Converted into Sales".
-                </p>
-
-                <p>
-                  <strong>Existing Inactive</strong> – Count of activities with{" "}
-                  <em>customer_status</em> "Existing Inactive".
-                </p>
-
-                <p>
-                  <strong>Existing Inactive (Converted To Sales)</strong> –
-                  Total <em>so_amount</em> for "Existing Inactive" with status
-                  "Converted into Sales".
-                </p>
-
-                <p className="italic text-xs">
-                  Note: All computations exclude records with remark{" "}
-                  <em>"PO Received"</em> and are filtered by the selected date
-                  range.
-                </p>
-              </div>
-            </TooltipInfo>
-          )}
-        </div>
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <CardTitle>TSM's and Other Manager List</CardTitle>
+        <input
+          type="text"
+          placeholder="Search Manager..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="border rounded-md px-3 py-1 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </CardHeader>
 
       <CardContent>
-        {(loading || managersLoading) && <p>Loading data...</p>}
-        {error && <p className="text-destructive">{error}</p>}
+        {loading && <p>Loading...</p>}
+        {error && <p className="text-red-600">{error}</p>}
+        {!loading && !error && groupedManager.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>Agent Name</TableHead>
+                <TableHead>Sales</TableHead>
+                <TableHead>Non-Sales</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Converted into Sales</TableHead>
+                <TableHead>% Inquiry to Sales</TableHead>
+                <TableHead>New Client</TableHead>
+                <TableHead>New Non Buying</TableHead>
+                <TableHead>Existing Active</TableHead>
+                <TableHead>Existing Inactive</TableHead>
+                <TableHead>New Client (Converted)</TableHead>
+                <TableHead>New Non-Buying (Converted)</TableHead>
+                <TableHead>Existing Active (Converted)</TableHead>
+                <TableHead>Existing Inactive (Converted)</TableHead>
+                <TableHead>TSA Response Time</TableHead>
+                <TableHead>Non-Quotation HT</TableHead>
+                <TableHead>Quotation HT</TableHead>
+                <TableHead>SPF Handling Duration</TableHead>
+              </TableRow>
+            </TableHeader>
 
-        {!loading && !managersLoading && !error && groupedData.length === 0 && (
-          <p className="text-muted-foreground">No data available.</p>
+            <TableHeader className="font-semibold bg-muted/80 border-b">
+              <TableCell>-</TableCell>
+              <TableCell>Total</TableCell>
+              <TableCell>{totalSales}</TableCell>
+              <TableCell>{totalNonSales}</TableCell>
+              <TableCell>{totalSales + totalNonSales}</TableCell>
+              <TableCell>₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>{totalConvertedSales}</TableCell>
+              <TableCell>{totalInquiryToSalesPercent.toFixed(2)}%</TableCell>
+              <TableCell>{groupedManager.reduce((sum, a) => sum + a.newClientCount, 0)}</TableCell>
+              <TableCell>{groupedManager.reduce((sum, a) => sum + a.newNonBuyingCount, 0)}</TableCell>
+              <TableCell>{groupedManager.reduce((sum, a) => sum + a.existingActiveCount, 0)}</TableCell>
+              <TableCell>{groupedManager.reduce((sum, a) => sum + a.existingInactiveCount, 0)}</TableCell>
+              <TableCell>₱{groupedManager.reduce((sum, a) => sum + a.newClientConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{groupedManager.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{groupedManager.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{groupedManager.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
+            </TableHeader>
+
+            <TableBody>
+              {groupedManager.map((a, index) => {
+                const inquiryToSalesPercent = a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
+                return (
+                  <TableRow key={a.agentName}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell className="uppercase">{a.agentName}</TableCell>
+                    <TableCell>{a.salesCount}</TableCell>
+                    <TableCell>{a.nonSalesCount}</TableCell>
+                    <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>
+                    <TableCell>₱{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>{a.convertedSalesCount}</TableCell>
+                    <TableCell>{inquiryToSalesPercent.toFixed(2)}%</TableCell>
+                    <TableCell>{a.newClientCount}</TableCell>
+                    <TableCell>{a.newNonBuyingCount}</TableCell>
+                    <TableCell>{a.existingActiveCount}</TableCell>
+                    <TableCell>{a.existingInactiveCount}</TableCell>
+                    <TableCell>₱{a.newClientConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>₱{a.newNonBuyingConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>₱{a.existingActiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>₱{a.existingInactiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
+                    <TableCell>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
+                    <TableCell>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
+                    <TableCell>{formatHoursToHMS(a.avgSPFHandlingTime)}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
 
-        {!loading && !managersLoading && !error && groupedData.length > 0 && (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">Rank</TableHead>
-                  <TableHead>Agent Name</TableHead>
-                  <TableHead className="text-right">Sales</TableHead>
-                  <TableHead className="text-right">Non-Sales</TableHead>
-                  <TableHead className="text-left">Amount</TableHead>
-                  <TableHead className="text-right">QTY Sold</TableHead>
-                  <TableHead className="text-right">Converted Sales</TableHead>
-                  <TableHead className="text-right">
-                    % Conversion Inquiry to Sales
-                  </TableHead>
-                  <TableHead className="text-right">New Client</TableHead>
-                  <TableHead className="text-right">New Non-Buying</TableHead>
-                  <TableHead className="text-right">Existing Active</TableHead>
-                  <TableHead className="text-right">
-                    Existing Inactive
-                  </TableHead>
-                  <TableHead className="text-right">
-                    New Client (Converted To Sales)
-                  </TableHead>
-                  <TableHead className="text-right">
-                    New Non-Buying (Converted To Sales)
-                  </TableHead>
-                  <TableHead className="text-right">
-                    Existing Active (Converted To Sales)
-                  </TableHead>
-                  <TableHead className="text-right">
-                    Existing Inactive (Converted To Sales)
-                  </TableHead>
-                  <TableHead className="text-right">
-                    TSAs Response Time
-                  </TableHead>
-                  {/* <TableHead className="text-right">NON RFQ Handling Time</TableHead> */}
-                  <TableHead className="text-right">RFQ Handling Time</TableHead>
-                  {/* <TableHead className="text-right">SPF Handling Time</TableHead> */}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groupedData
-                  .slice()
-                  .sort((a, b) => b.amount - a.amount)
-                  .map((row, index) => {
-                    const {
-                      manager,
-                      salesCount,
-                      nonSalesCount,
-                      convertedCount,
-                      newClientCount,
-                      qtySold,
-                      amount,
-                      newNonBuyingCount,
-                      ExistingActiveCount,
-                      ExistingInactive,
-                      newClientConvertedAmount,
-                      newNonBuyingConvertedAmount,
-                      newExistingActiveConvertedAmount,
-                      newExistingInactiveConvertedAmount,
-                      tsaResponseTotal,
-                      tsaResponseCount,
-                      nonRfQTotal,
-                      nonRfQCount,
-                      rfqTotal,
-                      rfqCount,
-                      spfTotal,
-                      spfCount,
-                      csrList,
-                      companyList,
-                    } = row;
-
-                    const managerDetails = managers.find(
-                      (a) => a.ReferenceID === manager,
-                    );
-
-                    const fullName = managerDetails
-                      ? `${managerDetails.Firstname} ${managerDetails.Lastname}`
-                      : "(Unknown Agent)";
-
-                    const rank = index + 1;
-
-                    const avgTsaResponse =
-                      tsaResponseCount === 0
-                        ? "-"
-                        : tsaResponseTotal / tsaResponseCount;
-
-                    const avgNonRfQ =
-                      nonRfQCount === 0
-                        ? "-"
-                        : nonRfQTotal / nonRfQCount;
-
-                    const avgRfQ =
-                      rfqCount === 0 ? "-" : rfqTotal / rfqCount;
-
-                    const avgSpf =
-                      spfCount === 0 ? "-" : spfTotal / spfCount;
-
-
-                    return (
-                      <TableRow key={manager} className="hover:bg-muted/50">
-                        <TableCell className="font-medium text-center">
-                          <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                            {rank}
-                          </Badge>
-                        </TableCell>
-
-                        <TableCell className="capitalize">
-                          <details className="cursor-pointer">
-                            <summary className="font-semibold">
-                              {fullName}
-                            </summary>
-
-                            <div className="mt-2 text-xs text-muted-foreground space-y-1">
-                              <div className="font-medium">
-                                CSRs who encoded:
-                              </div>
-
-                              {csrList?.length === 0 && <div>No CSR found</div>}
-
-                              {csrList?.map((csrId: string) => {
-                                const csr = managers.find(
-                                  (a) => a.ReferenceID === csrId,
-                                );
-
-                                return (
-                                  <div key={csrId}>
-                                    {csr
-                                      ? `${csr.Firstname} ${csr.Lastname}`
-                                      : csrId}
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            <div className="font-medium mt-3">
-                              Companies Handled:
-                            </div>
-
-                            <div className="max-h-40 overflow-y-auto pr-2 border rounded-md p-2 bg-muted/30">
-                              {companyList?.length === 0 && (
-                                <div>No companies found</div>
-                              )}
-
-                              {companyList?.map((company: string) => (
-                                <div key={company} className="truncate">
-                                  {company}
-                                </div>
-                              ))}
-                            </div>
-                          </details>
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {salesCount.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {nonSalesCount.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-left">
-                          ₱
-                          {amount.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {qtySold.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {convertedCount.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {(() => {
-                            const totalInquiry = salesCount + nonSalesCount;
-
-                            return totalInquiry === 0
-                              ? "0.00%"
-                              : ((convertedCount / totalInquiry) * 100).toFixed(
-                                2,
-                              ) + "%";
-                          })()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {newClientCount.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {newNonBuyingCount.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {ExistingActiveCount.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {ExistingInactive.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          ₱
-                          {newClientConvertedAmount.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          ₱
-                          {newNonBuyingConvertedAmount.toLocaleString(
-                            undefined,
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            },
-                          )}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          ₱
-                          {newExistingActiveConvertedAmount.toLocaleString(
-                            undefined,
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            },
-                          )}
-                        </TableCell>
-
-                        <TableCell className="font-mono tabular-nums text-right">
-                          ₱
-                          {newExistingInactiveConvertedAmount.toLocaleString(
-                            undefined,
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            },
-                          )}
-                        </TableCell>
-
-                        <TableCell className="text-right font-mono">
-                          {avgTsaResponse === "-"
-                            ? "-"
-                            : formatHHMMSS(avgTsaResponse)}
-                        </TableCell>
-
-                        {/* <TableCell className="text-right font-mono">
-                          {avgNonRfQ === "-" ? "-" : formatHHMMSS(avgNonRfQ)}
-                        </TableCell> */}
-
-                        <TableCell className="text-right font-mono">
-                          {avgRfQ === "-" ? "-" : formatHHMMSS(avgRfQ)}
-                        </TableCell>
-
-                        {/* <TableCell className="text-right font-mono">
-                          {avgSpf === "-" ? "-" : formatHHMMSS(avgSpf)}
-                        </TableCell> */}
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-
-              <tfoot>
-                <TableRow className="bg-muted/30 font-semibold">
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell className="text-right">Total</TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {groupedData
-                      .reduce((sum, row) => sum + row.salesCount, 0)
-                      .toLocaleString()}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {groupedData
-                      .reduce((sum, row) => sum + row.nonSalesCount, 0)
-                      .toLocaleString()}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    ₱
-                    {totalSoAmount.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {groupedData
-                      .reduce((sum, row) => sum + row.qtySold, 0)
-                      .toLocaleString()}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {groupedData
-                      .reduce((sum, row) => sum + row.convertedCount, 0)
-                      .toLocaleString()}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {(() => {
-                      const totalInquiry = groupedData.reduce(
-                        (sum, row) => sum + row.salesCount + row.nonSalesCount,
-                        0,
-                      );
-
-                      const totalConverted = groupedData.reduce(
-                        (sum, row) => sum + row.convertedCount,
-                        0,
-                      );
-
-                      return totalInquiry === 0
-                        ? "0.00%"
-                        : ((totalConverted / totalInquiry) * 100).toFixed(2) +
-                        "%";
-                    })()}
-                  </TableCell>
-
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {groupedData
-                      .reduce((sum, row) => sum + row.newClientCount, 0)
-                      .toLocaleString()}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {groupedData
-                      .reduce((sum, row) => sum + row.newNonBuyingCount, 0)
-                      .toLocaleString()}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {groupedData
-                      .reduce((sum, row) => sum + row.ExistingActiveCount, 0)
-                      .toLocaleString()}
-                  </TableCell>
-
-                  <TableCell className="font-mono tabular-nums text-right">
-                    {groupedData
-                      .reduce((sum, row) => sum + row.ExistingInactive, 0)
-                      .toLocaleString()}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    ₱
-                    {groupedData
-                      .reduce(
-                        (sum, row) => sum + row.newClientConvertedAmount,
-                        0,
-                      )
-                      .toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    ₱
-                    {groupedData
-                      .reduce(
-                        (sum, row) => sum + row.newNonBuyingConvertedAmount,
-                        0,
-                      )
-                      .toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                  </TableCell>
-                  <TableCell className="font-mono tabular-nums text-right">
-                    ₱
-                    {groupedData
-                      .reduce(
-                        (sum, row) =>
-                          sum + row.newExistingActiveConvertedAmount,
-                        0,
-                      )
-                      .toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                  </TableCell>
-<TableCell className="font-mono tabular-nums text-right">
-  ₱
-  {groupedData
-    .reduce(
-      (sum, row) =>
-        sum + row.newExistingInactiveConvertedAmount,
-      0,
-    )
-    .toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}
-</TableCell>
-
-<TableCell className="font-mono tabular-nums text-right">
-  {(() => {
-    const total = groupedData.reduce(
-      (sum, row) =>
-        sum +
-        (row.tsaResponseCount === 0
-          ? 0
-          : row.tsaResponseTotal / row.tsaResponseCount),
-      0,
-    );
-
-    return total === 0
-      ? "-"
-      : formatHHMMSS(total);
-  })()}
-</TableCell>
-
-
-{/* <TableCell className="font-mono tabular-nums text-right">
-  {(() => {
-    const total = groupedData.reduce(
-      (sum, row) =>
-        sum +
-        (row.nonRfQCount === 0
-          ? 0
-          : row.nonRfQTotal / row.nonRfQCount),
-      0,
-    );
-
-    return total === 0
-      ? "-"
-      : formatHHMMSS(total);
-  })()}
-</TableCell> */}
-
-<TableCell className="font-mono tabular-nums text-right">
-  {(() => {
-    const total = groupedData.reduce(
-      (sum, row) =>
-        sum +
-        (row.rfqCount === 0
-          ? 0
-          : row.rfqTotal / row.rfqCount),
-      0,
-    );
-
-    return total === 0
-      ? "-"
-      : formatHHMMSS(total);
-  })()}
-</TableCell>
-
-{/* <TableCell className="font-mono tabular-nums text-right">
-  {(() => {
-    const total = groupedData.reduce(
-      (sum, row) =>
-        sum +
-        (row.spfCount === 0
-          ? 0
-          : row.spfTotal / row.spfCount),
-      0,
-    );
-
-    return total === 0
-      ? "-"
-      : formatHHMMSS(total);
-  })()}
-</TableCell> */}
-
-
-                </TableRow>
-              </tfoot>
-            </Table>
-          </div>
-        )}
+        {!loading && !error && groupedManager.length === 0 && <p>No agents found.</p>}
       </CardContent>
-
-      <Separator />
-
-      <CardFooter className="flex justify-end">
-        <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-          Total Amount: ₱
-          {totalSoAmount.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
-        </Badge>
-      </CardFooter>
     </Card>
   );
 });
 
-export default AgentSalesTableCard;
+export default AgentListCard;
