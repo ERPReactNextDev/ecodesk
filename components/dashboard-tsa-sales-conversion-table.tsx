@@ -14,9 +14,9 @@ interface Activity {
   status?: string;
   tsa_acknowledge_date?: string;
   ticket_endorsed?: string;
-  tsa_handling_time?: string; // new
-  ticket_received?: string; // new
-  remarks?: string; // new
+  tsa_handling_time?: string;
+  ticket_received?: string;
+  remarks?: string;
   customer_status?: string;
 }
 
@@ -82,9 +82,18 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     fetchActivities();
   }, [role, userReferenceId]);
 
+  // ===== Utility: parse date with forced year 2026 if wrong =====
+  const parseDateFixYear = (dateStr?: string) => {
+    if (!dateStr) return new Date(NaN);
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return new Date(NaN);
+    if (d.getFullYear() < 2026) d.setFullYear(2026);
+    return d;
+  };
+
   const isDateInRange = (dateStr?: string, range?: DateRange) => {
     if (!range || !dateStr) return true;
-    const date = new Date(dateStr);
+    const date = parseDateFixYear(dateStr);
     if (isNaN(date.getTime())) return false;
     const from = range.from ? new Date(range.from.setHours(0, 0, 0, 0)) : null;
     const to = range.to ? new Date(range.to.setHours(23, 59, 59, 999)) : null;
@@ -94,35 +103,13 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   };
 
   const groupedAgents = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        agentName: string;
-        salesCount: number;
-        nonSalesCount: number;
-        amount: number;
-        convertedSalesCount: number;
-        responseTimes: number[];
-        quotationHandlingTimes: number[]; // new
-        nonQuotationHandlingTimes: number[]; // NEW
-        spfHandlingTimes: number[]; // ✅ NEW
-        newClientCount: number;
-        newNonBuyingCount: number;
-        existingActiveCount: number;
-        existingInactiveCount: number;
-        newClientConvertedAmount: number;
-        newNonBuyingConvertedAmount: number;
-        existingActiveConvertedAmount: number;
-        existingInactiveConvertedAmount: number;
-      }
-    > = {};
+    const map: Record<string, any> = {};
 
     activities
       .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
       .forEach((a) => {
         const agentObj = agents.find((ag) => ag.ReferenceID === a.agent);
         const name = agentObj ? `${agentObj.Firstname} ${agentObj.Lastname}` : null;
-
         if (!name || name.toLowerCase() === "unknown") return;
 
         if (!map[a.agent || name]) {
@@ -133,7 +120,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             amount: 0,
             convertedSalesCount: 0,
             responseTimes: [],
-            quotationHandlingTimes: [], // new
+            quotationHandlingTimes: [],
             nonQuotationHandlingTimes: [],
             spfHandlingTimes: [],
             newClientCount: 0,
@@ -161,90 +148,64 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           map[a.agent || name].convertedSalesCount += 1;
         }
 
-        // ✅ Count customer_status
         switch (a.customer_status?.trim()) {
           case "New Client":
             map[a.agent || name].newClientCount += 1;
+            if (a.status === "Converted into Sales") map[a.agent || name].newClientConvertedAmount += amount;
             break;
           case "New Non-Buying":
             map[a.agent || name].newNonBuyingCount += 1;
+            if (a.status === "Converted into Sales") map[a.agent || name].newNonBuyingConvertedAmount += amount;
             break;
           case "Existing Active":
             map[a.agent || name].existingActiveCount += 1;
+            if (a.status === "Converted into Sales") map[a.agent || name].existingActiveConvertedAmount += amount;
             break;
           case "Existing Inactive":
             map[a.agent || name].existingInactiveCount += 1;
+            if (a.status === "Converted into Sales") map[a.agent || name].existingInactiveConvertedAmount += amount;
             break;
         }
 
-        if (a.status === "Converted into Sales") {
-          switch (a.customer_status?.trim()) {
-            case "New Client":
-              map[a.agent || name].newClientConvertedAmount += Number(a.so_amount) || 0;
-              break;
-            case "New Non-Buying":
-              map[a.agent || name].newNonBuyingConvertedAmount += Number(a.so_amount) || 0;
-              break;
-            case "Existing Active":
-              map[a.agent || name].existingActiveConvertedAmount += Number(a.so_amount) || 0;
-              break;
-            case "Existing Inactive":
-              map[a.agent || name].existingInactiveConvertedAmount += Number(a.so_amount) || 0;
-              break;
-          }
-        }
-
+        // ----- TSA Response Time -----
         if (a.tsa_acknowledge_date && a.ticket_endorsed) {
-          const ack = new Date(a.tsa_acknowledge_date).getTime();
-          const end = new Date(a.ticket_endorsed).getTime();
+          const ack = parseDateFixYear(a.tsa_acknowledge_date).getTime();
+          const end = parseDateFixYear(a.ticket_endorsed).getTime();
           if (!isNaN(ack) && !isNaN(end) && ack >= end) {
-            const diffHours = (ack - end) / (1000 * 60 * 60);
-            map[a.agent || name].responseTimes.push(diffHours);
+            map[a.agent || name].responseTimes.push((ack - end) / (1000 * 60 * 60));
           }
         }
 
-        // Compute Quotation Handling Time
-        if (
-          a.tsa_handling_time &&
-          a.ticket_received &&
-          (a.remarks === "Quotation For Approval" || a.remarks === "Sold")
-        ) {
-          const tsaTime = new Date(a.tsa_handling_time).getTime();
-          const ticketReceived = new Date(a.ticket_received).getTime();
-          if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
-            const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
+        // ----- Quotation / Non-Quotation / SPF Handling -----
+        const tsaTime = parseDateFixYear(a.tsa_handling_time).getTime();
+        const ticketReceived = parseDateFixYear(a.ticket_received).getTime();
+        if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
+          const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
+
+          const remarksLower = a.remarks?.trim().toLowerCase();
+          const nonQuotationRemarks = [
+            "no stocks / insufficient stocks",
+            "item not carried",
+            "unable to contact customer",
+            "customer request cancellation",
+            "accreditation / partnership",
+            "no response for client",
+            "assisted",
+            "dissaproved quotation",
+            "for site visit",
+            "non standard item",
+            "not converted to sales",
+            "for occular inspection",
+            "waiting for client confirmation",
+            "pending quotation"
+          ];
+
+          if (remarksLower === "quotation for approval" || remarksLower === "sold") {
             map[a.agent || name].quotationHandlingTimes.push(diffHours);
-          }
-        }
-
-        // Compute Non-Quotation Handling Time
-        if (
-          a.tsa_handling_time &&
-          a.ticket_received &&
-          a.remarks &&
-          a.remarks !== "Quotation For Approval" &&
-          a.remarks !== "Sold" &&
-          a.remarks !== "For SPF"
-        ) {
-          const tsaTime = new Date(a.tsa_handling_time).getTime();
-          const ticketReceived = new Date(a.ticket_received).getTime();
-          if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
-            const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
-            map[a.agent || name].nonQuotationHandlingTimes.push(diffHours);
-          }
-        }
-
-        // ✅ Compute SPF Handling Duration
-        if (
-          a.tsa_handling_time &&
-          a.ticket_received &&
-          a.remarks === "For SPF"
-        ) {
-          const tsaTime = new Date(a.tsa_handling_time).getTime();
-          const ticketReceived = new Date(a.ticket_received).getTime();
-          if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
-            const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
+          } else if (remarksLower === "for spf") {
             map[a.agent || name].spfHandlingTimes.push(diffHours);
+          } else if (remarksLower && nonQuotationRemarks.includes(remarksLower)) {
+            map[a.agent || name].nonQuotationHandlingTimes.push(diffHours);
           }
         }
       });
@@ -252,102 +213,36 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     return Object.values(map)
       .filter((a) => a.agentName.toLowerCase().includes(searchTerm.toLowerCase()))
       .map((a) => {
-        const avgResponseTime =
-          a.responseTimes.length > 0
-            ? a.responseTimes.reduce((sum, t) => sum + t, 0) / a.responseTimes.length
-            : 0;
-
-        const avgQuotationHandlingTime =
-          a.quotationHandlingTimes.length > 0
-            ? a.quotationHandlingTimes.reduce((sum, t) => sum + t, 0) / a.quotationHandlingTimes.length
-            : 0;
-
-        const avgNonQuotationHandlingTime =
-          a.nonQuotationHandlingTimes.length > 0
-            ? a.nonQuotationHandlingTimes.reduce((sum, t) => sum + t, 0) /
-            a.nonQuotationHandlingTimes.length
-            : 0;
-
-        const avgSPFHandlingTime =
-          a.spfHandlingTimes.length > 0
-            ? a.spfHandlingTimes.reduce((sum, t) => sum + t, 0) /
-            a.spfHandlingTimes.length
-            : 0;
-
+        const avg = (arr: number[]) =>
+          arr.length > 0 ? arr.reduce((sum, t) => sum + t, 0) / arr.length : 0;
         return {
           ...a,
-          avgResponseTime,
-          avgQuotationHandlingTime,
-          avgNonQuotationHandlingTime,
-          avgSPFHandlingTime,
-          newClientCount: a.newClientCount,
-          newNonBuyingCount: a.newNonBuyingCount,
-          existingActiveCount: a.existingActiveCount,
-          existingInactiveCount: a.existingInactiveCount,
-          newClientConvertedAmount: a.newClientConvertedAmount,
-          newNonBuyingConvertedAmount: a.newNonBuyingConvertedAmount,
-          existingActiveConvertedAmount: a.existingActiveConvertedAmount,
-          existingInactiveConvertedAmount: a.existingInactiveConvertedAmount,
-
+          avgResponseTime: avg(a.responseTimes),
+          avgQuotationHandlingTime: avg(a.quotationHandlingTimes),
+          avgNonQuotationHandlingTime: avg(a.nonQuotationHandlingTimes),
+          avgSPFHandlingTime: avg(a.spfHandlingTimes),
         };
-
       });
   }, [activities, agents, dateCreatedFilterRange, searchTerm]);
 
-  function formatHoursToHMS(hoursDecimal: number) {
+  const formatHoursToHMS = (hoursDecimal: number) => {
     const totalSeconds = Math.round(hoursDecimal * 3600);
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  }
+  };
 
   const totalSales = groupedAgents.reduce((sum, a) => sum + a.salesCount, 0);
   const totalNonSales = groupedAgents.reduce((sum, a) => sum + a.nonSalesCount, 0);
   const totalAmount = groupedAgents.reduce((sum, a) => sum + a.amount, 0);
   const totalConvertedSales = groupedAgents.reduce((sum, a) => sum + a.convertedSalesCount, 0);
-  const totalInquiryToSalesPercent =
-    totalSales > 0 ? (totalConvertedSales / totalSales) * 100 : 0;
+  const totalInquiryToSalesPercent = totalSales > 0 ? (totalConvertedSales / totalSales) * 100 : 0;
 
-  const allTSAResponseTimes = groupedAgents.flatMap(
-    (a) => a.responseTimes ?? []
-  );
-
-  const avgTSAResponseTime =
-    allTSAResponseTimes.length > 0
-      ? allTSAResponseTimes.reduce((sum, t) => sum + t, 0) /
-      allTSAResponseTimes.length
-      : 0;
-
-  const allQuotationHandlingTimes = groupedAgents.flatMap(
-    (a) => a.quotationHandlingTimes ?? []
-  );
-
-  const avgQuotationHandlingTime =
-    allQuotationHandlingTimes.length > 0
-      ? allQuotationHandlingTimes.reduce((sum, t) => sum + t, 0) /
-      allQuotationHandlingTimes.length
-      : 0;
-
-  const allNonQuotationHandlingTimes = groupedAgents.flatMap(
-    (a) => a.nonQuotationHandlingTimes ?? []
-  );
-
-  const avgNonQuotationHandlingTime =
-    allNonQuotationHandlingTimes.length > 0
-      ? allNonQuotationHandlingTimes.reduce((sum, t) => sum + t, 0) /
-      allNonQuotationHandlingTimes.length
-      : 0;
-
-  const allSPFHandlingTimes = groupedAgents.flatMap(
-    (a) => a.spfHandlingTimes ?? []
-  );
-
-  const avgSPFHandlingTime =
-    allSPFHandlingTimes.length > 0
-      ? allSPFHandlingTimes.reduce((sum, t) => sum + t, 0) /
-      allSPFHandlingTimes.length
-      : 0;
+  const avgTSAResponseTime = groupedAgents.flatMap(a => a.responseTimes).reduce((sum, t) => sum + t, 0) / (groupedAgents.flatMap(a => a.responseTimes).length || 1);
+  const avgQuotationHandlingTime = groupedAgents.flatMap(a => a.quotationHandlingTimes).reduce((sum, t) => sum + t, 0) / (groupedAgents.flatMap(a => a.quotationHandlingTimes).length || 1);
+  const avgNonQuotationHandlingTime = groupedAgents.flatMap(a => a.nonQuotationHandlingTimes).reduce((sum, t) => sum + t, 0) / (groupedAgents.flatMap(a => a.nonQuotationHandlingTimes).length || 1);
+  const avgSPFHandlingTime = groupedAgents.flatMap(a => a.spfHandlingTimes).reduce((sum, t) => sum + t, 0) / (groupedAgents.flatMap(a => a.spfHandlingTimes).length || 1);
 
   return (
     <Card>
@@ -365,7 +260,6 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
       <CardContent>
         {loading && <p>Loading...</p>}
         {error && <p className="text-red-600">{error}</p>}
-
         {!loading && !error && groupedAgents.length > 0 && (
           <Table>
             <TableHeader>
@@ -400,16 +294,13 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 <TableCell>{totalSales}</TableCell>
                 <TableCell>{totalNonSales}</TableCell>
                 <TableCell>{totalSales + totalNonSales}</TableCell>
-                <TableCell>
-                  ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </TableCell>
+                <TableCell>₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 <TableCell>{totalConvertedSales}</TableCell>
                 <TableCell>{totalInquiryToSalesPercent.toFixed(2)}%</TableCell>
                 <TableCell>{groupedAgents.reduce((sum, a) => sum + a.newClientCount, 0)}</TableCell>
                 <TableCell>{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingCount, 0)}</TableCell>
                 <TableCell>{groupedAgents.reduce((sum, a) => sum + a.existingActiveCount, 0)}</TableCell>
                 <TableCell>{groupedAgents.reduce((sum, a) => sum + a.existingInactiveCount, 0)}</TableCell>
-                {/* ✅ New Converted Amount Totals */}
                 <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newClientConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
@@ -420,10 +311,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
               </TableRow>
 
-
               {groupedAgents.map((a, index) => {
-                const inquiryToSalesPercent =
-                  a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
+                const inquiryToSalesPercent = a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
                 return (
                   <TableRow key={a.agentName}>
                     <TableCell>{index + 1}</TableCell>
@@ -431,9 +320,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                     <TableCell>{a.salesCount}</TableCell>
                     <TableCell>{a.nonSalesCount}</TableCell>
                     <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>
-                    <TableCell>
-                      ₱{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </TableCell>
+                    <TableCell>₱{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell>{a.convertedSalesCount}</TableCell>
                     <TableCell>{inquiryToSalesPercent.toFixed(2)}%</TableCell>
                     <TableCell>{a.newClientCount}</TableCell>
