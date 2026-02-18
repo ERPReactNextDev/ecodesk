@@ -265,7 +265,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         <CardTitle>TSM's and Other Manager List</CardTitle>
         <input
           type="text"
-          placeholder="Search Agent..."
+          placeholder="Search Manager..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border rounded-md px-3 py-1 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
