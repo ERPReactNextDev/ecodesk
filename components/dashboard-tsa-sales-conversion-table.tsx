@@ -227,13 +227,12 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   }, [activities, agents, dateCreatedFilterRange, searchTerm]);
 
   const formatHoursToHMS = (hours: number) => {
-    const totalSeconds = Math.floor(hours * 3600); // NOT round
+    const totalSeconds = Math.round(hours * 3600); // ROUND instead of floor
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
-
 
   const totalSales = groupedAgents.reduce((sum, a) => sum + a.salesCount, 0);
   const totalNonSales = groupedAgents.reduce((sum, a) => sum + a.nonSalesCount, 0);
@@ -263,7 +262,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <CardTitle>Agent List</CardTitle>
+        <CardTitle>Agent's and Other Users</CardTitle>
         <input
           type="text"
           placeholder="Search Agent..."
@@ -332,7 +331,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 return (
                   <TableRow key={a.agentName}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell>{a.agentName}</TableCell>
+                    <TableCell className="uppercase">{a.agentName}</TableCell>
                     <TableCell>{a.salesCount}</TableCell>
                     <TableCell>{a.nonSalesCount}</TableCell>
                     <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>
