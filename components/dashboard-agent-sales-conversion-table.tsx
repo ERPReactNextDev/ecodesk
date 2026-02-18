@@ -27,7 +27,6 @@ import {
   TableBody,
   TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -279,18 +278,17 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         }
 
         // CSR Response Time
-        // CSR Response Time
         if (received && endorsed) {
-          const r = new Date(received.replace(" ", "T"));
-          const e = new Date(endorsed.replace(" ", "T"));
+          const r = new Date(received);
+          const e = new Date(endorsed);
           if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
             const diff = e.getTime() - r.getTime();
-            map[referenceid].responseTimeTotal += diff;
-            map[referenceid].responseCount += 1;
+            if (diff <= MAX_RESPONSE_TIME_MS) {
+              map[referenceid].responseTimeTotal += diff;
+              map[referenceid].responseCount += 1;
+            }
           }
         }
-
-
       });
 
     return Object.values(map);
@@ -330,36 +328,20 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
   const totalAveValue = totalConverted === 0 ? 0 : totalAmount / totalConverted;
 
-  // Compute total average CSR response time like Excel AVERAGE()
-  const responseTimes = groupedData
-    .map((row) => (row.responseCount > 0 ? row.responseTimeTotal / row.responseCount : null))
-    .filter((val): val is number => val !== null); // only valid numbers
-
   const totalAveResponse =
-    responseTimes.length === 0
-      ? 0
-      : responseTimes.reduce((sum, val) => sum + val, 0) / responseTimes.length;
+    totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
   const formatMs = (ms: number) => {
-    const totalSeconds = Math.round(ms / 1000); // round to nearest second
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
+    const totalSeconds = Math.round(ms / 1000);
 
-    return `${String(hours).padStart(1, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
-
-
-  const referencePriority = [
-    "RP-CSR-451122",
-    "AA-CSR-785895",
-    "MC-CSR-947264",
-    "LM-CSR-809795",
-    "MQ-CSR-170039",
-    "MG-NCR-829953",
-    "EM-NCR-600530",
-    // ...ilagay lahat ng iba pang IDs dito sa order mo
-  ];
+  const totalRowResponseAverage =
+    totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
   return (
     <Card>
@@ -465,75 +447,116 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                 </TableRow>
               </TableHeader>
 
-              <TableHeader>
-                <TableRow className="font-bold bg-muted/50">
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell>Total</TableCell>
-                  <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">{groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}</TableCell>
-                  <TableCell className="text-right">₱{totalAmount.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{totalQty.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{totalConverted}</TableCell>
-                  <TableCell className="text-right">
-                    {totalSales === 0 ? "0.00%" : totalConversionPct.toFixed(2) + "%"}
-                  </TableCell>
-                  <TableCell className="text-right">{Math.round(totalAveUnit)}</TableCell>
-                  <TableCell className="text-right">{Math.round(totalAveValue).toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalNewClient.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalNewNonBuying.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalExistingActive.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalExistingInactive.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{formatMs(totalAveResponse)}</TableCell>
-                </TableRow>
-              </TableHeader>
-
               <TableBody>
                 {groupedData
                   .slice()
-                  .sort((a, b) => {
-                    const indexA = referencePriority.indexOf(a.referenceid);
-                    const indexB = referencePriority.indexOf(b.referenceid);
-
-                    if (indexA === -1 && indexB === -1) return 0; // both not in priority list
-                    if (indexA === -1) return 1; // a goes after b
-                    if (indexB === -1) return -1; // b goes after a
-                    return indexA - indexB; // both in list → sort by priority
-                  })
+                  .sort((a, b) => b.amount - a.amount)
                   .map((row, index) => {
-                    const agent = agents.find((a) => a.ReferenceID === row.referenceid);
-                    const fullName = agent ? `${agent.Firstname} ${agent.Lastname}` : "(Unknown Agent)";
-                    const avgResponse = row.responseCount === 0 ? 0 : row.responseTimeTotal / row.responseCount;
+                    const agent = agents.find(
+                      (a) => a.ReferenceID === row.referenceid,
+                    );
+                    const fullName = agent
+                      ? `${agent.Firstname} ${agent.Lastname}`
+                      : "(Unknown Agent)";
+
+                    const avgResponse =
+                      row.responseCount === 0
+                        ? 0
+                        : row.responseTimeTotal / row.responseCount;
 
                     return (
                       <TableRow key={row.referenceid}>
                         <TableCell className="text-center">
                           <Badge className="h-10 min-w-10">{index + 1}</Badge>
                         </TableCell>
+
                         <TableCell>{fullName}</TableCell>
-                        <TableCell className="text-right">{row.salesCount}</TableCell>
-                        <TableCell className="text-right">{row.nonSalesCount}</TableCell>
-                        <TableCell className="text-right">₱{row.amount.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{row.qtySold.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{row.convertedCount}</TableCell>
-                        <TableCell className="text-right">{row.salesCount === 0 ? "0.00%" : ((row.convertedCount / row.salesCount) * 100).toFixed(2) + "%"}</TableCell>
+
                         <TableCell className="text-right">
-                          {row.convertedCount === 0 ? 0 : Math.round(row.qtySold / row.convertedCount)}
+                          {row.salesCount}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {row.nonSalesCount}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          ₱{row.amount.toLocaleString()}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          {row.qtySold}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          {row.convertedCount}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          {row.salesCount === 0
+                            ? "0.00%"
+                            : (
+                              (row.convertedCount / row.salesCount) *
+                              100
+                            ).toFixed(2) + "%"}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.convertedCount === 0
-                            ? "0"
-                            : Math.round(row.amount / row.convertedCount).toLocaleString()}
+                            ? "0.00"
+                            : (row.qtySold / row.convertedCount).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {row.convertedCount === 0
+                            ? "0.00"
+                            : (row.amount / row.convertedCount).toFixed(2)}
                         </TableCell>
 
-                        <TableCell className="text-right">₱{row.newClientSales.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">₱{row.newNonBuyingSales.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">₱{row.existingActiveSales.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">₱{row.existingInactiveSales.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{formatMs(avgResponse)}</TableCell>
+                        <TableCell className="text-right">
+                          ₱{row.newClientSales.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ₱{row.newNonBuyingSales.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ₱{row.existingActiveSales.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ₱{row.existingInactiveSales.toLocaleString()}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          {formatMs(avgResponse)}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
               </TableBody>
+
+              <tfoot>
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell className="text-center">-</TableCell>
+                  <TableCell>Total</TableCell>
+                  <TableCell className="text-right">{totalSales}</TableCell>
+                  <TableCell className="text-right">{groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}</TableCell>
+                  <TableCell className="text-right">₱{totalAmount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{totalQty}</TableCell>
+                  <TableCell className="text-right">{totalConverted}</TableCell>
+                  <TableCell className="text-right">
+                    {totalSales === 0 ? "0.00%" : totalConversionPct.toFixed(2) + "%"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {totalAveUnit.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {totalAveValue.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">₱{totalNewClient.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalNewNonBuying.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalExistingActive.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalExistingInactive.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{formatMs(totalAveResponse)}</TableCell>
+                </TableRow>
+              </tfoot>
+
             </Table>
           </div>
         )}
