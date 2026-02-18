@@ -440,8 +440,6 @@ const InputField = ({
     )}
   </Field>
 );
-// CTRL+F: TIME_OF_DAY_CARD_COLOR
-
 function getTimeOfDayCardStyle(datetime?: string) {
   if (!datetime) return "border-gray-200 bg-gray-50";
 
@@ -461,7 +459,6 @@ function getTimeOfDayCardStyle(datetime?: string) {
 
   return "border-slate-400 bg-slate-200";
 }
-
 export function TicketSheet(props: TicketSheetProps) {
   const {
     step,
