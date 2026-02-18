@@ -6,7 +6,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFoo
 import { type DateRange } from "react-day-picker";
 
 interface Activity {
-  manager?: string;
+  department_head?: string;
   referenceid?: string;
   date_created?: string;
   wrap_up?: string;
@@ -108,12 +108,12 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     activities
       .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
       .forEach((a) => {
-        const agentObj = agents.find((ag) => ag.ReferenceID === a.manager);
+        const agentObj = agents.find((ag) => ag.ReferenceID === a.department_head);
         const name = agentObj ? `${agentObj.Firstname} ${agentObj.Lastname}` : null;
         if (!name || name.toLowerCase() === "unknown") return;
 
-        if (!map[a.manager || name]) {
-          map[a.manager || name] = {
+        if (!map[a.department_head || name]) {
+          map[a.department_head || name] = {
             agentName: name,
             salesCount: 0,
             nonSalesCount: 0,
@@ -136,34 +136,34 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
 
         const wrapUpNormalized = a.wrap_up?.trim() || "";
         if (SALES_WRAP_UPS.includes(wrapUpNormalized)) {
-          map[a.manager || name].salesCount += 1;
+          map[a.department_head || name].salesCount += 1;
         } else {
-          map[a.manager || name].nonSalesCount += 1;
+          map[a.department_head || name].nonSalesCount += 1;
         }
 
         const amount = Number(a.so_amount) || 0;
-        map[a.manager || name].amount += amount;
+        map[a.department_head || name].amount += amount;
 
         if (a.status === "Converted into Sales") {
-          map[a.manager || name].convertedSalesCount += 1;
+          map[a.department_head || name].convertedSalesCount += 1;
         }
 
         switch (a.customer_status?.trim()) {
           case "New Client":
-            map[a.manager || name].newClientCount += 1;
-            if (a.status === "Converted into Sales") map[a.manager || name].newClientConvertedAmount += amount;
+            map[a.department_head || name].newClientCount += 1;
+            if (a.status === "Converted into Sales") map[a.department_head || name].newClientConvertedAmount += amount;
             break;
           case "New Non-Buying":
-            map[a.manager || name].newNonBuyingCount += 1;
-            if (a.status === "Converted into Sales") map[a.manager || name].newNonBuyingConvertedAmount += amount;
+            map[a.department_head || name].newNonBuyingCount += 1;
+            if (a.status === "Converted into Sales") map[a.department_head || name].newNonBuyingConvertedAmount += amount;
             break;
           case "Existing Active":
-            map[a.manager || name].existingActiveCount += 1;
-            if (a.status === "Converted into Sales") map[a.manager || name].existingActiveConvertedAmount += amount;
+            map[a.department_head || name].existingActiveCount += 1;
+            if (a.status === "Converted into Sales") map[a.department_head || name].existingActiveConvertedAmount += amount;
             break;
           case "Existing Inactive":
-            map[a.manager || name].existingInactiveCount += 1;
-            if (a.status === "Converted into Sales") map[a.manager || name].existingInactiveConvertedAmount += amount;
+            map[a.department_head || name].existingInactiveCount += 1;
+            if (a.status === "Converted into Sales") map[a.department_head || name].existingInactiveConvertedAmount += amount;
             break;
         }
 
@@ -172,7 +172,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           const ack = parseDateFixYear(a.tsa_acknowledge_date).getTime();
           const end = parseDateFixYear(a.ticket_endorsed).getTime();
           if (!isNaN(ack) && !isNaN(end) && ack >= end) {
-            map[a.manager || name].responseTimes.push((ack - end) / (1000 * 60 * 60));
+            map[a.department_head || name].responseTimes.push((ack - end) / (1000 * 60 * 60));
           }
         }
 
@@ -202,11 +202,11 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           ];
 
           if (remarksLower === "quotation for approval" || remarksLower === "sold") {
-            map[a.manager || name].quotationHandlingTimes.push(diffHours);
+            map[a.department_head || name].quotationHandlingTimes.push(diffHours);
           } else if (remarksLower === "for spf") {
-            map[a.manager || name].spfHandlingTimes.push(diffHours);
+            map[a.department_head || name].spfHandlingTimes.push(diffHours);
           } else if (remarksLower && nonQuotationRemarks.includes(remarksLower)) {
-            map[a.manager || name].nonQuotationHandlingTimes.push(diffHours);
+            map[a.department_head || name].nonQuotationHandlingTimes.push(diffHours);
           }
         }
       });
@@ -262,7 +262,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <CardTitle>TSM's and Other Manager List</CardTitle>
+        <CardTitle>Departamental Heads</CardTitle>
         <input
           type="text"
           placeholder="Search Agent..."
