@@ -951,45 +951,56 @@ const AgentSalesTableCard = forwardRef<AgentSalesConversionCardRef, Props>(
       })}
     </TableCell>
 
-    <TableCell className="text-right">
-      {(() => {
-        const total = groupedData.reduce((sum, r) => sum + r.tsaResponseTotal, 0);
-        const count = groupedData.reduce((sum, r) => sum + r.tsaResponseCount, 0);
-        return count === 0 ? "-" : formatMinutesToHHMM(total / count);
-      })()}
-    </TableCell>
-
-    <TableCell className="text-right">
+<TableCell className="text-right">
   {(() => {
-    const total = groupedData.reduce((sum, r) => sum + r.tsaHandlingTotal, 0);
-    const count = groupedData.reduce((sum, r) => sum + r.tsaHandlingCount, 0);
-    return count === 0 ? "-" : formatMinutesToHHMM(total / count);
+    const total = groupedData.reduce(
+      (sum, r) => sum + (r.tsaResponseTotal / (r.tsaResponseCount || 1)),
+      0
+    );
+    return total === 0 ? "-" : formatMinutesToHHMM(total);
   })()}
 </TableCell>
 
-    <TableCell className="text-right">
-      {(() => {
-        const total = groupedData.reduce((sum, r) => sum + r.nonQuotationTotal, 0);
-        const count = groupedData.reduce((sum, r) => sum + r.nonQuotationCount, 0);
-        return count === 0 ? "-" : formatMinutesToHHMM(total / count);
-      })()}
-    </TableCell>
+<TableCell className="text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, r) => sum + (r.tsaHandlingTotal / (r.tsaHandlingCount || 1)),
+      0
+    );
+    return total === 0 ? "-" : formatMinutesToHHMM(total);
+  })()}
+</TableCell>
 
-    <TableCell className="text-right">
-      {(() => {
-        const total = groupedData.reduce((sum, r) => sum + r.quotationTotal, 0);
-        const count = groupedData.reduce((sum, r) => sum + r.quotationCount, 0);
-        return count === 0 ? "-" : formatMinutesToHHMM(total / count);
-      })()}
-    </TableCell>
+<TableCell className="text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, r) => sum + (r.nonQuotationTotal / (r.nonQuotationCount || 1)),
+      0
+    );
+    return total === 0 ? "-" : formatMinutesToHHMM(total);
+  })()}
+</TableCell>
 
-    <TableCell className="text-right">
-      {(() => {
-        const total = groupedData.reduce((sum, r) => sum + r.spfTotal, 0);
-        const count = groupedData.reduce((sum, r) => sum + r.spfCount, 0);
-        return count === 0 ? "-" : formatMinutesToHHMM(total / count);
-      })()}
-    </TableCell>
+<TableCell className="text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, r) => sum + (r.quotationTotal / (r.quotationCount || 1)),
+      0
+    );
+    return total === 0 ? "-" : formatMinutesToHHMM(total);
+  })()}
+</TableCell>
+
+<TableCell className="text-right">
+  {(() => {
+    const total = groupedData.reduce(
+      (sum, r) => sum + (r.spfTotal / (r.spfCount || 1)),
+      0
+    );
+    return total === 0 ? "-" : formatMinutesToHHMM(total);
+  })()}
+</TableCell>
+
 
   </TableRow>
 </tfoot>

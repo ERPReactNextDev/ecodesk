@@ -72,7 +72,7 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef { }
+export interface AgentSalesConversionCardRef {}
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -205,11 +205,16 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
       }
     > = {};
 
-    const SALES_WRAPUPS = ["customer order", "customer inquiry sales", "follow up sales"];
+    const SALES_WRAPUPS = [
+      "customer order",
+      "customer inquiry sales",
+      "follow up sales",
+    ];
 
     activities
       .filter((a) => {
-        if (!isDateInRange(a.date_created, dateCreatedFilterRange)) return false;
+        if (!isDateInRange(a.date_created, dateCreatedFilterRange))
+          return false;
         if (!a.referenceid || a.referenceid.trim() === "") return false;
         if (role !== "Admin") return a.referenceid === userReferenceId;
         return true;
@@ -246,7 +251,10 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         }
 
         // ✅ Sales / Non-Sales logic
-        if (remarksLower === "po received" || !SALES_WRAPUPS.includes(wrapUpLower)) {
+        if (
+          remarksLower === "po received" ||
+          !SALES_WRAPUPS.includes(wrapUpLower)
+        ) {
           // PO Received or wrap_up not in sales list → Non-Sales
           map[referenceid].nonSalesCount += 1;
         } else {
@@ -258,18 +266,27 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         map[referenceid].qtySold += isNaN(qtySold) ? 0 : qtySold;
 
         // Sales amounts per customer status
-        if (status === "converted into sales" && remarksLower !== "po received") {
+        if (
+          status === "converted into sales" &&
+          remarksLower !== "po received"
+        ) {
           if (customerStatus === "New Client") {
             map[referenceid].newClientSales += isNaN(soAmount) ? 0 : soAmount;
           }
           if (customerStatus === "New Non-Buying") {
-            map[referenceid].newNonBuyingSales += isNaN(soAmount) ? 0 : soAmount;
+            map[referenceid].newNonBuyingSales += isNaN(soAmount)
+              ? 0
+              : soAmount;
           }
           if (customerStatus === "Existing Active") {
-            map[referenceid].existingActiveSales += isNaN(soAmount) ? 0 : soAmount;
+            map[referenceid].existingActiveSales += isNaN(soAmount)
+              ? 0
+              : soAmount;
           }
           if (customerStatus === "Existing Inactive") {
-            map[referenceid].existingInactiveSales += isNaN(soAmount) ? 0 : soAmount;
+            map[referenceid].existingInactiveSales += isNaN(soAmount)
+              ? 0
+              : soAmount;
           }
 
           // Total converted count & amount
@@ -340,8 +357,15 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
-  const totalRowResponseAverage =
-    totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
+
+  const formatTotalHours = (ms: number) => {
+    const hours = ms / (1000 * 60 * 60);
+    return hours.toFixed(2);
+  };
+  const totalDisplayedResponseMs = groupedData.reduce((sum, row) => {
+    if (row.responseCount === 0) return sum;
+    return sum + row.responseTimeTotal / row.responseCount;
+  }, 0);
 
   return (
     <Card>
@@ -495,9 +519,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                           {row.salesCount === 0
                             ? "0.00%"
                             : (
-                              (row.convertedCount / row.salesCount) *
-                              100
-                            ).toFixed(2) + "%"}
+                                (row.convertedCount / row.salesCount) *
+                                100
+                              ).toFixed(2) + "%"}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.convertedCount === 0
@@ -536,12 +560,18 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableCell className="text-center">-</TableCell>
                   <TableCell>Total</TableCell>
                   <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">{groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}</TableCell>
-                  <TableCell className="text-right">₱{totalAmount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalAmount.toLocaleString()}
+                  </TableCell>
                   <TableCell className="text-right">{totalQty}</TableCell>
                   <TableCell className="text-right">{totalConverted}</TableCell>
                   <TableCell className="text-right">
-                    {totalSales === 0 ? "0.00%" : totalConversionPct.toFixed(2) + "%"}
+                    {totalSales === 0
+                      ? "0.00%"
+                      : totalConversionPct.toFixed(2) + "%"}
                   </TableCell>
                   <TableCell className="text-right">
                     {totalAveUnit.toFixed(2)}
@@ -549,14 +579,23 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableCell className="text-right">
                     {totalAveValue.toFixed(2)}
                   </TableCell>
-                  <TableCell className="text-right">₱{totalNewClient.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalNewNonBuying.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalExistingActive.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalExistingInactive.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{formatMs(totalAveResponse)}</TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalNewClient.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalNewNonBuying.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalExistingActive.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalExistingInactive.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatMs(totalDisplayedResponseMs)}
+                  </TableCell>
                 </TableRow>
               </tfoot>
-
             </Table>
           </div>
         )}
