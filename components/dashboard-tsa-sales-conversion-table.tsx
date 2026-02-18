@@ -245,7 +245,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
 
   const avgTSAResponseTime = AVERAGE(
-    groupedAgents.map(a => a.avgResponseTime).filter(v => !Number.isNaN(v))
+    groupedAgents.map(a => a.avgResponseTime).filter(v => v > 0)
   );
 
   const avgQuotationHandlingTime = AVERAGE(
@@ -253,7 +253,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   );
 
   const avgNonQuotationHandlingTime = AVERAGE(
-    groupedAgents.map(a => a.avgNonQuotationHandlingTime).filter(v => !Number.isNaN(v))
+    groupedAgents.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
   );
 
   const avgSPFHandlingTime = AVERAGE(
@@ -303,6 +303,29 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
               </TableRow>
             </TableHeader>
 
+            <TableHeader className="font-semibold bg-muted/80 border-b">
+              <TableCell>-</TableCell>
+              <TableCell>Total</TableCell>
+              <TableCell>{totalSales}</TableCell>
+              <TableCell>{totalNonSales}</TableCell>
+              <TableCell>{totalSales + totalNonSales}</TableCell>
+              <TableCell>₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>{totalConvertedSales}</TableCell>
+              <TableCell>{totalInquiryToSalesPercent.toFixed(2)}%</TableCell>
+              <TableCell>{groupedAgents.reduce((sum, a) => sum + a.newClientCount, 0)}</TableCell>
+              <TableCell>{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingCount, 0)}</TableCell>
+              <TableCell>{groupedAgents.reduce((sum, a) => sum + a.existingActiveCount, 0)}</TableCell>
+              <TableCell>{groupedAgents.reduce((sum, a) => sum + a.existingInactiveCount, 0)}</TableCell>
+              <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newClientConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
+            </TableHeader>
+
             <TableBody>
               {groupedAgents.map((a, index) => {
                 const inquiryToSalesPercent = a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
@@ -332,28 +355,6 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 );
               })}
             </TableBody>
-            <TableFooter className="font-semibold bg-muted/20">
-              <TableCell>-</TableCell>
-              <TableCell>Total</TableCell>
-              <TableCell>{totalSales}</TableCell>
-              <TableCell>{totalNonSales}</TableCell>
-              <TableCell>{totalSales + totalNonSales}</TableCell>
-              <TableCell>₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell>{totalConvertedSales}</TableCell>
-              <TableCell>{totalInquiryToSalesPercent.toFixed(2)}%</TableCell>
-              <TableCell>{groupedAgents.reduce((sum, a) => sum + a.newClientCount, 0)}</TableCell>
-              <TableCell>{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingCount, 0)}</TableCell>
-              <TableCell>{groupedAgents.reduce((sum, a) => sum + a.existingActiveCount, 0)}</TableCell>
-              <TableCell>{groupedAgents.reduce((sum, a) => sum + a.existingInactiveCount, 0)}</TableCell>
-              <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newClientConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
-              <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
-              <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
-              <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
-            </TableFooter>
           </Table>
         )}
 
