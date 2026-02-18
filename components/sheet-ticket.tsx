@@ -312,6 +312,8 @@ interface TicketSheetProps {
   hrAcknowledgeDate: string;
   setHrAcknowledgeDate: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
+  department_head: string;
+setDepartmentHead: React.Dispatch<React.SetStateAction<string>>;
   handleBack: () => void;
   handleNext: () => void;
   handleUpdate: (agentReassigned: boolean) => void;
@@ -519,6 +521,8 @@ export function TicketSheet(props: TicketSheetProps) {
     setManager,
     agent,
     setAgent,
+    department_head,
+setDepartmentHead,
     ticketReferenceNumber,
     setTicketReferenceNumber,
     closeReason,
@@ -540,9 +544,22 @@ export function TicketSheet(props: TicketSheetProps) {
     handleBack,
     handleNext,
     handleUpdate,
+    
   } = props;
 
   // ================= ASSIGNEE (DYNAMIC USERS) =================
+
+
+
+const allowedDepartmentHeads = [
+  "SH-NCR-560908",
+  "BR-PH-358329",
+  "MM-PH-104083",
+];
+
+const [departmentHeadsList, setDepartmentHeadsList] = useState<User[]>([]);
+const [loadingDepartmentHeads, setLoadingDepartmentHeads] = useState(false);
+
   interface User {
     ReferenceID: string;
     Firstname: string;
@@ -552,6 +569,7 @@ export function TicketSheet(props: TicketSheetProps) {
     Connection: string;
   }
   const [managersList, setManagersList] = useState<User[]>([]);
+  
   const [managersAvailable, setManagersAvailable] = useState(0);
   const [agentsList, setAgentsList] = useState<User[]>([]);
 
@@ -622,6 +640,34 @@ export function TicketSheet(props: TicketSheetProps) {
   const quotationHT = baseHT ? computeQuotationHT(remarks, baseHT) : "";
 
   const spfHT = baseHT ? computeSpfHT(remarks, baseHT) : "";
+
+// ================= FETCH DEPARTMENT HEADS =================
+
+useEffect(() => {
+
+  setLoadingDepartmentHeads(true);
+
+  fetch(`/api/fetch-users-by-role?role=Manager`)
+    .then((res) => res.json())
+    .then((json) => {
+
+      const all: User[] = json.data || [];
+
+      // ONLY SHOW THE 3 REF IDs
+      const filtered = all.filter(user =>
+        allowedDepartmentHeads.includes(user.ReferenceID)
+      );
+
+      setDepartmentHeadsList(filtered);
+
+    })
+    .catch(() => setDepartmentHeadsList([]))
+    .finally(() => setLoadingDepartmentHeads(false));
+
+}, []);
+
+
+
 
   // ================= FETCH MANAGERS =================
 
@@ -1772,7 +1818,56 @@ export function TicketSheet(props: TicketSheetProps) {
       {step === 6 && !isJobApplicant && (
         <>
           <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
+{/* ================= DEPARTMENT HEAD ================= */}
 
+<Field>
+  <FieldLabel>Department Head</FieldLabel>
+
+  <FieldDescription>
+    Select the department head responsible.
+  </FieldDescription>
+
+  <Select
+    value={department_head}
+    onValueChange={(value) => setDepartmentHead(value)}
+  >
+    <SelectTrigger className="w-full">
+      <SelectValue placeholder="Select Department Head" />
+    </SelectTrigger>
+
+    <SelectContent>
+
+      {loadingDepartmentHeads && (
+        <SelectItem value="__loading__" disabled>
+          Loading department heads...
+        </SelectItem>
+      )}
+
+      {!loadingDepartmentHeads && departmentHeadsList.length === 0 && (
+        <SelectItem value="__none__" disabled>
+          No department heads available
+        </SelectItem>
+      )}
+
+      {departmentHeadsList.map((dh) => (
+
+        allowedDepartmentHeads.includes(dh.ReferenceID) && (
+
+          <SelectItem
+            key={dh.ReferenceID}
+            value={dh.ReferenceID}
+          >
+            {dh.Firstname} {dh.Lastname}
+          </SelectItem>
+
+        )
+
+      ))}
+
+    </SelectContent>
+  </Select>
+
+</Field>
           {/* ================= MANAGER ================= */}
           <Field>
             <FieldLabel>Manager</FieldLabel>
