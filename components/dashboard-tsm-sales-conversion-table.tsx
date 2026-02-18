@@ -1125,74 +1125,72 @@ const AgentSalesTableCard = forwardRef<
 <TableCell className="font-mono tabular-nums text-right">
   {(() => {
     const total = groupedData.reduce(
-      (sum, row) => sum + row.tsaResponseTotal,
+      (sum, row) =>
+        sum +
+        (row.tsaResponseCount === 0
+          ? 0
+          : row.tsaResponseTotal / row.tsaResponseCount),
       0,
     );
 
-    const count = groupedData.reduce(
-      (sum, row) => sum + row.tsaResponseCount,
-      0,
-    );
-
-    return count === 0
+    return total === 0
       ? "-"
-      : formatHHMMSS(total / count);
+      : formatHHMMSS(total);
   })()}
 </TableCell>
+
 
 {/* <TableCell className="font-mono tabular-nums text-right">
   {(() => {
     const total = groupedData.reduce(
-      (sum, row) => sum + row.nonRfQTotal,
+      (sum, row) =>
+        sum +
+        (row.nonRfQCount === 0
+          ? 0
+          : row.nonRfQTotal / row.nonRfQCount),
       0,
     );
 
-    const count = groupedData.reduce(
-      (sum, row) => sum + row.nonRfQCount,
-      0,
-    );
-
-    return count === 0
+    return total === 0
       ? "-"
-      : formatHHMMSS(total / count);
+      : formatHHMMSS(total);
   })()}
 </TableCell> */}
 
 <TableCell className="font-mono tabular-nums text-right">
   {(() => {
     const total = groupedData.reduce(
-      (sum, row) => sum + row.rfqTotal,
+      (sum, row) =>
+        sum +
+        (row.rfqCount === 0
+          ? 0
+          : row.rfqTotal / row.rfqCount),
       0,
     );
 
-    const count = groupedData.reduce(
-      (sum, row) => sum + row.rfqCount,
-      0,
-    );
-
-    return count === 0
+    return total === 0
       ? "-"
-      : formatHHMMSS(total / count);
+      : formatHHMMSS(total);
   })()}
 </TableCell>
 
 {/* <TableCell className="font-mono tabular-nums text-right">
   {(() => {
     const total = groupedData.reduce(
-      (sum, row) => sum + row.spfTotal,
+      (sum, row) =>
+        sum +
+        (row.spfCount === 0
+          ? 0
+          : row.spfTotal / row.spfCount),
       0,
     );
 
-    const count = groupedData.reduce(
-      (sum, row) => sum + row.spfCount,
-      0,
-    );
-
-    return count === 0
+    return total === 0
       ? "-"
-      : formatHHMMSS(total / count);
+      : formatHHMMSS(total);
   })()}
 </TableCell> */}
+
 
                 </TableRow>
               </tfoot>

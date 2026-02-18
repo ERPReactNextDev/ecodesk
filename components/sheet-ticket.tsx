@@ -197,6 +197,26 @@ function computeQuotationHT(remarks: string, baseTime: string) {
   return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
 }
 
+function getMinDateTimeLocal(daysBack: number) {
+  const now = new Date();
+
+  const min = new Date(now);
+  min.setDate(now.getDate() - daysBack);
+  min.setSeconds(0);
+  min.setMilliseconds(0);
+
+  return min.toISOString().slice(0, 16);
+}
+
+function getMaxDateTimeLocal() {
+  const now = new Date();
+
+  now.setSeconds(0);
+  now.setMilliseconds(0);
+
+  return now.toISOString().slice(0, 16);
+}
+
 function computeSpfHT(remarks: string, baseTime: string) {
   return (remarks || "").toUpperCase().includes("SPF") ? baseTime : "";
 }
@@ -294,7 +314,7 @@ interface TicketSheetProps {
   loading: boolean;
   handleBack: () => void;
   handleNext: () => void;
-handleUpdate: (agentReassigned: boolean) => void;
+  handleUpdate: (agentReassigned: boolean) => void;
 }
 
 // Reusable Radio Group
@@ -369,6 +389,10 @@ const InputField = ({
   description,
   rows,
   error,
+
+  // ✅ ADD THESE
+  min,
+  max,
 }: {
   type?: string;
   value: string;
@@ -379,9 +403,14 @@ const InputField = ({
   description?: string;
   rows?: number;
   error?: string;
+
+  // ✅ ADD THESE
+  min?: string;
+  max?: string;
 }) => (
   <Field>
     {description && <FieldDescription>{description}</FieldDescription>}
+
     {type === "textarea" ? (
       <>
         <Textarea
@@ -391,6 +420,7 @@ const InputField = ({
           placeholder={placeholder}
           className="capitalize"
         />
+
         {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
       </>
     ) : (
@@ -400,12 +430,37 @@ const InputField = ({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          // ✅ THIS IS THE FIX
+          min={min}
+          max={max}
         />
+
         {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
       </>
     )}
   </Field>
 );
+// CTRL+F: TIME_OF_DAY_CARD_COLOR
+
+function getTimeOfDayCardStyle(datetime?: string) {
+  if (!datetime) return "border-gray-200 bg-gray-50";
+
+  const hour = new Date(datetime).getHours();
+
+  if (hour >= 6 && hour < 8) return "border-orange-400 bg-orange-100";
+
+  if (hour >= 8 && hour < 12) return "border-yellow-400 bg-yellow-100";
+
+  if (hour >= 12 && hour < 15) return "border-blue-400 bg-blue-100";
+
+  if (hour >= 15 && hour < 17) return "border-green-400 bg-green-100";
+
+  if (hour >= 17 && hour < 18) return "border-purple-400 bg-purple-100";
+
+  if (hour >= 18 && hour < 21) return "border-indigo-400 bg-indigo-100";
+
+  return "border-slate-400 bg-slate-200";
+}
 
 export function TicketSheet(props: TicketSheetProps) {
   const {
@@ -666,7 +721,6 @@ export function TicketSheet(props: TicketSheetProps) {
       }
     }
   }, [ticketReceived, ticketEndorsed]);
-
 
   // TSM validation - same logic pattern as Ticket Received/Endorsed
   useEffect(() => {
@@ -1012,27 +1066,27 @@ export function TicketSheet(props: TicketSheetProps) {
   const [loadingLoad, setLoadingLoad] = useState(false);
 
   // Override handleUpdate to validate status before saving
-const onUpdate = async () => {
-  if (!validateStep6()) return;
+  const onUpdate = async () => {
+    if (!validateStep6()) return;
 
-  setErrors({});
+    setErrors({});
 
-  await handleUpdate(agentReassigned);
+    await handleUpdate(agentReassigned);
 
-  // FORCE update to Supabase ONLY when Reassign button was clicked
-  if (agentReassigned === true) {
-    try {
-      const { updateReassignRemarks } = await import("@/utils/supabase-reassign");
+    // FORCE update to Supabase ONLY when Reassign button was clicked
+    if (agentReassigned === true) {
+      try {
+        const { updateReassignRemarks } =
+          await import("@/utils/supabase-reassign");
 
-      await updateReassignRemarks(ticketReferenceNumber, true);
+        await updateReassignRemarks(ticketReferenceNumber, true);
 
-      console.log("Remarks successfully set to Reassigned");
-    } catch (err) {
-      console.error("Failed to update reassigned remarks:", err);
+        console.log("Remarks successfully set to Reassigned");
+      } catch (err) {
+        console.error("Failed to update reassigned remarks:", err);
+      }
     }
-  }
-};
-
+  };
 
   const isStep3NextDisabled = !ticketReceived || !ticketEndorsed || !!timeError;
 
@@ -1178,43 +1232,58 @@ const onUpdate = async () => {
                 />
               </Field> */}
 
-              <Field>
-                {(!ticketReceived || !ticketEndorsed) && (
-                  <p className="text-sm text-green-600 mb-2">
-                    Both Ticket Received and Ticket Endorsed are required.
-                  </p>
-                )}
-                <FieldLabel>
-                  Ticket Received{" "}
-                  <span className="text-red-600 text-xs italic">*required</span>
-                </FieldLabel>
-                <FieldDescription>
-                  Date and time when the ticket was initially received or
-                  logged.
-                </FieldDescription>
-                <InputField
-                  type="datetime-local"
-                  value={ticketReceived}
-                  onChange={(e) => setTicketReceived(e.target.value)}
-                  error={errors.ticketReceived || timeError || undefined}
-                />
-              </Field>
-              <Field>
-                <FieldLabel>
-                  Ticket Endorsed{" "}
-                  <span className="text-red-600 text-xs italic">*required</span>
-                </FieldLabel>
-                <FieldDescription>
-                  Date and time when the ticket was endorsed to the assigned
-                  department.
-                </FieldDescription>
-                <InputField
-                  type="datetime-local"
-                  value={ticketEndorsed}
-                  onChange={(e) => setTicketEndorsed(e.target.value)}
-                  error={errors.ticketEndorsed || timeError || undefined}
-                />
-              </Field>
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketReceived)}`}
+              >
+                <Field>
+                  {(!ticketReceived || !ticketEndorsed) && (
+                    <p className="text-sm text-green-600 mb-2">
+                      Both Ticket Received and Ticket Endorsed are required.
+                    </p>
+                  )}
+                  <FieldLabel>
+                    Ticket Received{" "}
+                    <span className="text-red-600 text-xs italic">
+                      *required
+                    </span>
+                  </FieldLabel>
+                  <FieldDescription>
+                    Date and time when the ticket was initially received or
+                    logged.
+                  </FieldDescription>
+                  <InputField
+                    type="datetime-local"
+                    value={ticketReceived}
+                    onChange={(e) => setTicketReceived(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+                    error={errors.ticketReceived || timeError || undefined}
+                  />
+                </Field>
+              </div>
+
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketEndorsed)}`}
+              >
+                <Field>
+                  <FieldLabel>
+                    Ticket Endorsed{" "}
+                    <span className="text-red-600 text-xs italic">
+                      *required
+                    </span>
+                  </FieldLabel>
+                  <FieldDescription>
+                    Date and time when the ticket was endorsed to the assigned
+                    department.
+                  </FieldDescription>
+                  <InputField
+                    type="datetime-local"
+                    value={ticketEndorsed}
+                    onChange={(e) => setTicketEndorsed(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+                    error={errors.ticketEndorsed || timeError || undefined}
+                  />
+                </Field>
+              </div>
 
               <Field>
                 <FieldLabel>Channel</FieldLabel>
@@ -1911,6 +1980,7 @@ const onUpdate = async () => {
                     type="datetime-local"
                     value={tsmAcknowledgeDate}
                     onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
                   />
                 </Field>
 
@@ -1920,6 +1990,7 @@ const onUpdate = async () => {
                     type="datetime-local"
                     value={tsmHandlingTime}
                     onChange={(e) => setTsmHandlingTime(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
                     error={tsmTimeError || undefined}
                   />
                 </Field>
@@ -1929,6 +2000,7 @@ const onUpdate = async () => {
                     type="datetime-local"
                     value={tsaAcknowledgeDate}
                     onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
                   />
                 </Field>
 
@@ -1938,6 +2010,7 @@ const onUpdate = async () => {
                     type="datetime-local"
                     value={tsaHandlingTime}
                     onChange={(e) => setTsaHandlingTime(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
                     error={tsaTimeError || undefined}
                   />
                 </Field>
@@ -2063,3 +2136,4 @@ const onUpdate = async () => {
     </>
   );
 }
+

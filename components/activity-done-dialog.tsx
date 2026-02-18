@@ -14,6 +14,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
+function getMinDateTimeLocal(daysBack: number) {
+  const now = new Date();
+
+  const min = new Date(now);
+  min.setDate(now.getDate() - daysBack);
+
+  min.setSeconds(0);
+  min.setMilliseconds(0);
+
+  return min.toISOString().slice(0, 16);
+}
+
 interface DoneDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -181,18 +193,20 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
 
               <div className="space-y-2 mt-2">
                 <Label>TSM Acknowledgement Date *</Label>
-                <Input
-                  type="datetime-local"
-                  value={tsmAcknowledgeDate}
-                  onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
-                />
+<Input
+  type="datetime-local"
+  value={tsmAcknowledgeDate}
+  onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
+  min={getMinDateTimeLocal(7)}
+/>
 
                 <Label>TSM Handling Time *</Label>
-                <Input
-                  type="datetime-local"
-                  value={tsmHandlingTime}
-                  onChange={(e) => setTsmHandlingTime(e.target.value)}
-                />
+<Input
+  type="datetime-local"
+  value={tsmHandlingTime}
+  onChange={(e) => setTsmHandlingTime(e.target.value)}
+  min={getMinDateTimeLocal(7)}
+/>
                 {tsmTimeError && (
                   <p className="text-sm text-red-600">{tsmTimeError}</p>
                 )}
@@ -200,18 +214,20 @@ export const DoneDialog: React.FC<DoneDialogProps> = ({
 
               <div className="space-y-2 mt-4">
                 <Label>TSA Acknowledgement Date *</Label>
-                <Input
-                  type="datetime-local"
-                  value={tsaAcknowledgeDate}
-                  onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
-                />
+<Input
+  type="datetime-local"
+  value={tsaAcknowledgeDate}
+  onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
+  min={getMinDateTimeLocal(7)}
+/>
 
                 <Label>TSA Handling Time *</Label>
-                <Input
-                  type="datetime-local"
-                  value={tsaHandlingTime}
-                  onChange={(e) => setTsaHandlingTime(e.target.value)}
-                />
+<Input
+  type="datetime-local"
+  value={tsaHandlingTime}
+  onChange={(e) => setTsaHandlingTime(e.target.value)}
+  min={getMinDateTimeLocal(7)}
+/>
                 {tsaTimeError && (
                   <p className="text-sm text-red-600">{tsaTimeError}</p>
                 )}
