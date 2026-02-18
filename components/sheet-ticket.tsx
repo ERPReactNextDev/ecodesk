@@ -440,8 +440,6 @@ const InputField = ({
     )}
   </Field>
 );
-// CTRL+F: TIME_OF_DAY_CARD_COLOR
-
 function getTimeOfDayCardStyle(datetime?: string) {
   if (!datetime) return "border-gray-200 bg-gray-50";
 
@@ -461,7 +459,6 @@ function getTimeOfDayCardStyle(datetime?: string) {
 
   return "border-slate-400 bg-slate-200";
 }
-
 export function TicketSheet(props: TicketSheetProps) {
   const {
     step,
@@ -1969,57 +1966,92 @@ export function TicketSheet(props: TicketSheetProps) {
           {(status === "Closed" || status === "Converted into Sales") && (
             <>
               {/* HANDLING TIME SECTION - MOVED FROM STEP 3 */}
-              <div className="mt-4 rounded-lg border border-blue-300 bg-blue-50 p-4 space-y-4">
-                <h4 className="font-semibold text-sm text-blue-700">
-                  Handling Time Details (Required on Closing)
-                </h4>
+{/* HANDLING TIME SECTION - MOVED FROM STEP 3 */}
+<div className="mt-4 rounded-lg border border-blue-300 bg-blue-50 p-4 space-y-4">
+  <h4 className="font-semibold text-sm text-blue-700">
+    Handling Time Details (Required on Closing)
+  </h4>
 
-                <Field>
-                  <FieldLabel>TSM Acknowledgement Date *</FieldLabel>
-                  <InputField
-                    type="datetime-local"
-                    value={tsmAcknowledgeDate}
-                    onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
-                    min={getMinDateTimeLocal(7)}
-                  />
-                </Field>
+  {/* TSM ACKNOWLEDGEMENT */}
+  <div
+    className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
+      tsmAcknowledgeDate,
+    )}`}
+  >
+    <Field>
+      <FieldLabel>TSM Acknowledgement Date *</FieldLabel>
 
-                <Field>
-                  <FieldLabel>TSM Handling Time *</FieldLabel>
-                  <InputField
-                    type="datetime-local"
-                    value={tsmHandlingTime}
-                    onChange={(e) => setTsmHandlingTime(e.target.value)}
-                    min={getMinDateTimeLocal(7)}
-                    error={tsmTimeError || undefined}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>TSA Acknowledgement Date *</FieldLabel>
-                  <InputField
-                    type="datetime-local"
-                    value={tsaAcknowledgeDate}
-                    onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
-                    min={getMinDateTimeLocal(7)}
-                  />
-                </Field>
+      <InputField
+        type="datetime-local"
+        value={tsmAcknowledgeDate}
+        onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
+        min={getMinDateTimeLocal(7)}
+      />
+    </Field>
+  </div>
 
-                <Field>
-                  <FieldLabel>TSA Handling Time *</FieldLabel>
-                  <InputField
-                    type="datetime-local"
-                    value={tsaHandlingTime}
-                    onChange={(e) => setTsaHandlingTime(e.target.value)}
-                    min={getMinDateTimeLocal(7)}
-                    error={tsaTimeError || undefined}
-                  />
-                </Field>
+  {/* TSM HANDLING */}
+  <div
+    className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
+      tsmHandlingTime,
+    )}`}
+  >
+    <Field>
+      <FieldLabel>TSM Handling Time *</FieldLabel>
 
-                <p className="text-xs text-gray-600 italic">
-                  Note: Either TSM or TSA acknowledgement details must be
-                  completed before closing the ticket.
-                </p>
-              </div>
+      <InputField
+        type="datetime-local"
+        value={tsmHandlingTime}
+        onChange={(e) => setTsmHandlingTime(e.target.value)}
+        min={getMinDateTimeLocal(7)}
+        error={tsmTimeError || undefined}
+      />
+    </Field>
+  </div>
+
+  {/* TSA ACKNOWLEDGEMENT */}
+  <div
+    className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
+      tsaAcknowledgeDate,
+    )}`}
+  >
+    <Field>
+      <FieldLabel>TSA Acknowledgement Date *</FieldLabel>
+
+      <InputField
+        type="datetime-local"
+        value={tsaAcknowledgeDate}
+        onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
+        min={getMinDateTimeLocal(7)}
+      />
+    </Field>
+  </div>
+
+  {/* TSA HANDLING */}
+  <div
+    className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
+      tsaHandlingTime,
+    )}`}
+  >
+    <Field>
+      <FieldLabel>TSA Handling Time *</FieldLabel>
+
+      <InputField
+        type="datetime-local"
+        value={tsaHandlingTime}
+        onChange={(e) => setTsaHandlingTime(e.target.value)}
+        min={getMinDateTimeLocal(7)}
+        error={tsaTimeError || undefined}
+      />
+    </Field>
+  </div>
+
+  <p className="text-xs text-gray-600 italic">
+    Note: Either TSM or TSA acknowledgement details must be completed before
+    closing the ticket.
+  </p>
+</div>
+
 
               {/* EXISTING CLOSE REASON SECTION */}
               {status === "Closed" && (
