@@ -34,6 +34,7 @@ interface SkuTicketItem {
   department?: string;
   manager?: string;
   agent?: string;
+  department_head?: string;
   traffic?: string;
   channel?: string;
   source_company?: string;
@@ -220,6 +221,7 @@ export function ReportsSkuTicketDialog({ item }: Props) {
             <h3 className="font-semibold text-sm">Ticket Information</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <p><strong>Department:</strong> {item.department || "-"}</p>
+              <p><strong>Department Head:</strong> {getUserNameByRefId(item.department_head)}</p>
               <p><strong>Manager:</strong> {getUserNameByRefId(item.manager)}</p>
               <p><strong>Agent:</strong> {getUserNameByRefId(item.agent)}</p>
               <p><strong>Traffic:</strong> {item.traffic || "-"}</p>
