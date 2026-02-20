@@ -549,10 +549,10 @@ export function TicketSheet(props: TicketSheetProps) {
   // ================= ASSIGNEE (DYNAMIC USERS) =================
 
   const allowedDepartmentHeads = [
+    "DT-PH-994793",
     "SH-NCR-560908",
     "BR-PH-358329",
     "MM-PH-104083",
-    "DT-PH-994793",
   ];
 
   const [departmentHeadsList, setDepartmentHeadsList] = useState<User[]>([]);
@@ -654,7 +654,24 @@ export function TicketSheet(props: TicketSheetProps) {
           allowedDepartmentHeads.includes(user.ReferenceID),
         );
 
+        // ✅ ADD THE BOSS MANUALLY
+        const bossExists = filtered.some(
+          (user) => user.ReferenceID === "DT-PH-994793",
+        );
+
+        if (!bossExists) {
+          filtered.unshift({
+            ReferenceID: "DT-PH-994793",
+            Firstname: "Dexter",
+            Lastname: "Tan",
+            Role: "Director",
+            Department: "Owner",
+            Connection: "Online",
+          });
+        }
+
         setDepartmentHeadsList(filtered);
+
       })
       .catch(() => setDepartmentHeadsList([]))
       .finally(() => setLoadingDepartmentHeads(false));
@@ -1845,7 +1862,9 @@ export function TicketSheet(props: TicketSheetProps) {
                   (dh) =>
                     allowedDepartmentHeads.includes(dh.ReferenceID) && (
                       <SelectItem key={dh.ReferenceID} value={dh.ReferenceID}>
-                        {dh.Firstname} {dh.Lastname}
+                        {dh.ReferenceID === "DT-PH-994793"
+                          ? "Dexter Tan"
+                          : `${dh.Firstname} ${dh.Lastname}`}
                       </SelectItem>
                     ),
                 )}
