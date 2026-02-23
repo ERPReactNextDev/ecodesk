@@ -77,6 +77,7 @@ interface Activity {
   department: string;
   manager: string;
   agent: string;
+  department_head: string;
   remarks: string;
   inquiry: string;
   item_code: string;
@@ -277,6 +278,7 @@ export function UpdateTicketDialog({
   const [departmentState, setDepartment] = useState("");
   const [managerState, setManager] = useState("");
   const [agentState, setAgent] = useState("");
+  const [departmentHeadState, setDepartmentHeadState] = useState("");
   const [remarksState, setRemarks] = useState("");
   const [inquiryState, setInquiry] = useState("");
   const [itemCodeState, setItemCode] = useState("");
@@ -318,6 +320,7 @@ export function UpdateTicketDialog({
     setDepartment(department || "");
     setManager(manager || "");
     setAgent(agent || "");
+setDepartmentHeadState((department as any) || "");
     setRemarks(remarks || "");
     setInquiry(inquiry || "");
     setItemCode(item_code || "");
@@ -481,6 +484,7 @@ export function UpdateTicketDialog({
       department: departmentState,
       manager: managerState,
       agent: agentState,
+      department_head: departmentHeadState,
       remarks: remarksState,
       inquiry: inquiryState,
       item_code: itemCodeState,
@@ -614,6 +618,7 @@ await fetch("/api/com-update-account", {
   method: "PUT",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
+department_head: departmentHeadState,
     account_reference_number,
     company_name: companyName,
     contact_person: contactPersons
@@ -1193,6 +1198,8 @@ setSheetOpen(false);
                   setTsaHandlingTime={setTsaHandlingTime}
                   hrAcknowledgeDate={hrAcknowledgeDate}
                   setHrAcknowledgeDate={setHrAcknowledgeDate}
+                  department_head={departmentHeadState}
+setDepartmentHead={setDepartmentHeadState}
                 />
               )}
             </div>

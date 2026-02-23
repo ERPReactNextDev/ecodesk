@@ -39,6 +39,7 @@ interface TicketHistoryItem {
   department?: string;
   manager?: string;
   agent?: string;
+  department_head?: string;
   customer_type?: string;
   customer_status?: string;
 
@@ -228,6 +229,7 @@ export function TicketHistoryDialog({ item }: Props) {
             <h3 className="font-semibold text-sm">Assignment</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <p><strong>Department:</strong> {item.department || "-"}</p>
+              <p><strong>Department Head:</strong> {getUserNameByRefId(item.department_head)}</p>
               <p><strong>Manager:</strong> {getUserNameByRefId(item.manager)}</p>
               <p><strong>Agent:</strong> {getUserNameByRefId(item.agent)}</p>
               <p><strong>Customer Type:</strong> {item.customer_type || "-"}</p>

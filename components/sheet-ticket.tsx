@@ -312,6 +312,8 @@ interface TicketSheetProps {
   hrAcknowledgeDate: string;
   setHrAcknowledgeDate: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
+  department_head: string;
+  setDepartmentHead: React.Dispatch<React.SetStateAction<string>>;
   handleBack: () => void;
   handleNext: () => void;
   handleUpdate: (agentReassigned: boolean) => void;
@@ -519,6 +521,8 @@ export function TicketSheet(props: TicketSheetProps) {
     setManager,
     agent,
     setAgent,
+    department_head,
+    setDepartmentHead,
     ticketReferenceNumber,
     setTicketReferenceNumber,
     closeReason,
@@ -543,6 +547,17 @@ export function TicketSheet(props: TicketSheetProps) {
   } = props;
 
   // ================= ASSIGNEE (DYNAMIC USERS) =================
+
+  const allowedDepartmentHeads = [
+    "DT-PH-994793",
+    "SH-NCR-560908",
+    "BR-PH-358329",
+    "MM-PH-104083",
+  ];
+
+  const [departmentHeadsList, setDepartmentHeadsList] = useState<User[]>([]);
+  const [loadingDepartmentHeads, setLoadingDepartmentHeads] = useState(false);
+
   interface User {
     ReferenceID: string;
     Firstname: string;
@@ -552,6 +567,7 @@ export function TicketSheet(props: TicketSheetProps) {
     Connection: string;
   }
   const [managersList, setManagersList] = useState<User[]>([]);
+
   const [managersAvailable, setManagersAvailable] = useState(0);
   const [agentsList, setAgentsList] = useState<User[]>([]);
 
@@ -622,6 +638,44 @@ export function TicketSheet(props: TicketSheetProps) {
   const quotationHT = baseHT ? computeQuotationHT(remarks, baseHT) : "";
 
   const spfHT = baseHT ? computeSpfHT(remarks, baseHT) : "";
+
+  // ================= FETCH DEPARTMENT HEADS =================
+
+  useEffect(() => {
+    setLoadingDepartmentHeads(true);
+
+    fetch(`/api/fetch-users-by-role?role=Manager`)
+      .then((res) => res.json())
+      .then((json) => {
+        const all: User[] = json.data || [];
+
+        // ONLY SHOW THE 3 REF IDs
+        const filtered = all.filter((user) =>
+          allowedDepartmentHeads.includes(user.ReferenceID),
+        );
+
+        // ✅ ADD THE BOSS MANUALLY
+        const bossExists = filtered.some(
+          (user) => user.ReferenceID === "DT-PH-994793",
+        );
+
+        if (!bossExists) {
+          filtered.unshift({
+            ReferenceID: "DT-PH-994793",
+            Firstname: "Dexter",
+            Lastname: "Tan",
+            Role: "Director",
+            Department: "Owner",
+            Connection: "Online",
+          });
+        }
+
+        setDepartmentHeadsList(filtered);
+
+      })
+      .catch(() => setDepartmentHeadsList([]))
+      .finally(() => setLoadingDepartmentHeads(false));
+  }, []);
 
   // ================= FETCH MANAGERS =================
 
@@ -1329,25 +1383,26 @@ export function TicketSheet(props: TicketSheetProps) {
                     onChange={setSource}
                     placeholder="Select a source"
                     options={[
-                      { value: "FB Ads", label: "FB Ads" },
-                      { value: "LNB", label: "LNB" },
-                      { value: "Viber", label: "Viber Community" },
-                      { value: "Whatsapp", label: "Whatsapp Community" },
-                      { value: "SMS", label: "SMS" },
-                      { value: "Website", label: "Website" },
-                      { value: "Word of Mouth", label: "Word of Mouth" },
-                      { value: "Quotation Docs", label: "Quotation Docs" },
-                      { value: "Google Search", label: "Google Search" },
-                      { value: "Site Visit", label: "Site Visit" },
                       { value: "Agent Call", label: "Agent Call" },
                       { value: "Catalogue", label: "Catalogue" },
-                      { value: "Shopee", label: "Shopee" },
-                      { value: "Lazada", label: "Lazada" },
-                      { value: "Tiktok", label: "Tiktok" },
-                      { value: "Worldbex", label: "Worldbex" },
-                      { value: "PhilConstruct", label: "PhilConstruct" },
                       { value: "Conex", label: "Conex" },
+                      { value: "Email Blast", label: "Email Blast" },
+                      { value: "FB Ads", label: "FB Ads" },
+                      { value: "Google Search", label: "Google Search" },
+                      { value: "Lazada", label: "Lazada" },
+                      { value: "LNB", label: "LNB" },
+                      { value: "PhilConstruct", label: "PhilConstruct" },
                       { value: "Product Demo", label: "Product Demo" },
+                      { value: "Quotation Docs", label: "Quotation Docs" },
+                      { value: "Shopee", label: "Shopee" },
+                      { value: "Site Visit", label: "Site Visit" },
+                      { value: "SMS", label: "SMS" },
+                      { value: "Tiktok", label: "Tiktok" },
+                      { value: "Viber", label: "Viber Community" },
+                      { value: "Website", label: "Website" },
+                      { value: "Whatsapp", label: "Whatsapp Community" },
+                      { value: "Word of Mouth", label: "Word of Mouth" },
+                      { value: "Worldbex", label: "Worldbex" },
                     ]}
                   />
                 </Field>
@@ -1772,7 +1827,50 @@ export function TicketSheet(props: TicketSheetProps) {
       {step === 6 && !isJobApplicant && (
         <>
           <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
+          {/* ================= DEPARTMENT HEAD ================= */}
 
+          <Field>
+            <FieldLabel>Department Head</FieldLabel>
+
+            <FieldDescription>
+              Select the department head responsible.
+            </FieldDescription>
+
+            <Select
+              value={department_head}
+              onValueChange={(value) => setDepartmentHead(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Department Head" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {loadingDepartmentHeads && (
+                  <SelectItem value="__loading__" disabled>
+                    Loading department heads...
+                  </SelectItem>
+                )}
+
+                {!loadingDepartmentHeads &&
+                  departmentHeadsList.length === 0 && (
+                    <SelectItem value="__none__" disabled>
+                      No department heads available
+                    </SelectItem>
+                  )}
+
+                {departmentHeadsList.map(
+                  (dh) =>
+                    allowedDepartmentHeads.includes(dh.ReferenceID) && (
+                      <SelectItem key={dh.ReferenceID} value={dh.ReferenceID}>
+                        {dh.ReferenceID === "DT-PH-994793"
+                          ? "Dexter Tan"
+                          : `${dh.Firstname} ${dh.Lastname}`}
+                      </SelectItem>
+                    ),
+                )}
+              </SelectContent>
+            </Select>
+          </Field>
           {/* ================= MANAGER ================= */}
           <Field>
             <FieldLabel>Manager</FieldLabel>
@@ -1966,92 +2064,91 @@ export function TicketSheet(props: TicketSheetProps) {
           {(status === "Closed" || status === "Converted into Sales") && (
             <>
               {/* HANDLING TIME SECTION - MOVED FROM STEP 3 */}
-{/* HANDLING TIME SECTION - MOVED FROM STEP 3 */}
-<div className="mt-4 rounded-lg border border-blue-300 bg-blue-50 p-4 space-y-4">
-  <h4 className="font-semibold text-sm text-blue-700">
-    Handling Time Details (Required on Closing)
-  </h4>
+              {/* HANDLING TIME SECTION - MOVED FROM STEP 3 */}
+              <div className="mt-4 rounded-lg border border-blue-300 bg-blue-50 p-4 space-y-4">
+                <h4 className="font-semibold text-sm text-blue-700">
+                  Handling Time Details (Required on Closing)
+                </h4>
 
-  {/* TSM ACKNOWLEDGEMENT */}
-  <div
-    className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
-      tsmAcknowledgeDate,
-    )}`}
-  >
-    <Field>
-      <FieldLabel>TSM Acknowledgement Date *</FieldLabel>
+                {/* TSM ACKNOWLEDGEMENT */}
+                <div
+                  className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
+                    tsmAcknowledgeDate,
+                  )}`}
+                >
+                  <Field>
+                    <FieldLabel>TSM Acknowledgement Date *</FieldLabel>
 
-      <InputField
-        type="datetime-local"
-        value={tsmAcknowledgeDate}
-        onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
-        min={getMinDateTimeLocal(7)}
-      />
-    </Field>
-  </div>
+                    <InputField
+                      type="datetime-local"
+                      value={tsmAcknowledgeDate}
+                      onChange={(e) => setTsmAcknowledgeDate(e.target.value)}
+                      min={getMinDateTimeLocal(7)}
+                    />
+                  </Field>
+                </div>
 
-  {/* TSM HANDLING */}
-  <div
-    className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
-      tsmHandlingTime,
-    )}`}
-  >
-    <Field>
-      <FieldLabel>TSM Handling Time *</FieldLabel>
+                {/* TSM HANDLING */}
+                <div
+                  className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
+                    tsmHandlingTime,
+                  )}`}
+                >
+                  <Field>
+                    <FieldLabel>TSM Handling Time *</FieldLabel>
 
-      <InputField
-        type="datetime-local"
-        value={tsmHandlingTime}
-        onChange={(e) => setTsmHandlingTime(e.target.value)}
-        min={getMinDateTimeLocal(7)}
-        error={tsmTimeError || undefined}
-      />
-    </Field>
-  </div>
+                    <InputField
+                      type="datetime-local"
+                      value={tsmHandlingTime}
+                      onChange={(e) => setTsmHandlingTime(e.target.value)}
+                      min={getMinDateTimeLocal(7)}
+                      error={tsmTimeError || undefined}
+                    />
+                  </Field>
+                </div>
 
-  {/* TSA ACKNOWLEDGEMENT */}
-  <div
-    className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
-      tsaAcknowledgeDate,
-    )}`}
-  >
-    <Field>
-      <FieldLabel>TSA Acknowledgement Date *</FieldLabel>
+                {/* TSA ACKNOWLEDGEMENT */}
+                <div
+                  className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
+                    tsaAcknowledgeDate,
+                  )}`}
+                >
+                  <Field>
+                    <FieldLabel>TSA Acknowledgement Date *</FieldLabel>
 
-      <InputField
-        type="datetime-local"
-        value={tsaAcknowledgeDate}
-        onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
-        min={getMinDateTimeLocal(7)}
-      />
-    </Field>
-  </div>
+                    <InputField
+                      type="datetime-local"
+                      value={tsaAcknowledgeDate}
+                      onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
+                      min={getMinDateTimeLocal(7)}
+                    />
+                  </Field>
+                </div>
 
-  {/* TSA HANDLING */}
-  <div
-    className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
-      tsaHandlingTime,
-    )}`}
-  >
-    <Field>
-      <FieldLabel>TSA Handling Time *</FieldLabel>
+                {/* TSA HANDLING */}
+                <div
+                  className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(
+                    tsaHandlingTime,
+                  )}`}
+                >
+                  <Field>
+                    <FieldLabel>TSA Handling Time *</FieldLabel>
 
-      <InputField
-        type="datetime-local"
-        value={tsaHandlingTime}
-        onChange={(e) => setTsaHandlingTime(e.target.value)}
-        min={getMinDateTimeLocal(7)}
-        error={tsaTimeError || undefined}
-      />
-    </Field>
-  </div>
+                    <InputField
+                      type="datetime-local"
+                      value={tsaHandlingTime}
+                      onChange={(e) => setTsaHandlingTime(e.target.value)}
+                      min={getMinDateTimeLocal(7)}
+                      error={tsaTimeError || undefined}
+                    />
+                  </Field>
+                </div>
 
-  <p className="text-xs text-gray-600 italic">
-    Note: Either TSM or TSA acknowledgement details must be completed before
-    closing the ticket.
-  </p>
-</div>
-
+                <p className="text-xs text-gray-600 italic">
+                  Note: Either TSM or TSA acknowledgement details must be
+                  completed before closing the ticket.
+                </p>
+              </div>
 
               {/* EXISTING CLOSE REASON SECTION */}
               {status === "Closed" && (
@@ -2168,4 +2265,3 @@ export function TicketSheet(props: TicketSheetProps) {
     </>
   );
 }
-
