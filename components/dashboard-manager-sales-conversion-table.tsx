@@ -247,7 +247,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     return (
         <Card>
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                <CardTitle>Agent's and Other Users</CardTitle>
+                <CardTitle>Department Head's</CardTitle>
                 <input
                     type="text"
                     placeholder="Search Agent..."
