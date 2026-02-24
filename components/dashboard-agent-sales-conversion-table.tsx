@@ -72,7 +72,7 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef {}
+export interface AgentSalesConversionCardRef { }
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -358,15 +358,15 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  const formatTotalHours = (ms: number) => {
-    const hours = ms / (1000 * 60 * 60);
-    return hours.toFixed(2);
-  };
-  const totalDisplayedResponseMs = groupedData.reduce((sum, row) => {
-    if (row.responseCount === 0) return sum;
-    return sum + row.responseTimeTotal / row.responseCount;
-  }, 0);
 
+  const AVERAGE = (values: number[]): number =>
+    values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+
+  const avgCSRResponseTime = AVERAGE(
+    groupedData
+      .map(row => row.responseCount > 0 ? row.responseTimeTotal / row.responseCount : 0)
+      .filter(v => v > 0)
+  );
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
@@ -470,6 +470,47 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   </TableHead>
                 </TableRow>
               </TableHeader>
+              <TableHeader>
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell className="text-center">-</TableCell>
+                  <TableCell>Total</TableCell>
+                  <TableCell className="text-right">{totalSales}</TableCell>
+                  <TableCell className="text-right">
+                    {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalAmount.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">{totalQty}</TableCell>
+                  <TableCell className="text-right">{totalConverted}</TableCell>
+                  <TableCell className="text-right">
+                    {totalSales === 0
+                      ? "0.00%"
+                      : totalConversionPct.toFixed(2) + "%"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {totalAveUnit.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {totalAveValue.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalNewClient.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalNewNonBuying.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalExistingActive.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalExistingInactive.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatMs(avgCSRResponseTime)}
+                  </TableCell>
+                </TableRow>
+              </TableHeader>
 
               <TableBody>
                 {groupedData
@@ -519,9 +560,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                           {row.salesCount === 0
                             ? "0.00%"
                             : (
-                                (row.convertedCount / row.salesCount) *
-                                100
-                              ).toFixed(2) + "%"}
+                              (row.convertedCount / row.salesCount) *
+                              100
+                            ).toFixed(2) + "%"}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.convertedCount === 0
@@ -554,48 +595,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     );
                   })}
               </TableBody>
-
-              <tfoot>
-                <TableRow className="font-bold bg-muted/50">
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell>Total</TableCell>
-                  <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">
-                    {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalAmount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">{totalQty}</TableCell>
-                  <TableCell className="text-right">{totalConverted}</TableCell>
-                  <TableCell className="text-right">
-                    {totalSales === 0
-                      ? "0.00%"
-                      : totalConversionPct.toFixed(2) + "%"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {totalAveUnit.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {totalAveValue.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalNewClient.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalNewNonBuying.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingActive.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingInactive.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatMs(totalDisplayedResponseMs)}
-                  </TableCell>
-                </TableRow>
-              </tfoot>
             </Table>
           </div>
         )}
