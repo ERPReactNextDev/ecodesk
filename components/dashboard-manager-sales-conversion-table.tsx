@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, forwardRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
 import { type DateRange } from "react-day-picker";
 
 interface Activity {
@@ -18,6 +18,7 @@ interface Activity {
     ticket_received?: string;
     remarks?: string;
     customer_status?: string;
+    ticket_reference_number?: string;
 }
 
 interface Agent {
@@ -43,6 +44,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchAgents() {
@@ -82,6 +84,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         fetchActivities();
     }, [role, userReferenceId]);
 
+    // ===== Utility: parse date with forced year 2026 if wrong =====
     const parseDateFixYear = (dateStr?: string) => {
         if (!dateStr) return new Date(NaN);
         const d = new Date(dateStr);
@@ -101,41 +104,65 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         return true;
     };
 
-    // ===== Grouped by agentName only to avoid duplicates =====
-    const groupedManager = useMemo(() => {
+    const groupedAgents = useMemo(() => {
         const map: Record<string, any> = {};
 
         activities
             .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
             .forEach((a) => {
-                const agentObj = agents.find((ag) => ag.ReferenceID === a.department_head);
-                const name = agentObj ? `${agentObj.Firstname} ${agentObj.Lastname}` : a.department_head || "Unknown";
-                const key = name.toLowerCase().trim();
-                if (!map[key]) {
-                    map[key] = {
+                // ⛔ SKIP agad pag null / undefined / empty ang department_head
+                if (!a.department_head?.trim()) return;
+
+                const agentObj = agents.find(
+                    (ag) => ag.ReferenceID === a.department_head
+                );
+
+                const name = agentObj
+                    ? `${agentObj.Firstname} ${agentObj.Lastname}`
+                    : null;
+
+                if (!name || name.toLowerCase() === "unknown") return;
+
+                if (!map[a.department_head]) {
+                    map[a.department_head] = {
                         agentName: name,
                         responseTimes: [],
                         quotationHandlingTimes: [],
                         nonQuotationHandlingTimes: [],
                         spfHandlingTimes: [],
+                        tickets: [],
                     };
                 }
 
-                // TSA Response Time
+                // ----- TSA Response Time -----
                 if (a.tsa_acknowledge_date && a.ticket_endorsed) {
                     const ack = parseDateFixYear(a.tsa_acknowledge_date).getTime();
                     const end = parseDateFixYear(a.ticket_endorsed).getTime();
+
                     if (!isNaN(ack) && !isNaN(end) && ack >= end) {
-                        map[key].responseTimes.push((ack - end) / (1000 * 60 * 60));
+                        map[a.department_head].responseTimes.push(
+                            (ack - end) / (1000 * 60 * 60)
+                        );
                     }
                 }
 
-                // Quotation / Non-Quotation / SPF Handling
+                // ----- Ticket Reference Numbers -----
+                if (a.ticket_reference_number) {
+                    map[a.department_head].tickets.push(
+                        a.ticket_reference_number
+                    );
+                }
+
+                // ----- Quotation / Non-Quotation / SPF Handling -----
                 const tsaTime = parseDateFixYear(a.tsa_handling_time).getTime();
                 const ticketReceived = parseDateFixYear(a.ticket_received).getTime();
+
                 if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
-                    const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
-                    const remarksLower = a.remarks?.trim().toLowerCase() || "";
+                    const diffHours =
+                        (tsaTime - ticketReceived) / (1000 * 60 * 60);
+
+                    const remarksLower = a.remarks?.trim().toLowerCase();
+
                     const nonQuotationRemarks = [
                         "no stocks / insufficient stocks",
                         "item not carried",
@@ -154,21 +181,32 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                         "pending quotation",
                     ];
 
-                    if (remarksLower === "quotation for approval" || remarksLower === "sold") {
-                        map[key].quotationHandlingTimes.push(diffHours);
+                    if (
+                        remarksLower === "quotation for approval" ||
+                        remarksLower === "sold"
+                    ) {
+                        map[a.department_head].quotationHandlingTimes.push(diffHours);
                     } else if (remarksLower === "for spf") {
-                        map[key].spfHandlingTimes.push(diffHours);
-                    } else if (nonQuotationRemarks.includes(remarksLower)) {
-                        map[key].nonQuotationHandlingTimes.push(diffHours);
+                        map[a.department_head].spfHandlingTimes.push(diffHours);
+                    } else if (
+                        remarksLower &&
+                        nonQuotationRemarks.includes(remarksLower)
+                    ) {
+                        map[a.department_head].nonQuotationHandlingTimes.push(diffHours);
                     }
                 }
             });
 
-        // Compute averages
-        // Compute averages and filter out unknown
         return Object.values(map)
+            .filter((a) =>
+                a.agentName.toLowerCase().includes(searchTerm.toLowerCase())
+            )
             .map((a) => {
-                const avg = (arr: number[]) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0);
+                const avg = (arr: number[]) =>
+                    arr.length
+                        ? arr.reduce((sum, t) => sum + t, 0) / arr.length
+                        : 0;
+
                 return {
                     ...a,
                     avgResponseTime: avg(a.responseTimes),
@@ -176,33 +214,43 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                     avgNonQuotationHandlingTime: avg(a.nonQuotationHandlingTimes),
                     avgSPFHandlingTime: avg(a.spfHandlingTimes),
                 };
-            })
-            .filter((a) => a.agentName.toLowerCase().trim() !== "unknown"); // <-- dito tinanggal unknown
-
+            });
     }, [activities, agents, dateCreatedFilterRange, searchTerm]);
 
     const formatHoursToHMS = (hours: number) => {
-        const totalSeconds = Math.round(hours * 3600);
+        const totalSeconds = Math.round(hours * 3600); // ROUND instead of floor
         const h = Math.floor(totalSeconds / 3600);
         const m = Math.floor((totalSeconds % 3600) / 60);
         const s = totalSeconds % 60;
         return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     };
 
-    const AVERAGE = (values: number[]) =>
-        values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+    const AVERAGE = (values: number[]): number =>
+        values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
 
-    const avgTSAResponseTime = AVERAGE(groupedManager.map(a => a.avgResponseTime).filter(v => v > 0));
-    const avgQuotationHandlingTime = AVERAGE(groupedManager.map(a => a.avgQuotationHandlingTime).filter(v => v > 0));
-    const avgNonQuotationHandlingTime = AVERAGE(groupedManager.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0));
+    const avgTSAResponseTime = AVERAGE(
+        groupedAgents.map(a => a.avgResponseTime).filter(v => v > 0)
+    );
+
+    const avgQuotationHandlingTime = AVERAGE(
+        groupedAgents.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
+    );
+
+    const avgNonQuotationHandlingTime = AVERAGE(
+        groupedAgents.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
+    );
+
+    const avgSPFHandlingTime = AVERAGE(
+        groupedAgents.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
+    );
 
     return (
         <Card>
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                <CardTitle>Departmental Heads</CardTitle>
+                <CardTitle>Department Head's</CardTitle>
                 <input
                     type="text"
-                    placeholder="Search Head..."
+                    placeholder="Search Agent..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="border rounded-md px-3 py-1 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -212,15 +260,16 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             <CardContent>
                 {loading && <p>Loading...</p>}
                 {error && <p className="text-red-600">{error}</p>}
-                {!loading && !error && groupedManager.length > 0 && (
+                {!loading && !error && groupedAgents.length > 0 && (
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>#</TableHead>
-                                <TableHead>Head</TableHead>
+                                <TableHead>Agent Name</TableHead>
                                 <TableHead>TSA Response Time</TableHead>
                                 <TableHead>Non-Quotation HT</TableHead>
                                 <TableHead>Quotation HT</TableHead>
+                                <TableHead>SPF Handling Duration</TableHead>
                             </TableRow>
                         </TableHeader>
 
@@ -230,22 +279,67 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                             <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
                             <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
                             <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
+                            <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
                         </TableHeader>
 
                         <TableBody>
-                            {groupedManager.map((a, index) => (
-                                <TableRow key={a.agentName}>
-                                    <TableCell>{index + 1}</TableCell>
-                                    <TableCell className="uppercase">{a.agentName}</TableCell>
-                                    <TableCell>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
-                                    <TableCell>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
-                                    <TableCell>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
-                                </TableRow>
-                            ))}
+                            {groupedAgents.map((a, index) => {
+                                const isOpen = expandedAgent === a.agentName;
+
+                                return (
+                                    <React.Fragment key={a.agentName}>
+                                        {/* MAIN ROW */}
+                                        <TableRow
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() =>
+                                                setExpandedAgent(isOpen ? null : a.agentName)
+                                            }
+                                        >
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell className="uppercase font-semibold">
+                                                {a.agentName}
+                                            </TableCell>
+                                            <TableCell>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
+                                            <TableCell>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
+                                            <TableCell>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
+                                            <TableCell>{formatHoursToHMS(a.avgSPFHandlingTime)}</TableCell>
+                                        </TableRow>
+
+                                        {/* ACCORDION ROW */}
+                                        {isOpen && (
+                                            <TableRow className="bg-muted/30">
+                                                <TableCell colSpan={6} className="p-4">
+                                                    <p className="font-semibold mb-2">
+                                                        Ticket Reference Numbers
+                                                    </p>
+
+                                                    {a.tickets.length > 0 ? (
+                                                        <ul className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                                            {a.tickets.map((t: string, i: number) => (
+                                                                <li
+                                                                    key={i}
+                                                                    className="px-2 py-1 border rounded bg-background"
+                                                                >
+                                                                    {t}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p className="text-muted-foreground text-sm">
+                                                            No tickets found.
+                                                        </p>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 )}
-                {!loading && !error && groupedManager.length === 0 && <p>No agents found.</p>}
+
+                {!loading && !error && groupedAgents.length === 0 && <p>No agents found.</p>}
             </CardContent>
         </Card>
     );
