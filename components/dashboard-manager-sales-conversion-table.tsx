@@ -244,6 +244,61 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         groupedAgents.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
     );
 
+    React.useImperativeHandle(ref, () => ({
+
+downloadCSV() {
+
+    if (!groupedAgents.length) {
+        alert("No data to export");
+        return;
+    }
+
+    const headers = [
+        "Department Head",
+        "TSA Response Time",
+        "Non Quotation HT",
+        "Quotation HT",
+        "SPF HT",
+        "Ticket Count"
+    ];
+
+    const rows = groupedAgents.map(a => [
+
+        a.agentName,
+
+        formatHoursToHMS(a.avgResponseTime),
+
+        formatHoursToHMS(a.avgNonQuotationHandlingTime),
+
+        formatHoursToHMS(a.avgQuotationHandlingTime),
+
+        formatHoursToHMS(a.avgSPFHandlingTime),
+
+        a.tickets.length
+
+    ]);
+
+    const csvContent =
+        [headers, ...rows]
+        .map(e => e.join(","))
+        .join("\n");
+
+    const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+
+    link.download = "department-head-sales.csv";
+
+    link.click();
+
+}
+
+}));
+
     return (
         <Card>
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
