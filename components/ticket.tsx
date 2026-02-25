@@ -76,6 +76,7 @@ interface Ticket {
   agent?: string;
   remarks?: string;
   inquiry?: string;
+  department_head?: string;
 
   // ✅ ADD THESE TWO LINES (THIS FIXES YOUR ERROR)
   company_name: string;
@@ -1207,6 +1208,7 @@ const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
                       {...{
                         _id: item._id,
                         date_created: item.date_created,
+                        department_head: item.department_head,
                         ticket_reference_number: item.ticket_reference_number,
                         ticket_received: item.ticket_received,
                         ticket_endorsed: item.ticket_endorsed,

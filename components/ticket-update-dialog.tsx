@@ -135,6 +135,7 @@ interface UpdateActivityDialogProps {
   customer_status?: string;
   status?: string;
   department?: string;
+  department_head?: string;
   manager?: string;
   agent?: string;
   remarks?: string;
@@ -221,6 +222,7 @@ export function UpdateTicketDialog({
   inquiry,
   item_code,
   item_description,
+  department_head,
   po_number,
   so_date,
   so_number,
@@ -320,7 +322,7 @@ export function UpdateTicketDialog({
     setDepartment(department || "");
     setManager(manager || "");
     setAgent(agent || "");
-setDepartmentHeadState((department as any) || "");
+setDepartmentHeadState(department_head || "");
     setRemarks(remarks || "");
     setInquiry(inquiry || "");
     setItemCode(item_code || "");
