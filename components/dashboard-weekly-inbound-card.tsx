@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Info } from "lucide-react";
-import { type DateRange } from "react-day-picker";
 
 import {
   Card,
@@ -20,7 +19,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Tooltip component
 function TooltipInfo({ children }: { children: React.ReactNode }) {
   return (
     <div className="absolute top-full mt-1 w-80 rounded-md bg-muted p-3 text-sm text-muted-foreground shadow-lg z-10">
@@ -34,106 +32,82 @@ interface Activity {
   date_created?: string;
 }
 
-interface ChannelTableProps {
+interface WeeklyInboundCardProps {
   activities: Activity[];
   loading: boolean;
   error: string | null;
-  dateCreatedFilterRange: DateRange | undefined;
-  setDateCreatedFilterRangeAction: React.Dispatch<
-    React.SetStateAction<DateRange | undefined>
-  >;
+  selectedMonth: number;
+  selectedYear: number;
+  customWeekMapping: { [date: string]: number | undefined };
 }
 
 export function WeeklyInboundCard({
   activities,
   loading,
   error,
-  dateCreatedFilterRange,
-  setDateCreatedFilterRangeAction,
-}: ChannelTableProps) {
+  selectedMonth,
+  selectedYear,
+  customWeekMapping,
+}: WeeklyInboundCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const isDateInRange = (dateStr?: string, range?: DateRange) => {
-    if (!range) return true;
+  const isInSelectedMonth = (dateStr?: string) => {
     if (!dateStr) return false;
-
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return false;
-
-    const { from, to } = range;
-
-    if (from && date < new Date(from.setHours(0, 0, 0, 0))) return false;
-    if (to && date > new Date(to.setHours(23, 59, 59, 999))) return false;
-
-    return true;
+    return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
   };
 
-  // Helper to get week number (1-4) based on date of month
-  // Days 1-7: Week 1, 8-14: Week 2, 15-21: Week 3, 22+: Week 4 (includes day 29-31)
-  function getWeekNumber(date: Date) {
-    const day = date.getDate();
-    if (day <= 7) return 1;
-    if (day <= 14) return 2;
-    if (day <= 21) return 3;
-    return 4;
-  }
+  const getWeekNumber = (date: Date): number | undefined => {
+    const key = date.toISOString().slice(0, 10);
+    return customWeekMapping[key]; // undefined if not assigned
+  };
 
-  // Group channels and count per week (merging week 5+ to week 4)
   const groupedData = useMemo(() => {
-    type WeekCounts = { [week: number]: number }; // e.g. {1: 3, 2: 5, 3: 2, 4: 7}
-
+    type WeekCounts = { [week: string]: number };
     const map: Record<string, WeekCounts> = {};
 
     activities
-      .filter(
-        (a) =>
-          isDateInRange(a.date_created, dateCreatedFilterRange) &&
-          a.channel &&
-          a.channel.trim() !== ""
-      )
+      .filter((a) => a.channel && a.channel.trim() !== "" && isInSelectedMonth(a.date_created))
       .forEach((a) => {
         const channel = a.channel!.trim();
         const date = a.date_created ? new Date(a.date_created) : null;
         if (!date) return;
 
-        const weekNum = getWeekNumber(date);
+        let weekNum = getWeekNumber(date);
+        const weekKey = weekNum && weekNum >= 1 && weekNum <= 4 ? `week${weekNum}` : "unassigned";
 
-        if (!map[channel]) {
-          map[channel] = { 1: 0, 2: 0, 3: 0, 4: 0 };
-        }
-
-        // Add count to correct week (merging week 5+ to 4)
-        map[channel][weekNum] = (map[channel][weekNum] || 0) + 1;
+        if (!map[channel]) map[channel] = { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0 };
+        map[channel][weekKey] = (map[channel][weekKey] || 0) + 1;
       });
 
-    return Object.entries(map).map(([channel, weeks]) => ({
-      channel,
-      week1: weeks[1] || 0,
-      week2: weeks[2] || 0,
-      week3: weeks[3] || 0,
-      week4: weeks[4] || 0,
-      total: (weeks[1] || 0) + (weeks[2] || 0) + (weeks[3] || 0) + (weeks[4] || 0),
-    }));
-  }, [activities, dateCreatedFilterRange]);
+    return Object.entries(map).map(([channel, weeks]) => {
+      const week1 = weeks.week1 || 0;
+      const week2 = weeks.week2 || 0;
+      const week3 = weeks.week3 || 0;
+      const week4 = weeks.week4 || 0;
+      const unassigned = weeks.unassigned || 0;
+      const total = week1 + week2 + week3 + week4 + unassigned;
+      return { channel, week1, week2, week3, week4, unassigned, total };
+    });
+  }, [activities, selectedMonth, selectedYear, customWeekMapping]);
 
-  // Calculate total counts per week for footer
   const totals = groupedData.reduce(
     (acc, curr) => {
       acc.week1 += curr.week1;
       acc.week2 += curr.week2;
       acc.week3 += curr.week3;
       acc.week4 += curr.week4;
+      acc.unassigned += curr.unassigned;
       acc.total += curr.total;
       return acc;
     },
-    { week1: 0, week2: 0, week3: 0, week4: 0, total: 0 }
+    { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0, total: 0 }
   );
 
   return (
     <Card>
-      <CardHeader className="flex justify-between items-center">
+      <CardHeader className="flex items-center gap-2">
         <CardTitle>Channel Count by Week</CardTitle>
-
         <div
           className="relative cursor-pointer text-muted-foreground hover:text-foreground"
           onMouseEnter={() => setShowTooltip(true)}
@@ -142,10 +116,7 @@ export function WeeklyInboundCard({
           <Info size={18} />
           {showTooltip && (
             <TooltipInfo>
-              <div>
-                Counts per channel broken down by week of the month (Week 1 = days 1-7, Week 2 = days 8-14, Week 3 = days 15-21,
-                Week 4 = days 22-end of month including days 29+).
-              </div>
+              Counts per channel broken down by week of the month. Unassigned dates are shown in "Unassigned".
             </TooltipInfo>
           )}
         </div>
@@ -167,7 +138,8 @@ export function WeeklyInboundCard({
                 <TableHead className="text-right">Week 1</TableHead>
                 <TableHead className="text-right">Week 2</TableHead>
                 <TableHead className="text-right">Week 3</TableHead>
-                <TableHead className="text-right">Week 4+</TableHead>
+                <TableHead className="text-right">Week 4</TableHead>
+                <TableHead className="text-right">Unassigned</TableHead>
                 <TableHead className="text-right font-bold">Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -180,6 +152,7 @@ export function WeeklyInboundCard({
                   <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.week4}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{row.unassigned}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.total}</TableCell>
                 </TableRow>
               ))}
@@ -192,6 +165,7 @@ export function WeeklyInboundCard({
                 <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.week4}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{totals.unassigned}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.total}</TableCell>
               </TableRow>
             </tfoot>

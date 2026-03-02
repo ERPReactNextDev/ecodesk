@@ -52,6 +52,7 @@ import TSMSalesTableCard from "@/components/dashboard-tsm-sales-conversion-table
 import ManagerSalesTableCard from "@/components/dashboard-manager-sales-conversion-table";
 //
 import CountTickets from "@/components/dashboard-agent-ticket-table";
+import { Info, Calendar } from "lucide-react";
 
 interface UserDetails {
   referenceid: string;
@@ -124,6 +125,21 @@ function DashboardContent() {
   const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const queryUserId = searchParams?.get("id") ?? "";
+
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [customWeekMapping, setCustomWeekMapping] = useState<{ [date: string]: number | undefined }>({});
+
+  const [selectedWeekForRange, setSelectedWeekForRange] = useState<number | null>(1);
+  const [rangeStartDate, setRangeStartDate] = useState<string>("");
+  const [rangeEndDate, setRangeEndDate] = useState<string>("");
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i);
 
   useEffect(() => {
     if (dateCreatedFilterRange) return;
@@ -417,8 +433,6 @@ function DashboardContent() {
                   <SelectItem value="Export Type Distribution">Export Type Distribution</SelectItem>
                   <SelectItem value="Export Company Distribution">Export Company Distribution</SelectItem>
                   <SelectItem value="Export Wrap Up Distribution">Export Wrap Up Distribution</SelectItem>
-                  <SelectItem value="Export TSA Sales Traffic">Export TSA Sales</SelectItem>
-                  <SelectItem value="Export TSM Sales Traffic">Export TSM Sales</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -479,12 +493,6 @@ function DashboardContent() {
               role={userDetails.role}
             />
 
-            <AgentSalesTableWeeklyCard
-              ref={agentSalesWeeklyCardRef}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-            />
-
             <TSASalesTableCard
               ref={tsaSalesTrafficCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
@@ -521,14 +529,6 @@ function DashboardContent() {
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
 
-            <WeeklyInboundCard
-              activities={activities}
-              loading={loadingActivities}
-              error={errorActivities}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
-            />
-
             <ChannelCard
               ref={channelCardRef}
               activities={activities}
@@ -544,6 +544,15 @@ function DashboardContent() {
               loading={loadingActivities}
               error={errorActivities}
               dateCreatedFilterRange={dateCreatedFilterRange}
+            />
+
+            <WrapUpCard
+              ref={wrapupCardRef}
+              activities={activities}
+              loading={loadingActivities}
+              error={errorActivities}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
           </div>
 
@@ -583,26 +592,176 @@ function DashboardContent() {
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
+
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <WrapUpCard
-              ref={wrapupCardRef}
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-bold">Weekly</h1>
+
+              {/* Customize Button */}
+              <div className="flex items-center gap-2">
+                {/* Month selector */}
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="text-xs bg-gray-800 text-white rounded p-4"
+                >
+                  {monthNames.map((m, i) => (
+                    <option key={m} value={i}>{m}</option>
+                  ))}
+                </select>
+
+                {/* Year selector */}
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="text-xs bg-gray-800 text-white rounded p-4"
+                >
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+
+                {/* Button to open modal */}
+                <button
+                  className="p-4 bg-yellow-500 text-black rounded hover:bg-yellow-600 text-xs font-semibold flex items-center gap-1"
+                  onClick={() => setIsCustomModalOpen(true)}
+                >
+                  <Calendar size={14} /> Customize Week
+                </button>
+              </div>
+            </div>
+
+            {/* Agent Sales Weekly Card */}
+            <AgentSalesTableWeeklyCard
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              customWeekMapping={customWeekMapping}
             />
 
+            <WeeklyInboundCard
+              activities={activities}
+              loading={loadingActivities}
+              error={errorActivities}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              customWeekMapping={customWeekMapping}
+            />
+
+            {/* Wrap Up Weekly Card */}
             <WrapUpWeeklyCard
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
-              dateCreatedFilterRange={dateCreatedFilterRange}
-              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              customWeekMapping={customWeekMapping}
             />
+
+            {isCustomModalOpen && (
+              <div className="fixed inset-0 bg-black/50 flex justify-center items-start pt-20 z-50">
+                <div className="bg-[#121212] p-6 rounded-lg w-[800px] text-white max-h-[80vh] overflow-auto">
+                  <h3 className="font-bold mb-2">Assign Dates to Weeks</h3>
+                  <p className="mb-4 text-sm text-gray-300">
+                    Click a start date, then an end date to assign a week to the range. Only assigned dates will be counted.
+                  </p>
+
+                  {/* Week range selector */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <span>Week:</span>
+                    {[1, 2, 3, 4].map((w) => (
+                      <button
+                        key={w}
+                        className={`p-4 rounded ${w === selectedWeekForRange ? "bg-cyan-500 text-black" : "bg-gray-700 text-white"
+                          }`}
+                        onClick={() => setSelectedWeekForRange(w)}
+                      >
+                        Week {w}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Date range calendar */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                      const date = new Date(selectedYear, selectedMonth, day);
+                      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+                        date.getDate()
+                      ).padStart(2, "0")}`;
+
+                      const assignedWeek = customWeekMapping[dateKey];
+                      const isSelected = dateKey >= rangeStartDate && dateKey <= rangeEndDate;
+
+                      return (
+                        <div
+                          key={day}
+                          className={`flex flex-col items-center cursor-pointer rounded ${isSelected ? "bg-cyan-600" : ""
+                            }`}
+                          onClick={() => {
+                            if (!rangeStartDate) {
+                              setRangeStartDate(dateKey);
+                              setRangeEndDate(dateKey);
+                            } else {
+                              // Update end date
+                              const start = new Date(rangeStartDate);
+                              const end = new Date(dateKey);
+                              const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
+
+                              setRangeEndDate(dateKey);
+
+                              // Assign selected week to the range
+                              const newMapping = { ...customWeekMapping };
+                              for (
+                                let d = new Date(minDate);
+                                d <= maxDate;
+                                d.setDate(d.getDate() + 1)
+                              ) {
+                                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+                                  d.getDate()
+                                ).padStart(2, "0")}`;
+                                if (selectedWeekForRange) newMapping[key] = selectedWeekForRange;
+                              }
+                              setCustomWeekMapping(newMapping);
+
+                              // Reset range
+                              setRangeStartDate("");
+                              setRangeEndDate("");
+                            }
+                          }}
+                        >
+                          <span className="text-xl">{day}</span>
+                          <span className="text-xs mt-1">
+                            {assignedWeek ? `Week ${assignedWeek}` : ""}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex justify-end gap-2 mt-4">
+                    <button
+                      className="p-4 bg-red-600 rounded hover:bg-red-500 text-white"
+                      onClick={() => setCustomWeekMapping({})}
+                    >
+                      Clear All
+                    </button>
+                    <button
+                      className="p-4 bg-gray-700 rounded hover:bg-gray-600"
+                      onClick={() => setIsCustomModalOpen(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
         </div>
       </SidebarInset>
       <SidebarRight

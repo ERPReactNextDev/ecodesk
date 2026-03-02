@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from "react";
 import { Info } from "lucide-react";
-import { type DateRange } from "react-day-picker";
 
 import {
   Card,
@@ -38,59 +37,38 @@ interface WrapUpWeeklyCardProps {
   activities: Activity[];
   loading: boolean;
   error: string | null;
-  dateCreatedFilterRange: DateRange | undefined;
-  setDateCreatedFilterRangeAction: React.Dispatch<
-    React.SetStateAction<DateRange | undefined>
-  >;
+  selectedMonth: number;
+  selectedYear: number;
+  customWeekMapping: { [date: string]: number | undefined };
 }
 
 export function WrapUpWeeklyCard({
   activities,
   loading,
   error,
-  dateCreatedFilterRange,
-  setDateCreatedFilterRangeAction,
+  selectedMonth,
+  selectedYear,
+  customWeekMapping,
 }: WrapUpWeeklyCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const isDateInRange = (dateStr?: string, range?: DateRange) => {
-    if (!range) return true;
+  const isInSelectedMonth = (dateStr?: string) => {
     if (!dateStr) return false;
-
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return false;
-
-    const { from, to } = range;
-
-    if (from && date < new Date(from.setHours(0, 0, 0, 0))) return false;
-    if (to && date > new Date(to.setHours(23, 59, 59, 999))) return false;
-
-    return true;
+    return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
   };
 
-  // Helper to get week number (1-4) based on date of month
-  // Days 1-7: Week 1, 8-14: Week 2, 15-21: Week 3, 22+: Week 4 (includes day 29-31)
-  function getWeekNumber(date: Date) {
-    const day = date.getDate();
-    if (day <= 7) return 1;
-    if (day <= 14) return 2;
-    if (day <= 21) return 3;
-    return 4;
-  }
+  const getWeekNumber = (date: Date): number | undefined => {
+    const key = date.toISOString().slice(0, 10);
+    return customWeekMapping[key];
+  };
 
-  // Group wrap-ups and count per week (merging week 5+ to week 4)
   const groupedData = useMemo(() => {
-    type WeekCounts = { [week: number]: number }; // e.g. {1: 3, 2: 5, 3: 2, 4: 7}
-
-    const map: Record<string, WeekCounts> = {};
+    type WeekCounts = { [week: number]: number };
+    const map: Record<string, WeekCounts & { unassigned: number }> = {};
 
     activities
-      .filter(
-        (a) =>
-          isDateInRange(a.date_created, dateCreatedFilterRange) &&
-          a.wrap_up &&
-          a.wrap_up.trim() !== ""
-      )
+      .filter((a) => a.wrap_up && a.wrap_up.trim() !== "" && isInSelectedMonth(a.date_created))
       .forEach((a) => {
         const wrap_up = a.wrap_up!.trim();
         const date = a.date_created ? new Date(a.date_created) : null;
@@ -98,35 +76,37 @@ export function WrapUpWeeklyCard({
 
         const weekNum = getWeekNumber(date);
 
-        if (!map[wrap_up]) {
-          map[wrap_up] = { 1: 0, 2: 0, 3: 0, 4: 0 };
-        }
+        if (!map[wrap_up]) map[wrap_up] = { 1: 0, 2: 0, 3: 0, 4: 0, unassigned: 0 };
 
-        // Add count to correct week (merging week 5+ to 4)
-        map[wrap_up][weekNum] = (map[wrap_up][weekNum] || 0) + 1;
+        if (weekNum && weekNum >= 1 && weekNum <= 4) {
+          map[wrap_up][weekNum] += 1;
+        } else {
+          map[wrap_up].unassigned += 1;
+        }
       });
 
-    return Object.entries(map).map(([wrap_up, weeks]) => ({
-      wrap_up,
-      week1: weeks[1] || 0,
-      week2: weeks[2] || 0,
-      week3: weeks[3] || 0,
-      week4: weeks[4] || 0,
-      total: (weeks[1] || 0) + (weeks[2] || 0) + (weeks[3] || 0) + (weeks[4] || 0),
-    }));
-  }, [activities, dateCreatedFilterRange]);
+    return Object.entries(map).map(([wrap_up, counts]) => {
+      const week1 = counts[1] || 0;
+      const week2 = counts[2] || 0;
+      const week3 = counts[3] || 0;
+      const week4 = counts[4] || 0;
+      const total = week1 + week2 + week3 + week4 + counts.unassigned;
 
-  // Calculate total counts per week for footer
+      return { wrap_up, week1, week2, week3, week4, unassigned: counts.unassigned, total };
+    });
+  }, [activities, selectedMonth, selectedYear, customWeekMapping]);
+
   const totals = groupedData.reduce(
     (acc, curr) => {
       acc.week1 += curr.week1;
       acc.week2 += curr.week2;
       acc.week3 += curr.week3;
       acc.week4 += curr.week4;
+      acc.unassigned += curr.unassigned;
       acc.total += curr.total;
       return acc;
     },
-    { week1: 0, week2: 0, week3: 0, week4: 0, total: 0 }
+    { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0, total: 0 }
   );
 
   return (
@@ -142,10 +122,7 @@ export function WrapUpWeeklyCard({
           <Info size={18} />
           {showTooltip && (
             <TooltipInfo>
-              <div>
-                Counts per wrapup broken down by week of the month (Week 1 = days 1-7, Week 2 = days 8-14, Week 3 = days 15-21,
-                Week 4 = days 22-end of month including days 29+).
-              </div>
+              Counts per wrap-up broken down by assigned weeks in the selected month. Unassigned activities are included in totals.
             </TooltipInfo>
           )}
         </div>
@@ -167,7 +144,8 @@ export function WrapUpWeeklyCard({
                 <TableHead className="text-right">Week 1</TableHead>
                 <TableHead className="text-right">Week 2</TableHead>
                 <TableHead className="text-right">Week 3</TableHead>
-                <TableHead className="text-right">Week 4+</TableHead>
+                <TableHead className="text-right">Week 4</TableHead>
+                <TableHead className="text-right">Unassigned</TableHead>
                 <TableHead className="text-right font-bold">Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -180,6 +158,7 @@ export function WrapUpWeeklyCard({
                   <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.week4}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{row.unassigned}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.total}</TableCell>
                 </TableRow>
               ))}
@@ -192,6 +171,7 @@ export function WrapUpWeeklyCard({
                 <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.week4}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{totals.unassigned}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.total}</TableCell>
               </TableRow>
             </tfoot>
