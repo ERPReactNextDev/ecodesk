@@ -124,6 +124,7 @@ function DashboardContent() {
   const agentSalesCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const managerSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const queryUserId = searchParams?.get("id") ?? "";
 
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
@@ -374,14 +375,11 @@ function DashboardContent() {
       } else {
         console.log("companyDistributionCardRef.current is null");
       }
-    } else if (selectedExport === "Export Company Distribution") {
-      if (wrapupCardRef.current) {
-        console.log("Calling downloadCSV from WrapUpCard");
-        wrapupCardRef.current.downloadCSV();
-      } else {
-        console.log("wrapupCardRef.current is null");
-      }
-    } else if (selectedExport === "Export TSA Sales Traffic") {
+    } else if (selectedExport === "Export Wrap Up Distribution") {
+  if (wrapupCardRef.current) {
+    wrapupCardRef.current.downloadCSV();
+  }
+} else if (selectedExport === "Export TSA Sales Traffic") {
       if (tsaSalesTrafficCardRef.current) {
         console.log("Calling downloadCSV from TSASalesTrafficCard");
         tsaSalesTrafficCardRef.current.downloadCSV();
@@ -395,7 +393,19 @@ function DashboardContent() {
       } else {
         console.log("tsmSalesTrafficCardRef.current is null");
       }
-    } else if (selectedExport === "Export All") {
+    } else if (selectedExport === "Export Manager Sales Traffic") {
+  if (managerSalesTrafficCardRef.current) {
+    managerSalesTrafficCardRef.current.downloadCSV();
+  }
+}
+
+else if (selectedExport === "Export Department Head Sales") {
+  if (managerSalesTrafficCardRef.current) {
+    managerSalesTrafficCardRef.current.downloadCSV();
+  }
+}
+    
+    else if (selectedExport === "Export All") {
       handleExportAll();
     } else {
       toast.error("Please select a valid export option");
@@ -510,7 +520,7 @@ function DashboardContent() {
             />
 
             <ManagerSalesTableCard
-              ref={tsmSalesTrafficCardRef}
+              ref={managerSalesTrafficCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
               role={userDetails.role}
