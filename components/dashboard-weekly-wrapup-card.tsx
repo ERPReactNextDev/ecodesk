@@ -122,7 +122,7 @@ export function WrapUpWeeklyCard({
           <Info size={18} />
           {showTooltip && (
             <TooltipInfo>
-              Counts per wrap-up broken down by assigned weeks in the selected month. Unassigned activities are included in totals.
+              Counts per wrap-up broken down by assigned weekss in the selected month. Unassigned activities are included in totals.
             </TooltipInfo>
           )}
         </div>
