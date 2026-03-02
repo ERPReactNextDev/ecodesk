@@ -487,8 +487,6 @@
 }
 
 
-
-
 .outlook {
   --radius: 0.625rem;
 
@@ -651,6 +649,9 @@
   .custom-scrollbar {
     scrollbar-width: none;
   }
+  
 
 
 }
+
+
