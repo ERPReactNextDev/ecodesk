@@ -1833,7 +1833,7 @@ export function TicketSheet(props: TicketSheetProps) {
             <FieldLabel>Department Head</FieldLabel>
 
             <FieldDescription>
-              Select the department head responsible.
+              Please Select the department head responsible.
             </FieldDescription>
 
             <Select
