@@ -447,8 +447,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">Rank</TableHead>
-                  <TableHead>CSR</TableHead>
+                  <TableHead className="sticky left-0 bg-white z-30">Rank</TableHead>
+                  <TableHead className="sticky left-[50px] bg-white z-30 border-r">CSR</TableHead>
                   <TableHead className="text-right">Sales</TableHead>
                   <TableHead className="text-right">Non-Sales</TableHead>
                   <TableHead className="text-right">Sales</TableHead>
@@ -472,8 +472,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
               </TableHeader>
               <TableHeader>
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell className="text-center">-</TableCell>
-                  <TableCell>Total</TableCell>
+                  <TableCell className="text-center sticky left-0 bg-white z-30">-</TableCell>
+                  <TableCell className="sticky left-[50px] bg-white z-30 border-r">Total</TableCell>
                   <TableCell className="text-right">{totalSales}</TableCell>
                   <TableCell className="text-right">
                     {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
@@ -531,11 +531,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
                     return (
                       <TableRow key={row.referenceid}>
-                        <TableCell className="text-center">
-                          <Badge className="h-10 min-w-10">{index + 1}</Badge>
+                        <TableCell className="text-center sticky left-0 bg-white z-30">
+                          {index + 1}
                         </TableCell>
 
-                        <TableCell>{fullName}</TableCell>
+                        <TableCell className="sticky left-[50px] bg-white z-30 border uppercase">{fullName}</TableCell>
 
                         <TableCell className="text-right">
                           {row.salesCount}

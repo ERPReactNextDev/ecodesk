@@ -376,10 +376,10 @@ function DashboardContent() {
         console.log("companyDistributionCardRef.current is null");
       }
     } else if (selectedExport === "Export Wrap Up Distribution") {
-  if (wrapupCardRef.current) {
-    wrapupCardRef.current.downloadCSV();
-  }
-} else if (selectedExport === "Export TSA Sales Traffic") {
+      if (wrapupCardRef.current) {
+        wrapupCardRef.current.downloadCSV();
+      }
+    } else if (selectedExport === "Export TSA Sales Traffic") {
       if (tsaSalesTrafficCardRef.current) {
         console.log("Calling downloadCSV from TSASalesTrafficCard");
         tsaSalesTrafficCardRef.current.downloadCSV();
@@ -394,17 +394,17 @@ function DashboardContent() {
         console.log("tsmSalesTrafficCardRef.current is null");
       }
     } else if (selectedExport === "Export Manager Sales Traffic") {
-  if (managerSalesTrafficCardRef.current) {
-    managerSalesTrafficCardRef.current.downloadCSV();
-  }
-}
+      if (managerSalesTrafficCardRef.current) {
+        managerSalesTrafficCardRef.current.downloadCSV();
+      }
+    }
 
-else if (selectedExport === "Export Department Head Sales") {
-  if (managerSalesTrafficCardRef.current) {
-    managerSalesTrafficCardRef.current.downloadCSV();
-  }
-}
-    
+    else if (selectedExport === "Export Department Head Sales") {
+      if (managerSalesTrafficCardRef.current) {
+        managerSalesTrafficCardRef.current.downloadCSV();
+      }
+    }
+
     else if (selectedExport === "Export All") {
       handleExportAll();
     } else {
@@ -566,7 +566,7 @@ else if (selectedExport === "Export Department Head Sales") {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InboundTrafficGenderCard
               ref={inboundTrafficCardRef}
               activities={activities}
@@ -645,25 +645,6 @@ else if (selectedExport === "Export Department Head Sales") {
 
             {/* Agent Sales Weekly Card */}
             <AgentSalesTableWeeklyCard
-              activities={activities}
-              loading={loadingActivities}
-              error={errorActivities}
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              customWeekMapping={customWeekMapping}
-            />
-
-            <WeeklyInboundCard
-              activities={activities}
-              loading={loadingActivities}
-              error={errorActivities}
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              customWeekMapping={customWeekMapping}
-            />
-
-            {/* Wrap Up Weekly Card */}
-            <WrapUpWeeklyCard
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -770,6 +751,27 @@ else if (selectedExport === "Export Department Head Sales") {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <WeeklyInboundCard
+              activities={activities}
+              loading={loadingActivities}
+              error={errorActivities}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              customWeekMapping={customWeekMapping}
+            />
+
+            {/* Wrap Up Weekly Card */}
+            <WrapUpWeeklyCard
+              activities={activities}
+              loading={loadingActivities}
+              error={errorActivities}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              customWeekMapping={customWeekMapping}
+            />
           </div>
 
         </div>
