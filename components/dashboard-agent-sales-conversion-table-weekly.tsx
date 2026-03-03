@@ -217,13 +217,13 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                                 <TableRow key={row.name}>
                                     <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
                                     <TableCell className="sticky left-[50px] bg-white z-20">{row.name}</TableCell>
-                                    <TableCell className="text-right">{row.week1}</TableCell>
-                                    <TableCell className="text-right">{row.week2}</TableCell>
-                                    <TableCell className="text-right">{row.week3}</TableCell>
-                                    <TableCell className="text-right">{row.week4}</TableCell>
-                                    <TableCell className="text-right">{row.total}</TableCell>
-                                    <TableCell className="text-right">{row.qtySold}</TableCell>
-                                    <TableCell className="text-right">{row.convertedCount}</TableCell>
+                                    <TableCell className="text-right">{row.week1.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.week2.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.week3.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.week4.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                                    <TableCell className="text-right">{row.qtySold.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.convertedCount.toLocaleString()}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -232,13 +232,13 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                             <TableRow className="font-bold bg-muted/50">
                                 <TableCell className="sticky left-0 bg-white z-20">Total</TableCell>
                                 <TableCell className="sticky left-[50px] bg-white z-20">-</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week1, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week4, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.total, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.qtySold, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.convertedCount, 0)}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week1, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week4, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.total, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.qtySold, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.convertedCount, 0).toLocaleString()}</TableCell>
                             </TableRow>
                         </tfoot>
                     </Table>
