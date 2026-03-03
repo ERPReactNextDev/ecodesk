@@ -139,7 +139,6 @@ export function WeeklyInboundCard({
                 <TableHead className="text-right">Week 2</TableHead>
                 <TableHead className="text-right">Week 3</TableHead>
                 <TableHead className="text-right">Week 4</TableHead>
-                <TableHead className="text-right">Unassigned</TableHead>
                 <TableHead className="text-right font-bold">Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -152,7 +151,6 @@ export function WeeklyInboundCard({
                   <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.week4}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{row.unassigned}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.total}</TableCell>
                 </TableRow>
               ))}
@@ -165,7 +163,6 @@ export function WeeklyInboundCard({
                 <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.week4}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{totals.unassigned}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{totals.total}</TableCell>
               </TableRow>
             </tfoot>

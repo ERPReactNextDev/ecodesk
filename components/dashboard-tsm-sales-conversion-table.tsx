@@ -279,8 +279,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Agent Name</TableHead>
+                <TableHead className="sticky left-0 bg-white z-30">#</TableHead>
+                <TableHead className="sticky left-[20px] bg-white z-30 border-r">TSM Name</TableHead>
                 <TableHead>Sales</TableHead>
                 <TableHead>Non-Sales</TableHead>
                 <TableHead>Total</TableHead>
@@ -303,8 +303,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             </TableHeader>
 
             <TableHeader className="font-semibold bg-muted/80 border-b">
-              <TableCell>-</TableCell>
-              <TableCell>Total</TableCell>
+              <TableCell className="sticky left-0 bg-white z-30">-</TableCell>
+              <TableCell className="sticky left-[20px] bg-white z-30 border-r">Total</TableCell>
               <TableCell>{totalSales}</TableCell>
               <TableCell>{totalNonSales}</TableCell>
               <TableCell>{totalSales + totalNonSales}</TableCell>
@@ -330,8 +330,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 const inquiryToSalesPercent = a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
                 return (
                   <TableRow key={a.agentName}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell className="uppercase">{a.agentName}</TableCell>
+                    <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
+                    <TableCell className="sticky left-[20px] bg-white z-20 uppercase border-r">{a.agentName}</TableCell>
                     <TableCell>{a.salesCount}</TableCell>
                     <TableCell>{a.nonSalesCount}</TableCell>
                     <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>

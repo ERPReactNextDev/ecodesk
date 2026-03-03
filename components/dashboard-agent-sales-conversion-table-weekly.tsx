@@ -195,7 +195,6 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                                 <TableHead className="text-right">Week 2</TableHead>
                                 <TableHead className="text-right">Week 3</TableHead>
                                 <TableHead className="text-right">Week 4</TableHead>
-                                <TableHead className="text-right">Unassigned</TableHead>
                                 <TableHead className="text-right">Total</TableHead>
                                 <TableHead className="text-right">QTY Sold</TableHead>
                                 <TableHead className="text-right">Converted Sales</TableHead>
@@ -210,7 +209,6 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                                     <TableCell className="text-right">{row.week2}</TableCell>
                                     <TableCell className="text-right">{row.week3}</TableCell>
                                     <TableCell className="text-right">{row.week4}</TableCell>
-                                    <TableCell className="text-right">{row.unassigned}</TableCell>
                                     <TableCell className="text-right">{row.total}</TableCell>
                                     <TableCell className="text-right">{row.qtySold}</TableCell>
                                     <TableCell className="text-right">{row.convertedCount}</TableCell>
@@ -225,7 +223,6 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0)}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0)}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week4, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.unassigned, 0)}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.total, 0)}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.qtySold, 0)}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.convertedCount, 0)}</TableCell>
