@@ -108,6 +108,8 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
 
     /* ---------------- Group Activities ---------------- */
     const groupedData = useMemo(() => {
+        if (agentsLoading) return [];
+
         const map: Record<
             string,
             {
@@ -147,20 +149,28 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                     };
                 }
 
+                // Add to weekly amount
                 if (week && week >= 1 && week <= 4) {
                     const key = `week${week}` as "week1" | "week2" | "week3" | "week4";
                     map[agentName][key] += amount;
+
+                    // ✅ Count qtySold only if it belongs to a week
+                    map[agentName].qtySold += qty;
                 } else {
                     map[agentName].unassigned += amount;
                 }
 
                 map[agentName].total += amount;
-                map[agentName].qtySold += qty;
-                if (a.status.toLowerCase() === "converted into sales") map[agentName].convertedCount++;
+
+                // ✅ Only count converted sales if it belongs to an assigned week
+                const statusNormalized = a.status?.trim().toLowerCase();
+                if (statusNormalized === "converted into sales") {
+                    if (week && week >= 1 && week <= 4) map[agentName].convertedCount++;
+                }
             });
 
         return Object.values(map);
-    }, [activities, agents, selectedMonth, selectedYear, customWeekMapping]);
+    }, [activities, agents, agentsLoading, selectedMonth, selectedYear, customWeekMapping]);
 
     const totalSoAmount = groupedData.reduce((sum, r) => sum + r.total, 0);
 
@@ -182,20 +192,20 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                 </div>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="overflow-auto">
                 {(loading || agentsLoading) && <p>Loading...</p>}
                 {error && <p className="text-destructive">{error}</p>}
 
                 {!loading && !agentsLoading && groupedData.length > 0 && (
-                    <Table>
+                    <Table className="min-w-[1200px]">
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Agent</TableHead>
+                                <TableHead className="sticky left-0 bg-white z-30">#</TableHead>
+                                <TableHead className="sticky left-[50px] bg-white z-30">Agent</TableHead>
                                 <TableHead className="text-right">Week 1</TableHead>
                                 <TableHead className="text-right">Week 2</TableHead>
                                 <TableHead className="text-right">Week 3</TableHead>
                                 <TableHead className="text-right">Week 4</TableHead>
-                                <TableHead className="text-right">Unassigned</TableHead>
                                 <TableHead className="text-right">Total</TableHead>
                                 <TableHead className="text-right">QTY Sold</TableHead>
                                 <TableHead className="text-right">Converted Sales</TableHead>
@@ -203,32 +213,32 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                         </TableHeader>
 
                         <TableBody>
-                            {groupedData.map((row) => (
+                            {groupedData.map((row, index) => (
                                 <TableRow key={row.name}>
-                                    <TableCell>{row.name}</TableCell>
-                                    <TableCell className="text-right">{row.week1}</TableCell>
-                                    <TableCell className="text-right">{row.week2}</TableCell>
-                                    <TableCell className="text-right">{row.week3}</TableCell>
-                                    <TableCell className="text-right">{row.week4}</TableCell>
-                                    <TableCell className="text-right">{row.unassigned}</TableCell>
-                                    <TableCell className="text-right">{row.total}</TableCell>
-                                    <TableCell className="text-right">{row.qtySold}</TableCell>
-                                    <TableCell className="text-right">{row.convertedCount}</TableCell>
+                                    <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
+                                    <TableCell className="sticky left-[50px] bg-white z-20">{row.name}</TableCell>
+                                    <TableCell className="text-right">{row.week1.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.week2.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.week3.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.week4.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                                    <TableCell className="text-right">{row.qtySold.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">{row.convertedCount.toLocaleString()}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
 
                         <tfoot>
                             <TableRow className="font-bold bg-muted/50">
-                                <TableCell>Total</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week1, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week4, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.unassigned, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.total, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.qtySold, 0)}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.convertedCount, 0)}</TableCell>
+                                <TableCell className="sticky left-0 bg-white z-20">Total</TableCell>
+                                <TableCell className="sticky left-[50px] bg-white z-20">-</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week1, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week4, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.total, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.qtySold, 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.convertedCount, 0).toLocaleString()}</TableCell>
                             </TableRow>
                         </tfoot>
                     </Table>

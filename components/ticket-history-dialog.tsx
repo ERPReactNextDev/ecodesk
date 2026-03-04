@@ -21,11 +21,11 @@ interface TicketHistoryItem {
   email_address?: string;
   company_name?: string;
 
-ticket_received?: string;
-ticket_endorsed?: string;
+  ticket_received?: string;
+  ticket_endorsed?: string;
 
-inquiry_received?: string;
-response_to_inquiry?: string;
+  inquiry_received?: string;
+  response_to_inquiry?: string;
 
   /* TIMELINE FIELDS */
   tsm_acknowledge_date?: string;
@@ -167,9 +167,15 @@ export function TicketHistoryDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Contact Information</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Contact Person:</strong> {item.contact_person || "-"}</p>
-              <p><strong>Contact Number:</strong> {item.contact_number || "-"}</p>
-              <p><strong>Email Address:</strong> {item.email_address || "-"}</p>
+              <p>
+                <strong>Contact Person:</strong> {item.contact_person || "-"}
+              </p>
+              <p>
+                <strong>Contact Number:</strong> {item.contact_number || "-"}
+              </p>
+              <p>
+                <strong>Email Address:</strong> {item.email_address || "-"}
+              </p>
             </div>
           </section>
 
@@ -185,36 +191,63 @@ export function TicketHistoryDialog({ item }: Props) {
 
             <Separator />
 
-<div className="grid grid-cols-2 gap-6 justify-items-center">
-  <TimeCircle label="Ticket Received" value={item.ticket_received} />
-  <TimeCircle label="Ticket Endorsed" value={item.ticket_endorsed} />
-</div>
-
-<Separator />
-
-<div className="grid grid-cols-2 gap-6 justify-items-center">
-  <TimeCircle label="Inquiry Received" value={item.inquiry_received} />
-  <TimeCircle label="Response to Inquiry" value={item.response_to_inquiry} />
-</div>
-
-            <Separator />
-
             <div className="grid grid-cols-2 gap-6 justify-items-center">
-              <TimeCircle label="TSA Acknowledgement Date" value={item.tsa_acknowledge_date} />
-              <TimeCircle label="TSA Handling Time" value={item.tsa_handling_time} />
+              <TimeCircle
+                label="Ticket Received"
+                value={item.ticket_received}
+              />
+              <TimeCircle
+                label="Ticket Endorsed"
+                value={item.ticket_endorsed}
+              />
             </div>
 
             <Separator />
 
             <div className="grid grid-cols-2 gap-6 justify-items-center">
-              <TimeCircle label="TSM Acknowledgement Date" value={item.tsm_acknowledge_date} />
-              <TimeCircle label="TSM Handling Time" value={item.tsm_handling_time} />
+              <TimeCircle
+                label="Inquiry Received"
+                value={item.inquiry_received}
+              />
+              <TimeCircle
+                label="Response to Inquiry"
+                value={item.response_to_inquiry}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
+              <TimeCircle
+                label="TSA Acknowledgement Date"
+                value={item.tsa_acknowledge_date}
+              />
+              <TimeCircle
+                label="TSA Handling Time"
+                value={item.tsa_handling_time}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
+              <TimeCircle
+                label="TSM Acknowledgement Date"
+                value={item.tsm_acknowledge_date}
+              />
+              <TimeCircle
+                label="TSM Handling Time"
+                value={item.tsm_handling_time}
+              />
             </div>
 
             <Separator />
 
             <div className="flex justify-center">
-              <TimeCircle label="HR Acknowledgement Date" value={item.hr_acknowledge_date} />
+              <TimeCircle
+                label="HR Acknowledgement Date"
+                value={item.hr_acknowledge_date}
+              />
             </div>
           </section>
 
@@ -224,11 +257,21 @@ export function TicketHistoryDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Ticket Details</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Traffic:</strong> {item.traffic || "-"}</p>
-              <p><strong>Channel:</strong> {item.channel || "-"}</p>
-              <p><strong>Source Company:</strong> {item.source_company || "-"}</p>
-              <p><strong>Source:</strong> {item.source || "-"}</p>
-              <p><strong>Wrap Up:</strong> {item.wrap_up || "-"}</p>
+              <p>
+                <strong>Traffic:</strong> {item.traffic || "-"}
+              </p>
+              <p>
+                <strong>Channel:</strong> {item.channel || "-"}
+              </p>
+              <p>
+                <strong>Source Company:</strong> {item.source_company || "-"}
+              </p>
+              <p>
+                <strong>Source:</strong> {item.source || "-"}
+              </p>
+              <p>
+                <strong>Wrap Up:</strong> {item.wrap_up || "-"}
+              </p>
             </div>
           </section>
 
@@ -238,12 +281,25 @@ export function TicketHistoryDialog({ item }: Props) {
           <section className="space-y-2">
             <h3 className="font-semibold text-sm">Assignment</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <p><strong>Department:</strong> {item.department || "-"}</p>
-              <p><strong>Department Head:</strong> {getUserNameByRefId(item.department_head)}</p>
-              <p><strong>Manager:</strong> {getUserNameByRefId(item.manager)}</p>
-              <p><strong>Agent:</strong> {getUserNameByRefId(item.agent)}</p>
-              <p><strong>Customer Type:</strong> {item.customer_type || "-"}</p>
-              <p><strong>Customer Status:</strong> {item.customer_status || "-"}</p>
+              <p>
+                <strong>Department:</strong> {item.department || "-"}
+              </p>
+              <p>
+                <strong>Department Head:</strong>{" "}
+                {getUserNameByRefId(item.department_head)}
+              </p>
+              <p>
+                <strong>Manager:</strong> {getUserNameByRefId(item.manager)}
+              </p>
+              <p>
+                <strong>Agent:</strong> {getUserNameByRefId(item.agent)}
+              </p>
+              <p>
+                <strong>Customer Type:</strong> {item.customer_type || "-"}
+              </p>
+              <p>
+                <strong>Customer Status:</strong> {item.customer_status || "-"}
+              </p>
             </div>
           </section>
 
@@ -253,10 +309,14 @@ export function TicketHistoryDialog({ item }: Props) {
               <section className="space-y-2">
                 <h3 className="font-semibold text-sm">Remarks & Inquiry</h3>
                 {item.remarks && (
-                  <p className="text-xs"><strong>Remarks:</strong> {item.remarks}</p>
+                  <p className="text-xs">
+                    <strong>Remarks:</strong> {item.remarks}
+                  </p>
                 )}
                 {item.inquiry && (
-                  <p className="text-xs"><strong>Inquiry:</strong> {item.inquiry}</p>
+                  <p className="text-xs">
+                    <strong>Inquiry:</strong> {item.inquiry}
+                  </p>
                 )}
               </section>
             </>
@@ -269,16 +329,40 @@ export function TicketHistoryDialog({ item }: Props) {
               <section className="space-y-2">
                 <h3 className="font-semibold text-sm">Sales Information</h3>
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <p><strong>PO Number:</strong> {item.po_number || "-"}</p>
-                  <p><strong>SO Number:</strong> {item.so_number || "-"}</p>
-                  <p><strong>SO Amount:</strong> {item.so_amount || "-"}</p>
-                  <p><strong>Qty Sold:</strong> {item.qty_sold || "-"}</p>
-                  <p><strong>Quotation Number:</strong> {item.quotation_number || "-"}</p>
-                  <p><strong>Quotation Amount:</strong> {item.quotation_amount || "-"}</p>
-                  <p><strong>Payment Terms:</strong> {item.payment_terms || "-"}</p>
-                  <p><strong>PO Source:</strong> {item.po_source || "-"}</p>
-                  <p><strong>Payment Date:</strong> {formatDateTime(item.payment_date)}</p>
-                  <p><strong>Delivery Date:</strong> {formatDateTime(item.delivery_date)}</p>
+                  <p>
+                    <strong>PO Number:</strong> {item.po_number || "-"}
+                  </p>
+                  <p>
+                    <strong>SO Number:</strong> {item.so_number || "-"}
+                  </p>
+                  <p>
+                    <strong>SO Amount:</strong> {item.so_amount || "-"}
+                  </p>
+                  <p>
+                    <strong>Qty Sold:</strong> {item.qty_sold || "-"}
+                  </p>
+                  <p>
+                    <strong>Quotation Number:</strong>{" "}
+                    {item.quotation_number || "-"}
+                  </p>
+                  <p>
+                    <strong>Quotation Amount:</strong>{" "}
+                    {item.quotation_amount || "-"}
+                  </p>
+                  <p>
+                    <strong>Payment Terms:</strong> {item.payment_terms || "-"}
+                  </p>
+                  <p>
+                    <strong>PO Source:</strong> {item.po_source || "-"}
+                  </p>
+                  <p>
+                    <strong>Payment Date:</strong>{" "}
+                    {formatDateTime(item.payment_date)}
+                  </p>
+                  <p>
+                    <strong>Delivery Date:</strong>{" "}
+                    {formatDateTime(item.delivery_date)}
+                  </p>
                 </div>
               </section>
             </>
@@ -289,9 +373,15 @@ export function TicketHistoryDialog({ item }: Props) {
               <Separator className="my-4" />
               <section className="space-y-2 bg-muted p-3 rounded-lg">
                 <h3 className="font-semibold text-sm">Closure Details</h3>
-                <p className="text-xs"><strong>Close Reason:</strong> {item.close_reason || "-"}</p>
-                <p className="text-xs"><strong>Counter Offer:</strong> {item.counter_offer || "-"}</p>
-                <p className="text-xs"><strong>Client Specs:</strong> {item.client_specs || "-"}</p>
+                <p className="text-xs">
+                  <strong>Close Reason:</strong> {item.close_reason || "-"}
+                </p>
+                <p className="text-xs">
+                  <strong>Counter Offer:</strong> {item.counter_offer || "-"}
+                </p>
+                <p className="text-xs">
+                  <strong>Client Specs:</strong> {item.client_specs || "-"}
+                </p>
               </section>
             </>
           )}

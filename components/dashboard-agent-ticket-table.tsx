@@ -204,7 +204,7 @@ const CountTickets: ForwardRefRenderFunction<CountTicketsRef, CountTicketsProps>
                               <Badge>{index + 1}</Badge>
                             </TableCell>
 
-                            <TableCell>{fullName}</TableCell>
+                            <TableCell className="uppercase">{fullName}</TableCell>
                             <TableCell className="text-right">{row.totalCount}</TableCell>
                           </TableRow>
 
