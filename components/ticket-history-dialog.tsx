@@ -21,8 +21,11 @@ interface TicketHistoryItem {
   email_address?: string;
   company_name?: string;
 
-  ticket_received?: string;
-  ticket_endorsed?: string;
+ticket_received?: string;
+ticket_endorsed?: string;
+
+inquiry_received?: string;
+response_to_inquiry?: string;
 
   /* TIMELINE FIELDS */
   tsm_acknowledge_date?: string;
@@ -182,10 +185,17 @@ export function TicketHistoryDialog({ item }: Props) {
 
             <Separator />
 
-            <div className="grid grid-cols-2 gap-6 justify-items-center">
-              <TimeCircle label="Ticket Received" value={item.ticket_received} />
-              <TimeCircle label="Ticket Endorsed" value={item.ticket_endorsed} />
-            </div>
+<div className="grid grid-cols-2 gap-6 justify-items-center">
+  <TimeCircle label="Ticket Received" value={item.ticket_received} />
+  <TimeCircle label="Ticket Endorsed" value={item.ticket_endorsed} />
+</div>
+
+<Separator />
+
+<div className="grid grid-cols-2 gap-6 justify-items-center">
+  <TimeCircle label="Inquiry Received" value={item.inquiry_received} />
+  <TimeCircle label="Response to Inquiry" value={item.response_to_inquiry} />
+</div>
 
             <Separator />
 

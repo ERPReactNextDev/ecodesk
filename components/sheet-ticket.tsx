@@ -243,6 +243,10 @@ interface TicketSheetProps {
   setTicketReceived: React.Dispatch<React.SetStateAction<string>>;
   ticketEndorsed: string;
   setTicketEndorsed: React.Dispatch<React.SetStateAction<string>>;
+  inquiryReceived: string;
+  setInquiryReceived: React.Dispatch<React.SetStateAction<string>>;
+  responseToInquiry: string;
+  setResponseToInquiry: React.Dispatch<React.SetStateAction<string>>;
   gender: string;
   setGender: React.Dispatch<React.SetStateAction<string>>;
   channel: string;
@@ -469,12 +473,16 @@ export function TicketSheet(props: TicketSheetProps) {
     setDepartment,
     dateCreated,
     setDateCreated,
-    ticketReceived,
-    setTicketReceived,
-    ticketEndorsed,
-    setTicketEndorsed,
-    gender,
-    setGender,
+ticketReceived,
+setTicketReceived,
+ticketEndorsed,
+setTicketEndorsed,
+inquiryReceived,
+setInquiryReceived,
+responseToInquiry,
+setResponseToInquiry,
+gender,
+setGender,
     channel,
     setChannel,
     wrapUp,
@@ -671,7 +679,6 @@ export function TicketSheet(props: TicketSheetProps) {
         }
 
         setDepartmentHeadsList(filtered);
-
       })
       .catch(() => setDepartmentHeadsList([]))
       .finally(() => setLoadingDepartmentHeads(false));
@@ -879,6 +886,7 @@ export function TicketSheet(props: TicketSheetProps) {
       setQtySold(String(productQuantityFromActivity));
     }
   };
+
 
   const [errors, setErrors] = useState<{
     ticketReceived?: string;
@@ -1332,6 +1340,46 @@ export function TicketSheet(props: TicketSheetProps) {
                     onChange={(e) => setTicketEndorsed(e.target.value)}
                     min={getMinDateTimeLocal(7)}
                     error={errors.ticketEndorsed || timeError || undefined}
+                  />
+                </Field>
+              </div>
+
+              {/* INQUIRY RECEIVED */}
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(inquiryReceived)}`}
+              >
+                <Field>
+                  <FieldLabel>Inquiry Received</FieldLabel>
+
+                  <FieldDescription>
+                    Date and time when the inquiry was received.
+                  </FieldDescription>
+
+                  <InputField
+                    type="datetime-local"
+                    value={inquiryReceived}
+                    onChange={(e) => setInquiryReceived(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+                  />
+                </Field>
+              </div>
+
+              {/* RESPONSE TO INQUIRY */}
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(responseToInquiry)}`}
+              >
+                <Field>
+                  <FieldLabel>Response to Inquiry</FieldLabel>
+
+                  <FieldDescription>
+                    Date and time when the inquiry was responded to.
+                  </FieldDescription>
+
+                  <InputField
+                    type="datetime-local"
+                    value={responseToInquiry}
+                    onChange={(e) => setResponseToInquiry(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
                   />
                 </Field>
               </div>

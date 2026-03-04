@@ -44,7 +44,6 @@ import {
 
 import { Input } from "@/components/ui/input";
 
-
 const toDatetimeLocal = (value?: string) => {
   if (!value) return "";
 
@@ -100,7 +99,8 @@ interface Activity {
   tsm_handling_time?: string;
   tsa_handling_time?: string;
   hr_acknowledge_date?: string;
-
+  inquiry_received?: string;
+  response_to_inquiry?: string;
   company_name: string;
   contact_number: string;
   contact_person: string;
@@ -122,9 +122,12 @@ interface UpdateActivityDialogProps {
   company_name: string;
   account_reference_number: string;
 
-
   ticket_received?: string;
   ticket_endorsed?: string;
+
+  inquiry_received?: string;
+  response_to_inquiry?: string;
+
   traffic?: string;
   source_company?: string;
   gender: string;
@@ -206,6 +209,8 @@ export function UpdateTicketDialog({
   account_reference_number,
   ticket_received,
   ticket_endorsed,
+  inquiry_received,
+  response_to_inquiry,
   traffic,
   source_company,
   gender,
@@ -267,6 +272,8 @@ export function UpdateTicketDialog({
   const [tsaAcknowledgeDate, setTsaAcknowledgeDate] = useState("");
   const [tsmHandlingTime, setTsmHandlingTime] = useState("");
   const [tsaHandlingTime, setTsaHandlingTime] = useState("");
+  const [inquiryReceived, setInquiryReceived] = useState("");
+  const [responseToInquiry, setResponseToInquiry] = useState("");
   const [hrAcknowledgeDate, setHrAcknowledgeDate] = useState("");
 
   const [genderState, setGender] = useState("");
@@ -322,7 +329,7 @@ export function UpdateTicketDialog({
     setDepartment(department || "");
     setManager(manager || "");
     setAgent(agent || "");
-setDepartmentHeadState(department_head || "");
+    setDepartmentHeadState(department_head || "");
     setRemarks(remarks || "");
     setInquiry(inquiry || "");
     setItemCode(item_code || "");
@@ -339,10 +346,8 @@ setDepartmentHeadState(department_head || "");
     setPaymentDate(payment_date || "");
     setDeliveryDate(delivery_date || "");
     setDateCreated(date_created || "");
-    setTsmAcknowledgeDate(tsm_acknowledge_date || "");
-    setTsaAcknowledgeDate(tsa_acknowledge_date || "");
-    setTsmHandlingTime(tsm_handling_time || "");
-    setTsaHandlingTime(tsa_handling_time || "");
+setInquiryReceived(toDatetimeLocal(inquiry_received));
+setResponseToInquiry(toDatetimeLocal(response_to_inquiry));
 
     setCloseReason(close_reason || "");
     setCounterOffer(counter_offer || "");
@@ -387,6 +392,8 @@ setDepartmentHeadState(department_head || "");
     source_company,
     ticket_received,
     ticket_endorsed,
+    inquiry_received,
+    response_to_inquiry,
     gender,
     channel,
     wrap_up,
@@ -454,6 +461,9 @@ setDepartmentHeadState(department_head || "");
 
       ticket_received: ticketReceivedState,
       ticket_endorsed: ticketEndorsedState,
+
+      inquiry_received: inquiryReceived,
+      response_to_inquiry: responseToInquiry,
 
       company_name: companyName,
       contact_number: contactNumbers
@@ -615,35 +625,34 @@ setDepartmentHeadState(department_head || "");
         }
       }
 
-// 🔥 ALSO UPDATE COMPANY TABLE (SYNC STEP 1 FIELDS)
-await fetch("/api/com-update-account", {
-  method: "PUT",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-department_head: departmentHeadState,
-    account_reference_number,
-    company_name: companyName,
-    contact_person: contactPersons
-      .map((p) => `${p.title} ${p.name}`.trim())
-      .filter((p) => p !== "")
-      .join(" / "),
-    contact_number: contactNumbers
-      .map((n) => n.trim())
-      .filter(Boolean)
-      .join(" / "),
-    email_address: emailAddresses
-      .map((e) => e.trim())
-      .filter(Boolean)
-      .join(" / "),
-    address,
-  }),
-});
+      // 🔥 ALSO UPDATE COMPANY TABLE (SYNC STEP 1 FIELDS)
+      await fetch("/api/com-update-account", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          department_head: departmentHeadState,
+          account_reference_number,
+          company_name: companyName,
+          contact_person: contactPersons
+            .map((p) => `${p.title} ${p.name}`.trim())
+            .filter((p) => p !== "")
+            .join(" / "),
+          contact_number: contactNumbers
+            .map((n) => n.trim())
+            .filter(Boolean)
+            .join(" / "),
+          email_address: emailAddresses
+            .map((e) => e.trim())
+            .filter(Boolean)
+            .join(" / "),
+          address,
+        }),
+      });
 
-toast.success("Activity and Company updated successfully!");
-onCreated(newActivity);
-setStep(1);
-setSheetOpen(false);
-
+      toast.success("Activity and Company updated successfully!");
+      onCreated(newActivity);
+      setStep(1);
+      setSheetOpen(false);
     } finally {
       setLoading(false);
     }
@@ -794,71 +803,72 @@ setSheetOpen(false);
                             Contact Person
                           </FieldLabel>
 
-<div className="space-y-2">
-  {contactPersons.map((person, idx) => (
-    <div key={idx} className="flex gap-2 items-center">
-      {/* Title Dropdown */}
-      <Select
-        value={person.title}
-        onValueChange={(value) => {
-          const updated = [...contactPersons];
-          updated[idx].title = value;
-          setContactPersons(updated);
-        }}
-      >
-        <SelectTrigger className="w-24">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="Mr.">Mr.</SelectItem>
-          <SelectItem value="Mrs.">Mrs.</SelectItem>
-          <SelectItem value="Ms.">Ms.</SelectItem>
-        </SelectContent>
-      </Select>
+                          <div className="space-y-2">
+                            {contactPersons.map((person, idx) => (
+                              <div
+                                key={idx}
+                                className="flex gap-2 items-center"
+                              >
+                                {/* Title Dropdown */}
+                                <Select
+                                  value={person.title}
+                                  onValueChange={(value) => {
+                                    const updated = [...contactPersons];
+                                    updated[idx].title = value;
+                                    setContactPersons(updated);
+                                  }}
+                                >
+                                  <SelectTrigger className="w-24">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Mr.">Mr.</SelectItem>
+                                    <SelectItem value="Mrs.">Mrs.</SelectItem>
+                                    <SelectItem value="Ms.">Ms.</SelectItem>
+                                  </SelectContent>
+                                </Select>
 
-      {/* Name Input */}
-      <Input
-        value={person.name}
-        onChange={(e) => {
-          const updated = [...contactPersons];
-          updated[idx].name = e.target.value;
-          setContactPersons(updated);
-        }}
-        className="flex-1"
-      />
+                                {/* Name Input */}
+                                <Input
+                                  value={person.name}
+                                  onChange={(e) => {
+                                    const updated = [...contactPersons];
+                                    updated[idx].name = e.target.value;
+                                    setContactPersons(updated);
+                                  }}
+                                  className="flex-1"
+                                />
 
-      {/* Remove Button */}
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => {
-          if (contactPersons.length === 1) return;
-          const updated = [...contactPersons];
-          updated.splice(idx, 1);
-          setContactPersons(updated);
-        }}
-      >
-        −
-      </Button>
-    </div>
-  ))}
+                                {/* Remove Button */}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (contactPersons.length === 1) return;
+                                    const updated = [...contactPersons];
+                                    updated.splice(idx, 1);
+                                    setContactPersons(updated);
+                                  }}
+                                >
+                                  −
+                                </Button>
+                              </div>
+                            ))}
 
-  {/* Add Button */}
-  <Button
-    type="button"
-    variant="secondary"
-    onClick={() =>
-      setContactPersons((prev) => [
-        ...prev,
-        { title: "Mr.", name: "" },
-      ])
-    }
-  >
-    + Add another person
-  </Button>
-</div>
-
-
+                            {/* Add Button */}
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() =>
+                                setContactPersons((prev) => [
+                                  ...prev,
+                                  { title: "Mr.", name: "" },
+                                ])
+                              }
+                            >
+                              + Add another person
+                            </Button>
+                          </div>
                         </FieldSet>
                       </FieldGroup>
                     </FieldSet>
@@ -1175,6 +1185,10 @@ setSheetOpen(false);
                   setDeliveryDate={setDeliveryDate}
                   dateCreated={dateCreatedState}
                   setDateCreated={setDateCreated}
+                  inquiryReceived={inquiryReceived}
+                  setInquiryReceived={setInquiryReceived}
+                  responseToInquiry={responseToInquiry}
+                  setResponseToInquiry={setResponseToInquiry}
                   loading={loading}
                   ticketReferenceNumber={ticketReferenceNumber}
                   setTicketReferenceNumber={setTicketReferenceNumber}
@@ -1201,7 +1215,7 @@ setSheetOpen(false);
                   hrAcknowledgeDate={hrAcknowledgeDate}
                   setHrAcknowledgeDate={setHrAcknowledgeDate}
                   department_head={departmentHeadState}
-setDepartmentHead={setDepartmentHeadState}
+                  setDepartmentHead={setDepartmentHeadState}
                 />
               )}
             </div>

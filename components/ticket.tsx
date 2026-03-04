@@ -62,6 +62,8 @@ interface Ticket {
   ticket_reference_number: string;
   ticket_received?: string;
   ticket_endorsed?: string;
+  inquiry_received?: string;
+  response_to_inquiry?: string;
   traffic?: string;
   source_company?: string;
   gender: string;
@@ -350,28 +352,36 @@ export const Ticket: React.FC<TicketProps> = ({
     };
   }, [fetchActivities]);
 
-const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
-  if (!range) return true;
+  const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
+    if (!range) return true;
 
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return false;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return false;
 
-  const { from, to } = range;
+    const { from, to } = range;
 
-  const fromDate = from
-    ? new Date(from.getFullYear(), from.getMonth(), from.getDate(), 0, 0, 0, 0)
-    : null;
+    const fromDate = from
+      ? new Date(
+          from.getFullYear(),
+          from.getMonth(),
+          from.getDate(),
+          0,
+          0,
+          0,
+          0,
+        )
+      : null;
 
-  const toDate = to
-    ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
-    : null;
+    const toDate = to
+      ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
+      : null;
 
-  // ✅ include both endpoints
-  if (fromDate && date < fromDate) return false;
-  if (toDate && date > toDate) return false;
+    // ✅ include both endpoints
+    if (fromDate && date < fromDate) return false;
+    if (toDate && date > toDate) return false;
 
-  return true;
-};
+    return true;
+  };
 
   const allowedStatuses = [
     "On-Progress",
@@ -808,6 +818,8 @@ const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
         "Gender",
         "Ticket Received",
         "Ticket Endorsed",
+        "Inquiry Received",
+"Response to Inquiry",
         "Traffic",
         "Source Company",
         "Channel",
@@ -856,8 +868,10 @@ const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
         item.contact_number || "-",
         item.email_address || "-",
         item.gender || "-",
-        formatDate(item.ticket_received),
-        formatDate(item.ticket_endorsed),
+formatDate(item.ticket_received),
+formatDate(item.ticket_endorsed),
+formatDate(item.inquiry_received),
+formatDate(item.response_to_inquiry),
         item.traffic || "-",
         item.source_company || "-",
         item.channel || "-",
@@ -1027,7 +1041,7 @@ const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
                         <strong>Email Address:</strong> {c.email_address || "-"}
                       </p>
                       {!c.company_name?.trim() &&
-                        c.contact_person?.trim() ? null : (
+                      c.contact_person?.trim() ? null : (
                         <p className="capitalize">
                           <strong>Contact Person:</strong>{" "}
                           {c.contact_person || "-"}
@@ -1152,7 +1166,9 @@ const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
                   <div className="mt-4 mb-3">
                     {item.contact_person && (
                       <div className="text-xs leading-relaxed">
-                        <div className="text-gray-600">Contact Person: {item.contact_person}</div>
+                        <div className="text-gray-600">
+                          Contact Person: {item.contact_person}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1212,6 +1228,8 @@ const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
                         ticket_reference_number: item.ticket_reference_number,
                         ticket_received: item.ticket_received,
                         ticket_endorsed: item.ticket_endorsed,
+                        inquiry_received: item.inquiry_received,
+response_to_inquiry: item.response_to_inquiry,
                         traffic: item.traffic,
                         source_company: item.source_company,
                         gender: item.gender,
