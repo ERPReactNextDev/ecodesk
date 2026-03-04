@@ -473,16 +473,16 @@ export function TicketSheet(props: TicketSheetProps) {
     setDepartment,
     dateCreated,
     setDateCreated,
-ticketReceived,
-setTicketReceived,
-ticketEndorsed,
-setTicketEndorsed,
-inquiryReceived,
-setInquiryReceived,
-responseToInquiry,
-setResponseToInquiry,
-gender,
-setGender,
+    ticketReceived,
+    setTicketReceived,
+    ticketEndorsed,
+    setTicketEndorsed,
+    inquiryReceived,
+    setInquiryReceived,
+    responseToInquiry,
+    setResponseToInquiry,
+    gender,
+    setGender,
     channel,
     setChannel,
     wrapUp,
@@ -780,6 +780,26 @@ setGender,
     }
   }, [ticketReceived, ticketEndorsed]);
 
+  useEffect(() => {
+    if (!inquiryReceived || !responseToInquiry) {
+      setInquiryTimeError(null);
+      return;
+    }
+
+    const received = new Date(inquiryReceived);
+    const responded = new Date(responseToInquiry);
+
+    if (!isNaN(received.getTime()) && !isNaN(responded.getTime())) {
+      if (responded < received) {
+        setInquiryTimeError(
+          "Response to Inquiry cannot be earlier than Inquiry Received.",
+        );
+      } else {
+        setInquiryTimeError(null);
+      }
+    }
+  }, [inquiryReceived, responseToInquiry]);
+
   // TSM validation - same logic pattern as Ticket Received/Endorsed
   useEffect(() => {
     if (!tsmAcknowledgeDate || !tsmHandlingTime) {
@@ -887,7 +907,6 @@ setGender,
     }
   };
 
-
   const [errors, setErrors] = useState<{
     ticketReceived?: string;
     ticketEndorsed?: string;
@@ -901,6 +920,7 @@ setGender,
   const [timeError, setTimeError] = useState<string | null>(null);
   const [tsmTimeError, setTsmTimeError] = useState<string | null>(null);
   const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
+  const [inquiryTimeError, setInquiryTimeError] = useState<string | null>(null);
   const isManagerRequiredButMissing = managersAvailable > 0 && !manager;
   const [highlightAgent, setHighlightAgent] = useState(false);
   const [agentReassigned, setAgentReassigned] = useState(false);
@@ -1102,7 +1122,7 @@ setGender,
   // Override handleNext to add validation on step 3 and 6
   const onNext = () => {
     if (step === 3) {
-      if (timeError) return;
+      if (timeError || inquiryTimeError) return;
       if (!validateStep3()) return;
 
       // 🚀 Job Applicant stops here (Save only)
@@ -1147,7 +1167,8 @@ setGender,
     }
   };
 
-  const isStep3NextDisabled = !ticketReceived || !ticketEndorsed || !!timeError;
+  const isStep3NextDisabled =
+    !ticketReceived || !ticketEndorsed || !!timeError || !!inquiryTimeError;
 
   // Helper: common buttons with validation on Next
   const Navigation = () => (
@@ -1360,6 +1381,7 @@ setGender,
                     value={inquiryReceived}
                     onChange={(e) => setInquiryReceived(e.target.value)}
                     min={getMinDateTimeLocal(7)}
+                    error={inquiryTimeError || undefined}
                   />
                 </Field>
               </div>
@@ -1380,6 +1402,7 @@ setGender,
                     value={responseToInquiry}
                     onChange={(e) => setResponseToInquiry(e.target.value)}
                     min={getMinDateTimeLocal(7)}
+                    error={inquiryTimeError || undefined}
                   />
                 </Field>
               </div>
