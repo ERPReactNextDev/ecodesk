@@ -1,28 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  FieldGroup,
-  FieldSet,
-  FieldLabel,
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldTitle,
-} from "@/components/ui/field";
+import { FieldGroup, FieldSet, FieldLabel, Field, FieldContent, FieldDescription, FieldTitle, } from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2Icon, User, UserRound } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator"
 
 // ===== HANDLING TIME COMPUTATION HELPERS (DISPLAY ONLY) =====
 
@@ -103,14 +88,10 @@ function computeTSAResponseTime(
   ];
 
   if (excluded.includes(wrapUp)) return "";
-
   const ack = toDate(tsaAck);
   const endorsed = toDate(ticketEndorsed);
-
   if (!ack || !endorsed) return "";
-
   if (ack < endorsed) return "INVALID DATE";
-
   return formatDuration(ack.getTime() - endorsed.getTime());
 }
 
@@ -133,11 +114,8 @@ function computeTSMResponseTime(
 
   const ack = toDate(tsmAck);
   const endorsed = toDate(ticketEndorsed);
-
   if (!ack || !endorsed) return "";
-
   if (ack < endorsed) return "INVALID DATE";
-
   return formatDuration(ack.getTime() - endorsed.getTime());
 }
 
@@ -161,11 +139,8 @@ function computeTSMHandlingTime(
 
   const ack = toDate(tsmAck);
   const received = toDate(ticketReceived);
-
   if (!ack || !received) return "";
-
   if (ack < received) return "INVALID DATE";
-
   return formatDuration(ack.getTime() - received.getTime());
 }
 
@@ -193,7 +168,6 @@ function computeNonQuotationHT(remarks: string, baseTime: string) {
 
 function computeQuotationHT(remarks: string, baseTime: string) {
   const list = ["QUOTATION FOR APPROVAL", "SOLD"];
-
   return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
 }
 
@@ -243,6 +217,8 @@ interface TicketSheetProps {
   setTicketReceived: React.Dispatch<React.SetStateAction<string>>;
   ticketEndorsed: string;
   setTicketEndorsed: React.Dispatch<React.SetStateAction<string>>;
+  handlingCSR: string;
+  setHandlingCSR: React.Dispatch<React.SetStateAction<string>>;
   inquiryReceived: string;
   setInquiryReceived: React.Dispatch<React.SetStateAction<string>>;
   responseToInquiry: string;
@@ -477,6 +453,8 @@ export function TicketSheet(props: TicketSheetProps) {
     setTicketReceived,
     ticketEndorsed,
     setTicketEndorsed,
+    handlingCSR,
+    setHandlingCSR,
     inquiryReceived,
     setInquiryReceived,
     responseToInquiry,
@@ -1312,6 +1290,73 @@ export function TicketSheet(props: TicketSheetProps) {
                 />
               </Field> */}
 
+              {/* INQUIRY RECEIVED */}
+              <Field>
+                <FieldLabel>Handling CSR</FieldLabel>
+                <FieldDescription>
+                  Platform or medium where the customer initially contacted the
+                  company.
+                </FieldDescription>
+                <SelectField
+                  value={handlingCSR}
+                  onChange={setHandlingCSR}
+                  placeholder="Select a channel"
+                  options={[
+                    { value: "Armando, Arendai", label: "Armando, Arendain" },
+                    { value: "Erica, Maestro", label: "Erica, Maestro" },
+                    { value: "Grace, Lumabao", label: "Grace, Lumabao" },
+                    { value: "Lester, Miguel", label: "Lester, Miguel" },
+                    { value: "Mark Vincent, Capin", label: "Mark Vincent, Capin" },
+                    { value: "Maureen, Gabriel", label: "Maureen, Gabriel" },
+                    { value: "Myra, Quinto", label: "Myra, Quinto" },
+                    { value: "Rikki, Paje", label: "Rikki, Paje" },
+                  ]}
+                />
+              </Field>
+
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(inquiryReceived)}`}
+              >
+                <Field>
+                  <FieldLabel>Inquiry Received</FieldLabel>
+
+                  <FieldDescription>
+                    Date and time when the inquiry was received.
+                  </FieldDescription>
+
+                  <InputField
+                    type="datetime-local"
+                    value={inquiryReceived}
+                    onChange={(e) => setInquiryReceived(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+                    error={inquiryTimeError || undefined}
+                  />
+                </Field>
+              </div>
+
+              {/* RESPONSE TO INQUIRY */}
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(responseToInquiry)}`}
+              >
+                <Field>
+                  <FieldLabel>Response to Inquiry</FieldLabel>
+
+                  <FieldDescription>
+                    Date and time when the inquiry was responded to.
+                  </FieldDescription>
+
+                  <InputField
+                    type="datetime-local"
+                    value={responseToInquiry}
+                    onChange={(e) => setResponseToInquiry(e.target.value)}
+                    min={getMinDateTimeLocal(7)}
+                    error={inquiryTimeError || undefined}
+                  />
+                </Field>
+              </div>
+
+              <Separator />
+
               <div
                 className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketReceived)}`}
               >
@@ -1361,48 +1406,6 @@ export function TicketSheet(props: TicketSheetProps) {
                     onChange={(e) => setTicketEndorsed(e.target.value)}
                     min={getMinDateTimeLocal(7)}
                     error={errors.ticketEndorsed || timeError || undefined}
-                  />
-                </Field>
-              </div>
-
-              {/* INQUIRY RECEIVED */}
-              <div
-                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(inquiryReceived)}`}
-              >
-                <Field>
-                  <FieldLabel>Inquiry Received</FieldLabel>
-
-                  <FieldDescription>
-                    Date and time when the inquiry was received.
-                  </FieldDescription>
-
-                  <InputField
-                    type="datetime-local"
-                    value={inquiryReceived}
-                    onChange={(e) => setInquiryReceived(e.target.value)}
-                    min={getMinDateTimeLocal(7)}
-                    error={inquiryTimeError || undefined}
-                  />
-                </Field>
-              </div>
-
-              {/* RESPONSE TO INQUIRY */}
-              <div
-                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(responseToInquiry)}`}
-              >
-                <Field>
-                  <FieldLabel>Response to Inquiry</FieldLabel>
-
-                  <FieldDescription>
-                    Date and time when the inquiry was responded to.
-                  </FieldDescription>
-
-                  <InputField
-                    type="datetime-local"
-                    value={responseToInquiry}
-                    onChange={(e) => setResponseToInquiry(e.target.value)}
-                    min={getMinDateTimeLocal(7)}
-                    error={inquiryTimeError || undefined}
                   />
                 </Field>
               </div>

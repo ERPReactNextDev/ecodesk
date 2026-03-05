@@ -101,6 +101,7 @@ interface Activity {
   hr_acknowledge_date?: string;
   inquiry_received?: string;
   response_to_inquiry?: string;
+  handling_csr?: string;
   company_name: string;
   contact_number: string;
   contact_person: string;
@@ -127,6 +128,7 @@ interface UpdateActivityDialogProps {
 
   inquiry_received?: string;
   response_to_inquiry?: string;
+  handling_csr?: string;
 
   traffic?: string;
   source_company?: string;
@@ -211,6 +213,7 @@ export function UpdateTicketDialog({
   ticket_endorsed,
   inquiry_received,
   response_to_inquiry,
+  handling_csr,
   traffic,
   source_company,
   gender,
@@ -272,6 +275,7 @@ export function UpdateTicketDialog({
   const [tsaAcknowledgeDate, setTsaAcknowledgeDate] = useState("");
   const [tsmHandlingTime, setTsmHandlingTime] = useState("");
   const [tsaHandlingTime, setTsaHandlingTime] = useState("");
+  const [handlingCSR, setHandlingCSR] = useState("");
   const [inquiryReceived, setInquiryReceived] = useState("");
   const [responseToInquiry, setResponseToInquiry] = useState("");
   const [hrAcknowledgeDate, setHrAcknowledgeDate] = useState("");
@@ -346,8 +350,9 @@ export function UpdateTicketDialog({
     setPaymentDate(payment_date || "");
     setDeliveryDate(delivery_date || "");
     setDateCreated(date_created || "");
-setInquiryReceived(toDatetimeLocal(inquiry_received));
-setResponseToInquiry(toDatetimeLocal(response_to_inquiry));
+    setHandlingCSR(handling_csr || "");
+    setInquiryReceived(toDatetimeLocal(inquiry_received));
+    setResponseToInquiry(toDatetimeLocal(response_to_inquiry));
 
     setCloseReason(close_reason || "");
     setCounterOffer(counter_offer || "");
@@ -394,6 +399,7 @@ setResponseToInquiry(toDatetimeLocal(response_to_inquiry));
     ticket_endorsed,
     inquiry_received,
     response_to_inquiry,
+    handling_csr,
     gender,
     channel,
     wrap_up,
@@ -464,6 +470,7 @@ setResponseToInquiry(toDatetimeLocal(response_to_inquiry));
 
       inquiry_received: inquiryReceived,
       response_to_inquiry: responseToInquiry,
+      handling_csr: handlingCSR,
 
       company_name: companyName,
       contact_number: contactNumbers
@@ -1185,6 +1192,8 @@ setResponseToInquiry(toDatetimeLocal(response_to_inquiry));
                   setDeliveryDate={setDeliveryDate}
                   dateCreated={dateCreatedState}
                   setDateCreated={setDateCreated}
+                  handlingCSR={handlingCSR}
+                  setHandlingCSR={setHandlingCSR}
                   inquiryReceived={inquiryReceived}
                   setInquiryReceived={setInquiryReceived}
                   responseToInquiry={responseToInquiry}

@@ -64,6 +64,7 @@ interface Ticket {
   ticket_endorsed?: string;
   inquiry_received?: string;
   response_to_inquiry?: string;
+  handling_csr?: string;
   traffic?: string;
   source_company?: string;
   gender: string;
@@ -819,7 +820,8 @@ export const Ticket: React.FC<TicketProps> = ({
         "Ticket Received",
         "Ticket Endorsed",
         "Inquiry Received",
-"Response to Inquiry",
+        "Response to Inquiry",
+        "Handling CSR",
         "Traffic",
         "Source Company",
         "Channel",
@@ -868,10 +870,11 @@ export const Ticket: React.FC<TicketProps> = ({
         item.contact_number || "-",
         item.email_address || "-",
         item.gender || "-",
-formatDate(item.ticket_received),
-formatDate(item.ticket_endorsed),
-formatDate(item.inquiry_received),
-formatDate(item.response_to_inquiry),
+        formatDate(item.ticket_received),
+        formatDate(item.ticket_endorsed),
+        formatDate(item.inquiry_received),
+        formatDate(item.response_to_inquiry),
+        item.handling_csr || "-",
         item.traffic || "-",
         item.source_company || "-",
         item.channel || "-",
@@ -1229,7 +1232,8 @@ formatDate(item.response_to_inquiry),
                         ticket_received: item.ticket_received,
                         ticket_endorsed: item.ticket_endorsed,
                         inquiry_received: item.inquiry_received,
-response_to_inquiry: item.response_to_inquiry,
+                        response_to_inquiry: item.response_to_inquiry,
+                        handling_csr: item.handling_csr,
                         traffic: item.traffic,
                         source_company: item.source_company,
                         gender: item.gender,
