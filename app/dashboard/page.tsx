@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, Suspense, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  Suspense,
+  useRef,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { FormatProvider } from "@/contexts/FormatContext";
@@ -27,7 +33,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { type DateRange } from "react-day-picker";
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 import { AccountsCard } from "@/components/dashboard-accounts-card";
@@ -87,9 +93,8 @@ interface Activity {
 }
 
 function DashboardContent() {
-  const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] = React.useState<
-    DateRange | undefined
-  >(undefined);
+  const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
+    React.useState<DateRange | undefined>(undefined);
 
   const searchParams = useSearchParams();
   const { userId, setUserId } = useUser();
@@ -115,32 +120,63 @@ function DashboardContent() {
   // Ref to access ChannelCard download function
   const channelCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const sourceCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const inboundTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const customerStatusCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const inboundTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
+    null,
+  );
+  const customerStatusCardRef = useRef<{ downloadCSV: () => void } | null>(
+    null,
+  );
   const customerTypeCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const companyDistributionCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const companyDistributionCardRef = useRef<{ downloadCSV: () => void } | null>(
+    null,
+  );
   const wrapupCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const tsaSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const tsaSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
+    null,
+  );
   const agentSalesCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const managerSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(
+    null,
+  );
+  const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
+    null,
+  );
+  const managerSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
+    null,
+  );
   const queryUserId = searchParams?.get("id") ?? "";
 
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [customWeekMapping, setCustomWeekMapping] = useState<{ [date: string]: number | undefined }>({});
+  const [customWeekMapping, setCustomWeekMapping] = useState<{
+    [date: string]: number | undefined;
+  }>({});
 
-  const [selectedWeekForRange, setSelectedWeekForRange] = useState<number | null>(1);
+  const [selectedWeekForRange, setSelectedWeekForRange] = useState<
+    number | null
+  >(1);
   const [rangeStartDate, setRangeStartDate] = useState<string>("");
   const [rangeEndDate, setRangeEndDate] = useState<string>("");
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
-  const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i);
+  const years = Array.from(
+    { length: 10 },
+    (_, i) => new Date().getFullYear() - 5 + i,
+  );
 
   useEffect(() => {
     if (dateCreatedFilterRange) return;
@@ -166,7 +202,6 @@ function DashboardContent() {
     setDateCreatedFilterRangeAction({ from, to });
   }, [dateCreatedFilterRange]);
 
-
   // Set userId from query params
   useEffect(() => {
     if (queryUserId && queryUserId !== userId) {
@@ -186,7 +221,9 @@ function DashboardContent() {
       setErrorUser(null);
       setLoadingUser(true);
       try {
-        const response = await fetch(`/api/user?id=${encodeURIComponent(userId)}`);
+        const response = await fetch(
+          `/api/user?id=${encodeURIComponent(userId)}`,
+        );
         if (!response.ok) throw new Error("Failed to fetch user data");
         const data = await response.json();
 
@@ -202,7 +239,7 @@ function DashboardContent() {
         console.error("Error fetching user data:", err);
         setErrorUser("Failed to fetch user data");
         toast.error(
-          "Failed to connect to server. Please try again later or refresh your network connection"
+          "Failed to connect to server. Please try again later or refresh your network connection",
         );
       } finally {
         setLoadingUser(false);
@@ -220,7 +257,8 @@ function DashboardContent() {
       const res = await fetch("/api/com-fetch-account", {
         cache: "no-store",
         headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate, proxy-revalidate",
           Pragma: "no-cache",
           Expires: "0",
         },
@@ -242,14 +280,16 @@ function DashboardContent() {
 
     try {
       // If Admin, don't filter by referenceid; else filter by referenceid
-      const url = userDetails.role === "Admin"
-        ? `/api/act-fetch-activity`  // fetch all activities for Admin (API should support this)
-        : `/api/act-fetch-activity?referenceid=${encodeURIComponent(userDetails.referenceid)}`;
+      const url =
+        userDetails.role === "Admin"
+          ? `/api/act-fetch-activity` // fetch all activities for Admin (API should support this)
+          : `/api/act-fetch-activity?referenceid=${encodeURIComponent(userDetails.referenceid)}`;
 
       const res = await fetch(url, {
         cache: "no-store",
         headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate, proxy-revalidate",
           Pragma: "no-cache",
           Expires: "0",
         },
@@ -266,7 +306,8 @@ function DashboardContent() {
       // Merge company info by matching account_reference_number
       const mergedActivities = fetchedActivities.map((activity) => {
         const matchedCompany = companies.find(
-          (comp) => comp.account_reference_number === activity.account_reference_number
+          (comp) =>
+            comp.account_reference_number === activity.account_reference_number,
         );
         return {
           ...activity,
@@ -379,6 +420,10 @@ function DashboardContent() {
       if (wrapupCardRef.current) {
         wrapupCardRef.current.downloadCSV();
       }
+    } else if (selectedExport === "Export CSR Sales Conversion") {
+      if (agentSalesCardRef.current) {
+        agentSalesCardRef.current.downloadCSV();
+      }
     } else if (selectedExport === "Export TSA Sales Traffic") {
       if (tsaSalesTrafficCardRef.current) {
         console.log("Calling downloadCSV from TSASalesTrafficCard");
@@ -386,26 +431,31 @@ function DashboardContent() {
       } else {
         console.log("tsaSalesTrafficCardRef.current is null");
       }
-    } else if (selectedExport === "Export TSM Sales Traffic") {
-      if (tsmSalesTrafficCardRef.current) {
-        console.log("Calling downloadCSV from TSMSalesTrafficCard");
-        tsmSalesTrafficCardRef.current.downloadCSV();
-      } else {
-        console.log("tsmSalesTrafficCardRef.current is null");
-      }
-    } else if (selectedExport === "Export Manager Sales Traffic") {
+    } 
+    else if (selectedExport === "Export Agent's and Other Users") {
+  if (tsaSalesTrafficCardRef.current) {
+    console.log("Calling downloadCSV from Agent's and Other Users");
+    tsaSalesTrafficCardRef.current.downloadCSV();
+  } else {
+    console.log("tsaSalesTrafficCardRef.current is null");
+  }
+}
+else if (selectedExport === "Export TSM's and Other Manager List") {
+  if (tsmSalesTrafficCardRef.current) {
+    console.log("Calling downloadCSV from TSM's and Other Manager List");
+    tsmSalesTrafficCardRef.current.downloadCSV();
+  } else {
+    console.log("tsmSalesTrafficCardRef.current is null");
+  }
+} else if (selectedExport === "Export Manager Sales Traffic") {
       if (managerSalesTrafficCardRef.current) {
         managerSalesTrafficCardRef.current.downloadCSV();
       }
-    }
-
-    else if (selectedExport === "Export Department Head Sales") {
+    } else if (selectedExport === "Export Department Head Sales") {
       if (managerSalesTrafficCardRef.current) {
         managerSalesTrafficCardRef.current.downloadCSV();
       }
-    }
-
-    else if (selectedExport === "Export All") {
+    } else if (selectedExport === "Export All") {
       handleExportAll();
     } else {
       toast.error("Please select a valid export option");
@@ -418,31 +468,67 @@ function DashboardContent() {
       <SidebarInset>
         <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2 px-3 z-[50]">
           <SidebarTrigger />
-          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-[orientation=vertical]:h-4"
+          />
 
           <div className="flex justify-between items-center w-full">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="line-clamp-1">Dashboard</BreadcrumbPage>
+                  <BreadcrumbPage className="line-clamp-1">
+                    Dashboard
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
 
             <div className="flex items-center space-x-2">
-              <Select defaultValue="" onValueChange={(value) => setSelectedExport(value)}>
+              <Select
+                defaultValue=""
+                onValueChange={(value) => setSelectedExport(value)}
+              >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Select Option" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Export CSR Sales Conversion">
+                    Export CSR Sales Conversion
+                  </SelectItem>
+                  <SelectItem value="Export Agent's and Other Users">
+                    Export Agent's and Other Users
+                  </SelectItem>
+
+  <SelectItem value="Export TSM's and Other Manager List">
+    TSM's and Other Manager List
+  </SelectItem>
+
                   <SelectItem value="Export All">Export All</SelectItem>
-                  <SelectItem value="Export Channel Usage">Export Channel Usage</SelectItem>
-                  <SelectItem value="Export Source Usage">Export Wrap Up Usage</SelectItem>
-                  <SelectItem value="Export Inbound Traffic by Gender">Export Inbound Traffic by Gender</SelectItem>
-                  <SelectItem value="Export Customer Status Distribution">Export Customer Status Distribution</SelectItem>
-                  <SelectItem value="Export Type Distribution">Export Type Distribution</SelectItem>
-                  <SelectItem value="Export Company Distribution">Export Company Distribution</SelectItem>
-                  <SelectItem value="Export Wrap Up Distribution">Export Wrap Up Distribution</SelectItem>
+                  <SelectItem value="Export Channel Usage">
+                    Export Channel Usage
+                  </SelectItem>
+                  <SelectItem value="Export Source Usage">
+                    Export Wrap Up Usage
+                  </SelectItem>
+                  <SelectItem value="Export Inbound Traffic by Gender">
+                    Export Inbound Traffic by Gender
+                  </SelectItem>
+                  <SelectItem value="Export Customer Status Distribution">
+                    Export Customer Status Distribution
+                  </SelectItem>
+                  <SelectItem value="Export Type Distribution">
+                    Export Type Distribution
+                  </SelectItem>
+                  <SelectItem value="Export Company Distribution">
+                    Export Company Distribution
+                  </SelectItem>
+                  <SelectItem value="Export Wrap Up Distribution">
+                    Export Wrap Up Distribution
+                  </SelectItem>
+                  <SelectItem value="Export CSR Sales Conversion">
+                    Export CSR Sales Conversion
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -481,7 +567,6 @@ function DashboardContent() {
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
-
           </div>
 
           <Separator />
@@ -602,7 +687,6 @@ function DashboardContent() {
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
             />
-
           </div>
 
           <div className="grid grid-cols-1 gap-4">
@@ -618,7 +702,9 @@ function DashboardContent() {
                   className="text-xs bg-gray-800 text-white rounded p-4"
                 >
                   {monthNames.map((m, i) => (
-                    <option key={m} value={i}>{m}</option>
+                    <option key={m} value={i}>
+                      {m}
+                    </option>
                   ))}
                 </select>
 
@@ -629,7 +715,9 @@ function DashboardContent() {
                   className="text-xs bg-gray-800 text-white rounded p-4"
                 >
                   {years.map((y) => (
-                    <option key={y} value={y}>{y}</option>
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
                   ))}
                 </select>
 
@@ -658,7 +746,8 @@ function DashboardContent() {
                 <div className="bg-[#121212] p-6 rounded-lg w-[800px] text-white max-h-[80vh] overflow-auto">
                   <h3 className="font-bold mb-2">Assign Dates to Weeks</h3>
                   <p className="mb-4 text-sm text-gray-300">
-                    Click a start date, then an end date to assign a week to the range. Only assigned dates will be counted.
+                    Click a start date, then an end date to assign a week to the
+                    range. Only assigned dates will be counted.
                   </p>
 
                   {/* Week range selector */}
@@ -667,8 +756,11 @@ function DashboardContent() {
                     {[1, 2, 3, 4].map((w) => (
                       <button
                         key={w}
-                        className={`p-4 rounded ${w === selectedWeekForRange ? "bg-cyan-500 text-black" : "bg-gray-700 text-white"
-                          }`}
+                        className={`p-4 rounded ${
+                          w === selectedWeekForRange
+                            ? "bg-cyan-500 text-black"
+                            : "bg-gray-700 text-white"
+                        }`}
                         onClick={() => setSelectedWeekForRange(w)}
                       >
                         Week {w}
@@ -681,17 +773,19 @@ function DashboardContent() {
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
                       const date = new Date(selectedYear, selectedMonth, day);
                       const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-                        date.getDate()
+                        date.getDate(),
                       ).padStart(2, "0")}`;
 
                       const assignedWeek = customWeekMapping[dateKey];
-                      const isSelected = dateKey >= rangeStartDate && dateKey <= rangeEndDate;
+                      const isSelected =
+                        dateKey >= rangeStartDate && dateKey <= rangeEndDate;
 
                       return (
                         <div
                           key={day}
-                          className={`flex flex-col items-center cursor-pointer rounded ${isSelected ? "bg-cyan-600" : ""
-                            }`}
+                          className={`flex flex-col items-center cursor-pointer rounded ${
+                            isSelected ? "bg-cyan-600" : ""
+                          }`}
                           onClick={() => {
                             if (!rangeStartDate) {
                               setRangeStartDate(dateKey);
@@ -700,7 +794,8 @@ function DashboardContent() {
                               // Update end date
                               const start = new Date(rangeStartDate);
                               const end = new Date(dateKey);
-                              const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
+                              const [minDate, maxDate] =
+                                start <= end ? [start, end] : [end, start];
 
                               setRangeEndDate(dateKey);
 
@@ -712,9 +807,10 @@ function DashboardContent() {
                                 d.setDate(d.getDate() + 1)
                               ) {
                                 const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-                                  d.getDate()
+                                  d.getDate(),
                                 ).padStart(2, "0")}`;
-                                if (selectedWeekForRange) newMapping[key] = selectedWeekForRange;
+                                if (selectedWeekForRange)
+                                  newMapping[key] = selectedWeekForRange;
                               }
                               setCustomWeekMapping(newMapping);
 
@@ -773,7 +869,6 @@ function DashboardContent() {
               customWeekMapping={customWeekMapping}
             />
           </div>
-
         </div>
       </SidebarInset>
       <SidebarRight

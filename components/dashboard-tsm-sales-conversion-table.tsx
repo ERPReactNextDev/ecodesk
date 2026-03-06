@@ -4,6 +4,7 @@ import React, { useState, useEffect, forwardRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
 import { type DateRange } from "react-day-picker";
+import { useImperativeHandle } from "react";
 
 interface Activity {
   manager?: string;
@@ -258,6 +259,119 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   const avgSPFHandlingTime = AVERAGE(
     groupedManager.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
   );
+
+  useImperativeHandle(ref, () => ({
+  downloadCSV() {
+    if (!groupedManager || groupedManager.length === 0) return;
+
+    const rows = groupedManager.map((a, index) => {
+      const inquiryToSalesPercent =
+        a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
+
+      return {
+        Rank: index + 1,
+        "TSM Name": a.agentName,
+        Sales: a.salesCount,
+        "Non-Sales": a.nonSalesCount,
+        Total: a.salesCount + a.nonSalesCount,
+        Amount: a.amount,
+        "Converted into Sales": a.convertedSalesCount,
+        "% Inquiry to Sales": inquiryToSalesPercent.toFixed(2) + "%",
+
+        "New Client": a.newClientCount,
+        "New Non Buying": a.newNonBuyingCount,
+        "Existing Active": a.existingActiveCount,
+        "Existing Inactive": a.existingInactiveCount,
+
+        "New Client (Converted)": a.newClientConvertedAmount,
+        "New Non-Buying (Converted)": a.newNonBuyingConvertedAmount,
+        "Existing Active (Converted)": a.existingActiveConvertedAmount,
+        "Existing Inactive (Converted)": a.existingInactiveConvertedAmount,
+
+        "TSA Response Time": formatHoursToHMS(a.avgResponseTime),
+        "Non-Quotation HT": formatHoursToHMS(a.avgNonQuotationHandlingTime),
+        "Quotation HT": formatHoursToHMS(a.avgQuotationHandlingTime),
+        "SPF Handling Duration": formatHoursToHMS(a.avgSPFHandlingTime),
+      };
+    });
+
+    const headers = [
+      "Rank",
+      "TSM Name",
+      "Sales",
+      "Non-Sales",
+      "Total",
+      "Amount",
+      "Converted into Sales",
+      "% Inquiry to Sales",
+      "New Client",
+      "New Non Buying",
+      "Existing Active",
+      "Existing Inactive",
+      "New Client (Converted)",
+      "New Non-Buying (Converted)",
+      "Existing Active (Converted)",
+      "Existing Inactive (Converted)",
+      "TSA Response Time",
+      "Non-Quotation HT",
+      "Quotation HT",
+      "SPF Handling Duration",
+    ];
+
+    let filterText = "All Dates";
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+      const from = new Date(dateCreatedFilterRange.from).toLocaleDateString();
+      const to = new Date(dateCreatedFilterRange.to).toLocaleDateString();
+      filterText = `${from} - ${to}`;
+    }
+
+    const totalRow = [
+      "",
+      "TOTAL",
+      totalSales,
+      totalNonSales,
+      totalSales + totalNonSales,
+      totalAmount,
+      totalConvertedSales,
+      totalInquiryToSalesPercent.toFixed(2) + "%",
+
+      groupedManager.reduce((sum, a) => sum + a.newClientCount, 0),
+      groupedManager.reduce((sum, a) => sum + a.newNonBuyingCount, 0),
+      groupedManager.reduce((sum, a) => sum + a.existingActiveCount, 0),
+      groupedManager.reduce((sum, a) => sum + a.existingInactiveCount, 0),
+
+      groupedManager.reduce((sum, a) => sum + a.newClientConvertedAmount, 0),
+      groupedManager.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0),
+      groupedManager.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0),
+      groupedManager.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0),
+
+      formatHoursToHMS(avgTSAResponseTime),
+      formatHoursToHMS(avgNonQuotationHandlingTime),
+      formatHoursToHMS(avgQuotationHandlingTime),
+      formatHoursToHMS(avgSPFHandlingTime),
+    ];
+
+    const csv = [
+      ["Date Filter", filterText].join(","),
+      [],
+      headers.join(","),
+      totalRow.join(","),
+      ...rows.map((row) =>
+        headers.map((h) => row[h as keyof typeof row]).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "tsm-sales-conversion.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  },
+}));
 
   return (
     <Card>

@@ -168,7 +168,7 @@ export function TicketReceived() {
     } finally {
       setLoadingTickets(false);
     }
-  }, [userDetails.referenceid, receivedTickets]);
+}, [userDetails.referenceid]);
 
   // Play notification sound once per new ticket batch
   useEffect(() => {

@@ -7,7 +7,9 @@ import React, {
   forwardRef,
   ForwardRefRenderFunction,
   useEffect,
+  useImperativeHandle,
 } from "react";
+
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -53,7 +55,8 @@ interface Activity {
   customer_status?: string;
   ticket_received?: string;
   ticket_endorsed?: string;
-
+  inquiry_received?: string;
+  response_to_inquiry?: string;
   wrap_up?: string;
 }
 
@@ -72,7 +75,9 @@ interface AgentSalesConversionCardProps {
   role: string;
 }
 
-export interface AgentSalesConversionCardRef { }
+export interface AgentSalesConversionCardRef {
+  downloadCSV: () => void;
+}
 
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -202,6 +207,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
         responseTimeTotal: number;
         responseCount: number;
+
+        handlingTimeTotal: number;
+        handlingCount: number;
       }
     > = {};
 
@@ -247,6 +255,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
             responseTimeTotal: 0,
             responseCount: 0,
+
+            handlingTimeTotal: 0,
+            handlingCount: 0,
           };
         }
 
@@ -306,6 +317,25 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             }
           }
         }
+
+        // CSR Handling Time (inquiry_received → response_to_inquiry)
+        if (a.inquiry_received && a.response_to_inquiry) {
+          const inquiry = new Date(a.inquiry_received);
+          const response = new Date(a.response_to_inquiry);
+
+          if (
+            !isNaN(inquiry.getTime()) &&
+            !isNaN(response.getTime()) &&
+            response >= inquiry
+          ) {
+            const diff = response.getTime() - inquiry.getTime();
+
+            if (diff <= MAX_RESPONSE_TIME_MS) {
+              map[referenceid].handlingTimeTotal += diff;
+              map[referenceid].handlingCount += 1;
+            }
+          }
+        }
       });
 
     return Object.values(map);
@@ -337,6 +367,15 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     (s, r) => s + r.responseCount,
     0,
   );
+  const totalHandlingTime = groupedData.reduce(
+    (s, r) => s + r.handlingTimeTotal,
+    0,
+  );
+
+  const totalHandlingCount = groupedData.reduce(
+    (s, r) => s + r.handlingCount,
+    0,
+  );
 
   const totalConversionPct =
     totalSales === 0 ? 0 : (totalConverted / totalSales) * 100;
@@ -344,9 +383,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
   const totalAveUnit = totalConverted === 0 ? 0 : totalQty / totalConverted;
 
   const totalAveValue = totalConverted === 0 ? 0 : totalAmount / totalConverted;
-
-  const totalAveResponse =
-    totalResponseCount === 0 ? 0 : totalResponseTime / totalResponseCount;
 
   const formatMs = (ms: number) => {
     const totalSeconds = Math.round(ms / 1000);
@@ -358,15 +394,148 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-
   const AVERAGE = (values: number[]): number =>
     values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
 
   const avgCSRResponseTime = AVERAGE(
     groupedData
-      .map(row => row.responseCount > 0 ? row.responseTimeTotal / row.responseCount : 0)
-      .filter(v => v > 0)
+      .map((row) =>
+        row.responseCount > 0 ? row.responseTimeTotal / row.responseCount : 0,
+      )
+      .filter((v) => v > 0),
   );
+
+  const avgCSRHandlingTime = AVERAGE(
+    groupedData
+      .map((row) =>
+        row.handlingCount > 0 ? row.handlingTimeTotal / row.handlingCount : 0,
+      )
+      .filter((v) => v > 0),
+  );
+
+  // downloadCSV(Table)
+  useImperativeHandle(ref, () => ({
+    downloadCSV() {
+      if (!groupedData || groupedData.length === 0) return;
+
+      const sortedRows = groupedData
+        .slice()
+        .sort((a, b) => b.amount - a.amount);
+
+      const rows = sortedRows.map((row, index) => {
+        const agent = agents.find((a) => a.ReferenceID === row.referenceid);
+
+        const fullName = agent
+          ? `${agent.Firstname} ${agent.Lastname}`
+          : "(Unknown Agent)";
+
+        const avgResponse =
+          row.responseCount === 0
+            ? 0
+            : row.responseTimeTotal / row.responseCount;
+
+        const avgHandling =
+          row.handlingCount === 0
+            ? 0
+            : row.handlingTimeTotal / row.handlingCount;
+
+        return {
+          Rank: index + 1,
+          CSR: fullName,
+          Sales: row.salesCount,
+          "Non-Sales": row.nonSalesCount,
+          "Sales Amount": row.amount,
+          "Qty Sold": row.qtySold,
+          "Converted to Sale": row.convertedCount,
+          "% Conversion":
+            row.salesCount === 0
+              ? "0.00%"
+              : ((row.convertedCount / row.salesCount) * 100).toFixed(2) + "%",
+          "Ave. Unit":
+            row.convertedCount === 0
+              ? "0.00"
+              : (row.qtySold / row.convertedCount).toFixed(2),
+          "Ave. Value":
+            row.convertedCount === 0
+              ? "0.00"
+              : (row.amount / row.convertedCount).toFixed(2),
+          "New Client": row.newClientSales,
+          "New-Non Buying": row.newNonBuyingSales,
+          "Existing Active": row.existingActiveSales,
+          "Existing Inactive": row.existingInactiveSales,
+          "CSR Handling Time": formatMs(avgHandling),
+          "CSR Response Time": formatMs(avgResponse),
+        };
+      });
+
+      const headers = [
+        "Rank",
+        "CSR",
+        "Sales",
+        "Non-Sales",
+        "Sales Amount",
+        "Qty Sold",
+        "Converted to Sale",
+        "% Conversion",
+        "Ave. Unit",
+        "Ave. Value",
+        "New Client",
+        "New-Non Buying",
+        "Existing Active",
+        "Existing Inactive",
+        "CSR Handling Time",
+        "CSR Response Time",
+      ];
+
+      // FORMAT DATE FILTER
+      let filterText = "All Dates";
+      if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+        const from = new Date(dateCreatedFilterRange.from).toLocaleDateString();
+        const to = new Date(dateCreatedFilterRange.to).toLocaleDateString();
+        filterText = `${from} - ${to}`;
+      }
+
+      // TOTAL ROW
+      const totalRow = [
+        "",
+        "TOTAL",
+        totalSales,
+        groupedData.reduce((s, r) => s + r.nonSalesCount, 0),
+        totalAmount,
+        totalQty,
+        totalConverted,
+        totalSales === 0 ? "0.00%" : totalConversionPct.toFixed(2) + "%",
+        totalAveUnit.toFixed(2),
+        totalAveValue.toFixed(2),
+        totalNewClient,
+        totalNewNonBuying,
+        totalExistingActive,
+        totalExistingInactive,
+        formatMs(avgCSRResponseTime),
+        formatMs(avgCSRHandlingTime),
+      ];
+
+      const csv = [
+        ["Date Filter", filterText].join(","),
+        [],
+        headers.join(","),
+        totalRow.join(","), // include totals
+        ...rows.map((row) =>
+          headers.map((h) => row[h as keyof typeof row]).join(","),
+        ),
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "csr-sales-conversion.csv";
+      link.click();
+
+      URL.revokeObjectURL(url);
+    },
+  }));
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
@@ -447,8 +616,12 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-white z-30">Rank</TableHead>
-                  <TableHead className="sticky left-[50px] bg-white z-30 border-r">CSR</TableHead>
+                  <TableHead className="sticky left-0 bg-white z-30">
+                    Rank
+                  </TableHead>
+                  <TableHead className="sticky left-[50px] bg-white z-30 border-r">
+                    CSR
+                  </TableHead>
                   <TableHead className="text-right">Sales</TableHead>
                   <TableHead className="text-right">Non-Sales</TableHead>
                   <TableHead className="text-right">Sales</TableHead>
@@ -466,14 +639,21 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     Existing Inactive
                   </TableHead>
                   <TableHead className="text-right">
+                    CSR Handling Time
+                  </TableHead>
+                  <TableHead className="text-right">
                     CSR Response Time
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableHeader>
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell className="text-center sticky left-0 bg-white z-30">-</TableCell>
-                  <TableCell className="sticky left-[50px] bg-white z-30 border-r">Total</TableCell>
+                  <TableCell className="text-center sticky left-0 bg-white z-30">
+                    -
+                  </TableCell>
+                  <TableCell className="sticky left-[50px] bg-white z-30 border-r">
+                    Total
+                  </TableCell>
                   <TableCell className="text-right">{totalSales}</TableCell>
                   <TableCell className="text-right">
                     {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
@@ -509,6 +689,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableCell className="text-right">
                     {formatMs(avgCSRResponseTime)}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {formatMs(avgCSRHandlingTime)}
+                  </TableCell>
                 </TableRow>
               </TableHeader>
 
@@ -529,40 +712,41 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                         ? 0
                         : row.responseTimeTotal / row.responseCount;
 
+                    const avgHandlingResponse =
+                      row.handlingCount === 0
+                        ? 0
+                        : row.handlingTimeTotal / row.handlingCount;
+
                     return (
                       <TableRow key={row.referenceid}>
                         <TableCell className="text-center sticky left-0 bg-white z-30">
                           {index + 1}
                         </TableCell>
-
-                        <TableCell className="sticky left-[50px] bg-white z-30 border uppercase">{fullName}</TableCell>
-
+                        <TableCell className="sticky left-[50px] bg-white z-30 border uppercase">
+                          {fullName}
+                        </TableCell>
                         <TableCell className="text-right">
                           {row.salesCount}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.nonSalesCount}
                         </TableCell>
-
                         <TableCell className="text-right">
                           ₱{row.amount.toLocaleString()}
                         </TableCell>
-
                         <TableCell className="text-right">
                           {row.qtySold}
                         </TableCell>
-
                         <TableCell className="text-right">
                           {row.convertedCount}
                         </TableCell>
-
                         <TableCell className="text-right">
                           {row.salesCount === 0
                             ? "0.00%"
                             : (
-                              (row.convertedCount / row.salesCount) *
-                              100
-                            ).toFixed(2) + "%"}
+                                (row.convertedCount / row.salesCount) *
+                                100
+                              ).toFixed(2) + "%"}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.convertedCount === 0
@@ -574,7 +758,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                             ? "0.00"
                             : (row.amount / row.convertedCount).toFixed(2)}
                         </TableCell>
-
                         <TableCell className="text-right">
                           ₱{row.newClientSales.toLocaleString()}
                         </TableCell>
@@ -587,9 +770,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                         <TableCell className="text-right">
                           ₱{row.existingInactiveSales.toLocaleString()}
                         </TableCell>
-
                         <TableCell className="text-right">
                           {formatMs(avgResponse)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatMs(avgHandlingResponse)}
                         </TableCell>
                       </TableRow>
                     );
