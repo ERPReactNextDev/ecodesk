@@ -441,10 +441,10 @@ function DashboardContent() {
         weeklyInboundCardRef.current.downloadCSV();
       }
     } else if (selectedExport === "Export Weekly Agent Sales Conversion") {
-  if (agentSalesWeeklyCardRef.current) {
-    agentSalesWeeklyCardRef.current.downloadCSV();
-  }
-} else if (selectedExport === "Export CSR Sales Conversion") {
+      if (agentSalesWeeklyCardRef.current) {
+        agentSalesWeeklyCardRef.current.downloadCSV();
+      }
+    } else if (selectedExport === "Export CSR Sales Conversion") {
       if (agentSalesCardRef.current) {
         agentSalesCardRef.current.downloadCSV();
       }
@@ -555,8 +555,6 @@ function DashboardContent() {
                   <SelectItem value="Export Weekly Agent Sales Conversion">
                     Export Weekly Agent Sales Conversion
                   </SelectItem>
-
-                  <SelectItem value="Export All">Export All</SelectItem>
                   <SelectItem value="Export Channel Usage">
                     Export Channel Usage
                   </SelectItem>
@@ -566,6 +564,7 @@ function DashboardContent() {
                   <SelectItem value="Export Wrap Up Distribution">
                     Export Wrap Up Distribution
                   </SelectItem>
+                  <SelectItem value="Export All">Export All</SelectItem>
                 </SelectContent>
               </Select>
 
