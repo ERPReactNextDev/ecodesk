@@ -407,7 +407,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
   const avgCSRHandlingTime = AVERAGE(
     groupedData
-<<<<<<< HEAD
       .map((row) =>
         row.handlingCount > 0 ? row.handlingTimeTotal / row.handlingCount : 0,
       )
@@ -464,29 +463,27 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           "New-Non Buying": row.newNonBuyingSales,
           "Existing Active": row.existingActiveSales,
           "Existing Inactive": row.existingInactiveSales,
-          "CSR Handling Time": formatMs(avgHandling),
           "CSR Response Time": formatMs(avgResponse),
         };
       });
 
-      const headers = [
-        "Rank",
-        "CSR",
-        "Sales",
-        "Non-Sales",
-        "Sales Amount",
-        "Qty Sold",
-        "Converted to Sale",
-        "% Conversion",
-        "Ave. Unit",
-        "Ave. Value",
-        "New Client",
-        "New-Non Buying",
-        "Existing Active",
-        "Existing Inactive",
-        "CSR Handling Time",
-        "CSR Response Time",
-      ];
+const headers = [
+  "Rank",
+  "CSR",
+  "Sales",
+  "Non-Sales",
+  "Sales Amount",
+  "Qty Sold",
+  "Converted to Sale",
+  "% Conversion",
+  "Ave. Unit",
+  "Ave. Value",
+  "New Client",
+  "New-Non Buying",
+  "Existing Active",
+  "Existing Inactive",
+  "CSR Response Time",
+];
 
       // FORMAT DATE FILTER
       let filterText = "All Dates";
@@ -511,9 +508,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         totalNewClient,
         totalNewNonBuying,
         totalExistingActive,
-        totalExistingInactive,
-        formatMs(avgCSRResponseTime),
-        formatMs(avgCSRHandlingTime),
+totalExistingInactive,
+formatMs(avgCSRResponseTime),
       ];
 
       const csv = [
@@ -537,11 +533,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
       URL.revokeObjectURL(url);
     },
   }));
-=======
-      .map(row => row.handlingCount > 0 ? row.handlingTimeTotal / row.handlingCount : 0)
-      .filter(v => v > 0)
-  );
->>>>>>> 2931b25879e3302cc94152cda899ad62e06a2a4f
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
@@ -641,21 +632,15 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableHead className="text-right">New Client</TableHead>
                   <TableHead className="text-right">New-Non Buying</TableHead>
                   <TableHead className="text-right">Existing Active</TableHead>
-<<<<<<< HEAD
                   <TableHead className="text-right">
                     Existing Inactive
                   </TableHead>
-                  <TableHead className="text-right">
+                  {/* <TableHead className="text-right">
                     CSR Handling Time
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead className="text-right">
                     CSR Response Time
                   </TableHead>
-=======
-                  <TableHead className="text-right">Existing Inactive</TableHead>
-                  <TableHead className="text-right">CSR Handling Time</TableHead>
-                  <TableHead className="text-right">CSR Response Time</TableHead>
->>>>>>> 2931b25879e3302cc94152cda899ad62e06a2a4f
                 </TableRow>
               </TableHeader>
               <TableHeader>
@@ -671,7 +656,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableCell className="text-right">₱{totalAmount.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{totalQty}</TableCell>
                   <TableCell className="text-right">{totalConverted}</TableCell>
-<<<<<<< HEAD
                   <TableCell className="text-right">
                     {totalSales === 0
                       ? "0.00%"
@@ -698,20 +682,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableCell className="text-right">
                     {formatMs(avgCSRResponseTime)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  {/* <TableCell className="text-right">
                     {formatMs(avgCSRHandlingTime)}
-                  </TableCell>
-=======
-                  <TableCell className="text-right">{totalSales === 0 ? "0.00%" : totalConversionPct.toFixed(2) + "%"}</TableCell>
-                  <TableCell className="text-right">{totalAveUnit.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{totalAveValue.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">₱{totalNewClient.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalNewNonBuying.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalExistingActive.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">₱{totalExistingInactive.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{formatMs(avgCSRResponseTime)}</TableCell>
-                  <TableCell className="text-right">{formatMs(avgCSRHandlingTime)}</TableCell>
->>>>>>> 2931b25879e3302cc94152cda899ad62e06a2a4f
+                  </TableCell> */}
                 </TableRow>
               </TableHeader>
 
@@ -739,7 +712,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
                     return (
                       <TableRow key={row.referenceid}>
-<<<<<<< HEAD
                         <TableCell className="text-center sticky left-0 bg-white z-30">
                           {index + 1}
                         </TableCell>
@@ -791,31 +763,12 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                         <TableCell className="text-right">
                           ₱{row.existingInactiveSales.toLocaleString()}
                         </TableCell>
+                        {/* <TableCell className="text-right">
+                          {formatMs(avgHandlingResponse)}
+                        </TableCell> */}
                         <TableCell className="text-right">
                           {formatMs(avgResponse)}
                         </TableCell>
-                        <TableCell className="text-right">
-                          {formatMs(avgHandlingResponse)}
-                        </TableCell>
-=======
-                        <TableCell className="text-center sticky left-0 bg-white z-30">{index + 1}</TableCell>
-                        <TableCell className="sticky left-[50px] bg-white z-30 border uppercase">{fullName}</TableCell>
-                        <TableCell className="text-right">{row.salesCount}</TableCell>
-                        <TableCell className="text-right">{row.nonSalesCount}</TableCell>
-                        <TableCell className="text-right">₱{row.amount.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{row.qtySold}</TableCell>
-                        <TableCell className="text-right">{row.convertedCount}</TableCell>
-                        <TableCell className="text-right">{row.salesCount === 0 ? "0.00%" : ((row.convertedCount / row.salesCount) * 100).toFixed(2) + "%"}</TableCell>
-                        <TableCell className="text-right">{row.convertedCount === 0 ? "0.00" : (row.qtySold / row.convertedCount).toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{row.convertedCount === 0 ? "0.00" : (row.amount / row.convertedCount).toFixed(2)}</TableCell>
-                        <TableCell className="text-right">₱{row.newClientSales.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">₱{row.newNonBuyingSales.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">₱{row.existingActiveSales.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">₱{row.existingInactiveSales.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{formatMs(avgResponse)}</TableCell>
-                        <TableCell className="text-right">{formatMs(avgHandlingResponse)}</TableCell>
-
->>>>>>> 2931b25879e3302cc94152cda899ad62e06a2a4f
                       </TableRow>
                     );
                   })}
