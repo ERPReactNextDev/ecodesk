@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Info } from "lucide-react";
 
 import {
@@ -42,14 +42,14 @@ interface WrapUpWeeklyCardProps {
   customWeekMapping: { [date: string]: number | undefined };
 }
 
-export function WrapUpWeeklyCard({
+export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(({
   activities,
   loading,
   error,
   selectedMonth,
   selectedYear,
   customWeekMapping,
-}: WrapUpWeeklyCardProps) {
+}, ref) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   const isInSelectedMonth = (dateStr?: string) => {
@@ -109,6 +109,76 @@ export function WrapUpWeeklyCard({
     { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0, total: 0 }
   );
 
+useImperativeHandle(ref, () => ({
+  downloadCSV() {
+    if (!groupedData || groupedData.length === 0) return;
+
+    const rows = groupedData.map((row, index) => {
+      return {
+        Rank: index + 1,
+        "Wrap-Up": row.wrap_up,
+        "Week 1": row.week1,
+        "Week 2": row.week2,
+        "Week 3": row.week3,
+        "Week 4": row.week4,
+        Total: row.total,
+      };
+    });
+
+    const headers = [
+      "Rank",
+      "Wrap-Up",
+      "Week 1",
+      "Week 2",
+      "Week 3",
+      "Week 4",
+      "Total",
+    ];
+
+    // SAME DATE FILTER LOGIC STYLE AS TSA EXPORT
+    let filterText = "All Dates";
+    if (selectedMonth !== undefined && selectedYear !== undefined) {
+      const firstDay = new Date(selectedYear, selectedMonth, 1);
+      const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
+
+      const from = firstDay.toLocaleDateString();
+      const to = lastDay.toLocaleDateString();
+
+      filterText = `${from} - ${to}`;
+    }
+
+    // TOTAL ROW
+    const totalRow = [
+      "",
+      "TOTAL",
+      totals.week1,
+      totals.week2,
+      totals.week3,
+      totals.week4,
+      totals.total,
+    ];
+
+    const csv = [
+      ["Date Filter", filterText].join(","),
+      [],
+      headers.join(","),
+      totalRow.join(","),
+      ...rows.map((row) =>
+        headers.map((h) => row[h as keyof typeof row]).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "weekly-wrapup-distribution.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  },
+}));
   return (
     <Card>
       <CardHeader className="flex justify-between items-center">
@@ -177,4 +247,4 @@ export function WrapUpWeeklyCard({
       </CardContent>
     </Card>
   );
-}
+});

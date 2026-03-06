@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, forwardRef, ForwardRefRenderFunction } from "react";
+import React, { useState, useEffect, useMemo, forwardRef, ForwardRefRenderFunction, useImperativeHandle } from "react";
 import { Info } from "lucide-react";
 
 import {
@@ -58,7 +58,9 @@ interface AgentSalesWeeklyCardProps {
     customWeekMapping: { [date: string]: number | undefined };
 }
 
-export interface AgentSalesWeeklyCardRef { }
+export interface AgentSalesWeeklyCardRef {
+  downloadCSV: () => void;
+}
 
 /* ---------------- Helpers ---------------- */
 function formatDateKey(dateStr: string) {
@@ -173,7 +175,135 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
     }, [activities, agents, agentsLoading, selectedMonth, selectedYear, customWeekMapping]);
 
     const totalSoAmount = groupedData.reduce((sum, r) => sum + r.total, 0);
+const downloadCSV = () => {
+  if (!groupedData.length) return;
 
+  const headers = [
+    "Rank",
+    "Agent",
+    "Week 1",
+    "Week 2",
+    "Week 3",
+    "Week 4",
+    "Total",
+    "QTY Sold",
+    "Converted Sales",
+  ];
+
+  const rows = groupedData.map((r, index) => [
+    index + 1,
+    r.name,
+    r.week1,
+    r.week2,
+    r.week3,
+    r.week4,
+    r.total,
+    r.qtySold,
+    r.convertedCount,
+  ]);
+
+  const csv = [
+    ["Month", selectedMonth + 1].join(","),
+    ["Year", selectedYear].join(","),
+    [],
+    headers.join(","),
+    ...rows.map((r) => r.join(",")),
+    [],
+    [
+      "TOTAL",
+      "",
+      groupedData.reduce((sum, r) => sum + r.week1, 0),
+      groupedData.reduce((sum, r) => sum + r.week2, 0),
+      groupedData.reduce((sum, r) => sum + r.week3, 0),
+      groupedData.reduce((sum, r) => sum + r.week4, 0),
+      groupedData.reduce((sum, r) => sum + r.total, 0),
+      groupedData.reduce((sum, r) => sum + r.qtySold, 0),
+      groupedData.reduce((sum, r) => sum + r.convertedCount, 0),
+    ].join(","),
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "weekly-agent-sales-conversion.csv";
+  link.click();
+
+  URL.revokeObjectURL(url);
+};
+
+useImperativeHandle(ref, () => ({
+  downloadCSV() {
+    if (!groupedData || groupedData.length === 0) return;
+
+    const rows = groupedData.map((r, index) => ({
+      Rank: index + 1,
+      Agent: r.name,
+      "Week 1": r.week1,
+      "Week 2": r.week2,
+      "Week 3": r.week3,
+      "Week 4": r.week4,
+      Total: r.total,
+      "QTY Sold": r.qtySold,
+      "Converted Sales": r.convertedCount,
+    }));
+
+    const headers = [
+      "Rank",
+      "Agent",
+      "Week 1",
+      "Week 2",
+      "Week 3",
+      "Week 4",
+      "Total",
+      "QTY Sold",
+      "Converted Sales",
+    ];
+
+// DATE FILTER TEXT (same logic as TSA export)
+const firstDay = new Date(selectedYear, selectedMonth, 1);
+const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
+
+const from = firstDay.toLocaleDateString();
+const to = lastDay.toLocaleDateString();
+
+const filterText = `${from} - ${to}`;
+
+    // TOTAL ROW
+    const totalRow = [
+      "",
+      "TOTAL",
+      groupedData.reduce((sum, r) => sum + r.week1, 0),
+      groupedData.reduce((sum, r) => sum + r.week2, 0),
+      groupedData.reduce((sum, r) => sum + r.week3, 0),
+      groupedData.reduce((sum, r) => sum + r.week4, 0),
+      groupedData.reduce((sum, r) => sum + r.total, 0),
+      groupedData.reduce((sum, r) => sum + r.qtySold, 0),
+      groupedData.reduce((sum, r) => sum + r.convertedCount, 0),
+    ];
+
+    const csv = [
+      ["Date Filter", filterText].join(","),
+      [],
+      headers.join(","),
+      totalRow.join(","),
+      ...rows.map((row) =>
+        headers.map((h) => row[h as keyof typeof row]).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "weekly-agent-sales-conversion.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  },
+}));
     return (
         <Card>
             <CardHeader className="flex justify-between items-center">

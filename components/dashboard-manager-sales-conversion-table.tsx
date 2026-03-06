@@ -248,12 +248,10 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
 
 downloadCSV() {
 
-    if (!groupedAgents.length) {
-        alert("No data to export");
-        return;
-    }
+    if (!groupedAgents.length) return;
 
     const headers = [
+        "Rank",
         "Department Head",
         "TSA Response Time",
         "Non Quotation HT",
@@ -262,38 +260,97 @@ downloadCSV() {
         "Ticket Count"
     ];
 
-    const rows = groupedAgents.map(a => [
+    const rows = groupedAgents.map((a, index) => ({
 
-        a.agentName,
+        Rank: index + 1,
 
-        formatHoursToHMS(a.avgResponseTime),
+        "Department Head": a.agentName,
 
-        formatHoursToHMS(a.avgNonQuotationHandlingTime),
+        "TSA Response Time": formatHoursToHMS(a.avgResponseTime),
 
-        formatHoursToHMS(a.avgQuotationHandlingTime),
+        "Non Quotation HT": formatHoursToHMS(a.avgNonQuotationHandlingTime),
 
-        formatHoursToHMS(a.avgSPFHandlingTime),
+        "Quotation HT": formatHoursToHMS(a.avgQuotationHandlingTime),
 
-        a.tickets.length
+        "SPF HT": formatHoursToHMS(a.avgSPFHandlingTime),
 
-    ]);
+        "Ticket Count": a.tickets.length
 
-    const csvContent =
-        [headers, ...rows]
-        .map(e => e.join(","))
-        .join("\n");
+    }));
 
-    const blob = new Blob([csvContent], {
+
+    // FORMAT DATE FILTER
+    let filterText = "All Dates";
+
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+
+        const from = new Date(dateCreatedFilterRange.from).toLocaleDateString();
+
+        const to = new Date(dateCreatedFilterRange.to).toLocaleDateString();
+
+        filterText = `${from} - ${to}`;
+
+    }
+
+
+    // TOTAL ROW
+    const totalRow = [
+
+        "",
+
+        "TOTAL",
+
+        formatHoursToHMS(avgTSAResponseTime),
+
+        formatHoursToHMS(avgNonQuotationHandlingTime),
+
+        formatHoursToHMS(avgQuotationHandlingTime),
+
+        formatHoursToHMS(avgSPFHandlingTime),
+
+        groupedAgents.reduce((s, a) => s + a.tickets.length, 0)
+
+    ];
+
+
+    const csv = [
+
+        ["Date Filter", filterText].join(","),
+
+        [],
+
+        headers.join(","),
+
+        totalRow.join(","),
+
+        ...rows.map(row =>
+
+            headers.map(h => row[h as keyof typeof row]).join(",")
+
+        )
+
+    ].join("\n");
+
+
+    const blob = new Blob([csv], {
+
         type: "text/csv;charset=utf-8;"
+
     });
+
+    const url = URL.createObjectURL(blob);
+
 
     const link = document.createElement("a");
 
-    link.href = URL.createObjectURL(blob);
+    link.href = url;
 
     link.download = "department-head-sales.csv";
 
     link.click();
+
+
+    URL.revokeObjectURL(url);
 
 }
 

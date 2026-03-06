@@ -123,6 +123,7 @@ function DashboardContent() {
   const inboundTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
     null,
   );
+  const weeklyInboundCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const customerStatusCardRef = useRef<{ downloadCSV: () => void } | null>(
     null,
   );
@@ -134,6 +135,8 @@ function DashboardContent() {
   const tsaSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
     null,
   );
+  const wrapupWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const metricsCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const agentSalesCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(
     null,
@@ -144,6 +147,11 @@ function DashboardContent() {
   const managerSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
     null,
   );
+
+  const departmentHeadSalesCardRef = useRef<{ downloadCSV: () => void } | null>(
+    null,
+  );
+
   const queryUserId = searchParams?.get("id") ?? "";
 
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
@@ -368,6 +376,10 @@ function DashboardContent() {
     if (tsmSalesTrafficCardRef.current) {
       tsmSalesTrafficCardRef.current.downloadCSV();
     }
+    if (departmentHeadSalesCardRef.current) {
+      departmentHeadSalesCardRef.current.downloadCSV();
+    }
+
     // Kung may iba pang cards na may export, idagdag rin dito
     toast.success("Exported all available data!");
   };
@@ -381,7 +393,7 @@ function DashboardContent() {
       } else {
         console.log("channelCardRef.current is null");
       }
-    } else if (selectedExport === "Export Source Usage") {
+    } else if (selectedExport === "Where Customer Find Us") {
       if (sourceCardRef.current) {
         console.log("Calling downloadCSV from SourceCard");
         sourceCardRef.current.downloadCSV();
@@ -417,10 +429,22 @@ function DashboardContent() {
         console.log("companyDistributionCardRef.current is null");
       }
     } else if (selectedExport === "Export Wrap Up Distribution") {
-      if (wrapupCardRef.current) {
-        wrapupCardRef.current.downloadCSV();
+      if (wrapupWeeklyCardRef.current) {
+        wrapupWeeklyCardRef.current.downloadCSV();
       }
-    } else if (selectedExport === "Export CSR Sales Conversion") {
+    } else if (selectedExport === "Export Weekly Wrap Up Distribution") {
+      if (wrapupWeeklyCardRef.current) {
+        wrapupWeeklyCardRef.current.downloadCSV();
+      }
+    } else if (selectedExport === "Export Weekly Inbound Channel Count") {
+      if (weeklyInboundCardRef.current) {
+        weeklyInboundCardRef.current.downloadCSV();
+      }
+    } else if (selectedExport === "Export Weekly Agent Sales Conversion") {
+  if (agentSalesWeeklyCardRef.current) {
+    agentSalesWeeklyCardRef.current.downloadCSV();
+  }
+} else if (selectedExport === "Export CSR Sales Conversion") {
       if (agentSalesCardRef.current) {
         agentSalesCardRef.current.downloadCSV();
       }
@@ -431,29 +455,31 @@ function DashboardContent() {
       } else {
         console.log("tsaSalesTrafficCardRef.current is null");
       }
-    } 
-    else if (selectedExport === "Export Agent's and Other Users") {
-  if (tsaSalesTrafficCardRef.current) {
-    console.log("Calling downloadCSV from Agent's and Other Users");
-    tsaSalesTrafficCardRef.current.downloadCSV();
-  } else {
-    console.log("tsaSalesTrafficCardRef.current is null");
-  }
-}
-else if (selectedExport === "Export TSM's and Other Manager List") {
-  if (tsmSalesTrafficCardRef.current) {
-    console.log("Calling downloadCSV from TSM's and Other Manager List");
-    tsmSalesTrafficCardRef.current.downloadCSV();
-  } else {
-    console.log("tsmSalesTrafficCardRef.current is null");
-  }
-} else if (selectedExport === "Export Manager Sales Traffic") {
+    } else if (selectedExport === "Export Agent's and Other Users") {
+      if (tsaSalesTrafficCardRef.current) {
+        console.log("Calling downloadCSV from Agent's and Other Users");
+        tsaSalesTrafficCardRef.current.downloadCSV();
+      } else {
+        console.log("tsaSalesTrafficCardRef.current is null");
+      }
+    } else if (selectedExport === "Export TSM's and Other Manager List") {
+      if (tsmSalesTrafficCardRef.current) {
+        console.log("Calling downloadCSV from TSM's and Other Manager List");
+        tsmSalesTrafficCardRef.current.downloadCSV();
+      } else {
+        console.log("tsmSalesTrafficCardRef.current is null");
+      }
+    } else if (selectedExport === "Export Manager Sales Traffic") {
       if (managerSalesTrafficCardRef.current) {
         managerSalesTrafficCardRef.current.downloadCSV();
       }
     } else if (selectedExport === "Export Department Head Sales") {
-      if (managerSalesTrafficCardRef.current) {
-        managerSalesTrafficCardRef.current.downloadCSV();
+      if (departmentHeadSalesCardRef.current) {
+        departmentHeadSalesCardRef.current.downloadCSV();
+      }
+    } else if (selectedExport === "Export Channel Metrics") {
+      if (metricsCardRef.current) {
+        metricsCardRef.current.downloadCSV();
       }
     } else if (selectedExport === "Export All") {
       handleExportAll();
@@ -499,17 +525,14 @@ else if (selectedExport === "Export TSM's and Other Manager List") {
                   <SelectItem value="Export Agent's and Other Users">
                     Export Agent's and Other Users
                   </SelectItem>
-
-  <SelectItem value="Export TSM's and Other Manager List">
-    TSM's and Other Manager List
-  </SelectItem>
-
-                  <SelectItem value="Export All">Export All</SelectItem>
-                  <SelectItem value="Export Channel Usage">
-                    Export Channel Usage
+                  <SelectItem value="Export TSM's and Other Manager List">
+                    TSM's and Other Manager List
                   </SelectItem>
-                  <SelectItem value="Export Source Usage">
-                    Export Wrap Up Usage
+                  <SelectItem value="Export Department Head Sales">
+                    Export Department Head Sales
+                  </SelectItem>
+                  <SelectItem value="Export Channel Metrics">
+                    Export Channel Metrics
                   </SelectItem>
                   <SelectItem value="Export Inbound Traffic by Gender">
                     Export Inbound Traffic by Gender
@@ -517,17 +540,31 @@ else if (selectedExport === "Export TSM's and Other Manager List") {
                   <SelectItem value="Export Customer Status Distribution">
                     Export Customer Status Distribution
                   </SelectItem>
-                  <SelectItem value="Export Type Distribution">
-                    Export Type Distribution
+                  <SelectItem value="Where Customer Find Us">
+                    Export Where Customer Find Us
                   </SelectItem>
                   <SelectItem value="Export Company Distribution">
                     Export Company Distribution
                   </SelectItem>
+                  <SelectItem value="Export Weekly Inbound Channel Count">
+                    Export Weekly Inbound Channel Count
+                  </SelectItem>
+                  <SelectItem value="Export Weekly Wrap Up Distribution">
+                    Export Weekly Wrap Up Distribution
+                  </SelectItem>
+                  <SelectItem value="Export Weekly Agent Sales Conversion">
+                    Export Weekly Agent Sales Conversion
+                  </SelectItem>
+
+                  <SelectItem value="Export All">Export All</SelectItem>
+                  <SelectItem value="Export Channel Usage">
+                    Export Channel Usage
+                  </SelectItem>
+                  <SelectItem value="Export Type Distribution">
+                    Export Type Distribution
+                  </SelectItem>
                   <SelectItem value="Export Wrap Up Distribution">
                     Export Wrap Up Distribution
-                  </SelectItem>
-                  <SelectItem value="Export CSR Sales Conversion">
-                    Export CSR Sales Conversion
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -605,7 +642,7 @@ else if (selectedExport === "Export TSM's and Other Manager List") {
             />
 
             <ManagerSalesTableCard
-              ref={managerSalesTrafficCardRef}
+              ref={departmentHeadSalesCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
               role={userDetails.role}
@@ -617,6 +654,7 @@ else if (selectedExport === "Export TSM's and Other Manager List") {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <MetricsCard
+              ref={metricsCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -733,6 +771,7 @@ else if (selectedExport === "Export TSM's and Other Manager List") {
 
             {/* Agent Sales Weekly Card */}
             <AgentSalesTableWeeklyCard
+              ref={agentSalesWeeklyCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -851,6 +890,7 @@ else if (selectedExport === "Export TSM's and Other Manager List") {
 
           <div className="grid grid-cols-2 gap-4">
             <WeeklyInboundCard
+              ref={weeklyInboundCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}
@@ -861,6 +901,7 @@ else if (selectedExport === "Export TSM's and Other Manager List") {
 
             {/* Wrap Up Weekly Card */}
             <WrapUpWeeklyCard
+              ref={wrapupWeeklyCardRef}
               activities={activities}
               loading={loadingActivities}
               error={errorActivities}

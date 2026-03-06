@@ -124,41 +124,67 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(
       displayData.reduce((sum, row) => sum + row.count, 0) + jobApplicationCount;
 
     /* ================= CSV EXPORT ================= */
-    useImperativeHandle(ref, () => ({
-      downloadCSV: () => {
-        const headers = ["Customer Type", "Count"];
+useImperativeHandle(ref, () => ({
+  downloadCSV: () => {
+    const headers = ["Customer Type", "Count"];
 
-        const rows = displayData.map((row) => [
-          row.customer_type,
-          row.count.toString(),
-        ]);
-
-        // Add job applications as a separate row
-        if (jobApplicationCount > 0) {
-          rows.push(["Count of Job Applications", jobApplicationCount.toString()]);
-        }
-
-        const csvContent =
-          [headers, ...rows]
-            .map((row) =>
-              row.map((item) => `"${item.replace(/"/g, '""')}"`).join(","),
-            )
-            .join("\n") + "\n";
-
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "customer_type_summary.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      },
+    const rows = displayData.map((row) => ({
+      "Customer Type": row.customer_type,
+      Count: row.count,
     }));
+
+    if (jobApplicationCount > 0) {
+      rows.push({
+        "Customer Type": "Count of Job Applications",
+        Count: jobApplicationCount,
+      });
+    }
+
+    // DATE FILTER TEXT (same logic as other exports)
+    let filterText = "All Dates";
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+      const from = new Date(
+        dateCreatedFilterRange.from,
+      ).toLocaleDateString();
+      const to = new Date(
+        dateCreatedFilterRange.to,
+      ).toLocaleDateString();
+      filterText = `${from} - ${to}`;
+    }
+
+    const totalRow = [
+      "TOTAL",
+      totalCount,
+    ];
+
+    const csv = [
+      ["Date Filter", filterText].join(","),
+
+      [],
+
+      headers.join(","),
+
+      totalRow.join(","),
+
+      ...rows.map((row) =>
+        headers.map((h) => row[h as keyof typeof row]).join(","),
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "customer_type_summary.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  },
+}));
 
     /* ================= UI ================= */
     return (

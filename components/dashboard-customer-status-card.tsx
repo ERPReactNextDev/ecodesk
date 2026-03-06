@@ -120,38 +120,60 @@ const CustomerStatusCard = forwardRef<
   const totalCount =
     groupedData.reduce((sum, row) => sum + row.count, 0) + othersCount;
 
-  /* ================= CSV EXPORT ================= */
-  useImperativeHandle(ref, () => ({
-    downloadCSV: () => {
-      const headers = ["Customer Status", "Count"];
+useImperativeHandle(ref, () => ({
+  downloadCSV() {
+    if (!groupedData || (groupedData.length === 0 && othersCount === 0)) return;
 
-      const rows = groupedData.map((r) => [r.customer_status, String(r.count)]);
+    const rows = groupedData.map((row, index) => ({
+      Rank: index + 1,
+      "Customer Status": row.customer_status,
+      Count: row.count,
+    }));
 
-      if (othersCount > 0) {
-        rows.push(["Count of Others Status", othersCount.toString()]);
-      }
-
-      const csvContent =
-        [headers, ...rows]
-          .map((row) =>
-            row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","),
-          )
-          .join("\n") + "\n";
-
-      const blob = new Blob([csvContent], {
-        type: "text/csv;charset=utf-8;",
+    if (othersCount > 0) {
+      rows.push({
+        Rank: rows.length + 1,
+        "Customer Status": "Count of Others Status",
+        Count: othersCount,
       });
+    }
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "customer_status.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    },
-  }));
+    const headers = ["Rank", "Customer Status", "Count"];
+
+    let filterText = "All Dates";
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+      const from = new Date(dateCreatedFilterRange.from).toLocaleDateString();
+      const to = new Date(dateCreatedFilterRange.to).toLocaleDateString();
+      filterText = `${from} - ${to}`;
+    }
+
+    const totalRow = [
+      "",
+      "TOTAL",
+      totalCount
+    ];
+
+    const csv = [
+      ["Date Filter", filterText].join(","),
+      [],
+      headers.join(","),
+      totalRow.join(","),
+      ...rows.map((row) =>
+        headers.map((h) => row[h as keyof typeof row]).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "customer-status-distribution.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  },
+}));
 
   /* ================= UI ================= */
   return (

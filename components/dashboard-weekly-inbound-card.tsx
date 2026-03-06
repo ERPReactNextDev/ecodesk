@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, forwardRef, useImperativeHandle } from "react";
 import { Info } from "lucide-react";
 
 import {
@@ -41,14 +41,14 @@ interface WeeklyInboundCardProps {
   customWeekMapping: { [date: string]: number | undefined };
 }
 
-export function WeeklyInboundCard({
+export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
   activities,
   loading,
   error,
   selectedMonth,
   selectedYear,
   customWeekMapping,
-}: WeeklyInboundCardProps) {
+}: WeeklyInboundCardProps, ref: any) {
   const [showTooltip, setShowTooltip] = useState(false);
 
   const isInSelectedMonth = (dateStr?: string) => {
@@ -103,6 +103,43 @@ export function WeeklyInboundCard({
     },
     { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0, total: 0 }
   );
+
+ const downloadCSV = () => {
+  const headers = ["Channel", "Week 1", "Week 2", "Week 3", "Week 4", "Total"];
+
+  const rows = groupedData.map((r) => [
+    r.channel,
+    r.week1,
+    r.week2,
+    r.week3,
+    r.week4,
+    r.total,
+  ]);
+
+  const csv = [
+    [`Month`, `${selectedMonth + 1}`].join(","),
+    [`Year`, `${selectedYear}`].join(","),
+    [],
+    headers.join(","),
+    ...rows.map((r) => r.join(",")),
+    [],
+    ["Total", totals.week1, totals.week2, totals.week3, totals.week4, totals.total].join(","),
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "weekly-inbound-channel-count.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}; 
+
+useImperativeHandle(ref, () => ({
+  downloadCSV,
+}));
 
   return (
     <Card>
@@ -171,4 +208,4 @@ export function WeeklyInboundCard({
       </CardContent>
     </Card>
   );
-}
+});

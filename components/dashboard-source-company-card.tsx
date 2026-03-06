@@ -100,36 +100,54 @@ const SourceCompanyCard = forwardRef<SourceCompanyCardRef, ChannelTableProps>(({
 
   const totalCount = groupedData.reduce((sum, row) => sum + row.count, 0);
 
-  useImperativeHandle(ref, () => ({
-    downloadCSV: () => {
-      const headers = ["Source Company", "Count"];
+useImperativeHandle(ref, () => ({
+  downloadCSV() {
+    if (!groupedData || groupedData.length === 0) return;
 
-      const rows = groupedData.map(({ source_company, count }) => [
-        source_company,
-        count.toString(),
-      ]);
+    const rows = groupedData.map((row, index) => ({
+      Rank: index + 1,
+      "Source Company": row.source_company,
+      Count: row.count,
+    }));
 
-      const csvContent =
-        [headers, ...rows]
-          .map((row) =>
-            row
-              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape quotes
-              .join(",")
-          )
-          .join("\n") + "\n";
+    const headers = ["Rank", "Source Company", "Count"];
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "source_company.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+    let filterText = "All Dates";
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+      const from = new Date(dateCreatedFilterRange.from).toLocaleDateString();
+      const to = new Date(dateCreatedFilterRange.to).toLocaleDateString();
+      filterText = `${from} - ${to}`;
     }
-  }));
+
+    const totalRow = [
+      "",
+      "TOTAL",
+      totalCount
+    ];
+
+    const csv = [
+      ["Date Filter", filterText].join(","),
+      [],
+      headers.join(","),
+      totalRow.join(","),
+      ...rows.map((row) =>
+        headers
+          .map((h) => `"${String(row[h as keyof typeof row]).replace(/"/g, '""')}"`)
+          .join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "source-company-distribution.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  },
+}));
 
   return (
     <Card>

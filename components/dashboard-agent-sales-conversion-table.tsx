@@ -467,23 +467,23 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         };
       });
 
-const headers = [
-  "Rank",
-  "CSR",
-  "Sales",
-  "Non-Sales",
-  "Sales Amount",
-  "Qty Sold",
-  "Converted to Sale",
-  "% Conversion",
-  "Ave. Unit",
-  "Ave. Value",
-  "New Client",
-  "New-Non Buying",
-  "Existing Active",
-  "Existing Inactive",
-  "CSR Response Time",
-];
+      const headers = [
+        "Rank",
+        "CSR",
+        "Sales",
+        "Non-Sales",
+        "Sales Amount",
+        "Qty Sold",
+        "Converted to Sale",
+        "% Conversion",
+        "Ave. Unit",
+        "Ave. Value",
+        "New Client",
+        "New-Non Buying",
+        "Existing Active",
+        "Existing Inactive",
+        "CSR Response Time",
+      ];
 
       // FORMAT DATE FILTER
       let filterText = "All Dates";
@@ -508,8 +508,8 @@ const headers = [
         totalNewClient,
         totalNewNonBuying,
         totalExistingActive,
-totalExistingInactive,
-formatMs(avgCSRResponseTime),
+        totalExistingInactive,
+        formatMs(avgCSRResponseTime),
       ];
 
       const csv = [
@@ -652,8 +652,12 @@ formatMs(avgCSRResponseTime),
                     Total
                   </TableCell>
                   <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">{groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}</TableCell>
-                  <TableCell className="text-right">₱{totalAmount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₱{totalAmount.toLocaleString()}
+                  </TableCell>
                   <TableCell className="text-right">{totalQty}</TableCell>
                   <TableCell className="text-right">{totalConverted}</TableCell>
                   <TableCell className="text-right">

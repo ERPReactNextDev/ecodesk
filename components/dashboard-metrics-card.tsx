@@ -1,6 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, {
+  useState,
+  useMemo,
+  useImperativeHandle
+} from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -48,6 +52,9 @@ interface ChannelTableProps {
     React.SetStateAction<DateRange | undefined>
   >;
 }
+export interface MetricsCardRef {
+  downloadCSV: () => void;
+}
 
 /* ---------------- Date Helper (FIXED) ---------------- */
 function isDateInRange(date: Date, range?: DateRange) {
@@ -68,12 +75,15 @@ function isDateInRange(date: Date, range?: DateRange) {
 }
 
 /* ---------------- Component ---------------- */
-export function MetricsCard({
+export const MetricsCard = React.forwardRef<
+  MetricsCardRef,
+  ChannelTableProps
+>(function MetricsCard({
   activities,
   loading,
   error,
   dateCreatedFilterRange,
-}: ChannelTableProps) {
+}, ref) {
   const [showTooltip, setShowTooltip] = useState(false);
 
   /* ---------------- Grouped Data ---------------- */
@@ -143,6 +153,94 @@ export function MetricsCard({
 
   const avgTransactionValueTotal =
     totalConverted > 0 ? totalSoAmount / totalConverted : 0;
+
+    useImperativeHandle(ref, () => ({
+  downloadCSV() {
+
+    if (!groupedData.length) return;
+
+    const headers = [
+      "Channel",
+      "Traffic",
+      "Amount",
+      "Converted",
+      "Qty Sold",
+      "ATU",
+      "ATV"
+    ];
+
+    const rows = groupedData.map(r => ({
+      Channel: r.channel,
+      Traffic: r.traffic,
+      Amount: r.soAmountTotal,
+      Converted: r.convertedCount,
+      "Qty Sold": r.qtySoldTotal,
+      ATU: Math.round(r.avgTransactionUnit),
+      ATV: Math.round(r.avgTransactionValue)
+    }));
+
+
+    // DATE FILTER TEXT
+    let filterText = "All Dates";
+
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+
+      const from = new Date(dateCreatedFilterRange.from).toLocaleDateString();
+
+      const to = new Date(dateCreatedFilterRange.to).toLocaleDateString();
+
+      filterText = `${from} - ${to}`;
+
+    }
+
+
+    // TOTAL ROW
+    const totalRow = [
+      "TOTAL",
+      totalTraffic,
+      totalSoAmount,
+      totalConverted,
+      totalQtySold,
+      Math.round(avgTransactionUnitTotal),
+      Math.round(avgTransactionValueTotal)
+    ];
+
+
+    const csv = [
+
+      ["Date Filter", filterText].join(","),
+
+      [],
+
+      headers.join(","),
+
+      totalRow.join(","),
+
+      ...rows.map(row =>
+        headers.map(h => row[h as keyof typeof row]).join(",")
+      )
+
+    ].join("\n");
+
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.download = "channel-traffic-metrics.csv";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+  }
+}));
 
   /* ---------------- Render ---------------- */
   return (
@@ -221,4 +319,4 @@ export function MetricsCard({
       </CardContent>
     </Card>
   );
-}
+});

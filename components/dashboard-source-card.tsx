@@ -124,28 +124,52 @@ const SourceCard = forwardRef<SourceCardRef, SourceListProps>(
       }).length;
     }, [filteredActivities]);
 
-    useImperativeHandle(ref, () => ({
-      downloadCSV() {
-        const header = ["Source", "Count"];
+useImperativeHandle(ref, () => ({
+  downloadCSV() {
+    if (!sourceCountsArray || sourceCountsArray.length === 0) return;
 
-        const rows = sourceCountsArray.map(({ source, count }) => [
-          source,
-          count.toString(),
-        ]);
-
-        const csvContent =
-          "data:text/csv;charset=utf-8," +
-          [header, ...rows].map((e) => e.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "source_counts.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      },
+    const rows = sourceCountsArray.map((row, index) => ({
+      Rank: index + 1,
+      Source: row.source,
+      Count: row.count,
     }));
+
+    const headers = ["Rank", "Source", "Count"];
+
+    let filterText = "All Dates";
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+      const from = new Date(dateCreatedFilterRange.from).toLocaleDateString();
+      const to = new Date(dateCreatedFilterRange.to).toLocaleDateString();
+      filterText = `${from} - ${to}`;
+    }
+
+    const totalRow = [
+      "",
+      "TOTAL",
+      totalSourcesCount
+    ];
+
+    const csv = [
+      ["Date Filter", filterText].join(","),
+      [],
+      headers.join(","),
+      totalRow.join(","),
+      ...rows.map((row) =>
+        headers.map((h) => row[h as keyof typeof row]).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "source-distribution.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  },
+}));
 
     return (
       <Card>

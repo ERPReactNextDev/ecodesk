@@ -102,46 +102,52 @@ const InboundTrafficGenderCard = forwardRef<InboundTrafficCardRef, ChannelTableP
 
   const totalCount = groupedData.reduce((sum, row) => sum + row.count, 0);
 
-  useImperativeHandle(ref, () => ({
-    downloadCSV: () => {
-      const filtered = activities.filter(
-        (a) =>
-          isDateInRange(a.date_created, dateCreatedFilterRange) &&
-          a.gender &&
-          a.gender.trim() !== "" &&
-          a.company_name &&
-          a.company_name.trim() !== ""
-      );
+useImperativeHandle(ref, () => ({
+  downloadCSV() {
+    if (!groupedData || groupedData.length === 0) return;
 
-      const headers = ["Gender", "Company Name", "Contact Person"];
+    const rows = groupedData.map((row, index) => ({
+      Rank: index + 1,
+      Gender: row.gender,
+      Count: row.count,
+    }));
 
-      const rows = filtered.map(({ gender, company_name, contact_person }) => [
-        gender?.trim() ?? "",
-        company_name.trim(),
-        contact_person?.trim() ?? "",
-      ]);
+    const headers = ["Rank", "Gender", "Count"];
 
-      const csvContent =
-        [headers, ...rows]
-          .map((row) =>
-            row
-              .map((item) => `"${item.replace(/"/g, '""')}"`) // escape double quotes
-              .join(",")
-          )
-          .join("\n") + "\n";
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "inbound_traffic_details.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+    let filterText = "All Dates";
+    if (dateCreatedFilterRange?.from && dateCreatedFilterRange?.to) {
+      const from = new Date(dateCreatedFilterRange.from).toLocaleDateString();
+      const to = new Date(dateCreatedFilterRange.to).toLocaleDateString();
+      filterText = `${from} - ${to}`;
     }
-  }));
+
+    const totalRow = [
+      "",
+      "TOTAL",
+      totalCount
+    ];
+
+    const csv = [
+      ["Date Filter", filterText].join(","),
+      [],
+      headers.join(","),
+      totalRow.join(","),
+      ...rows.map((row) =>
+        headers.map((h) => row[h as keyof typeof row]).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "inbound-traffic-gender.csv";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  },
+}));
 
   return (
     <Card>
