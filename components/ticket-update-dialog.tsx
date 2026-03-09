@@ -283,7 +283,8 @@ export function UpdateTicketDialog({
   const [genderState, setGender] = useState("");
   const [channelState, setChannel] = useState("");
   const [wrapUpState, setWrapUp] = useState("");
-  const isJobApplicant = wrapUpState === "Job Applicants";
+  const isJobApplicant =
+    wrapUpState === "Job Applicants" || wrapUpState === "Inquiry";
   const [sourceState, setSource] = useState("");
   const [customerTypeState, setCustomerType] = useState("");
   const [customerStatusState, setCustomerStatus] = useState("");
@@ -497,9 +498,18 @@ export function UpdateTicketDialog({
       channel: channelState,
       wrap_up: wrapUpState,
       source: sourceState,
+      ...(wrapUpState === "Inquiry" && {
+        close_reason: "Inquiry Handled",
+      }),
+
+      ...(wrapUpState === "Job Applicants" && {
+        close_reason: "Job Application Received",
+      }),
       customer_type: customerTypeState,
       customer_status: customerStatusState,
-      status: statusState,
+      ...(wrapUpState === "Job Applicants" || wrapUpState === "Inquiry"
+        ? { status: "Closed" }
+        : { status: statusState }),
       department: departmentState,
       manager: managerState,
       agent: agentState,
@@ -522,11 +532,18 @@ export function UpdateTicketDialog({
       date_created: dateCreatedState,
       date_updated: new Date().toISOString(),
 
-      ...(statusState === "Closed" && {
-        close_reason: closeReason,
-        counter_offer: counterOffer,
-        client_specs: clientSpecs,
-      }),
+...((statusState === "Closed" ||
+  wrapUpState === "Job Applicants" ||
+  wrapUpState === "Inquiry") && {
+  close_reason:
+    wrapUpState === "Inquiry"
+      ? "Inquiry Handled"
+      : wrapUpState === "Job Applicants"
+      ? "Job Application Received"
+      : closeReason,
+  counter_offer: counterOffer,
+  client_specs: clientSpecs,
+}),
 
       // 🔥 IF SAVING AS CONVERTED INTO SALES – CLEAR CLOSE FIELDS
       ...(statusState === "Converted into Sales" && {
@@ -537,7 +554,10 @@ export function UpdateTicketDialog({
     };
 
     // 🔥 CLEAR STEPS 4–6 ONLY WHEN SAVING AT STEP 3 (JOB APPLICANTS)
-    if (wrapUpState === "Job Applicants" && step === 3) {
+    if (
+      (wrapUpState === "Job Applicants" || wrapUpState === "Inquiry") &&
+      step === 3
+    ) {
       newActivity.customer_type = "-";
       newActivity.customer_status = "-";
       newActivity.department = "-";
@@ -604,6 +624,9 @@ export function UpdateTicketDialog({
             address,
             ticket_reference_number: ticketReferenceNumber,
             wrap_up: wrapUpState,
+            ...(wrapUpState === "Job Applicants" || wrapUpState === "Inquiry"
+              ? { status: "Closed" }
+              : { status: statusState }),
             inquiry: inquiryState,
             tsm: managerState,
             referenceid: agentState,

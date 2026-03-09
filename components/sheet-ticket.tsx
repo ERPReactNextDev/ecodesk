@@ -1,13 +1,27 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { FieldGroup, FieldSet, FieldLabel, Field, FieldContent, FieldDescription, FieldTitle, } from "@/components/ui/field";
+import {
+  FieldGroup,
+  FieldSet,
+  FieldLabel,
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldTitle,
+} from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 // ===== HANDLING TIME COMPUTATION HELPERS (DISPLAY ONLY) =====
 
@@ -81,6 +95,7 @@ function computeTSAResponseTime(
     "CustomerFeedback/Recommendation",
     "Job Inquiry",
     "Job Applicants",
+    "Inquiry",
     "Supplier/Vendor Product Offer",
     "Internal Whistle Blower",
     "Threats / Extortion / Intimidation",
@@ -563,7 +578,7 @@ export function TicketSheet(props: TicketSheetProps) {
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [errorActivities, setErrorActivities] = useState(null);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const isJobApplicant = wrapUp === "Job Applicants";
+  const isJobApplicant = wrapUp === "Job Applicants" || wrapUp === "Inquiry";
   const isHrActive = Boolean(hrAcknowledgeDate);
 
   // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
@@ -1306,7 +1321,10 @@ export function TicketSheet(props: TicketSheetProps) {
                     { value: "Erica, Maestro", label: "Erica, Maestro" },
                     { value: "Grace, Lumabao", label: "Grace, Lumabao" },
                     { value: "Lester, Miguel", label: "Lester, Miguel" },
-                    { value: "Mark Vincent, Capin", label: "Mark Vincent, Capin" },
+                    {
+                      value: "Mark Vincent, Capin",
+                      label: "Mark Vincent, Capin",
+                    },
                     { value: "Maureen, Gabriel", label: "Maureen, Gabriel" },
                     { value: "Myra, Quinto", label: "Myra, Quinto" },
                     { value: "Rikki, Paje", label: "Rikki, Paje" },
@@ -1501,6 +1519,10 @@ export function TicketSheet(props: TicketSheetProps) {
                       value: "Customer Inquiry Non-Sales",
                       label: "Customer Inquiry Non-Sales",
                     },
+
+                    { value: "Inquiry", label: "Inquiry" },
+                    { value: "Follow Up Sales", label: "Follow Up Sales" },
+
                     { value: "Follow Up Sales", label: "Follow Up Sales" },
                     {
                       value: "Follow Up Non-Sales",

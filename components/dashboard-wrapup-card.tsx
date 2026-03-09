@@ -100,12 +100,18 @@ const WrapUpCard: ForwardRefRenderFunction<WrapUpCardRef, WrapUpBarChartProps> =
 
   const wrapupCountsArray = useMemo(() => {
     const counts: Record<string, number> = {};
-    filteredActivities.forEach((a) => {
-      if (a.wrap_up && a.wrap_up.trim() !== "") {
-        const ch = a.wrap_up.trim();
-        counts[ch] = (counts[ch] || 0) + 1;
-      }
-    });
+filteredActivities.forEach((a) => {
+  const excluded = ["Inquiry"];
+
+  if (
+    a.wrap_up &&
+    a.wrap_up.trim() !== "" &&
+    !excluded.includes(a.wrap_up.trim())
+  ) {
+    const ch = a.wrap_up.trim();
+    counts[ch] = (counts[ch] || 0) + 1;
+  }
+});
     return Object.entries(counts)
       .map(([wrap_up, count]) => ({ wrap_up, count }))
       .sort((a, b) => b.count - a.count);
