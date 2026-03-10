@@ -58,6 +58,8 @@ interface Activity {
   inquiry_received?: string;
   response_to_inquiry?: string;
   wrap_up?: string;
+  // Handler
+  handling_csr: string;
 }
 
 interface Agent {
@@ -194,6 +196,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
       string,
       {
         referenceid: string;
+        handling_csr: string;
         salesCount: number;
         nonSalesCount: number;
         convertedCount: number;
@@ -242,6 +245,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         if (!map[referenceid]) {
           map[referenceid] = {
             referenceid,
+            handling_csr: a.handling_csr,
             salesCount: 0,
             nonSalesCount: 0,
             convertedCount: 0,
@@ -613,19 +617,14 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-white z-30">
-                    Rank
-                  </TableHead>
-                  <TableHead className="sticky left-[50px] bg-white z-30 border-r">
-                    CSR
-                  </TableHead>
-                  <TableHead className="text-right">Sales</TableHead>
-                  <TableHead className="text-right">Non-Sales</TableHead>
+                  <TableHead className="sticky left-0 bg-white z-30">Rank</TableHead>
+                  <TableHead className="sticky left-[70px] bg-white z-30 border-r">Endorsed CSR</TableHead>
+                  <TableHead className="sticky left-[230px] bg-white z-30 border-r">Received CSR</TableHead>
+                  <TableHead className="text-right border-r">Sales</TableHead>
+                  <TableHead className="text-right border-r">Non-Sales</TableHead>
                   <TableHead className="text-right">Sales</TableHead>
                   <TableHead className="text-right">Qty Sold</TableHead>
-                  <TableHead className="text-right">
-                    Converted to Sale
-                  </TableHead>
+                  <TableHead className="text-right">Converted to Sale</TableHead>
                   <TableHead className="text-right">% Conversion</TableHead>
                   <TableHead className="text-right">Ave. Unit</TableHead>
                   <TableHead className="text-right">Ave. Value</TableHead>
@@ -635,9 +634,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableHead className="text-right">
                     Existing Inactive
                   </TableHead>
-                  {/* <TableHead className="text-right">
+                  <TableHead className="text-right">
                     CSR Handling Time
-                  </TableHead> */}
+                  </TableHead>
                   <TableHead className="text-right">
                     CSR Response Time
                   </TableHead>
@@ -645,14 +644,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
               </TableHeader>
               <TableHeader>
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell className="text-center sticky left-0 bg-white z-30">
-                    -
-                  </TableCell>
-                  <TableCell className="sticky left-[50px] bg-white z-30 border-r">
-                    Total
-                  </TableCell>
-                  <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-center sticky left-0 bg-white z-30">Total</TableCell>
+                  <TableCell className="sticky left-[70px] bg-white z-30"></TableCell>
+                  <TableCell className="sticky left-[230px] bg-white z-30 border-r"></TableCell>
+                  <TableCell className="text-right border-r">{totalSales}</TableCell>
+                  <TableCell className="text-right border-r">
                     {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
                   </TableCell>
                   <TableCell className="text-right">
@@ -686,9 +682,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableCell className="text-right">
                     {formatMs(avgCSRResponseTime)}
                   </TableCell>
-                  {/* <TableCell className="text-right">
+                  <TableCell className="text-right">
                     {formatMs(avgCSRHandlingTime)}
-                  </TableCell> */}
+                  </TableCell>
                 </TableRow>
               </TableHeader>
 
@@ -719,13 +715,16 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                         <TableCell className="text-center sticky left-0 bg-white z-30">
                           {index + 1}
                         </TableCell>
-                        <TableCell className="sticky left-[50px] bg-white z-30 border uppercase">
+                        <TableCell className="sticky left-[70px] bg-white z-30 border uppercase">
                           {fullName}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="sticky left-[230px] bg-white z-30 border-r uppercase text-right">
+                          {row.handling_csr || "-"}
+                        </TableCell>
+                        <TableCell className="text-right border-r">
                           {row.salesCount}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right border-r">
                           {row.nonSalesCount}
                         </TableCell>
                         <TableCell className="text-right">
@@ -767,9 +766,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                         <TableCell className="text-right">
                           ₱{row.existingInactiveSales.toLocaleString()}
                         </TableCell>
-                        {/* <TableCell className="text-right">
+                        <TableCell className="text-right">
                           {formatMs(avgHandlingResponse)}
-                        </TableCell> */}
+                        </TableCell>
                         <TableCell className="text-right">
                           {formatMs(avgResponse)}
                         </TableCell>

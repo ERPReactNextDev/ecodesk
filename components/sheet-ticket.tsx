@@ -1315,7 +1315,7 @@ export function TicketSheet(props: TicketSheetProps) {
                 <SelectField
                   value={handlingCSR}
                   onChange={setHandlingCSR}
-                  placeholder="Select a channel"
+                  placeholder="Select a agent"
                   options={[
                     { value: "Armando, Arendai", label: "Armando, Arendain" },
                     { value: "Erica, Maestro", label: "Erica, Maestro" },
