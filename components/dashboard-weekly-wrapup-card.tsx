@@ -76,16 +76,16 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
 activities
   .filter((a) => {
     const excluded = ["Inquiry"]; // hide Inquiry only
-
     const wrap = a.wrap_up?.trim();
 
-    if (!wrap) return false;
+    if (!wrap || wrap === "-") return true; // allow for Others
     if (excluded.includes(wrap)) return false;
 
     return isInSelectedMonth(a.date_created);
   })
         .forEach((a) => {
-          const wrap_up = a.wrap_up!.trim();
+const wrap = a.wrap_up?.trim();
+const wrap_up = !wrap || wrap === "-" ? "Count of Others Status" : wrap;
           const date = a.date_created ? new Date(a.date_created) : null;
           if (!date) return;
 
@@ -216,7 +216,7 @@ activities
             <Info size={18} />
             {showTooltip && (
               <TooltipInfo>
-                Counts per wrap-up broken down by assigned weekss in the
+                Counts per wrap-up broken down by assigned weeks in the
                 selected month. Unassigned activities are included in totals.
               </TooltipInfo>
             )}

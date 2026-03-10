@@ -98,37 +98,47 @@ const WrapUpCard: ForwardRefRenderFunction<WrapUpCardRef, WrapUpBarChartProps> =
     return activities.filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange));
   }, [activities, dateCreatedFilterRange]);
 
-const wrapupCountsArray = useMemo(() => {
+const { wrapupCountsArray, othersCount } = useMemo(() => {
   const counts: Record<string, number> = {};
   const excluded = ["Inquiry"]; // hide Inquiry only
+  let others = 0;
 
   filteredActivities.forEach((a) => {
     const wrap = a.wrap_up?.trim();
 
-    if (!wrap || excluded.includes(wrap)) return;
+    if (!wrap || wrap === "-") {
+      others += 1;
+      return;
+    }
+
+    if (excluded.includes(wrap)) return;
 
     counts[wrap] = (counts[wrap] || 0) + 1;
   });
 
-  return Object.entries(counts)
-    .map(([wrap_up, count]) => ({ wrap_up, count }))
-    .sort((a, b) => b.count - a.count);
+  return {
+    wrapupCountsArray: Object.entries(counts)
+      .map(([wrap_up, count]) => ({ wrap_up, count }))
+      .sort((a, b) => b.count - a.count),
+    othersCount: others,
+  };
 }, [filteredActivities]);
 
-const totalWrapUpCount = useMemo(() => {
-  const excluded = ["Inquiry"];
+const totalWrapUpCount =
+  wrapupCountsArray.reduce((sum, row) => sum + row.count, 0) + othersCount;
 
-  return filteredActivities.filter(
-    (a) =>
-      a.wrap_up &&
-      a.wrap_up.trim() !== "" &&
-      !excluded.includes(a.wrap_up.trim())
-  ).length;
-}, [filteredActivities]);
   // CSV download helper
   const downloadCSV = () => {
     const header = ["wrap_up", "Count"];
-    const rows = wrapupCountsArray.map(({ wrap_up, count }) => [wrap_up, count.toString()]);
+const rows = [
+  ...wrapupCountsArray.map(({ wrap_up, count }) => [
+    wrap_up,
+    count.toString(),
+  ]),
+  ...(othersCount > 0
+    ? [["Count of Others Status", othersCount.toString()]]
+    : []),
+];
 
     const csvContent =
       "data:text/csv;charset=utf-8," +
@@ -172,7 +182,12 @@ const totalWrapUpCount = useMemo(() => {
         {!loading && !error && wrapupCountsArray.length > 0 ? (
           <ChartContainer config={chartConfig}>
             <BarChart
-              data={wrapupCountsArray}
+data={[
+  ...wrapupCountsArray,
+  ...(othersCount > 0
+    ? [{ wrap_up: "Count of Others Status", count: othersCount }]
+    : []),
+]}
               layout="vertical"
               margin={{ right: 16, left: 0 }}
               width={400}

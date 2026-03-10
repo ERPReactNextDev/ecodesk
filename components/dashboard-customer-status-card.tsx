@@ -92,37 +92,31 @@ const CustomerStatusCard = forwardRef<
   };
 
   /* ================= GROUPING WITH OTHERS COUNT ================= */
-  const { groupedData, othersCount } = useMemo(() => {
-    const map: Record<string, number> = {};
-    let others = 0;
+const groupedData = useMemo(() => {
+  const map: Record<string, number> = {};
 
-    activities
-      .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
-      .forEach((a) => {
-        const status = a.customer_status?.trim();
+  activities
+    .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
+    .forEach((a) => {
+      const status = a.customer_status?.trim();
 
-        if (!status || status === "-") {
-          others += 1;
-        } else {
-          map[status] = (map[status] || 0) + 1;
-        }
-      });
+      if (!status || status === "-") return;
 
-    return {
-      groupedData: Object.entries(map).map(([customer_status, count]) => ({
-        customer_status,
-        count,
-      })),
-      othersCount: others,
-    };
-  }, [activities, dateCreatedFilterRange]);
+      map[status] = (map[status] || 0) + 1;
+    });
 
-  const totalCount =
-    groupedData.reduce((sum, row) => sum + row.count, 0) + othersCount;
+  return Object.entries(map).map(([customer_status, count]) => ({
+    customer_status,
+    count,
+  }));
+}, [activities, dateCreatedFilterRange]);
+
+const totalCount =
+  groupedData.reduce((sum, row) => sum + row.count, 0);
 
 useImperativeHandle(ref, () => ({
   downloadCSV() {
-    if (!groupedData || (groupedData.length === 0 && othersCount === 0)) return;
+    if (!groupedData || (groupedData.length === 0)) return;
 
     const rows = groupedData.map((row, index) => ({
       Rank: index + 1,
@@ -130,13 +124,6 @@ useImperativeHandle(ref, () => ({
       Count: row.count,
     }));
 
-    if (othersCount > 0) {
-      rows.push({
-        Rank: rows.length + 1,
-        "Customer Status": "Count of Others Status",
-        Count: othersCount,
-      });
-    }
 
     const headers = ["Rank", "Customer Status", "Count"];
 
@@ -202,7 +189,7 @@ useImperativeHandle(ref, () => ({
         {loading && <p>Loading activities...</p>}
         {error && <p className="text-destructive">{error}</p>}
 
-        {!loading && !error && groupedData.length === 0 && othersCount === 0 && (
+        {!loading && !error && groupedData.length === 0 && (
           <p className="text-muted-foreground">No data available.</p>
         )}
 
@@ -230,21 +217,7 @@ useImperativeHandle(ref, () => ({
                 </TableRow>
               ))}
 
-              {othersCount > 0 && (
-                <TableRow key="others-status">
-                  <TableCell className="font-medium italic text-muted-foreground">
-                    Count of Others Status
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge
-                      variant="outline"
-                      className="h-9 min-w-9 rounded-full px-3 font-mono tabular-nums"
-                    >
-                      {othersCount}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              )}
+
             </TableBody>
           </Table>
         )}
