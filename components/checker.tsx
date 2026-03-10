@@ -54,6 +54,8 @@ interface Ticket {
     contact_person: string;
     email_address: string;
     hr_acknowledge_date: string;
+    inquiry_received: string;
+    response_to_inquiry: string;
 }
 
 interface TicketProps {
@@ -89,6 +91,8 @@ export const Checker: React.FC<TicketProps> = ({
         "ticket_endorsed",
         "tsa_acknowledge_date",
         "response_time", // ✅ new computed column
+        "inquiry_received",
+        "response_to_inquiry",
         "company_name",
         "contact_person",
         "gender",
