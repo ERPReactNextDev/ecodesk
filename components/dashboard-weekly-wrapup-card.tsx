@@ -73,14 +73,17 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
       type WeekCounts = { [week: number]: number };
       const map: Record<string, WeekCounts & { unassigned: number }> = {};
 
-      activities
-        .filter(
-          (a) =>
-            a.wrap_up &&
-            a.wrap_up.trim() !== "" &&
-            a.wrap_up.trim() !== "Inquiry" &&
-            isInSelectedMonth(a.date_created),
-        )
+activities
+  .filter((a) => {
+    const excluded = ["Inquiry"]; // hide Inquiry only
+
+    const wrap = a.wrap_up?.trim();
+
+    if (!wrap) return false;
+    if (excluded.includes(wrap)) return false;
+
+    return isInSelectedMonth(a.date_created);
+  })
         .forEach((a) => {
           const wrap_up = a.wrap_up!.trim();
           const date = a.date_created ? new Date(a.date_created) : null;

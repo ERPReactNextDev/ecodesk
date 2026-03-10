@@ -98,29 +98,33 @@ const WrapUpCard: ForwardRefRenderFunction<WrapUpCardRef, WrapUpBarChartProps> =
     return activities.filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange));
   }, [activities, dateCreatedFilterRange]);
 
-  const wrapupCountsArray = useMemo(() => {
-    const counts: Record<string, number> = {};
-filteredActivities.forEach((a) => {
+const wrapupCountsArray = useMemo(() => {
+  const counts: Record<string, number> = {};
+  const excluded = ["Inquiry"]; // hide Inquiry only
+
+  filteredActivities.forEach((a) => {
+    const wrap = a.wrap_up?.trim();
+
+    if (!wrap || excluded.includes(wrap)) return;
+
+    counts[wrap] = (counts[wrap] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .map(([wrap_up, count]) => ({ wrap_up, count }))
+    .sort((a, b) => b.count - a.count);
+}, [filteredActivities]);
+
+const totalWrapUpCount = useMemo(() => {
   const excluded = ["Inquiry"];
 
-  if (
-    a.wrap_up &&
-    a.wrap_up.trim() !== "" &&
-    !excluded.includes(a.wrap_up.trim())
-  ) {
-    const ch = a.wrap_up.trim();
-    counts[ch] = (counts[ch] || 0) + 1;
-  }
-});
-    return Object.entries(counts)
-      .map(([wrap_up, count]) => ({ wrap_up, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [filteredActivities]);
-
-  const totalWrapUpCount = useMemo(() => {
-    return filteredActivities.filter((a) => a.wrap_up && a.wrap_up.trim() !== "").length;
-  }, [filteredActivities]);
-
+  return filteredActivities.filter(
+    (a) =>
+      a.wrap_up &&
+      a.wrap_up.trim() !== "" &&
+      !excluded.includes(a.wrap_up.trim())
+  ).length;
+}, [filteredActivities]);
   // CSV download helper
   const downloadCSV = () => {
     const header = ["wrap_up", "Count"];

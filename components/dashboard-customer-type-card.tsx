@@ -94,34 +94,28 @@ const CustomerTypeCard = forwardRef<CustomerTypeCardRef, ChannelTableProps>(
     };
 
     /* ================= CORE LOGIC ================= */
-    const { displayData, jobApplicationCount } = useMemo(() => {
-      const summary: Record<string, number> = {};
-      let jobApps = 0;
+const displayData = useMemo(() => {
+  const summary: Record<string, number> = {};
 
-      activities
-        .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
-        .forEach((a) => {
-          const ct = a.customer_type?.trim();
+  activities
+    .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
+    .forEach((a) => {
+      const ct = a.customer_type?.trim();
 
-          if (!ct || ct === "-") {
-            // count as job application (not included in summary)
-            jobApps += 1;
-          } else {
-            summary[ct] = (summary[ct] ?? 0) + 1;
-          }
-        });
+      // Ignore empty or "-" customer types (Job Applicants)
+      if (!ct || ct === "-") return;
 
-      return {
-        displayData: Object.entries(summary).map(([customer_type, count]) => ({
-          customer_type,
-          count,
-        })),
-        jobApplicationCount: jobApps,
-      };
-    }, [activities, dateCreatedFilterRange]);
+      summary[ct] = (summary[ct] ?? 0) + 1;
+    });
 
-    const totalCount =
-      displayData.reduce((sum, row) => sum + row.count, 0) + jobApplicationCount;
+  return Object.entries(summary).map(([customer_type, count]) => ({
+    customer_type,
+    count,
+  }));
+}, [activities, dateCreatedFilterRange]);
+
+const totalCount =
+  displayData.reduce((sum, row) => sum + row.count, 0);
 
     /* ================= CSV EXPORT ================= */
 useImperativeHandle(ref, () => ({
@@ -133,12 +127,6 @@ useImperativeHandle(ref, () => ({
       Count: row.count,
     }));
 
-    if (jobApplicationCount > 0) {
-      rows.push({
-        "Customer Type": "Count of Job Applications",
-        Count: jobApplicationCount,
-      });
-    }
 
     // DATE FILTER TEXT (same logic as other exports)
     let filterText = "All Dates";
@@ -213,7 +201,7 @@ useImperativeHandle(ref, () => ({
           {loading && <p>Loading activities...</p>}
           {error && <p className="text-destructive">{error}</p>}
 
-          {!loading && !error && displayData.length === 0 && jobApplicationCount === 0 && (
+          {!loading && !error && displayData.length === 0 && (
             <p className="text-muted-foreground">No data available.</p>
           )}
 
@@ -243,22 +231,7 @@ useImperativeHandle(ref, () => ({
                   </TableRow>
                 ))}
 
-                {/* Show job applications as a separate row */}
-                {jobApplicationCount > 0 && (
-                  <TableRow key="job-applications">
-                    <TableCell className="font-medium py-4 italic text-muted-foreground">
-                      Count of Job Applications
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        variant="outline"
-                        className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums"
-                      >
-                        {jobApplicationCount}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                )}
+
               </TableBody>
             </Table>
           )}
