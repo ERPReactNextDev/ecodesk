@@ -1319,7 +1319,6 @@ export function TicketSheet(props: TicketSheetProps) {
                   options={[
                     { value: "Armando, Arendai", label: "Armando, Arendain" },
                     { value: "Erica, Maestro", label: "Erica, Maestro" },
-                    { value: "Grace, Lumabao", label: "Grace, Lumabao" },
                     { value: "Lester, Miguel", label: "Lester, Miguel" },
                     {
                       value: "Mark Vincent, Capin",
