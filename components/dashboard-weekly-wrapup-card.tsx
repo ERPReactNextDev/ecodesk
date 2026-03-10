@@ -73,7 +73,6 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
       "Customer Order",
       "Customer Inquiry Sales",
       "Customer Inquiry Non-Sales",
-      "Inquiry",
       "Follow Up Sales",
       "Follow Up Non-Sales",
       "After Sales",
@@ -85,7 +84,8 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
       "Threats/Extortion/Intimidation",
       "Supplier Accredited Request",
       "Internal Concern",
-      "Others"
+      "Others",
+      "Inquiry",
     ];
 
     const groupedData = useMemo(() => {
@@ -151,12 +151,16 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
 
     const totals = groupedData.reduce(
       (acc, curr) => {
+        // Skip Inquiry in totals
+        if (curr.wrap_up === "Inquiry") return acc;
+
         acc.week1 += curr.week1;
         acc.week2 += curr.week2;
         acc.week3 += curr.week3;
         acc.week4 += curr.week4;
         acc.unassigned += curr.unassigned;
         acc.total += curr.total;
+
         return acc;
       },
       { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0, total: 0 },
