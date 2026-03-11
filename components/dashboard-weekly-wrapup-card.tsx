@@ -69,44 +69,73 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
       return customWeekMapping[key];
     };
 
+    const WRAP_UP_LIST = [
+      "Customer Order",
+      "Customer Inquiry Sales",
+      "Customer Inquiry Non-Sales",
+      "Follow Up Sales",
+      "Follow Up Non-Sales",
+      "After Sales",
+      "Customer Complaint",
+      "Customer Feedback/Recommendation",
+      "Job Applicants",
+      "Supplier/Vendor Product Offer",
+      "Internal Whistle Blower",
+      "Threats/Extortion/Intimidation",
+      "Supplier Accredited Request",
+      "Internal Concern",
+      "Others",
+      "Inquiry",
+    ];
+
     const groupedData = useMemo(() => {
       type WeekCounts = { [week: number]: number };
       const map: Record<string, WeekCounts & { unassigned: number }> = {};
 
-activities
-  .filter((a) => {
-    const excluded = ["Inquiry"]; // hide Inquiry only
-    const wrap = a.wrap_up?.trim();
+      // Initialize all wrap-ups with zero counts
+      WRAP_UP_LIST.forEach((wrap) => {
+        map[wrap] = { 1: 0, 2: 0, 3: 0, 4: 0, unassigned: 0 };
+      });
 
-    if (!wrap || wrap === "-") return true; // allow for Others
-    if (excluded.includes(wrap)) return false;
+      // Only consider activities in the selected month/year
+      activities.forEach((a) => {
+        const wrap = a.wrap_up?.trim();
+        if (!wrap || !WRAP_UP_LIST.includes(wrap)) return;
 
-    return isInSelectedMonth(a.date_created);
-  })
-        .forEach((a) => {
-const wrap = a.wrap_up?.trim();
-const wrap_up = !wrap || wrap === "-" ? "Count of Others Status" : wrap;
-          const date = a.date_created ? new Date(a.date_created) : null;
-          if (!date) return;
+        const wrap_up = wrap;
+        if (!a.date_created) {
+          // No date → count as unassigned
+          map[wrap_up].unassigned += 1;
+          return;
+        }
 
-          const weekNum = getWeekNumber(date);
+        const date = new Date(a.date_created);
+        if (
+          date.getMonth() !== selectedMonth ||
+          date.getFullYear() !== selectedYear
+        ) {
+          // Skip activities outside selected month/year
+          return;
+        }
 
-          if (!map[wrap_up])
-            map[wrap_up] = { 1: 0, 2: 0, 3: 0, 4: 0, unassigned: 0 };
+        // Map date to week using customWeekMapping
+        const key = date.toISOString().slice(0, 10);
+        const weekNum = customWeekMapping[key];
 
-          if (weekNum && weekNum >= 1 && weekNum <= 4) {
-            map[wrap_up][weekNum] += 1;
-          } else {
-            map[wrap_up].unassigned += 1;
-          }
-        });
+        if (weekNum && weekNum >= 1 && weekNum <= 4) {
+          map[wrap_up][weekNum] += 1;
+        } else {
+          map[wrap_up].unassigned += 1;
+        }
+      });
 
+      // Convert map to array for table
       return Object.entries(map).map(([wrap_up, counts]) => {
-        const week1 = counts[1] || 0;
-        const week2 = counts[2] || 0;
-        const week3 = counts[3] || 0;
-        const week4 = counts[4] || 0;
-        const total = week1 + week2 + week3 + week4 + counts.unassigned;
+        const week1 = counts[1] ?? 0;
+        const week2 = counts[2] ?? 0;
+        const week3 = counts[3] ?? 0;
+        const week4 = counts[4] ?? 0;
+        const total = week1 + week2 + week3 + week4 + (counts.unassigned ?? 0);
 
         return {
           wrap_up,
@@ -114,7 +143,7 @@ const wrap_up = !wrap || wrap === "-" ? "Count of Others Status" : wrap;
           week2,
           week3,
           week4,
-          unassigned: counts.unassigned,
+          unassigned: counts.unassigned ?? 0,
           total,
         };
       });
@@ -122,12 +151,16 @@ const wrap_up = !wrap || wrap === "-" ? "Count of Others Status" : wrap;
 
     const totals = groupedData.reduce(
       (acc, curr) => {
+        // Skip Inquiry in totals
+        if (curr.wrap_up === "Inquiry") return acc;
+
         acc.week1 += curr.week1;
         acc.week2 += curr.week2;
         acc.week3 += curr.week3;
         acc.week4 += curr.week4;
         acc.unassigned += curr.unassigned;
         acc.total += curr.total;
+
         return acc;
       },
       { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0, total: 0 },

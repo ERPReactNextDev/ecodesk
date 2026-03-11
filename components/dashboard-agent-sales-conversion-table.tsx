@@ -53,8 +53,12 @@ interface Activity {
 
   // from Sheet Ticket
   customer_status?: string;
+
+  // Compute CSR Handling Time
   ticket_received?: string;
   ticket_endorsed?: string;
+
+  // Compute CSR Response Time
   inquiry_received?: string;
   response_to_inquiry?: string;
   wrap_up?: string;
@@ -79,6 +83,7 @@ export interface AgentSalesConversionCardRef {
   downloadCSV: () => void;
 }
 
+const MAX_HANDLING_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const AgentSalesTableCard: ForwardRefRenderFunction<
@@ -205,11 +210,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         existingActiveSales: number;
         existingInactiveSales: number;
 
-        responseTimeTotal: number;
-        responseCount: number;
-
         handlingTimeTotal: number;
         handlingCount: number;
+
+        responseTimeTotal: number;
+        responseCount: number;
       }
     > = {};
 
@@ -233,8 +238,13 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         const qtySold = Number(a.qty_sold ?? 0);
         const status = a.status?.toLowerCase() ?? "";
         const customerStatus = a.customer_status;
+        // Handling Time
         const received = a.ticket_received;
         const endorsed = a.ticket_endorsed;
+
+        // Response Time
+        const inquiry = a.inquiry_received;
+        const response = a.response_to_inquiry
 
         const remarksLower = (a.remarks || "").toLowerCase().trim();
         const wrapUpLower = (a.wrap_up || "").toLowerCase().trim();
@@ -253,11 +263,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             existingActiveSales: 0,
             existingInactiveSales: 0,
 
-            responseTimeTotal: 0,
-            responseCount: 0,
-
             handlingTimeTotal: 0,
             handlingCount: 0,
+
+            responseTimeTotal: 0,
+            responseCount: 0,
           };
         }
 
@@ -305,34 +315,28 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           map[referenceid].amount += isNaN(soAmount) ? 0 : soAmount;
         }
 
-        // CSR Response Time
+        // CSR Handling Time
         if (received && endorsed) {
           const r = new Date(received);
           const e = new Date(endorsed);
           if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
             const diff = e.getTime() - r.getTime();
-            if (diff <= MAX_RESPONSE_TIME_MS) {
-              map[referenceid].responseTimeTotal += diff;
-              map[referenceid].responseCount += 1;
+            if (diff <= MAX_HANDLING_TIME_MS) {
+              map[referenceid].handlingTimeTotal += diff;
+              map[referenceid].handlingCount += 1;
             }
           }
         }
 
-        // CSR Handling Time (inquiry_received → response_to_inquiry)
-        if (a.inquiry_received && a.response_to_inquiry) {
-          const inquiry = new Date(a.inquiry_received);
-          const response = new Date(a.response_to_inquiry);
-
-          if (
-            !isNaN(inquiry.getTime()) &&
-            !isNaN(response.getTime()) &&
-            response >= inquiry
-          ) {
-            const diff = response.getTime() - inquiry.getTime();
-
+        // CSR Response Time
+        if (inquiry && response) {
+          const r = new Date(inquiry);
+          const e = new Date(response);
+          if (!isNaN(r.getTime()) && !isNaN(e.getTime()) && e >= r) {
+            const diff = e.getTime() - r.getTime();
             if (diff <= MAX_RESPONSE_TIME_MS) {
-              map[referenceid].handlingTimeTotal += diff;
-              map[referenceid].handlingCount += 1;
+              map[referenceid].responseTimeTotal += diff;
+              map[referenceid].responseCount += 1;
             }
           }
         }
@@ -359,6 +363,16 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     (s, r) => s + r.existingInactiveSales,
     0,
   );
+
+  const totalHandlingTime = groupedData.reduce(
+    (s, r) => s + r.handlingTimeTotal,
+    0,
+  );
+  const totalHandlingCount = groupedData.reduce(
+    (s, r) => s + r.handlingCount,
+    0,
+  );
+
   const totalResponseTime = groupedData.reduce(
     (s, r) => s + r.responseTimeTotal,
     0,
@@ -367,21 +381,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     (s, r) => s + r.responseCount,
     0,
   );
-  const totalHandlingTime = groupedData.reduce(
-    (s, r) => s + r.handlingTimeTotal,
-    0,
-  );
-
-  const totalHandlingCount = groupedData.reduce(
-    (s, r) => s + r.handlingCount,
-    0,
-  );
 
   const totalConversionPct =
     totalSales === 0 ? 0 : (totalConverted / totalSales) * 100;
 
   const totalAveUnit = totalConverted === 0 ? 0 : totalQty / totalConverted;
-
   const totalAveValue = totalConverted === 0 ? 0 : totalAmount / totalConverted;
 
   const formatMs = (ms: number) => {
@@ -397,18 +401,18 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
   const AVERAGE = (values: number[]): number =>
     values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
 
-  const avgCSRResponseTime = AVERAGE(
-    groupedData
-      .map((row) =>
-        row.responseCount > 0 ? row.responseTimeTotal / row.responseCount : 0,
-      )
-      .filter((v) => v > 0),
-  );
-
   const avgCSRHandlingTime = AVERAGE(
     groupedData
       .map((row) =>
         row.handlingCount > 0 ? row.handlingTimeTotal / row.handlingCount : 0,
+      )
+      .filter((v) => v > 0),
+  );
+
+  const avgCSRResponseTime = AVERAGE(
+    groupedData
+      .map((row) =>
+        row.responseCount > 0 ? row.responseTimeTotal / row.responseCount : 0,
       )
       .filter((v) => v > 0),
   );
@@ -429,15 +433,15 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           ? `${agent.Firstname} ${agent.Lastname}`
           : "(Unknown Agent)";
 
-        const avgResponse =
-          row.responseCount === 0
-            ? 0
-            : row.responseTimeTotal / row.responseCount;
-
         const avgHandling =
           row.handlingCount === 0
             ? 0
             : row.handlingTimeTotal / row.handlingCount;
+
+        const avgResponse =
+          row.responseCount === 0
+            ? 0
+            : row.responseTimeTotal / row.responseCount;    
 
         return {
           Rank: index + 1,
@@ -463,6 +467,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           "New-Non Buying": row.newNonBuyingSales,
           "Existing Active": row.existingActiveSales,
           "Existing Inactive": row.existingInactiveSales,
+          "CSR Handling Time": formatMs(avgHandling),
           "CSR Response Time": formatMs(avgResponse),
         };
       });
@@ -482,7 +487,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         "New-Non Buying",
         "Existing Active",
         "Existing Inactive",
-        "CSR Response Time",
+        "CSR Handling Time",
+        "CSR Response Time"
       ];
 
       // FORMAT DATE FILTER
@@ -509,6 +515,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         totalNewNonBuying,
         totalExistingActive,
         totalExistingInactive,
+        formatMs(avgCSRHandlingTime),
         formatMs(avgCSRResponseTime),
       ];
 
@@ -632,63 +639,29 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableHead className="text-right">New Client</TableHead>
                   <TableHead className="text-right">New-Non Buying</TableHead>
                   <TableHead className="text-right">Existing Active</TableHead>
-                  <TableHead className="text-right">
-                    Existing Inactive
-                  </TableHead>
-                  {/* <TableHead className="text-right">
-                    CSR Handling Time
-                  </TableHead> */}
-                  <TableHead className="text-right">
-                    CSR Response Time
-                  </TableHead>
+                  <TableHead className="text-right">Existing Inactive</TableHead>
+                  <TableHead className="text-right">CSR Response Time</TableHead>
+                  <TableHead className="text-right">CSR Handling Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableHeader>
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell className="text-center sticky left-0 bg-white z-30">
-                    -
-                  </TableCell>
-                  <TableCell className="sticky left-[50px] bg-white z-30 border-r">
-                    Total
-                  </TableCell>
+                  <TableCell className="text-center sticky left-0 bg-white z-30">-</TableCell>
+                  <TableCell className="sticky left-[50px] bg-white z-30 border-r">Total</TableCell>
                   <TableCell className="text-right">{totalSales}</TableCell>
-                  <TableCell className="text-right">
-                    {groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalAmount.toLocaleString()}
-                  </TableCell>
+                  <TableCell className="text-right">{groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}</TableCell>
+                  <TableCell className="text-right">₱{totalAmount.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{totalQty}</TableCell>
                   <TableCell className="text-right">{totalConverted}</TableCell>
-                  <TableCell className="text-right">
-                    {totalSales === 0
-                      ? "0.00%"
-                      : totalConversionPct.toFixed(2) + "%"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {totalAveUnit.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {totalAveValue.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalNewClient.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalNewNonBuying.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingActive.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₱{totalExistingInactive.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatMs(avgCSRResponseTime)}
-                  </TableCell>
-                  {/* <TableCell className="text-right">
-                    {formatMs(avgCSRHandlingTime)}
-                  </TableCell> */}
+                  <TableCell className="text-right">{totalSales === 0 ? "0.00%" : totalConversionPct.toFixed(2) + "%"}</TableCell>
+                  <TableCell className="text-right">{totalAveUnit.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{totalAveValue.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">₱{totalNewClient.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalNewNonBuying.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalExistingActive.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">₱{totalExistingInactive.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{formatMs(avgCSRResponseTime)}</TableCell>
+                  <TableCell className="text-right">{formatMs(avgCSRHandlingTime)}</TableCell>
                 </TableRow>
               </TableHeader>
 
@@ -704,75 +677,34 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                       ? `${agent.Firstname} ${agent.Lastname}`
                       : "(Unknown Agent)";
 
-                    const avgResponse =
-                      row.responseCount === 0
-                        ? 0
-                        : row.responseTimeTotal / row.responseCount;
-
-                    const avgHandlingResponse =
+                    const avgHandling =
                       row.handlingCount === 0
                         ? 0
                         : row.handlingTimeTotal / row.handlingCount;
 
+                    const avgResponse =
+                      row.responseCount === 0
+                        ? 0
+                        : row.responseTimeTotal / row.responseCount;    
+
                     return (
                       <TableRow key={row.referenceid}>
-                        <TableCell className="text-center sticky left-0 bg-white z-30">
-                          {index + 1}
-                        </TableCell>
-                        <TableCell className="sticky left-[50px] bg-white z-30 border uppercase">
-                          {fullName}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.salesCount}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.nonSalesCount}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₱{row.amount.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.qtySold}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.convertedCount}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.salesCount === 0
-                            ? "0.00%"
-                            : (
-                                (row.convertedCount / row.salesCount) *
-                                100
-                              ).toFixed(2) + "%"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.convertedCount === 0
-                            ? "0.00"
-                            : (row.qtySold / row.convertedCount).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {row.convertedCount === 0
-                            ? "0.00"
-                            : (row.amount / row.convertedCount).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₱{row.newClientSales.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₱{row.newNonBuyingSales.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₱{row.existingActiveSales.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₱{row.existingInactiveSales.toLocaleString()}
-                        </TableCell>
-                        {/* <TableCell className="text-right">
-                          {formatMs(avgHandlingResponse)}
-                        </TableCell> */}
-                        <TableCell className="text-right">
-                          {formatMs(avgResponse)}
-                        </TableCell>
+                        <TableCell className="text-center sticky left-0 bg-white z-30">{index + 1}</TableCell>
+                        <TableCell className="sticky left-[50px] bg-white z-30 border uppercase">{fullName}</TableCell>
+                        <TableCell className="text-right">{row.salesCount}</TableCell>
+                        <TableCell className="text-right">{row.nonSalesCount}</TableCell>
+                        <TableCell className="text-right">₱{row.amount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{row.qtySold}</TableCell>
+                        <TableCell className="text-right">{row.convertedCount}</TableCell>
+                        <TableCell className="text-right">{row.salesCount === 0 ? "0.00%" : ((row.convertedCount / row.salesCount) * 100).toFixed(2) + "%"}</TableCell>
+                        <TableCell className="text-right">{row.convertedCount === 0 ? "0.00" : (row.qtySold / row.convertedCount).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{row.convertedCount === 0 ? "0.00" : (row.amount / row.convertedCount).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">₱{row.newClientSales.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">₱{row.newNonBuyingSales.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">₱{row.existingActiveSales.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">₱{row.existingInactiveSales.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{formatMs(avgResponse)}</TableCell>
+                        <TableCell className="text-right">{formatMs(avgHandling)}</TableCell>
                       </TableRow>
                     );
                   })}
