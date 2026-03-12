@@ -17,7 +17,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { toast } from "sonner";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandEmpty,
+} from "@/components/ui/command";
+import { ChevronsUpDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
@@ -58,10 +73,9 @@ export function AddCompanyModal({
   const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
 
   // names
-const [contactPersons, setContactPersons] = useState<
-  { title: string; name: string }[]
->([{ title: "Mr.", name: "" }]);
-
+  const [contactPersons, setContactPersons] = useState<
+    { title: string; name: string }[]
+  >([{ title: "Mr.", name: "" }]);
 
   const [existingCompanies, setExistingCompanies] = useState<
     {
@@ -74,25 +88,74 @@ const [contactPersons, setContactPersons] = useState<
 
   const [duplicate, setDuplicate] = useState({ contact: false });
 
-  const clientSegments = [
-    "Agriculture, Hunting and Forestry",
-    "Construction",
-    "Data Center",
-    "Education",
-    "Electricity, Gas and Water",
-    "Fishing",
-    "Finance and Insurance",
-    "Government Offices",
-    "Health and Social Work",
-    "Hotels and Restaurants",
-    "Manufacturing",
-    "Mining",
-    "Personal Services",
-    "Real Estate and Renting",
-    "Transport, Storage and Communication",
-    "Wholesale and Retail",
-  ];
+  /* CLIENT SEGMENT (DYNAMIC FROM DATABASE) */
+  const [clientSegments, setClientSegments] = useState<string[]>([]);
+  const [newIndustry, setNewIndustry] = useState("");
+  const [addingIndustry, setAddingIndustry] = useState(false);
+  const [industryDuplicate, setIndustryDuplicate] = useState(false);
 
+  /* FETCH INDUSTRIES */
+  const fetchIndustries = async () => {
+    try {
+      const res = await fetch("/api/com-fetch-industry");
+      const data = await res.json();
+
+      if (data.success) {
+        setClientSegments(data.data.map((i: any) => i.industry_name));
+      }
+    } catch (err) {
+      console.error("Industry fetch error", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchIndustries();
+  }, []);
+  useEffect(() => {
+    const exists = clientSegments.some(
+      (seg) => seg.toLowerCase().trim() === newIndustry.toLowerCase().trim(),
+    );
+
+    setIndustryDuplicate(exists);
+  }, [newIndustry, clientSegments]);
+  /* ADD NEW INDUSTRY */
+  const handleAddIndustry = async () => {
+    if (!newIndustry.trim()) return;
+
+    if (industryDuplicate) {
+      toast.error("Client segment already exists");
+      return;
+    }
+
+    try {
+      setAddingIndustry(true);
+
+      const res = await fetch("/api/com-add-industry", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          industry_name: newIndustry.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) throw new Error(data.error);
+
+      setNewIndustry("");
+
+      await fetchIndustries();
+
+      toast.success("Industry added");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to add industry");
+    } finally {
+      setAddingIndustry(false);
+    }
+  };
   const genders = ["Male", "Female"];
 
   /* FETCH EXISTING COMPANIES */
@@ -119,10 +182,10 @@ const [contactPersons, setContactPersons] = useState<
   useEffect(() => {
     const name = formData.company_name.toLowerCase().trim();
 
-const person = contactPersons
-  .map((p) => `${p.title} ${p.name}`.toLowerCase().trim())
-  .filter(Boolean)
-  .join(" / ");
+    const person = contactPersons
+      .map((p) => `${p.title} ${p.name}`.toLowerCase().trim())
+      .filter(Boolean)
+      .join(" / ");
 
     const numbers = contactNumbers
       .map((n) => n.toLowerCase().trim())
@@ -156,8 +219,7 @@ const person = contactPersons
       formData.address.trim() ||
       formData.industry ||
       formData.email_address.trim() ||
-contactPersons.some((p) => p.name.trim())
- ||
+      contactPersons.some((p) => p.name.trim()) ||
       contactNumbers.some((n) => n.trim());
 
     const emailValid =
@@ -233,10 +295,10 @@ contactPersons.some((p) => p.name.trim())
         .filter(Boolean)
         .join(" / ");
 
-const joinedPersons = contactPersons
-  .map((p) => `${p.title} ${p.name}`.trim())
-  .filter((p) => p !== "")
-  .join(" / ");
+      const joinedPersons = contactPersons
+        .map((p) => `${p.title} ${p.name}`.trim())
+        .filter((p) => p !== "")
+        .join(" / ");
 
       const res = await fetch("/api/com-save-company", {
         method: "POST",
@@ -285,7 +347,7 @@ const joinedPersons = contactPersons
     });
     setContactNumbers([""]);
     setDuplicate({ contact: false });
-setContactPersons([{ title: "Mr.", name: "" }]);
+    setContactPersons([{ title: "Mr.", name: "" }]);
   };
 
   return (
@@ -328,61 +390,63 @@ setContactPersons([{ title: "Mr.", name: "" }]);
               <FieldLabel>Customer Name *</FieldLabel>
 
               <div className="space-y-2">
-{contactPersons.map((person, idx) => (
-  <div key={idx} className="flex gap-2 items-center">
-    {/* Title Dropdown */}
-    <Select
-      value={person.title}
-      onValueChange={(value) => {
-        const updated = [...contactPersons];
-        updated[idx].title = value;
-        setContactPersons(updated);
-      }}
-    >
-      <SelectTrigger className="w-24">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="Mr.">Mr.</SelectItem>
-        <SelectItem value="Mrs.">Mrs.</SelectItem>
-        <SelectItem value="Ms.">Ms.</SelectItem>
-      </SelectContent>
-    </Select>
+                {contactPersons.map((person, idx) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    {/* Title Dropdown */}
+                    <Select
+                      value={person.title}
+                      onValueChange={(value) => {
+                        const updated = [...contactPersons];
+                        updated[idx].title = value;
+                        setContactPersons(updated);
+                      }}
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Mr.">Mr.</SelectItem>
+                        <SelectItem value="Mrs.">Mrs.</SelectItem>
+                        <SelectItem value="Ms.">Ms.</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-    {/* Name Input */}
-    <Input
-      value={person.name}
-      onChange={(e) => {
-        const updated = [...contactPersons];
-        updated[idx].name = e.target.value;
-        setContactPersons(updated);
-      }}
-      placeholder="Customer Name"
-      className="flex-grow"
-    />
+                    {/* Name Input */}
+                    <Input
+                      value={person.name}
+                      onChange={(e) => {
+                        const updated = [...contactPersons];
+                        updated[idx].name = e.target.value;
+                        setContactPersons(updated);
+                      }}
+                      placeholder="Customer Name"
+                      className="flex-grow"
+                    />
 
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => {
-        if (contactPersons.length === 1) return;
-        const updated = [...contactPersons];
-        updated.splice(idx, 1);
-        setContactPersons(updated);
-      }}
-    >
-      −
-    </Button>
-  </div>
-))}
-
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (contactPersons.length === 1) return;
+                        const updated = [...contactPersons];
+                        updated.splice(idx, 1);
+                        setContactPersons(updated);
+                      }}
+                    >
+                      −
+                    </Button>
+                  </div>
+                ))}
 
                 <Button
                   type="button"
                   variant="secondary"
-onClick={() =>
-  setContactPersons((prev) => [...prev, { title: "Mr.", name: "" }])
-}
+                  onClick={() =>
+                    setContactPersons((prev) => [
+                      ...prev,
+                      { title: "Mr.", name: "" },
+                    ])
+                  }
                 >
                   + Add another name
                 </Button>
@@ -457,21 +521,85 @@ onClick={() =>
 
             <Field>
               <FieldLabel>Client Segment *</FieldLabel>
-              <Select
-                value={formData.industry}
-                onValueChange={(v) => setFormData({ ...formData, industry: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {clientSegments.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between"
+                  >
+                    {formData.industry || "Select client segment"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search client segment..." />
+
+                    <CommandList
+                      className="max-h-[240px] overflow-y-auto overscroll-contain"
+                      onWheel={(e) => e.stopPropagation()}
+                    >
+                      <CommandEmpty>No segment found</CommandEmpty>
+
+                      {clientSegments.map((segment) => (
+                        <CommandItem
+                          key={segment}
+                          value={segment}
+                          onSelect={() =>
+                            setFormData({
+                              ...formData,
+                              industry: segment,
+                            })
+                          }
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.industry === segment
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                          {segment}
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+
+                    {/* ADD NEW SEGMENT */}
+                    <div className="p-2 border-t flex flex-col gap-1">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add new segment"
+                          value={newIndustry}
+                          onChange={(e) => setNewIndustry(e.target.value)}
+                          className={industryDuplicate ? "border-red-500" : ""}
+                        />
+
+                        <Button
+                          size="sm"
+                          onClick={handleAddIndustry}
+                          disabled={
+                            addingIndustry ||
+                            industryDuplicate ||
+                            !newIndustry.trim()
+                          }
+                        >
+                          {addingIndustry ? "..." : "Add"}
+                        </Button>
+                      </div>
+
+                      {industryDuplicate && (
+                        <p className="text-xs text-red-600">
+                          Client segment already exists
+                        </p>
+                      )}
+                    </div>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </Field>
           </FieldGroup>
         </div>
