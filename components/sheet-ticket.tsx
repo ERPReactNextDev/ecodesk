@@ -1449,6 +1449,7 @@ export function TicketSheet(props: TicketSheetProps) {
                     { value: "Email", label: "Email" },
                     { value: "Whatsapp", label: "Whatsapp" },
                     { value: "Shopify", label: "Shopify" },
+                    { value: "FB Leads", label: "FB Leads" },
                   ]}
                   error={errors.channel}
                 />
@@ -1494,6 +1495,8 @@ export function TicketSheet(props: TicketSheetProps) {
                       { value: "Whatsapp", label: "Whatsapp Community" },
                       { value: "Word of Mouth", label: "Word of Mouth" },
                       { value: "Worldbex", label: "Worldbex" },
+                      { value: "LNB Events", label: "LNB Events" },
+                      { value: "UAP Partnership", label: "UAP Partnership" },
                     ]}
                   />
                 </Field>

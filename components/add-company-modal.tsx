@@ -193,10 +193,7 @@ export function AddCompanyModal({
       .filter(Boolean)
       .join(" / ");
 
-const email = emailAddresses
-  .map((e) => e.toLowerCase().trim())
-  .filter(Boolean)
-  .join(" / ");
+    const email = (formData.email_address || "").toLowerCase().trim();
 
     const isDuplicate = existingCompanies.some(
       (c) =>
@@ -209,26 +206,26 @@ const email = emailAddresses
     setDuplicate({
       contact: isDuplicate,
     });
-}, [
-  formData.company_name,
-  emailAddresses,
-  contactPersons,
-  contactNumbers,
-  existingCompanies,
-]);
+  }, [
+    formData.company_name,
+    formData.email_address,
+    contactPersons,
+    contactNumbers,
+    existingCompanies,
+  ]);
 
   const isFormValid = () => {
     const hasAnyInput =
       formData.company_name.trim() ||
       formData.address.trim() ||
       formData.industry ||
-      emailAddresses.some((e) => e.trim()) ||
+      formData.email_address.trim() ||
       contactPersons.some((p) => p.name.trim()) ||
       contactNumbers.some((n) => n.trim());
 
-const emailValid = emailAddresses.every(
-  (e) => !e || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
-);
+    const emailValid =
+      !formData.email_address ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
 
     if (!hasAnyInput) return false;
     if (!emailValid) return false;
@@ -299,15 +296,15 @@ const emailValid = emailAddresses.every(
         .filter(Boolean)
         .join(" / ");
 
+const joinedEmails = emailAddresses
+  .map((e) => e.trim())
+  .filter(Boolean)
+  .join(" / ");
+
       const joinedPersons = contactPersons
         .map((p) => `${p.title} ${p.name}`.trim())
         .filter((p) => p !== "")
         .join(" / ");
-
-        const joinedEmails = emailAddresses
-  .map((e) => e.trim())
-  .filter(Boolean)
-  .join(" / ");
 
       const res = await fetch("/api/com-save-company", {
         method: "POST",
@@ -316,9 +313,10 @@ const emailValid = emailAddresses.every(
           referenceid,
           account_reference_number,
           ...formData,
-          contact_person: joinedPersons, // 🔥 joined names
-          contact_number: joinedContacts,
-          date_created: new Date().toISOString(),
+contact_person: joinedPersons,
+contact_number: joinedContacts,
+email_address: joinedEmails,
+date_created: new Date().toISOString(),
         }),
       });
 
@@ -355,6 +353,7 @@ const emailValid = emailAddresses.every(
       status: "Active",
     });
     setContactNumbers([""]);
+    setEmailAddresses([""]);
     setDuplicate({ contact: false });
     setContactPersons([{ title: "Mr.", name: "" }]);
   };
@@ -508,7 +507,7 @@ const emailValid = emailAddresses.every(
             updated[idx] = e.target.value;
             setEmailAddresses(updated);
           }}
-          placeholder="example@email.com"
+          placeholder="email@example.com"
           className="flex-grow"
         />
 

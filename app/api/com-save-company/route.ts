@@ -36,15 +36,9 @@ export async function POST(req: Request) {
       contact_person,
       contact_number,
       email_address,
-
-      // NEW ADDRESS STRUCTURE
-      street_address,
-      barangay,
-      city,
-      province,
-      region,
-
+      address,
       delivery_address,
+      region,
       type_client,
       date_created,
       industry,
@@ -54,6 +48,14 @@ export async function POST(req: Request) {
       gender,
       remarks,
     } = body;
+
+    // Basic validation
+    if (!company_name) {
+      return NextResponse.json(
+        { success: false, error: "Company name is required." },
+        { status: 400 }
+      );
+    }
 
     const normalizedContactPerson = normalizeField(contact_person);
     const normalizedContactNumber = normalizeField(contact_number);
@@ -66,17 +68,6 @@ export async function POST(req: Request) {
         ? date_created
         : new Date().toISOString();
 
-    // ✅ GENERATE FULL ADDRESS
-    const fullAddress = [
-      street_address,
-      barangay ? `Brgy. ${barangay}` : null,
-      city,
-      province,
-      region,
-    ]
-      .filter(Boolean)
-      .join(", ");
-
     const inserted = await Xchire_sql`
       INSERT INTO accounts
       (
@@ -87,15 +78,9 @@ export async function POST(req: Request) {
         contact_person,
         contact_number,
         email_address,
-
         address,
-        street_address,
-        barangay,
-        city,
-        province,
-        region,
-
         delivery_address,
+        region,
         type_client,
         date_created,
         industry,
@@ -114,15 +99,9 @@ export async function POST(req: Request) {
         ${normalizedContactPerson},
         ${normalizedContactNumber},
         ${normalizedEmailAddress},
-
-        ${fullAddress || null},
-        ${street_address || null},
-        ${barangay || null},
-        ${city || null},
-        ${province || null},
-        ${region || null},
-
+        ${address || null},
         ${delivery_address || null},
+        ${region || null},
         ${type_client},
         ${createdDate},
         ${industry || null},
