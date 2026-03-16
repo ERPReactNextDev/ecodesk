@@ -71,6 +71,7 @@ export function AddCompanyModal({
   // ✅ MULTIPLE CONTACT NUMBERS STATE
   // numbers
   const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
+  const [emailAddresses, setEmailAddresses] = useState<string[]>([""]);
 
   // names
   const [contactPersons, setContactPersons] = useState<
@@ -192,7 +193,10 @@ export function AddCompanyModal({
       .filter(Boolean)
       .join(" / ");
 
-    const email = (formData.email_address || "").toLowerCase().trim();
+const email = emailAddresses
+  .map((e) => e.toLowerCase().trim())
+  .filter(Boolean)
+  .join(" / ");
 
     const isDuplicate = existingCompanies.some(
       (c) =>
@@ -205,26 +209,26 @@ export function AddCompanyModal({
     setDuplicate({
       contact: isDuplicate,
     });
-  }, [
-    formData.company_name,
-    formData.email_address,
-    contactPersons,
-    contactNumbers,
-    existingCompanies,
-  ]);
+}, [
+  formData.company_name,
+  emailAddresses,
+  contactPersons,
+  contactNumbers,
+  existingCompanies,
+]);
 
   const isFormValid = () => {
     const hasAnyInput =
       formData.company_name.trim() ||
       formData.address.trim() ||
       formData.industry ||
-      formData.email_address.trim() ||
+      emailAddresses.some((e) => e.trim()) ||
       contactPersons.some((p) => p.name.trim()) ||
       contactNumbers.some((n) => n.trim());
 
-    const emailValid =
-      !formData.email_address ||
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address);
+const emailValid = emailAddresses.every(
+  (e) => !e || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+);
 
     if (!hasAnyInput) return false;
     if (!emailValid) return false;
@@ -299,6 +303,11 @@ export function AddCompanyModal({
         .map((p) => `${p.title} ${p.name}`.trim())
         .filter((p) => p !== "")
         .join(" / ");
+
+        const joinedEmails = emailAddresses
+  .map((e) => e.trim())
+  .filter(Boolean)
+  .join(" / ");
 
       const res = await fetch("/api/com-save-company", {
         method: "POST",
@@ -485,29 +494,48 @@ export function AddCompanyModal({
               </div>
             </Field>
 
-            <Field>
-              <FieldLabel>Email Address</FieldLabel>
-              <Input
-                type="email"
-                value={formData.email_address}
-                onChange={(e) =>
-                  setFormData({ ...formData, email_address: e.target.value })
-                }
-                className={
-                  formData.email_address &&
-                  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address)
-                    ? "border-red-500"
-                    : ""
-                }
-              />
+<Field>
+  <FieldLabel>Email Address</FieldLabel>
 
-              {formData.email_address &&
-                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address) && (
-                  <p className="text-xs text-red-600 mt-1">
-                    Please enter a valid email address
-                  </p>
-                )}
-            </Field>
+  <div className="space-y-2">
+    {emailAddresses.map((email, idx) => (
+      <div key={idx} className="flex gap-2 items-center">
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => {
+            const updated = [...emailAddresses];
+            updated[idx] = e.target.value;
+            setEmailAddresses(updated);
+          }}
+          placeholder="example@email.com"
+          className="flex-grow"
+        />
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (emailAddresses.length === 1) return;
+            const updated = [...emailAddresses];
+            updated.splice(idx, 1);
+            setEmailAddresses(updated);
+          }}
+        >
+          −
+        </Button>
+      </div>
+    ))}
+
+    <Button
+      type="button"
+      variant="secondary"
+      onClick={() => setEmailAddresses((prev) => [...prev, ""])}
+    >
+      + Add another email
+    </Button>
+  </div>
+</Field>
 
             <Field>
               <FieldLabel>Address *</FieldLabel>
