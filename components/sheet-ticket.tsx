@@ -334,7 +334,7 @@ const ComboboxField = ({
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
   error?: string;
   disabled?: boolean;
 }) => {
@@ -373,10 +373,15 @@ const ComboboxField = ({
                   <CommandItem
                     key={option.value}
                     value={option.label}
+                    disabled={option.disabled}
                     onSelect={() => {
+                      if (option.disabled) return;
                       onChange(option.value === value ? "" : option.value);
                       setOpen(false);
                     }}
+                    className={cn(
+                      option.disabled && "opacity-40 cursor-not-allowed pointer-events-none",
+                    )}
                   >
                     <Check
                       className={cn(
@@ -1722,7 +1727,7 @@ export function TicketSheet(props: TicketSheetProps) {
                     disabled={!manager}
                     options={
                       loadingAgents
-                        ? [{ value: "__loading__", label: "Loading agents..." }]
+                        ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
                         : agentsList.map((a) => ({
                             value: a.ReferenceID,
                             label: `${a.Firstname} ${a.Lastname}${
@@ -1730,8 +1735,9 @@ export function TicketSheet(props: TicketSheetProps) {
                                 ? " 🟢"
                                 : a.Connection === "Offline"
                                   ? " ⚫"
-                                  : ""
+                                  : " ⚫"
                             }`,
+                            disabled: a.Connection !== "Online",
                           }))
                     }
                   />
