@@ -45,7 +45,7 @@ interface Company {
   address: string;
   status: string;
   referenceid: string;
-  date_created?: string; // ✅ ADD THIS
+  date_created?: string;
 }
 
 interface MergedActivity extends Ticket {
@@ -81,7 +81,6 @@ interface Ticket {
   inquiry?: string;
   department_head?: string;
 
-  // ✅ ADD THESE TWO LINES (THIS FIXES YOUR ERROR)
   company_name: string;
   contact_number: string;
   type_client: string;
@@ -135,6 +134,31 @@ interface Agent {
   Lastname: string;
 }
 
+const COLUMN_ITEMS_PER_PAGE = 10;
+
+const STATUS_COLUMNS = [
+  "On-Progress",
+  "Closed",
+  "Endorsed",
+  "Converted into Sales",
+] as const;
+
+type StatusColumn = (typeof STATUS_COLUMNS)[number];
+
+const STATUS_STYLES: Record<string, string> = {
+  "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
+  Closed: "bg-gray-200 text-gray-700 border-gray-300",
+  Endorsed: "bg-purple-100 text-purple-700 border-purple-300",
+  "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
+};
+
+const STATUS_HEADER_STYLES: Record<string, string> = {
+  "On-Progress": "bg-blue-50 border-blue-200 text-blue-800",
+  Closed: "bg-gray-50 border-gray-200 text-gray-700",
+  Endorsed: "bg-purple-50 border-purple-200 text-purple-800",
+  "Converted into Sales": "bg-green-50 border-green-200 text-green-800",
+};
+
 export const Ticket: React.FC<TicketProps> = ({
   referenceid,
   role,
@@ -150,18 +174,26 @@ export const Ticket: React.FC<TicketProps> = ({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
-    null,
-  );
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
 
   const [addingLock, setAddingLock] = useState<Set<string>>(new Set());
   const [addingAccount, setAddingAccount] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // For activities right side search and pagination
   const [activitySearchTerm, setActivitySearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const [columnSearch, setColumnSearch] = useState<Record<StatusColumn, string>>({
+    "On-Progress": "",
+    "Closed": "",
+    "Endorsed": "",
+    "Converted into Sales": "",
+  });
+
+  const [columnCurrentPage, setColumnCurrentPage] = useState<Record<StatusColumn, number>>({
+    "On-Progress": 1,
+    "Closed": 1,
+    "Endorsed": 1,
+    "Converted into Sales": 1,
+  });
 
   const [showCheckboxes, setShowCheckboxes] = useState(false);
   const [selectedToDelete, setSelectedToDelete] = useState<string[]>([]);
@@ -184,45 +216,20 @@ export const Ticket: React.FC<TicketProps> = ({
     status?: string;
   }>({});
 
-  const STATUS_STYLES: Record<string, string> = {
-    "On-Progress": "bg-blue-100 text-blue-700 border-blue-300",
-    Closed: "bg-gray-200 text-gray-700 border-gray-300",
-    Endorsed: "bg-purple-100 text-purple-700 border-purple-300",
-    "Converted into Sales": "bg-green-100 text-green-700 border-green-300",
-  };
-
   const isNewCompany = (dateCreated?: string) => {
     if (!dateCreated) return false;
-
-    // Convert "YYYY-MM-DD HH:mm:ss.SSS" → local Date
     const created = new Date(dateCreated.replace(" ", "T"));
     if (isNaN(created.getTime())) return false;
-
     const now = new Date();
-
-    // Difference in milliseconds
     const diffMs = now.getTime() - created.getTime();
-
-    // 1 day = 24 hours
     const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
     return diffMs <= ONE_DAY_MS;
   };
 
-  // Sorting field and order
   const sortableFields = [
-    "source_company",
-    "source",
-    "wrap_up",
-    "traffic",
-    "department",
-    "channel",
-    "customer_status",
-    "customer_type",
-    "remarks",
-    "status",
-    "date_created",
-    "date_updated",
+    "source_company", "source", "wrap_up", "traffic", "department",
+    "channel", "customer_status", "customer_type", "remarks", "status",
+    "date_created", "date_updated",
   ];
   const [sortField, setSortField] = useState<string>("date_updated");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -252,42 +259,28 @@ export const Ticket: React.FC<TicketProps> = ({
   }, []);
 
   useEffect(() => {
-    if (!exporting) {
-      setProgress(0);
-      return;
-    }
-
+    if (!exporting) { setProgress(0); return; }
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 1; // increase 1% every interval
+        if (prev >= 100) { clearInterval(interval); return 100; }
+        return prev + 1;
       });
-    }, 10); // every 50ms, so ~5 seconds to reach 100%
-
+    }, 10);
     return () => clearInterval(interval);
   }, [exporting]);
 
   const handleFilterChange = (field: keyof typeof filters, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value || undefined, // clear filter if empty string
-    }));
+    setFilters((prev) => ({ ...prev, [field]: value || undefined }));
   };
 
-  // Fetch companies on mount
   const fetchCompanies = async () => {
     setLoadingCompanies(true);
     setErrorCompanies(null);
-
     try {
       const res = await fetch("/api/com-fetch-account", {
         cache: "no-store",
         headers: {
-          "Cache-Control":
-            "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
           Pragma: "no-cache",
           Expires: "0",
         },
@@ -302,15 +295,11 @@ export const Ticket: React.FC<TicketProps> = ({
     }
   };
 
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
+  useEffect(() => { fetchCompanies(); }, []);
 
-  // Fetch activities when referenceid changes
   const fetchActivities = useCallback(async () => {
     setLoadingActivities(true);
     setErrorActivities(null);
-
     try {
       const res = await fetch("/api/act-fetch-activity-role", {
         method: "GET",
@@ -321,12 +310,10 @@ export const Ticket: React.FC<TicketProps> = ({
           "x-reference-id": referenceid,
         },
       });
-
       if (!res.ok) {
         const json = await res.json();
         throw new Error(json.error || "Failed to fetch activities");
       }
-
       const json = await res.json();
       setActivities(json.data || []);
     } catch (error: any) {
@@ -336,111 +323,58 @@ export const Ticket: React.FC<TicketProps> = ({
     }
   }, [role, referenceid]);
 
-  useEffect(() => {
-    fetchActivities();
-  }, [referenceid, fetchActivities]);
+  useEffect(() => { fetchActivities(); }, [referenceid, fetchActivities]);
 
-  // 🔥 REAL-TIME LISTENER (Shopify → Ticket)
   useEffect(() => {
-    const handleRealtimeUpdate = () => {
-      fetchActivities(); // re-fetch MongoDB instantly
-    };
-
+    const handleRealtimeUpdate = () => { fetchActivities(); };
     window.addEventListener("activity-updated", handleRealtimeUpdate);
-
-    return () => {
-      window.removeEventListener("activity-updated", handleRealtimeUpdate);
-    };
+    return () => { window.removeEventListener("activity-updated", handleRealtimeUpdate); };
   }, [fetchActivities]);
 
   const isDateInRange = (dateStr: string, range: DateRange | undefined) => {
     if (!range) return true;
-
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return false;
-
     const { from, to } = range;
-
-    const fromDate = from
-      ? new Date(
-          from.getFullYear(),
-          from.getMonth(),
-          from.getDate(),
-          0,
-          0,
-          0,
-          0,
-        )
-      : null;
-
-    const toDate = to
-      ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999)
-      : null;
-
-    // ✅ include both endpoints
+    const fromDate = from ? new Date(from.getFullYear(), from.getMonth(), from.getDate(), 0, 0, 0, 0) : null;
+    const toDate = to ? new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999) : null;
     if (fromDate && date < fromDate) return false;
     if (toDate && date > toDate) return false;
-
     return true;
   };
 
-  const allowedStatuses = [
-    "On-Progress",
-    "Closed",
-    "Endorsed",
-    "Converted into Sales",
-  ];
+  const allowedStatuses = ["On-Progress", "Closed", "Endorsed", "Converted into Sales"];
 
   const filteredAndSortedData = useMemo(() => {
     let data = activities
       .filter((a) => allowedStatuses.includes(a.status))
       .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange));
 
-    // Search bar filter (activitySearchTerm)
     if (activitySearchTerm.trim() !== "") {
       const term = activitySearchTerm.toLowerCase();
-
-      data = data.filter((item) => {
-        const companyName = (item.company_name ?? "").toLowerCase();
-        const ticketRef = (item.ticket_reference_number ?? "").toLowerCase();
-
-        // Add more fields if needed, e.g. contact_person, contact_number
-        const contactPerson = (item.contact_person ?? "").toLowerCase();
-
-        return (
-          companyName.includes(term) ||
-          ticketRef.includes(term) ||
-          contactPerson.includes(term)
-        );
-      });
+      data = data.filter((item) =>
+        (item.company_name ?? "").toLowerCase().includes(term) ||
+        (item.ticket_reference_number ?? "").toLowerCase().includes(term) ||
+        (item.contact_person ?? "").toLowerCase().includes(term)
+      );
     }
 
-    // UI filters
     Object.entries(filters).forEach(([key, val]) => {
       if (val && val.trim() !== "") {
-        data = data.filter((item) => {
-          const itemValue = (item as any)[key];
-          return itemValue
-            ?.toString()
-            .toLowerCase()
-            .includes(val.toLowerCase());
-        });
+        data = data.filter((item) =>
+          (item as any)[key]?.toString().toLowerCase().includes(val.toLowerCase())
+        );
       }
     });
 
-    // Sort filtered data
     data = data.slice().sort((a, b) => {
-      // 🔥 1️⃣ ENDORSED ALWAYS ON TOP
       const aIsEndorsed = a.status === "Endorsed";
       const bIsEndorsed = b.status === "Endorsed";
-
       if (aIsEndorsed && !bIsEndorsed) return -1;
       if (!aIsEndorsed && bIsEndorsed) return 1;
 
-      // 🔁 2️⃣ NORMAL SORT (DATE / FIELD)
       let aVal = (a as any)[sortField];
       let bVal = (b as any)[sortField];
-
       if (sortField === "date_created" || sortField === "date_updated") {
         aVal = aVal ? new Date(aVal).getTime() : 0;
         bVal = bVal ? new Date(bVal).getTime() : 0;
@@ -448,55 +382,87 @@ export const Ticket: React.FC<TicketProps> = ({
         aVal = aVal ? aVal.toString().toLowerCase() : "";
         bVal = bVal ? bVal.toString().toLowerCase() : "";
       }
-
       if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
       if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
 
     return data;
-  }, [
-    activities,
-    activitySearchTerm,
-    filters,
-    sortField,
-    sortOrder,
-    dateCreatedFilterRange,
-  ]);
+  }, [activities, activitySearchTerm, filters, sortField, sortOrder, dateCreatedFilterRange]);
+
+  const groupedByStatus = useMemo(() => {
+    const result = {} as Record<StatusColumn, Ticket[]>;
+    for (const status of STATUS_COLUMNS) {
+      const term = columnSearch[status]?.toLowerCase() || "";
+      result[status] = filteredAndSortedData
+        .filter((a) => a.status === status)
+        .filter((item) => {
+          if (!term) return true;
+          return (
+            item.company_name?.toLowerCase().includes(term) ||
+            item.ticket_reference_number?.toLowerCase().includes(term) ||
+            item.contact_person?.toLowerCase().includes(term)
+          );
+        });
+    }
+    return result;
+  }, [filteredAndSortedData, columnSearch]);
+
+  const paginatedByStatus = useMemo(() => {
+    const result = {} as Record<StatusColumn, Ticket[]>;
+    for (const status of STATUS_COLUMNS) {
+      const page = columnCurrentPage[status];
+      const start = (page - 1) * COLUMN_ITEMS_PER_PAGE;
+      result[status] = groupedByStatus[status].slice(start, start + COLUMN_ITEMS_PER_PAGE);
+    }
+    return result;
+  }, [groupedByStatus, columnCurrentPage]);
+
+  const totalPagesByStatus = useMemo(() => {
+    const result = {} as Record<StatusColumn, number>;
+    for (const status of STATUS_COLUMNS) {
+      result[status] = Math.max(1, Math.ceil(groupedByStatus[status].length / COLUMN_ITEMS_PER_PAGE));
+    }
+    return result;
+  }, [groupedByStatus]);
+
+  const goToColumnPage = (status: StatusColumn, page: number) => {
+    const total = totalPagesByStatus[status];
+    const clamped = Math.min(Math.max(1, page), total);
+    setColumnCurrentPage((prev) => ({ ...prev, [status]: clamped }));
+  };
+
+  useEffect(() => {
+    setColumnCurrentPage({
+      "On-Progress": 1,
+      "Closed": 1,
+      "Endorsed": 1,
+      "Converted into Sales": 1,
+    });
+  }, [activitySearchTerm, filters, dateCreatedFilterRange, columnSearch]);
 
   const isLoading = loadingCompanies || loadingActivities;
   const error = errorCompanies || errorActivities;
 
   const excludedCompanyStatuses = ["Pending", "Transferred", "Remove"];
-
-  const normalize = (str: string) =>
-    str
-      .toLowerCase()
-      .replace(/[_\s]+/g, " ") // replace underscores and multiple spaces with single space
-      .trim();
+  const normalize = (str: string) => str.toLowerCase().replace(/[_\s]+/g, " ").trim();
 
   const filteredCompanies = companies
     .filter((c) => {
       if (excludedCompanyStatuses.includes(c.status)) return false;
-
       const term = normalize(searchTerm);
       if (!term) return true;
-
       const fields = [
         normalize(c.company_name || ""),
         normalize(c.email_address || ""),
         normalize(c.contact_number || ""),
         normalize(c.contact_person || ""),
       ];
-
       return fields.some((field) => field.includes(term));
     })
-
-    // ✅ KEEP OLD SEARCH RELEVANCE SORT
     .sort((a, b) => {
       const term = normalize(searchTerm);
       if (!term) return 0;
-
       const score = (company: Company) => {
         const fields = [
           normalize(company.company_name || ""),
@@ -504,81 +470,43 @@ export const Ticket: React.FC<TicketProps> = ({
           normalize(company.contact_number || ""),
           normalize(company.contact_person || ""),
         ];
-
         let bestScore = 3;
         fields.forEach((field) => {
           if (field === term) bestScore = Math.min(bestScore, 0);
           else if (field.startsWith(term)) bestScore = Math.min(bestScore, 1);
           else if (field.includes(term)) bestScore = Math.min(bestScore, 2);
         });
-
         return bestScore;
       };
-
       return score(a) - score(b);
     })
-
-    // 🔥 NEW SORT: NEW + LATEST ON TOP
     .sort((a, b) => {
       const aIsNew = isNewCompany((a as any).date_created);
       const bIsNew = isNewCompany((b as any).date_created);
-
-      // 1️⃣ NEW companies first
       if (aIsNew && !bIsNew) return -1;
       if (!aIsNew && bIsNew) return 1;
-
-      // 2️⃣ Latest created first
       const aTime = new Date((a as any).date_created ?? 0).getTime();
       const bTime = new Date((b as any).date_created ?? 0).getTime();
-
       return bTime - aTime;
     });
 
   const MAX_DISPLAY = 20;
 
   const displayedCompanies = useMemo(() => {
-    // 1️⃣ Exclude the company that is currently being added
-    const filtered = filteredCompanies.filter(
-      (c) => c.account_reference_number !== addingAccount,
-    );
+    return filteredCompanies
+      .filter((c) => c.account_reference_number !== addingAccount)
+      .slice(0, MAX_DISPLAY);
+  }, [filteredCompanies, addingAccount]);
 
-    // 2️⃣ Slice to MAX_DISPLAY after relevance sorting
-    return filtered.slice(0, MAX_DISPLAY);
-  }, [filteredCompanies, addingAccount]); // added addingAccount as dependency
-  // Filter activities by search term (right side)
-
-  const totalPages = Math.ceil(filteredAndSortedData.length / ITEMS_PER_PAGE);
-
-  const paginatedActivities = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredAndSortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [currentPage, filteredAndSortedData]);
-
-  const goToPage = (page: number) => {
-    if (page < 1) page = 1;
-    else if (page > totalPages) page = totalPages;
-    setCurrentPage(page);
-  };
-
-  // Generates activity reference number from company initials + region + timestamp
   function generateActivityReferenceNumber(companyName: string): string {
-    const initials = companyName
-      .split(" ")
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-    const region = "REG"; // TODO: replace with real region logic if needed
+    const initials = companyName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+    const region = "REG";
     const timestamp = Date.now();
     return `${initials}-${region}-${timestamp}`;
   }
 
   const openDoneDialog = (_id: string) => {
-    // Make sure id is defined and non-empty
-    if (!_id) {
-      toast.error("Invalid activity ID");
-      return;
-    }
+    if (!_id) { toast.error("Invalid activity ID"); return; }
     setSelectedActivityId(_id);
     setDialogOpen(true);
   };
@@ -595,53 +523,26 @@ export const Ticket: React.FC<TicketProps> = ({
     try {
       setUpdatingId(selectedActivityId);
       setDialogOpen(false);
-
-      // Find the activity to update in your current state (activities or mergedData)
-      const activityToUpdate = activities.find(
-        (a) => a._id === selectedActivityId,
-      );
+      const activityToUpdate = activities.find((a) => a._id === selectedActivityId);
       if (!activityToUpdate) {
         toast.error("Activity not found in current data.");
         setUpdatingId(null);
         return;
       }
-
-      // Prepare updated activity data
-      const updatedActivity = {
-        _id: selectedActivityId,
-        status: "Closed",
-        close_reason: payload.close_reason,
-        counter_offer: payload.counter_offer,
-        client_specs: payload.client_specs,
-
-        tsm_acknowledge_date: payload.tsm_acknowledge_date,
-        tsm_handling_time: payload.tsm_handling_time,
-        tsa_acknowledge_date: payload.tsa_acknowledge_date,
-        tsa_handling_time: payload.tsa_handling_time,
-      };
-
-      const res = await fetch(
-        "/api/act-update-status?role=" + encodeURIComponent(role),
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedActivity),
-          cache: "no-store",
-        },
-      );
-
+      const updatedActivity = { _id: selectedActivityId, status: "Closed", ...payload };
+      const res = await fetch("/api/act-update-status?role=" + encodeURIComponent(role), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedActivity),
+        cache: "no-store",
+      });
       const result = await res.json();
-
       if (!res.ok) {
-        toast.error(
-          `Failed to update status: ${result.error || "Unknown error"}`,
-        );
+        toast.error(`Failed to update status: ${result.error || "Unknown error"}`);
         setUpdatingId(null);
         return;
       }
-
       await fetchActivities();
-
       toast.success("Transaction marked as Done.");
     } catch {
       toast.error("An error occurred while updating status.");
@@ -653,23 +554,10 @@ export const Ticket: React.FC<TicketProps> = ({
 
   const handleAddActivity = async (company: Company) => {
     const key = company.account_reference_number;
-
-    // 🔒 HARD BLOCK double click
     if (addingLock.has(key)) return;
-
-    if (!referenceid) {
-      toast.error("Missing reference ID");
-      return;
-    }
-
-    // 🔒 lock immediately
+    if (!referenceid) { toast.error("Missing reference ID"); return; }
     setAddingLock((prev) => new Set(prev).add(key));
     setAddingAccount(key);
-
-    const newActivityReferenceNumber = generateActivityReferenceNumber(
-      company.company_name,
-    );
-
     const payload = {
       referenceid,
       account_reference_number: company.account_reference_number,
@@ -680,9 +568,8 @@ export const Ticket: React.FC<TicketProps> = ({
       email_address: company.email_address,
       type_client: company.type_client,
       address: company.address,
-      activity_reference_number: newActivityReferenceNumber,
+      activity_reference_number: generateActivityReferenceNumber(company.company_name),
     };
-
     try {
       const res = await fetch("/api/act-save-account", {
         method: "POST",
@@ -690,33 +577,114 @@ export const Ticket: React.FC<TicketProps> = ({
         body: JSON.stringify(payload),
         cache: "no-store",
       });
-
       const json = await res.json();
-
       if (!res.ok) {
-        toast.error(
-          `Failed to save activity: ${json.error || "Unknown error"}`,
-        );
+        toast.error(`Failed to save activity: ${json.error || "Unknown error"}`);
         return;
       }
-
       toast.success("Activity added.");
       await fetchActivities();
-    } catch (error) {
+    } catch {
       toast.error("Error saving activity");
     } finally {
-      // 🔓 unlock after request ends
-      setAddingLock((prev) => {
-        const copy = new Set(prev);
-        copy.delete(key);
-        return copy;
-      });
+      setAddingLock((prev) => { const copy = new Set(prev); copy.delete(key); return copy; });
       setAddingAccount(null);
     }
   };
 
-  // 👇👇👇 PUT THIS RIGHT HERE 👇👇👇
   const selectedActivity = activities.find((a) => a._id === selectedActivityId);
+
+  const toggleSelect = (id: string) => {
+    setSelectedToDelete((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (selectedToDelete.length === 0) { toast.error("No activity selected."); return; }
+    try {
+      setDeleting(true);
+      const res = await fetch("/api/act-delete-activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedToDelete }),
+      });
+      const result = await res.json();
+      if (!res.ok) { toast.error(result.error || "Failed to delete activities."); setDeleting(false); return; }
+      toast.success("Selected activities deleted.");
+      setSelectedToDelete([]);
+      setShowCheckboxes(false);
+      await fetchActivities();
+    } catch { toast.error("Error deleting activities."); }
+    finally { setDeleting(false); setShowDeleteConfirm(false); }
+  };
+
+  async function handleExportCsv(data: MergedActivity[]) {
+    if (!data.length) { toast.error("No data to export."); return; }
+    try {
+      setExporting(true);
+      await new Promise((r) => setTimeout(r, 1000));
+      const headers = [
+        "CSR Agent", "Company Name", "Status", "Date Created", "Date Updated",
+        "Contact Person", "Contact Number", "Email Address", "Gender",
+        "Ticket Received", "Ticket Endorsed", "Inquiry Received", "Response to Inquiry",
+        "Handling CSR", "Traffic", "Source Company", "Channel", "Wrap Up", "Source",
+        "Customer Type", "Customer Status", "Department", "Territory Sales Manager",
+        "TSM Acknowledge Time", "TSM Handling Time", "Territory Sales Associate",
+        "TSA Acknowledge Time", "TSA Handling Time", "Remarks", "Inquiry",
+        "Item Code", "Item Description", "PO Number", "SO Date", "SO Number",
+        "SO Amount", "Qty Sold", "Quotation Number", "Quotation Amount",
+        "Payment Terms", "PO Source", "Payment Date", "Delivery Date", "Close Reason",
+      ];
+      const formatDate = (dateStr?: string) => {
+        if (!dateStr) return "-";
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? "-" : d.toLocaleString();
+      };
+      const rows = data.map((item: MergedActivity) => [
+        getAgentNameByReferenceID(item.referenceid), item.company_name, item.status,
+        formatDate(item.date_created), formatDate(item.date_updated),
+        item.contact_person || "-", item.contact_number || "-", item.email_address || "-",
+        item.gender || "-", formatDate(item.ticket_received), formatDate(item.ticket_endorsed),
+        formatDate(item.inquiry_received), formatDate(item.response_to_inquiry),
+        item.handling_csr || "-", item.traffic || "-", item.source_company || "-",
+        item.channel || "-", item.wrap_up || "-", item.source || "-",
+        item.customer_type || "-", item.customer_status || "-", item.department || "-",
+        getAgentNameByReferenceID(item.manager), formatDate(item.tsm_acknowledge_date),
+        formatDate(item.tsm_handling_time), getAgentNameByReferenceID(item.agent),
+        formatDate(item.tsa_acknowledge_date), formatDate(item.tsa_handling_time),
+        item.remarks || "-", item.inquiry || "-", item.item_code || "-",
+        item.item_description || "-", item.po_number || "-", formatDate(item.so_date),
+        item.so_number || "-", item.so_amount || "-", item.qty_sold || "-",
+        item.quotation_number || "-", item.quotation_amount || "-",
+        item.payment_terms || "-", item.po_source || "-",
+        formatDate(item.payment_date), formatDate(item.delivery_date), item.close_reason || "-",
+      ]);
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(",")),
+      ].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `TICKETS_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("CSV file downloaded.");
+    } catch (error) {
+      toast.error("Failed to export CSV.");
+      console.error(error);
+    } finally { setExporting(false); }
+  }
+
+  const getAgentNameByReferenceID = (refId: string | null | undefined): string => {
+    if (!refId) return "-";
+    const agent = agents.find((a) => a.ReferenceID === refId);
+    return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
+  };
 
   if (isLoading) {
     return (
@@ -728,10 +696,7 @@ export const Ticket: React.FC<TicketProps> = ({
 
   if (error) {
     return (
-      <Alert
-        variant="destructive"
-        className="flex flex-col space-y-4 p-4 text-xs"
-      >
+      <Alert variant="destructive" className="flex flex-col space-y-4 p-4 text-xs">
         <div className="flex items-center space-x-3">
           <AlertCircleIcon className="h-6 w-6 text-red-600" />
           <div>
@@ -741,7 +706,6 @@ export const Ticket: React.FC<TicketProps> = ({
             </AlertDescription>
           </div>
         </div>
-
         <div className="flex items-center space-x-3">
           <CheckCircle2Icon className="h-6 w-6 text-green-600" />
           <div>
@@ -755,194 +719,6 @@ export const Ticket: React.FC<TicketProps> = ({
     );
   }
 
-  const toggleSelect = (id: string) => {
-    setSelectedToDelete((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
-
-  // Delete selected activities handler
-  const handleDeleteConfirm = async () => {
-    if (selectedToDelete.length === 0) {
-      toast.error("No activity selected.");
-      return;
-    }
-
-    try {
-      setDeleting(true);
-      // Example delete API, adjust path & method as needed
-      const res = await fetch("/api/act-delete-activity", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedToDelete }),
-      });
-      const result = await res.json();
-
-      if (!res.ok) {
-        toast.error(result.error || "Failed to delete activities.");
-        setDeleting(false);
-        return;
-      }
-
-      toast.success("Selected activities deleted.");
-      setSelectedToDelete([]);
-      setShowCheckboxes(false);
-      await fetchActivities();
-    } catch (err) {
-      toast.error("Error deleting activities.");
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-    }
-  };
-
-  async function handleExportCsv(data: MergedActivity[]) {
-    if (!data.length) {
-      toast.error("No data to export.");
-      return;
-    }
-
-    try {
-      setExporting(true);
-
-      await new Promise((r) => setTimeout(r, 1000));
-
-      const headers = [
-        "CSR Agent",
-        "Company Name",
-        "Status",
-        "Date Created",
-        "Date Updated",
-        "Contact Person",
-        "Contact Number",
-        "Email Address",
-        "Gender",
-        "Ticket Received",
-        "Ticket Endorsed",
-        "Inquiry Received",
-        "Response to Inquiry",
-        "Handling CSR",
-        "Traffic",
-        "Source Company",
-        "Channel",
-        "Wrap Up",
-        "Source",
-        "Customer Type",
-        "Customer Status",
-        "Department",
-        "Territory Sales Manager",
-        "TSM Acknowledge Time",
-        "TSM Handling Time",
-        "Territory Sales Associate",
-        "TSA Acknowledge Time",
-        "TSA Handling Time",
-        "Remarks",
-        "Inquiry",
-        "Item Code",
-        "Item Description",
-        "PO Number",
-        "SO Date",
-        "SO Number",
-        "SO Amount",
-        "Qty Sold",
-        "Quotation Number",
-        "Quotation Amount",
-        "Payment Terms",
-        "PO Source",
-        "Payment Date",
-        "Delivery Date",
-        "Close Reason",
-      ];
-
-      const formatDate = (dateStr?: string) => {
-        if (!dateStr) return "-";
-        const d = new Date(dateStr);
-        return isNaN(d.getTime()) ? "-" : d.toLocaleString();
-      };
-
-      const rows = data.map((item: MergedActivity) => [
-        getAgentNameByReferenceID(item.referenceid),
-        item.company_name,
-        item.status,
-        formatDate(item.date_created),
-        formatDate(item.date_updated),
-        item.contact_person || "-",
-        item.contact_number || "-",
-        item.email_address || "-",
-        item.gender || "-",
-        formatDate(item.ticket_received),
-        formatDate(item.ticket_endorsed),
-        formatDate(item.inquiry_received),
-        formatDate(item.response_to_inquiry),
-        item.handling_csr || "-",
-        item.traffic || "-",
-        item.source_company || "-",
-        item.channel || "-",
-        item.wrap_up || "-",
-        item.source || "-",
-        item.customer_type || "-",
-        item.customer_status || "-",
-        item.department || "-",
-        getAgentNameByReferenceID(item.manager),
-        formatDate(item.tsm_acknowledge_date),
-        formatDate(item.tsm_handling_time),
-        getAgentNameByReferenceID(item.agent),
-        formatDate(item.tsa_acknowledge_date),
-        formatDate(item.tsa_handling_time),
-        item.remarks || "-",
-        item.inquiry || "-",
-        item.item_code || "-",
-        item.item_description || "-",
-        item.po_number || "-",
-        formatDate(item.so_date),
-        item.so_number || "-",
-        item.so_amount || "-",
-        item.qty_sold || "-",
-        item.quotation_number || "-",
-        item.quotation_amount || "-",
-        item.payment_terms || "-",
-        item.po_source || "-",
-        formatDate(item.payment_date),
-        formatDate(item.delivery_date),
-        item.close_reason || "-",
-      ]);
-
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) =>
-          row
-            .map((field) => `"${String(field).replace(/"/g, '""')}"`)
-            .join(","),
-        ),
-      ].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `TICKETS_${Date.now()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      toast.success("CSV file downloaded.");
-    } catch (error) {
-      toast.error("Failed to export CSV.");
-      console.error(error);
-    } finally {
-      setExporting(false);
-    }
-  }
-
-  const getAgentNameByReferenceID = (
-    refId: string | null | undefined,
-  ): string => {
-    if (!refId) return "-";
-    const agent = agents.find((a) => a.ReferenceID === refId);
-    return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
-  };
-
   return (
     <div className="flex flex-col md:flex-row gap-4">
       {/* LEFT SIDE — COMPANIES */}
@@ -950,11 +726,7 @@ export const Ticket: React.FC<TicketProps> = ({
         <CardHeader className="p-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold">Companies</CardTitle>
-            {/* LEFT SIDE — COMPANIES */}
-            <AddCompanyModal
-              referenceid={referenceid}
-              onCreated={fetchCompanies} // pass the fetch function here
-            />
+            <AddCompanyModal referenceid={referenceid} onCreated={fetchCompanies} />
           </div>
         </CardHeader>
 
@@ -971,42 +743,22 @@ export const Ticket: React.FC<TicketProps> = ({
               No company info available.
             </div>
           ) : (
-            <Accordion
-              type="multiple"
-              className="overflow-auto space-y-2 p-2 max-h-[700px]"
-            >
+            <Accordion type="multiple" className="overflow-auto space-y-2 p-2 max-h-[700px]">
               {displayedCompanies.map((c) => {
-                // Find the agent for this company (adjust if needed)
-                const agentDetails = agents.find(
-                  (a) => a.ReferenceID === c.referenceid,
-                );
+                const agentDetails = agents.find((a) => a.ReferenceID === c.referenceid);
                 const fullName = agentDetails
                   ? `${agentDetails.Firstname} ${agentDetails.Lastname}`
                   : "(Unknown Agent)";
-
                 return (
-                  <AccordionItem
-                    key={c.account_reference_number}
-                    value={c.account_reference_number} // may kaparehas kasi bro
-                  >
+                  <AccordionItem key={c.account_reference_number} value={c.account_reference_number}>
                     <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
                       <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
-                        <span
-                          className="flex items-center gap-2 flex-wrap"
-                          style={{ minWidth: 0 }}
-                        >
+                        <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
                           <span className="break-words whitespace-normal cap">
-                            {c.company_name?.trim()
-                              ? c.company_name
-                              : c.contact_person}
+                            {c.company_name?.trim() ? c.company_name : c.contact_person}
                           </span>
-
                           {isNewCompany(c.date_created) && (
-                            <span
-                              className="flex items-center gap-1 px-2 py-0.5 rounded-full
-                                                        bg-green-100 text-green-700 border border-green-300 text-[9px] font-semibold"
-                            >
-                              {/* glowing dot */}
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-300 text-[9px] font-semibold">
                               <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
@@ -1016,47 +768,27 @@ export const Ticket: React.FC<TicketProps> = ({
                           )}
                         </span>
                       </AccordionTrigger>
-
                       <Button
                         variant="outline"
                         disabled={
                           addingAccount === c.account_reference_number ||
                           addingLock.has(c.account_reference_number)
                         }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddActivity(c);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); handleAddActivity(c); }}
                         className="text-xs px-3 py-1 cursor-pointer"
                       >
-                        {addingAccount === c.account_reference_number
-                          ? "Adding..."
-                          : "Add"}
+                        {addingAccount === c.account_reference_number ? "Adding..." : "Add"}
                       </Button>
                     </div>
-
                     <AccordionContent className="text-xs px-4 pb-2 pt-0">
-                      <p>
-                        <strong>Contact Number:</strong>{" "}
-                        {c.contact_number || "-"}
-                      </p>
-                      <p>
-                        <strong>Email Address:</strong> {c.email_address || "-"}
-                      </p>
-                      {!c.company_name?.trim() &&
-                      c.contact_person?.trim() ? null : (
-                        <p className="capitalize">
-                          <strong>Contact Person:</strong>{" "}
-                          {c.contact_person || "-"}
-                        </p>
+                      <p><strong>Contact Number:</strong> {c.contact_number || "-"}</p>
+                      <p><strong>Email Address:</strong> {c.email_address || "-"}</p>
+                      {!c.company_name?.trim() && c.contact_person?.trim() ? null : (
+                        <p className="capitalize"><strong>Contact Person:</strong> {c.contact_person || "-"}</p>
                       )}
-                      <p className="mb-2">
-                        <strong>Type Client:</strong> {c.type_client || "-"}
-                      </p>
+                      <p className="mb-2"><strong>Type Client:</strong> {c.type_client || "-"}</p>
                       <p className="uppercase">
-                        <strong>
-                          Current Handler: <Badge>{fullName} </Badge>
-                        </strong>
+                        <strong>Current Handler: <Badge>{fullName}</Badge></strong>
                       </p>
                     </AccordionContent>
                   </AccordionItem>
@@ -1070,21 +802,17 @@ export const Ticket: React.FC<TicketProps> = ({
       {/* RIGHT SIDE — ACTIVITIES */}
       <Card className="w-full md:w-2/3 p-4 rounded-xl flex flex-col">
         <div className="mb-2 text-xs font-bold">
-          Total On-Progress Activities: {filteredAndSortedData.length}
+          Total Activities: {filteredAndSortedData.length}
         </div>
 
-        <div className="flex mb-3 space-x-2 items-center">
+        <div className="flex mb-3 space-x-2 items-center flex-wrap gap-y-2">
           <input
             type="search"
             placeholder="Search activities by company, status, reference number..."
             value={activitySearchTerm}
-            onChange={(e) => {
-              setActivitySearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
+            onChange={(e) => setActivitySearchTerm(e.target.value)}
             className="flex-grow px-3 py-2 border rounded-md text-sm"
           />
-
           <Button
             variant="outline"
             disabled={filteredAndSortedData.length === 0}
@@ -1093,240 +821,228 @@ export const Ticket: React.FC<TicketProps> = ({
           >
             Download CSV
           </Button>
-
-          <Button
-            className="cursor-pointer"
-            onClick={() => setFilterDialogOpen(true)}
-          >
+          <Button className="cursor-pointer" onClick={() => setFilterDialogOpen(true)}>
             Filter
           </Button>
-
           <Button
             variant={showCheckboxes ? "secondary" : "outline"}
             disabled={filteredAndSortedData.length === 0}
             onClick={() => {
-              if (showCheckboxes) {
-                // Cancel delete mode
-                setShowCheckboxes(false);
-                setSelectedToDelete([]);
-              } else {
-                setShowCheckboxes(true);
-              }
+              if (showCheckboxes) { setShowCheckboxes(false); setSelectedToDelete([]); }
+              else { setShowCheckboxes(true); }
             }}
             className="whitespace-nowrap cursor-pointer"
           >
             {showCheckboxes ? "Cancel" : "Delete"}
           </Button>
-
           {showCheckboxes && selectedToDelete.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
+            <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
               Delete Selected ({selectedToDelete.length})
             </Button>
           )}
         </div>
 
-        {/* ACTIVITIES LIST */}
-        <div className="max-h-[600px] overflow-auto space-y-3 custom-scrollbar flex-grow">
-          {paginatedActivities.map((item, index) => {
-            let badgeColor: "default" | "secondary" | "outline" = "default";
-
-            if (item.status === "Assisted" || item.status === "SO-Done") {
-              badgeColor = "secondary";
-            } else if (item.status === "Quote-Done") {
-              badgeColor = "outline";
-            }
-
-            const isChecked = selectedToDelete.includes(item._id);
+        {/* ===================== 4 STATUS COLUMNS ===================== */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          {STATUS_COLUMNS.map((status) => {
+            const columnItems = paginatedByStatus[status];
+            const totalItems = groupedByStatus[status].length;
+            const currentPage = columnCurrentPage[status];
+            const totalPages = totalPagesByStatus[status];
 
             return (
+              /* Each column is a flex column with fixed total height so all 4 are equal */
               <div
-                key={`${item._id}-${index}`}
-                className="border rounded-lg p-3 flex items-start justify-between gap-3"
+                key={status}
+                className="flex flex-col border rounded-xl overflow-hidden"
+                style={{ height: "680px" }}
               >
-                {/* LEFT INFO */}
-                <div className="flex-1 text-xs">
-                  <div className="flex items-center gap-2">
-                    {showCheckboxes && (
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleSelect(item._id)}
-                        className="w-4 h-4 cursor-pointer"
-                      />
-                    )}
-
-                    <span className="font-semibold capitalize">
-                      {item.company_name === "Unknown Company"
-                        ? item.contact_person || "Unknown Company"
-                        : item.company_name}
-                    </span>
-                  </div>
-
-                  {/* Contact Person Section */}
-                  <div className="mt-4 mb-3">
-                    {item.contact_person && (
-                      <div className="text-xs leading-relaxed">
-                        <div className="text-gray-600">
-                          Contact Person: {item.contact_person}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-muted-foreground space-y-1">
-                    <div>
-                      Updated:{" "}
-                      {new Date(item.date_updated).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </div>
-
-                    <div className="text-[10px] text-slate-500">
-                      Created:{" "}
-                      {new Date(item.date_created).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="mt-1 flex items-center gap-1">
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-semibold
-                            ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-700 border-slate-300"}`}
-                    >
-                      {item.status}
-                    </span>
-                    –{" "}
-                    <span className="capitalize font-bold">
-                      {getAgentNameByReferenceID(item.referenceid)}
-                    </span>
-                  </div>
+                {/* COLUMN HEADER */}
+                <div className={`flex items-center justify-between px-3 py-2 border-b shrink-0 ${STATUS_HEADER_STYLES[status]}`}>
+                  <span className="text-xs font-bold truncate">{status}</span>
+                  <span className="text-[10px] font-semibold bg-white/70 border px-1.5 py-0.5 rounded-full ml-1 shrink-0">
+                    {totalItems}
+                  </span>
                 </div>
 
-                {/* RIGHT ACTIONS */}
-                {!showCheckboxes && (
-                  <div className="flex gap-2 flex-shrink-0">
-                    {/* VIEW HISTORY MODAL */}
-                    <TicketHistoryDialog item={item} />
+                {/* SEARCH BAR */}
+                <div className="px-2 py-1.5 border-b bg-white shrink-0">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="w-full px-2 py-1 text-xs border rounded"
+                    value={columnSearch[status]}
+                    onChange={(e) => {
+                      setColumnSearch((prev) => ({ ...prev, [status]: e.target.value }));
+                      setColumnCurrentPage((prev) => ({ ...prev, [status]: 1 }));
+                    }}
+                  />
+                </div>
 
-                    {/* UPDATE */}
-                    <UpdateTicketDialog
-                      {...{
-                        _id: item._id,
-                        date_created: item.date_created,
-                        department_head: item.department_head,
-                        ticket_reference_number: item.ticket_reference_number,
-                        ticket_received: item.ticket_received,
-                        ticket_endorsed: item.ticket_endorsed,
-                        inquiry_received: item.inquiry_received,
-                        response_to_inquiry: item.response_to_inquiry,
-                        handling_csr: item.handling_csr,
-                        traffic: item.traffic,
-                        source_company: item.source_company,
-                        gender: item.gender,
-                        channel: item.channel,
-                        wrap_up: item.wrap_up,
-                        source: item.source,
-                        customer_type: item.customer_type,
-                        customer_status: item.customer_status,
-                        status: item.status,
-                        department: item.department,
-                        manager: item.manager,
-                        agent: item.agent,
-                        remarks: item.remarks,
-                        inquiry: item.inquiry,
-                        item_code: item.item_code,
-                        item_description: item.item_description,
-                        po_number: item.po_number,
-                        so_date: item.so_date,
-                        so_number: item.so_number,
-                        so_amount: item.so_amount,
-                        qty_sold: item.qty_sold,
-                        quotation_number: item.quotation_number,
-                        quotation_amount: item.quotation_amount,
-                        payment_terms: item.payment_terms,
-                        po_source: item.po_source,
-                        payment_date: item.payment_date,
-                        delivery_date: item.delivery_date,
+                {/* SCROLLABLE ITEMS LIST — takes remaining height */}
+                <div className="overflow-y-auto flex-1 bg-gray-50/50 custom-scrollbar">
+                  {columnItems.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-xs text-muted-foreground p-4 text-center">
+                      No records found.
+                    </div>
+                  ) : (
+                    <div className="p-2 space-y-2">
+                      {columnItems.map((item, index) => {
+                        const isChecked = selectedToDelete.includes(item._id);
+                        return (
+                          <div
+                            key={`${item._id}-${index}`}
+                            className="bg-white border rounded-lg p-2.5 flex items-start justify-between gap-2 shadow-sm hover:shadow-md transition-shadow"
+                          >
+                            {/* LEFT INFO */}
+                            <div className="flex-1 text-xs min-w-0">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                {showCheckboxes && (
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => toggleSelect(item._id)}
+                                    className="w-3.5 h-3.5 cursor-pointer shrink-0"
+                                  />
+                                )}
+                                <span className="font-semibold capitalize truncate">
+                                  {item.company_name === "Unknown Company"
+                                    ? item.contact_person || "Unknown Company"
+                                    : item.company_name}
+                                </span>
+                              </div>
 
-                        // ✅ REQUIRED FOR AUTOFILL
-                        close_reason: item.close_reason,
-                        counter_offer: item.counter_offer,
-                        client_specs: item.client_specs,
-                        tsm_acknowledge_date: item.tsm_acknowledge_date,
-                        tsa_acknowledge_date: item.tsa_acknowledge_date,
-                        tsm_handling_time: item.tsm_handling_time,
-                        tsa_handling_time: item.tsa_handling_time,
-                        hr_acknowledge_date: item.hr_acknowledge_date,
+                              {item.contact_person && (
+                                <div className="text-gray-500 truncate mb-1">
+                                  {item.contact_person}
+                                </div>
+                              )}
 
-                        referenceid: item.referenceid,
-                        type_client: item.type_client,
-                        contact_number: item.contact_number,
-                        email_address: item.email_address,
-                        company_name: item.company_name,
-                        contact_person: item.contact_person,
-                        address: item.address,
-                        account_reference_number: item.account_reference_number,
-                      }}
-                      onCreated={async () => {
-                        await fetchActivities();
-                        await fetchCompanies(); // 🔥 refresh left Companies panel
-                      }}
-                    />
+                              <div className="text-muted-foreground space-y-0.5">
+                                <div className="truncate">
+                                  Updated: {new Date(item.date_updated).toLocaleString()}
+                                </div>
+                                <div className="text-[10px] text-slate-400 truncate">
+                                  Created: {new Date(item.date_created).toLocaleString()}
+                                </div>
+                              </div>
 
-                    {/* CLOSE */}
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="cursor-pointer"
-                      disabled={updatingId === item._id}
-                      onClick={() => openDoneDialog(item._id)}
-                    >
-                      {updatingId === item._id ? "Updating..." : "Closed"}
-                    </Button>
-                  </div>
-                )}
+                              <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                                <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[8px] font-semibold ${STATUS_STYLES[item.status]}`}>
+                                  {item.status}
+                                </span>
+                                <span className="text-[10px] text-gray-400">–</span>
+                                <span className="text-[10px] capitalize font-semibold truncate">
+                                  {getAgentNameByReferenceID(item.referenceid)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* RIGHT ACTIONS */}
+                            {!showCheckboxes && (
+                              <div className="flex flex-col gap-1 shrink-0">
+                                <TicketHistoryDialog item={item} />
+                                <UpdateTicketDialog
+                                  {...item}
+                                  onCreated={async () => {
+                                    await fetchActivities();
+                                    await fetchCompanies();
+                                  }}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={updatingId === item._id}
+                                  onClick={() => openDoneDialog(item._id)}
+                                  className="text-xs"
+                                >
+                                  {updatingId === item._id ? "Updating..." : "Closed"}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* PAGINATION FOOTER — always pinned at bottom */}
+                <div className="border-t bg-white px-2 py-2 shrink-0">
+                  {totalPages > 1 ? (
+                    <>
+                      <div className="flex items-center justify-between gap-1 text-xs">
+                        <button
+                          onClick={() => goToColumnPage(status, currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="px-2 py-0.5 rounded border disabled:opacity-40 hover:bg-gray-100 cursor-pointer text-xs"
+                        >
+                          ‹ Prev
+                        </button>
+
+                        <div className="flex items-center gap-0.5">
+                          {currentPage > 2 && (
+                            <>
+                              <button
+                                onClick={() => goToColumnPage(status, 1)}
+                                className="px-1.5 py-0.5 rounded border hover:bg-gray-100 cursor-pointer text-xs"
+                              >
+                                1
+                              </button>
+                              {currentPage > 3 && <span className="text-gray-400 text-xs">…</span>}
+                            </>
+                          )}
+                          {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter((p) => p >= currentPage - 1 && p <= currentPage + 1)
+                            .map((p) => (
+                              <button
+                                key={p}
+                                onClick={() => goToColumnPage(status, p)}
+                                className={`px-1.5 py-0.5 rounded border cursor-pointer text-xs ${
+                                  p === currentPage
+                                    ? "bg-blue-600 text-white border-blue-600"
+                                    : "hover:bg-gray-100"
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            ))}
+                          {currentPage < totalPages - 1 && (
+                            <>
+                              {currentPage < totalPages - 2 && <span className="text-gray-400 text-xs">…</span>}
+                              <button
+                                onClick={() => goToColumnPage(status, totalPages)}
+                                className="px-1.5 py-0.5 rounded border hover:bg-gray-100 cursor-pointer text-xs"
+                              >
+                                {totalPages}
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => goToColumnPage(status, currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="px-2 py-0.5 rounded border disabled:opacity-40 hover:bg-gray-100 cursor-pointer text-xs"
+                        >
+                          Next ›
+                        </button>
+                      </div>
+                      <div className="text-center text-[10px] text-gray-400 mt-0.5">
+                        Page {currentPage} of {totalPages} · {totalItems} total
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-[10px] text-gray-400">
+                      {totalItems} {totalItems === 1 ? "record" : "records"}
+                    </div>
+                  )}
+                </div>
+
               </div>
             );
           })}
-        </div>
-
-        {/* PAGINATION CONTROLS */}
-        <div className="mt-4 flex justify-center items-center space-x-2 text-xs">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={currentPage <= 1}
-            onClick={() => goToPage(currentPage - 1)}
-          >
-            Prev
-          </Button>
-
-          <span>
-            Page {currentPage} / {totalPages || 1}
-          </span>
-
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={currentPage >= totalPages}
-            onClick={() => goToPage(currentPage + 1)}
-          >
-            Next
-          </Button>
         </div>
 
         {/* CONFIRM DELETE DIALOG */}
@@ -1349,7 +1065,7 @@ export const Ticket: React.FC<TicketProps> = ({
           setSortOrder={setSortOrder}
           mergedData={filteredAndSortedData}
           sortableFields={sortableFields}
-          agents={agents} // 👈 THIS LINE FIXES THE ERROR
+          agents={agents}
         />
       </Card>
 
@@ -1373,17 +1089,13 @@ export const Ticket: React.FC<TicketProps> = ({
           style={{ borderRadius: "1rem" }}
         >
           <Item variant="outline">
-            <ItemMedia variant="icon">
-              <Spinner />
-            </ItemMedia>
+            <ItemMedia variant="icon"><Spinner /></ItemMedia>
             <ItemContent>
               <ItemTitle>Downloading...</ItemTitle>
               <ItemDescription>{`${filteredAndSortedData.length} records`}</ItemDescription>
             </ItemContent>
             <ItemActions className="hidden sm:flex">
-              <Button variant="outline" size="sm" disabled>
-                Cancel
-              </Button>
+              <Button variant="outline" size="sm" disabled>Cancel</Button>
             </ItemActions>
             <ItemFooter>
               <Progress value={progress} />
