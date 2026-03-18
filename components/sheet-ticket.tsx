@@ -340,9 +340,7 @@ const ComboboxField = ({
 }) => {
   const [open, setOpen] = useState(false);
 
-  const sorted = [...options].sort((a, b) =>
-    a.label.localeCompare(b.label),
-  );
+  const sorted = [...options].sort((a, b) => a.label.localeCompare(b.label));
 
   const selectedLabel = sorted.find((o) => o.value === value)?.label;
 
@@ -365,7 +363,9 @@ const ComboboxField = ({
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
           <Command>
-            <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
+            <CommandInput
+              placeholder={`Search ${placeholder.toLowerCase()}...`}
+            />
             <CommandList>
               <CommandEmpty>No results found.</CommandEmpty>
               <CommandGroup>
@@ -380,7 +380,8 @@ const ComboboxField = ({
                       setOpen(false);
                     }}
                     className={cn(
-                      option.disabled && "opacity-40 cursor-not-allowed pointer-events-none",
+                      option.disabled &&
+                        "opacity-40 cursor-not-allowed pointer-events-none",
                     )}
                   >
                     <Check
@@ -993,8 +994,14 @@ export function TicketSheet(props: TicketSheetProps) {
   const wrapUpOptions = [
     { value: "After Sales", label: "After Sales" },
     { value: "Customer Complaint", label: "Customer Complaint" },
-    { value: "Customer Feedback/Recommendation", label: "Customer Feedback/Recommendation" },
-    { value: "Customer Inquiry Non-Sales", label: "Customer Inquiry Non-Sales" },
+    {
+      value: "Customer Feedback/Recommendation",
+      label: "Customer Feedback/Recommendation",
+    },
+    {
+      value: "Customer Inquiry Non-Sales",
+      label: "Customer Inquiry Non-Sales",
+    },
     { value: "Customer Inquiry Sales", label: "Customer Inquiry Sales" },
     { value: "Customer Order", label: "Customer Order" },
     { value: "Follow Up Non-Sales", label: "Follow Up Non-Sales" },
@@ -1004,30 +1011,54 @@ export function TicketSheet(props: TicketSheetProps) {
     { value: "Internal Whistle Blower", label: "Internal Whistle Blower" },
     { value: "Job Applicants", label: "Job Applicants" },
     { value: "Others", label: "Others" },
-    { value: "Supplier Accredited Request", label: "Supplier Accredited Request" },
-    { value: "Supplier/Vendor Product Offer", label: "Supplier/Vendor Product Offer" },
-    { value: "Threats/Extortion/Intimidation", label: "Threats/Extortion/Intimidation" },
+    {
+      value: "Supplier Accredited Request",
+      label: "Supplier Accredited Request",
+    },
+    {
+      value: "Supplier/Vendor Product Offer",
+      label: "Supplier/Vendor Product Offer",
+    },
+    {
+      value: "Threats/Extortion/Intimidation",
+      label: "Threats/Extortion/Intimidation",
+    },
   ].sort((a, b) => a.label.localeCompare(b.label));
 
   const remarksOptions = [
-    { value: "Accreditation / Partnership", label: "Accreditation / Partnership" },
+    {
+      value: "Accreditation / Partnership",
+      label: "Accreditation / Partnership",
+    },
     { value: "Assisted", label: "Assisted" },
-    { value: "Customer Request Cancellation", label: "Customer Request Cancellation" },
+    {
+      value: "Customer Request Cancellation",
+      label: "Customer Request Cancellation",
+    },
     { value: "Disapproved Quotation", label: "Disapproved Quotation" },
     { value: "For Occular Inspection", label: "For Occular Inspection" },
     { value: "For Site Visit", label: "For Site Visit" },
     { value: "For SPF", label: "For SPF" },
     { value: "Item Not Carried", label: "Item Not Carried" },
     { value: "No Response For Client", label: "No Response For Client" },
-    { value: "No Stocks / Insufficient Stocks", label: "No Stocks / Insufficient Stocks" },
+    {
+      value: "No Stocks / Insufficient Stocks",
+      label: "No Stocks / Insufficient Stocks",
+    },
     { value: "Non Standard Item", label: "Non Standard Item" },
     { value: "Not Converted to Sales", label: "Not Converted to Sales" },
     { value: "Pending Quotation", label: "Pending Quotation" },
     { value: "Po Received", label: "Po Received" },
     { value: "Quotation For Approval", label: "Quotation For Approval" },
     { value: "Sold", label: "Sold" },
-    { value: "Unable to Contact Customer", label: "Unable to Contact Customer" },
-    { value: "Waiting for Client Confirmation", label: "Waiting for Client Confirmation" },
+    {
+      value: "Unable to Contact Customer",
+      label: "Unable to Contact Customer",
+    },
+    {
+      value: "Waiting for Client Confirmation",
+      label: "Waiting for Client Confirmation",
+    },
   ].sort((a, b) => a.label.localeCompare(b.label));
 
   const paymentTermsOptions = [
@@ -1054,49 +1085,143 @@ export function TicketSheet(props: TicketSheetProps) {
 
   // Options for Radio Groups
   const departmentOptions: Option[] = [
-    { value: "Accounting", title: "Accounting", description: "Handle initial client contact for financial matters and updates." },
-    { value: "Business Development", title: "Business Development", description: "Manage client outreach and relationship building activities." },
-    { value: "E-Commerce", title: "E-Commerce", description: "Conduct follow-up calls to monitor progress and gather additional requirements." },
-    { value: "Engineering", title: "Engineering", description: "Provide technical support and follow up on project developments." },
-    { value: "Human Resources", title: "Human Resources", description: "Manage employee relations and follow-up on HR-related inquiries." },
-    { value: "Marketing", title: "Marketing", description: "Follow up on campaigns and coordinate client feedback." },
-    { value: "Procurement", title: "Procurement", description: "Oversee purchasing processes and supplier communications." },
-    { value: "Sales", title: "Sales", description: "Follow up on sales opportunities and client requests." },
-    { value: "Warehouse", title: "Warehouse & Logistics", description: "Coordinate logistics and inventory follow-ups." },
+    {
+      value: "Accounting",
+      title: "Accounting",
+      description:
+        "Handle initial client contact for financial matters and updates.",
+    },
+    {
+      value: "Business Development",
+      title: "Business Development",
+      description:
+        "Manage client outreach and relationship building activities.",
+    },
+    {
+      value: "E-Commerce",
+      title: "E-Commerce",
+      description:
+        "Conduct follow-up calls to monitor progress and gather additional requirements.",
+    },
+    {
+      value: "Engineering",
+      title: "Engineering",
+      description:
+        "Provide technical support and follow up on project developments.",
+    },
+    {
+      value: "Human Resources",
+      title: "Human Resources",
+      description:
+        "Manage employee relations and follow-up on HR-related inquiries.",
+    },
+    {
+      value: "Marketing",
+      title: "Marketing",
+      description: "Follow up on campaigns and coordinate client feedback.",
+    },
+    {
+      value: "Procurement",
+      title: "Procurement",
+      description: "Oversee purchasing processes and supplier communications.",
+    },
+    {
+      value: "Sales",
+      title: "Sales",
+      description: "Follow up on sales opportunities and client requests.",
+    },
+    {
+      value: "Warehouse",
+      title: "Warehouse & Logistics",
+      description: "Coordinate logistics and inventory follow-ups.",
+    },
   ];
 
   const customerStatusOptions: Option[] = [
-    { value: "Existing Active", title: "Existing Active", description: "Has consistent or recent purchase activity." },
-    { value: "Existing Inactive", title: "Existing Inactive", description: "Previously active but has no recent purchase activity." },
-    { value: "New Client", title: "New Client", description: "A newly onboarded client with initial transactions." },
-    { value: "New Non-Buying", title: "New Non-Buying", description: "Newly registered customer but has no purchasing history yet." },
+    {
+      value: "Existing Active",
+      title: "Existing Active",
+      description: "Has consistent or recent purchase activity.",
+    },
+    {
+      value: "Existing Inactive",
+      title: "Existing Inactive",
+      description: "Previously active but has no recent purchase activity.",
+    },
+    {
+      value: "New Client",
+      title: "New Client",
+      description: "A newly onboarded client with initial transactions.",
+    },
+    {
+      value: "New Non-Buying",
+      title: "New Non-Buying",
+      description:
+        "Newly registered customer but has no purchasing history yet.",
+    },
   ];
 
   const customerTypeOptions: Option[] = [
-    { value: "B2B", title: "B2B", description: "Business-to-Business client category." },
-    { value: "B2C", title: "B2C", description: "Business-to-Consumer, individual or household buyers." },
-    { value: "B2G", title: "B2G", description: "Government agencies and public sector clients." },
-    { value: "Gentrade", title: "Gentrade", description: "Gentrade partner or affiliated business accounts." },
-    { value: "Modern Trade", title: "Modern Trade", description: "Large retail chains and commercial distributors." },
+    {
+      value: "B2B",
+      title: "B2B",
+      description: "Business-to-Business client category.",
+    },
+    {
+      value: "B2C",
+      title: "B2C",
+      description: "Business-to-Consumer, individual or household buyers.",
+    },
+    {
+      value: "B2G",
+      title: "B2G",
+      description: "Government agencies and public sector clients.",
+    },
+    {
+      value: "Gentrade",
+      title: "Gentrade",
+      description: "Gentrade partner or affiliated business accounts.",
+    },
+    {
+      value: "Modern Trade",
+      title: "Modern Trade",
+      description: "Large retail chains and commercial distributors.",
+    },
   ];
 
   const statusOptions: Option[] = [
-    { value: "Closed", title: "Closed", description: "The process or item has been completed and finalized." },
-    { value: "Converted into Sales", title: "Converted into Sales", description: "The item has progressed and resulted in a successful sale." },
-    { value: "Endorsed", title: "Endorsed", description: "The item has been reviewed and forwarded for further action." },
+    {
+      value: "Closed",
+      title: "Closed",
+      description: "The process or item has been completed and finalized.",
+    },
+    {
+      value: "Converted into Sales",
+      title: "Converted into Sales",
+      description: "The item has progressed and resulted in a successful sale.",
+    },
+    {
+      value: "Endorsed",
+      title: "Endorsed",
+      description:
+        "The item has been reviewed and forwarded for further action.",
+    },
   ];
 
   const validateStep3 = () => {
     const newErrors: typeof errors = {};
-    if (!ticketReceived) newErrors.ticketReceived = "Ticket Received is required.";
-    if (!ticketEndorsed) newErrors.ticketEndorsed = "Ticket Endorsed is required.";
+    if (!ticketReceived)
+      newErrors.ticketReceived = "Ticket Received is required.";
+    if (!ticketEndorsed)
+      newErrors.ticketEndorsed = "Ticket Endorsed is required.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateStep4 = () => {
     const newErrors: typeof errors = {};
-    if (!customerStatus) newErrors.customerStatus = "Customer Status is required.";
+    if (!customerStatus)
+      newErrors.customerStatus = "Customer Status is required.";
     if (!customerType) newErrors.customerType = "Customer Type is required.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -1111,7 +1236,8 @@ export function TicketSheet(props: TicketSheetProps) {
 
     if (status === "Closed") {
       if (!tsmAcknowledgeDate && !tsaAcknowledgeDate) {
-        newErrors.status = "Either TSM or TSA Acknowledgement Date is required when closing or converting to sales.";
+        newErrors.status =
+          "Either TSM or TSA Acknowledgement Date is required when closing or converting to sales.";
       }
       if (tsmAcknowledgeDate && !tsmHandlingTime) {
         newErrors.status = "TSM Handling Time is required.";
@@ -1123,8 +1249,10 @@ export function TicketSheet(props: TicketSheetProps) {
         newErrors.status = "Close reason is required.";
       }
       if (closeReason === "Counter Offer") {
-        if (!counterOffer.trim()) newErrors.status = "Counter offer is required.";
-        if (!clientSpecs.trim()) newErrors.status = "Client specs are required.";
+        if (!counterOffer.trim())
+          newErrors.status = "Counter offer is required.";
+        if (!clientSpecs.trim())
+          newErrors.status = "Client specs are required.";
       }
     }
 
@@ -1158,7 +1286,8 @@ export function TicketSheet(props: TicketSheetProps) {
 
     if (agentReassigned === true) {
       try {
-        const { updateReassignRemarks } = await import("@/utils/supabase-reassign");
+        const { updateReassignRemarks } =
+          await import("@/utils/supabase-reassign");
         await updateReassignRemarks(ticketReferenceNumber, true);
         console.log("Remarks successfully set to Reassigned");
       } catch (err) {
@@ -1233,21 +1362,35 @@ export function TicketSheet(props: TicketSheetProps) {
               <FieldContent>
                 <RadioGroup value={department} onValueChange={setDepartment}>
                   {errors.customerStatus && (
-                    <p className="text-sm text-red-600 mt-2">{errors.customerStatus}</p>
+                    <p className="text-sm text-red-600 mt-2">
+                      {errors.customerStatus}
+                    </p>
                   )}
                   {departmentOptions.map((item) => (
                     <FieldLabel key={item.value} className="cursor-pointer">
-                      <Field orientation="horizontal" className="w-full items-start">
+                      <Field
+                        orientation="horizontal"
+                        className="w-full items-start"
+                      >
                         <FieldContent className="flex-1">
                           <FieldTitle>{item.title}</FieldTitle>
-                          <FieldDescription>{item.description}</FieldDescription>
+                          <FieldDescription>
+                            {item.description}
+                          </FieldDescription>
 
                           {department === item.value && (
                             <div className="mt-4 flex gap-2">
-                              <Button variant="outline" onClick={handleBack} className="cursor-pointer">
+                              <Button
+                                variant="outline"
+                                onClick={handleBack}
+                                className="cursor-pointer"
+                              >
                                 Back
                               </Button>
-                              <Button onClick={onNext} className="cursor-pointer">
+                              <Button
+                                onClick={onNext}
+                                className="cursor-pointer"
+                              >
                                 Next
                               </Button>
                             </div>
@@ -1269,15 +1412,32 @@ export function TicketSheet(props: TicketSheetProps) {
 
       {step === 3 && (
         <>
-          <h2 className="text-sm font-semibold mt-3">Step 3 — Ticket Details</h2>
+          <h2 className="text-sm font-semibold mt-3">
+            Step 3 — Ticket Details
+          </h2>
           <FieldGroup>
             <FieldSet>
               {/* HANDLING CSR */}
               <Field>
-                <FieldLabel>Handling CSR</FieldLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel>Handling CSR</FieldLabel>
+
+                  {handlingCSR && (
+                    <button
+                      type="button"
+                      onClick={() => setHandlingCSR("")}
+                      className="text-xs text-red-600 hover:text-red-700 underline"
+                    >
+                      Clear Field
+                    </button>
+                  )}
+                </div>
+
                 <FieldDescription>
-                  Platform or medium where the customer initially contacted the company.
+                  Platform or medium where the customer initially contacted the
+                  company.
                 </FieldDescription>
+
                 <ComboboxField
                   value={handlingCSR}
                   onChange={setHandlingCSR}
@@ -1287,10 +1447,14 @@ export function TicketSheet(props: TicketSheetProps) {
               </Field>
 
               {/* INQUIRY RECEIVED */}
-              <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(inquiryReceived)}`}>
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(inquiryReceived)}`}
+              >
                 <Field>
                   <FieldLabel>Inquiry Received</FieldLabel>
-                  <FieldDescription>Date and time when the inquiry was received.</FieldDescription>
+                  <FieldDescription>
+                    Date and time when the inquiry was received.
+                  </FieldDescription>
                   <InputField
                     type="datetime-local"
                     value={inquiryReceived}
@@ -1302,10 +1466,14 @@ export function TicketSheet(props: TicketSheetProps) {
               </div>
 
               {/* RESPONSE TO INQUIRY */}
-              <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(responseToInquiry)}`}>
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(responseToInquiry)}`}
+              >
                 <Field>
                   <FieldLabel>Response to Inquiry</FieldLabel>
-                  <FieldDescription>Date and time when the inquiry was responded to.</FieldDescription>
+                  <FieldDescription>
+                    Date and time when the inquiry was responded to.
+                  </FieldDescription>
                   <InputField
                     type="datetime-local"
                     value={responseToInquiry}
@@ -1319,7 +1487,9 @@ export function TicketSheet(props: TicketSheetProps) {
               <Separator />
 
               {/* TICKET RECEIVED */}
-              <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketReceived)}`}>
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketReceived)}`}
+              >
                 <Field>
                   {(!ticketReceived || !ticketEndorsed) && (
                     <p className="text-sm text-green-600 mb-2">
@@ -1328,10 +1498,13 @@ export function TicketSheet(props: TicketSheetProps) {
                   )}
                   <FieldLabel>
                     Ticket Received{" "}
-                    <span className="text-red-600 text-xs italic">*required</span>
+                    <span className="text-red-600 text-xs italic">
+                      *required
+                    </span>
                   </FieldLabel>
                   <FieldDescription>
-                    Date and time when the ticket was initially received or logged.
+                    Date and time when the ticket was initially received or
+                    logged.
                   </FieldDescription>
                   <InputField
                     type="datetime-local"
@@ -1344,14 +1517,19 @@ export function TicketSheet(props: TicketSheetProps) {
               </div>
 
               {/* TICKET ENDORSED */}
-              <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketEndorsed)}`}>
+              <div
+                className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 mb-3 ${getTimeOfDayCardStyle(ticketEndorsed)}`}
+              >
                 <Field>
                   <FieldLabel>
                     Ticket Endorsed{" "}
-                    <span className="text-red-600 text-xs italic">*required</span>
+                    <span className="text-red-600 text-xs italic">
+                      *required
+                    </span>
                   </FieldLabel>
                   <FieldDescription>
-                    Date and time when the ticket was endorsed to the assigned department.
+                    Date and time when the ticket was endorsed to the assigned
+                    department.
                   </FieldDescription>
                   <InputField
                     type="datetime-local"
@@ -1367,7 +1545,8 @@ export function TicketSheet(props: TicketSheetProps) {
               <Field>
                 <FieldLabel>Channel</FieldLabel>
                 <FieldDescription>
-                  Platform or medium where the customer initially contacted the company.
+                  Platform or medium where the customer initially contacted the
+                  company.
                 </FieldDescription>
                 <ComboboxField
                   value={channel}
@@ -1379,11 +1558,18 @@ export function TicketSheet(props: TicketSheetProps) {
               </Field>
 
               {/* SOURCE — conditional */}
-              {["Viber", "Text Message", "Website", "Voice Call", "Whatsapp"].includes(channel) && (
+              {[
+                "Viber",
+                "Text Message",
+                "Website",
+                "Voice Call",
+                "Whatsapp",
+              ].includes(channel) && (
                 <Field>
                   <FieldLabel>Source</FieldLabel>
                   <FieldDescription>
-                    Origin or reference indicating how the lead or concern was generated.
+                    Origin or reference indicating how the lead or concern was
+                    generated.
                   </FieldDescription>
                   <ComboboxField
                     value={source}
@@ -1398,7 +1584,8 @@ export function TicketSheet(props: TicketSheetProps) {
               <Field>
                 <FieldLabel>Wrap Up</FieldLabel>
                 <FieldDescription>
-                  Final classification describing the outcome or purpose of the interaction.
+                  Final classification describing the outcome or purpose of the
+                  interaction.
                 </FieldDescription>
                 <ComboboxField
                   value={wrapUp}
@@ -1464,20 +1651,29 @@ export function TicketSheet(props: TicketSheetProps) {
             <p className="text-sm text-red-600 mt-2">{errors.customerStatus}</p>
           )}
 
-          <div className={!customerStatus ? "opacity-50 pointer-events-none" : ""}>
+          <div
+            className={!customerStatus ? "opacity-50 pointer-events-none" : ""}
+          >
             <RadioGroup value={customerType} onValueChange={setCustomerType}>
               {errors.customerType && (
-                <p className="text-sm text-red-600 mt-2">{errors.customerType}</p>
+                <p className="text-sm text-red-600 mt-2">
+                  {errors.customerType}
+                </p>
               )}
               {customerTypeOptions.map((item) => (
                 <FieldLabel key={item.value}>
-                  <Field orientation="horizontal" className="w-full items-start">
+                  <Field
+                    orientation="horizontal"
+                    className="w-full items-start"
+                  >
                     <FieldContent className="flex-1">
                       <FieldTitle>{item.title}</FieldTitle>
                       <FieldDescription>{item.description}</FieldDescription>
                       {customerType === item.value && (
                         <div className="mt-4 flex gap-2">
-                          <Button variant="outline" onClick={handleBack}>Back</Button>
+                          <Button variant="outline" onClick={handleBack}>
+                            Back
+                          </Button>
                           <Button onClick={onNext}>Next</Button>
                         </div>
                       )}
@@ -1498,7 +1694,9 @@ export function TicketSheet(props: TicketSheetProps) {
             <>
               <Field>
                 <FieldLabel>Remarks</FieldLabel>
-                <FieldDescription>Select remarks related to the ticket status.</FieldDescription>
+                <FieldDescription>
+                  Select remarks related to the ticket status.
+                </FieldDescription>
                 <ComboboxField
                   value={remarks}
                   onChange={setRemarks}
@@ -1509,7 +1707,9 @@ export function TicketSheet(props: TicketSheetProps) {
 
               <Field>
                 <FieldLabel>Inquiry / Concern</FieldLabel>
-                <FieldDescription>Enter any additional remarks or concerns here.</FieldDescription>
+                <FieldDescription>
+                  Enter any additional remarks or concerns here.
+                </FieldDescription>
                 <InputField
                   type="textarea"
                   value={inquiry}
@@ -1526,7 +1726,9 @@ export function TicketSheet(props: TicketSheetProps) {
             <>
               <Field>
                 <FieldLabel>Item Code</FieldLabel>
-                <FieldDescription>Provide the code for the concerned item.</FieldDescription>
+                <FieldDescription>
+                  Provide the code for the concerned item.
+                </FieldDescription>
                 <InputField
                   value={itemCode}
                   onChange={(e) => setItemCode(e.target.value)}
@@ -1536,7 +1738,9 @@ export function TicketSheet(props: TicketSheetProps) {
 
               <Field>
                 <FieldLabel>Item Description</FieldLabel>
-                <FieldDescription>Describe the item in detail.</FieldDescription>
+                <FieldDescription>
+                  Describe the item in detail.
+                </FieldDescription>
                 <InputField
                   type="textarea"
                   value={itemDescription}
@@ -1551,7 +1755,9 @@ export function TicketSheet(props: TicketSheetProps) {
             <>
               <Field>
                 <FieldLabel>PO Number</FieldLabel>
-                <FieldDescription>Purchase order number related to this ticket.</FieldDescription>
+                <FieldDescription>
+                  Purchase order number related to this ticket.
+                </FieldDescription>
                 <InputField
                   value={poNumber}
                   onChange={(e) => setPoNumber(e.target.value)}
@@ -1571,7 +1777,9 @@ export function TicketSheet(props: TicketSheetProps) {
 
               <Field>
                 <FieldLabel>Payment Terms</FieldLabel>
-                <FieldDescription>Select payment terms agreed upon.</FieldDescription>
+                <FieldDescription>
+                  Select payment terms agreed upon.
+                </FieldDescription>
                 <ComboboxField
                   value={paymentTerms}
                   onChange={setPaymentTerms}
@@ -1582,7 +1790,9 @@ export function TicketSheet(props: TicketSheetProps) {
 
               <Field>
                 <FieldLabel>PO Source</FieldLabel>
-                <FieldDescription>Origin of the purchase order.</FieldDescription>
+                <FieldDescription>
+                  Origin of the purchase order.
+                </FieldDescription>
                 <ComboboxField
                   value={poSource}
                   onChange={setPoSource}
@@ -1603,7 +1813,9 @@ export function TicketSheet(props: TicketSheetProps) {
 
               <Field>
                 <FieldLabel>Delivery Date</FieldLabel>
-                <FieldDescription>Date the product was delivered.</FieldDescription>
+                <FieldDescription>
+                  Date the product was delivered.
+                </FieldDescription>
                 <InputField
                   type="date"
                   value={deliveryDate}
@@ -1617,7 +1829,9 @@ export function TicketSheet(props: TicketSheetProps) {
             <>
               <Field>
                 <FieldLabel>Quotation Number</FieldLabel>
-                <FieldDescription>Reference number for the quotation.</FieldDescription>
+                <FieldDescription>
+                  Reference number for the quotation.
+                </FieldDescription>
                 <InputField
                   value={quotationNumber}
                   onChange={(e) => setQuotationNumber(e.target.value)}
@@ -1627,7 +1841,9 @@ export function TicketSheet(props: TicketSheetProps) {
 
               <Field>
                 <FieldLabel>Quotation Amount</FieldLabel>
-                <FieldDescription>Amount quoted to the client.</FieldDescription>
+                <FieldDescription>
+                  Amount quoted to the client.
+                </FieldDescription>
                 <InputField
                   type="number"
                   value={quotationAmount}
@@ -1641,14 +1857,28 @@ export function TicketSheet(props: TicketSheetProps) {
       )}
 
       <div className="mt-6 p-4 border rounded bg-gray-50 text-sm space-y-1">
-        <h4 className="font-semibold mb-2">Handling Time Computation (Preview Only)</h4>
-        <div>CSR Response Time: <b>{csrTime || "-"}</b></div>
-        <div>TSA Response Time: <b>{tsaResponseTime || "-"}</b></div>
-        <div>TSA Handling Time: <b>{tsaHandlingTimeFinal || "-"}</b></div>
+        <h4 className="font-semibold mb-2">
+          Handling Time Computation (Preview Only)
+        </h4>
+        <div>
+          CSR Response Time: <b>{csrTime || "-"}</b>
+        </div>
+        <div>
+          TSA Response Time: <b>{tsaResponseTime || "-"}</b>
+        </div>
+        <div>
+          TSA Handling Time: <b>{tsaHandlingTimeFinal || "-"}</b>
+        </div>
         <hr className="my-2" />
-        <div>Non-Quotation HT: <b>{nonQuotationHT || "-"}</b></div>
-        <div>Quotation HT: <b>{quotationHT || "-"}</b></div>
-        <div>SPF HT: <b>{spfHT || "-"}</b></div>
+        <div>
+          Non-Quotation HT: <b>{nonQuotationHT || "-"}</b>
+        </div>
+        <div>
+          Quotation HT: <b>{quotationHT || "-"}</b>
+        </div>
+        <div>
+          SPF HT: <b>{spfHT || "-"}</b>
+        </div>
         <p className="text-xs text-gray-500 mt-2">
           * Values are computed in real-time and not saved to the database.
         </p>
@@ -1661,16 +1891,25 @@ export function TicketSheet(props: TicketSheetProps) {
           {/* DEPARTMENT HEAD */}
           <Field>
             <FieldLabel>Department Head</FieldLabel>
-            <FieldDescription>Please select the department head responsible.</FieldDescription>
+            <FieldDescription>
+              Please select the department head responsible.
+            </FieldDescription>
             <ComboboxField
               value={department_head}
               onChange={setDepartmentHead}
               placeholder="Select Department Head"
               options={
                 loadingDepartmentHeads
-                  ? [{ value: "__loading__", label: "Loading department heads..." }]
+                  ? [
+                      {
+                        value: "__loading__",
+                        label: "Loading department heads...",
+                      },
+                    ]
                   : departmentHeadsList
-                      .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
+                      .filter((dh) =>
+                        allowedDepartmentHeads.includes(dh.ReferenceID),
+                      )
                       .map((dh) => ({
                         value: dh.ReferenceID,
                         label:
@@ -1685,7 +1924,9 @@ export function TicketSheet(props: TicketSheetProps) {
           {/* MANAGER */}
           <Field>
             <FieldLabel>Manager</FieldLabel>
-            <FieldDescription>Select the manager responsible for this task or client.</FieldDescription>
+            <FieldDescription>
+              Select the manager responsible for this task or client.
+            </FieldDescription>
             <ComboboxField
               value={manager}
               onChange={(value) => {
@@ -1717,7 +1958,9 @@ export function TicketSheet(props: TicketSheetProps) {
                 </FieldDescription>
                 <div
                   className={`transition-all duration-300 ${
-                    highlightAgent ? "ring-2 ring-green-500 rounded-md animate-pulse" : ""
+                    highlightAgent
+                      ? "ring-2 ring-green-500 rounded-md animate-pulse"
+                      : ""
                   }`}
                 >
                   <ComboboxField
@@ -1727,7 +1970,13 @@ export function TicketSheet(props: TicketSheetProps) {
                     disabled={!manager}
                     options={
                       loadingAgents
-                        ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
+                        ? [
+                            {
+                              value: "__loading__",
+                              label: "Loading agents...",
+                              disabled: true,
+                            },
+                          ]
                         : agentsList.map((a) => ({
                             value: a.ReferenceID,
                             label: `${a.Firstname} ${a.Lastname}${
@@ -1756,7 +2005,9 @@ export function TicketSheet(props: TicketSheetProps) {
                     <Field orientation="horizontal">
                       <FieldContent>
                         <FieldTitle>Closed</FieldTitle>
-                        <FieldDescription>The process or item has been completed and finalized.</FieldDescription>
+                        <FieldDescription>
+                          The process or item has been completed and finalized.
+                        </FieldDescription>
                       </FieldContent>
                       <RadioGroupItem value="Closed" />
                     </Field>
@@ -1767,7 +2018,10 @@ export function TicketSheet(props: TicketSheetProps) {
                     <Field orientation="horizontal">
                       <FieldContent>
                         <FieldTitle>Endorsed</FieldTitle>
-                        <FieldDescription>The item has been reviewed and forwarded for further action.</FieldDescription>
+                        <FieldDescription>
+                          The item has been reviewed and forwarded for further
+                          action.
+                        </FieldDescription>
                       </FieldContent>
                       <RadioGroupItem value="Endorsed" />
                     </Field>
@@ -1793,7 +2047,10 @@ export function TicketSheet(props: TicketSheetProps) {
                     <Field orientation="horizontal">
                       <FieldContent>
                         <FieldTitle>Converted into Sales</FieldTitle>
-                        <FieldDescription>The item has progressed and resulted in a successful sale.</FieldDescription>
+                        <FieldDescription>
+                          The item has progressed and resulted in a successful
+                          sale.
+                        </FieldDescription>
                       </FieldContent>
                       <RadioGroupItem value="Converted into Sales" />
                     </Field>
@@ -1816,7 +2073,9 @@ export function TicketSheet(props: TicketSheetProps) {
                 </h4>
 
                 {/* TSM ACK */}
-                <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsmAcknowledgeDate)}`}>
+                <div
+                  className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsmAcknowledgeDate)}`}
+                >
                   <Field>
                     <FieldLabel>TSM Acknowledgement Date *</FieldLabel>
                     <InputField
@@ -1829,7 +2088,9 @@ export function TicketSheet(props: TicketSheetProps) {
                 </div>
 
                 {/* TSM HANDLING */}
-                <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsmHandlingTime)}`}>
+                <div
+                  className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsmHandlingTime)}`}
+                >
                   <Field>
                     <FieldLabel>TSM Handling Time *</FieldLabel>
                     <InputField
@@ -1843,7 +2104,9 @@ export function TicketSheet(props: TicketSheetProps) {
                 </div>
 
                 {/* TSA ACK */}
-                <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsaAcknowledgeDate)}`}>
+                <div
+                  className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsaAcknowledgeDate)}`}
+                >
                   <Field>
                     <FieldLabel>TSA Acknowledgement Date *</FieldLabel>
                     <InputField
@@ -1856,7 +2119,9 @@ export function TicketSheet(props: TicketSheetProps) {
                 </div>
 
                 {/* TSA HANDLING */}
-                <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsaHandlingTime)}`}>
+                <div
+                  className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsaHandlingTime)}`}
+                >
                   <Field>
                     <FieldLabel>TSA Handling Time *</FieldLabel>
                     <InputField
@@ -1870,7 +2135,8 @@ export function TicketSheet(props: TicketSheetProps) {
                 </div>
 
                 <p className="text-xs text-gray-600 italic">
-                  Note: Either TSM or TSA acknowledgement details must be completed before closing the ticket.
+                  Note: Either TSM or TSA acknowledgement details must be
+                  completed before closing the ticket.
                 </p>
               </div>
 
