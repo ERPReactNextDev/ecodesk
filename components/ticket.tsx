@@ -719,355 +719,339 @@ export const Ticket: React.FC<TicketProps> = ({
     );
   }
 
-  return (
-    <div className="flex flex-col md:flex-row gap-4">
-      {/* LEFT SIDE — COMPANIES */}
-      <Card className="w-full md:w-1/3 p-3 rounded-lg flex flex-col">
-        <CardHeader className="p-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold">Companies</CardTitle>
-            <AddCompanyModal referenceid={referenceid} onCreated={fetchCompanies} />
-          </div>
-        </CardHeader>
+  // ── reusable column card renderer ──────────────────────────────────────────
+  const renderColumn = (status: StatusColumn) => {
+    const columnItems = paginatedByStatus[status];
+    const totalItems = groupedByStatus[status].length;
+    const currentPage = columnCurrentPage[status];
+    const totalPages = totalPagesByStatus[status];
 
-        <CardContent className="p-0 flex flex-col flex-grow overflow-hidden">
-          <Input
-            type="search"
-            placeholder="Search company, email, contact, person..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+    return (
+      <div
+        key={status}
+        className="flex flex-col border rounded-xl overflow-hidden"
+        style={{ height: "560px" }}
+      >
+        {/* HEADER */}
+        <div className={`flex items-center justify-between px-3 py-2 border-b shrink-0 ${STATUS_HEADER_STYLES[status]}`}>
+          <span className="text-xs font-bold truncate">{status}</span>
+          <span className="text-[10px] font-semibold bg-white/70 border px-1.5 py-0.5 rounded-full ml-1 shrink-0">
+            {totalItems}
+          </span>
+        </div>
+
+        {/* SEARCH */}
+        <div className="px-2 py-1.5 border-b bg-white shrink-0">
+          <input
+            type="text"
+            placeholder="Search..."
+            className="w-full px-2 py-1 text-xs border rounded"
+            value={columnSearch[status]}
+            onChange={(e) => {
+              setColumnSearch((prev) => ({ ...prev, [status]: e.target.value }));
+              setColumnCurrentPage((prev) => ({ ...prev, [status]: 1 }));
+            }}
           />
+        </div>
 
-          {displayedCompanies.length === 0 ? (
-            <div className="text-muted-foreground text-sm p-3 border rounded-lg">
-              No company info available.
+        {/* SCROLLABLE LIST */}
+        <div className="overflow-y-auto flex-1 bg-gray-50/50 custom-scrollbar">
+          {columnItems.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-xs text-muted-foreground p-4 text-center">
+              No records found.
             </div>
           ) : (
-            <Accordion type="multiple" className="overflow-auto space-y-2 p-2 max-h-[700px]">
-              {displayedCompanies.map((c) => {
-                const agentDetails = agents.find((a) => a.ReferenceID === c.referenceid);
-                const fullName = agentDetails
-                  ? `${agentDetails.Firstname} ${agentDetails.Lastname}`
-                  : "(Unknown Agent)";
+            <div className="p-2 space-y-2">
+              {columnItems.map((item, index) => {
+                const isChecked = selectedToDelete.includes(item._id);
                 return (
-                  <AccordionItem key={c.account_reference_number} value={c.account_reference_number}>
-                    <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
-                      <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
-                        <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
-                          <span className="break-words whitespace-normal cap">
-                            {c.company_name?.trim() ? c.company_name : c.contact_person}
-                          </span>
-                          {isNewCompany(c.date_created) && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-300 text-[9px] font-semibold">
-                              <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
-                              </span>
-                              NEW
-                            </span>
-                          )}
+                  <div
+                    key={`${item._id}-${index}`}
+                    className="bg-white border rounded-lg p-2.5 flex items-start justify-between gap-2 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    {/* INFO */}
+                    <div className="flex-1 text-xs min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        {showCheckboxes && (
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleSelect(item._id)}
+                            className="w-3.5 h-3.5 cursor-pointer shrink-0"
+                          />
+                        )}
+                        <span className="font-semibold capitalize truncate">
+                          {item.company_name === "Unknown Company"
+                            ? item.contact_person || "Unknown Company"
+                            : item.company_name}
                         </span>
-                      </AccordionTrigger>
-                      <Button
-                        variant="outline"
-                        disabled={
-                          addingAccount === c.account_reference_number ||
-                          addingLock.has(c.account_reference_number)
-                        }
-                        onClick={(e) => { e.stopPropagation(); handleAddActivity(c); }}
-                        className="text-xs px-3 py-1 cursor-pointer"
-                      >
-                        {addingAccount === c.account_reference_number ? "Adding..." : "Add"}
-                      </Button>
-                    </div>
-                    <AccordionContent className="text-xs px-4 pb-2 pt-0">
-                      <p><strong>Contact Number:</strong> {c.contact_number || "-"}</p>
-                      <p><strong>Email Address:</strong> {c.email_address || "-"}</p>
-                      {!c.company_name?.trim() && c.contact_person?.trim() ? null : (
-                        <p className="capitalize"><strong>Contact Person:</strong> {c.contact_person || "-"}</p>
+                      </div>
+
+                      {item.contact_person && (
+                        <div className="text-gray-500 truncate mb-1">{item.contact_person}</div>
                       )}
-                      <p className="mb-2"><strong>Type Client:</strong> {c.type_client || "-"}</p>
-                      <p className="uppercase">
-                        <strong>Current Handler: <Badge>{fullName}</Badge></strong>
-                      </p>
-                    </AccordionContent>
-                  </AccordionItem>
+
+                      <div className="text-muted-foreground space-y-0.5">
+                        <div className="truncate">Updated: {new Date(item.date_updated).toLocaleString()}</div>
+                        <div className="text-[10px] text-slate-400 truncate">
+                          Created: {new Date(item.date_created).toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                        <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[8px] font-semibold ${STATUS_STYLES[item.status]}`}>
+                          {item.status}
+                        </span>
+                        <span className="text-[10px] text-gray-400">–</span>
+                        <span className="text-[10px] capitalize font-semibold truncate">
+                          {getAgentNameByReferenceID(item.referenceid)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ACTIONS */}
+                    {!showCheckboxes && (
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <TicketHistoryDialog item={item} />
+                        <UpdateTicketDialog
+                          {...item}
+                          onCreated={async () => {
+                            await fetchActivities();
+                            await fetchCompanies();
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={updatingId === item._id}
+                          onClick={() => openDoneDialog(item._id)}
+                          className="text-xs"
+                        >
+                          {updatingId === item._id ? "Updating..." : "Closed"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
-            </Accordion>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* RIGHT SIDE — ACTIVITIES */}
-      <Card className="w-full md:w-2/3 p-4 rounded-xl flex flex-col">
-        <div className="mb-2 text-xs font-bold">
-          Total Activities: {filteredAndSortedData.length}
-        </div>
-
-        <div className="flex mb-3 space-x-2 items-center flex-wrap gap-y-2">
-          <input
-            type="search"
-            placeholder="Search activities by company, status, reference number..."
-            value={activitySearchTerm}
-            onChange={(e) => setActivitySearchTerm(e.target.value)}
-            className="flex-grow px-3 py-2 border rounded-md text-sm"
-          />
-          <Button
-            variant="outline"
-            disabled={filteredAndSortedData.length === 0}
-            onClick={() => handleExportCsv(filteredAndSortedData)}
-            className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
-          >
-            Download CSV
-          </Button>
-          <Button className="cursor-pointer" onClick={() => setFilterDialogOpen(true)}>
-            Filter
-          </Button>
-          <Button
-            variant={showCheckboxes ? "secondary" : "outline"}
-            disabled={filteredAndSortedData.length === 0}
-            onClick={() => {
-              if (showCheckboxes) { setShowCheckboxes(false); setSelectedToDelete([]); }
-              else { setShowCheckboxes(true); }
-            }}
-            className="whitespace-nowrap cursor-pointer"
-          >
-            {showCheckboxes ? "Cancel" : "Delete"}
-          </Button>
-          {showCheckboxes && selectedToDelete.length > 0 && (
-            <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
-              Delete Selected ({selectedToDelete.length})
-            </Button>
+            </div>
           )}
         </div>
 
-        {/* ===================== 4 STATUS COLUMNS ===================== */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          {STATUS_COLUMNS.map((status) => {
-            const columnItems = paginatedByStatus[status];
-            const totalItems = groupedByStatus[status].length;
-            const currentPage = columnCurrentPage[status];
-            const totalPages = totalPagesByStatus[status];
-
-            return (
-              /* Each column is a flex column with fixed total height so all 4 are equal */
-              <div
-                key={status}
-                className="flex flex-col border rounded-xl overflow-hidden"
-                style={{ height: "680px" }}
-              >
-                {/* COLUMN HEADER */}
-                <div className={`flex items-center justify-between px-3 py-2 border-b shrink-0 ${STATUS_HEADER_STYLES[status]}`}>
-                  <span className="text-xs font-bold truncate">{status}</span>
-                  <span className="text-[10px] font-semibold bg-white/70 border px-1.5 py-0.5 rounded-full ml-1 shrink-0">
-                    {totalItems}
-                  </span>
-                </div>
-
-                {/* SEARCH BAR */}
-                <div className="px-2 py-1.5 border-b bg-white shrink-0">
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="w-full px-2 py-1 text-xs border rounded"
-                    value={columnSearch[status]}
-                    onChange={(e) => {
-                      setColumnSearch((prev) => ({ ...prev, [status]: e.target.value }));
-                      setColumnCurrentPage((prev) => ({ ...prev, [status]: 1 }));
-                    }}
-                  />
-                </div>
-
-                {/* SCROLLABLE ITEMS LIST — takes remaining height */}
-                <div className="overflow-y-auto flex-1 bg-gray-50/50 custom-scrollbar">
-                  {columnItems.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-xs text-muted-foreground p-4 text-center">
-                      No records found.
-                    </div>
-                  ) : (
-                    <div className="p-2 space-y-2">
-                      {columnItems.map((item, index) => {
-                        const isChecked = selectedToDelete.includes(item._id);
-                        return (
-                          <div
-                            key={`${item._id}-${index}`}
-                            className="bg-white border rounded-lg p-2.5 flex items-start justify-between gap-2 shadow-sm hover:shadow-md transition-shadow"
-                          >
-                            {/* LEFT INFO */}
-                            <div className="flex-1 text-xs min-w-0">
-                              <div className="flex items-center gap-1.5 mb-1">
-                                {showCheckboxes && (
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => toggleSelect(item._id)}
-                                    className="w-3.5 h-3.5 cursor-pointer shrink-0"
-                                  />
-                                )}
-                                <span className="font-semibold capitalize truncate">
-                                  {item.company_name === "Unknown Company"
-                                    ? item.contact_person || "Unknown Company"
-                                    : item.company_name}
-                                </span>
-                              </div>
-
-                              {item.contact_person && (
-                                <div className="text-gray-500 truncate mb-1">
-                                  {item.contact_person}
-                                </div>
-                              )}
-
-                              <div className="text-muted-foreground space-y-0.5">
-                                <div className="truncate">
-                                  Updated: {new Date(item.date_updated).toLocaleString()}
-                                </div>
-                                <div className="text-[10px] text-slate-400 truncate">
-                                  Created: {new Date(item.date_created).toLocaleString()}
-                                </div>
-                              </div>
-
-                              <div className="mt-1.5 flex items-center gap-1 flex-wrap">
-                                <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[8px] font-semibold ${STATUS_STYLES[item.status]}`}>
-                                  {item.status}
-                                </span>
-                                <span className="text-[10px] text-gray-400">–</span>
-                                <span className="text-[10px] capitalize font-semibold truncate">
-                                  {getAgentNameByReferenceID(item.referenceid)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* RIGHT ACTIONS */}
-                            {!showCheckboxes && (
-                              <div className="flex flex-col gap-1 shrink-0">
-                                <TicketHistoryDialog item={item} />
-                                <UpdateTicketDialog
-                                  {...item}
-                                  onCreated={async () => {
-                                    await fetchActivities();
-                                    await fetchCompanies();
-                                  }}
-                                />
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  size="sm"
-                                  disabled={updatingId === item._id}
-                                  onClick={() => openDoneDialog(item._id)}
-                                  className="text-xs"
-                                >
-                                  {updatingId === item._id ? "Updating..." : "Closed"}
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* PAGINATION FOOTER — always pinned at bottom */}
-                <div className="border-t bg-white px-2 py-2 shrink-0">
-                  {totalPages > 1 ? (
+        {/* PAGINATION FOOTER */}
+        <div className="border-t bg-white px-2 py-2 shrink-0">
+          {totalPages > 1 ? (
+            <>
+              <div className="flex items-center justify-between gap-1 text-xs">
+                <button
+                  onClick={() => goToColumnPage(status, currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-0.5 rounded border disabled:opacity-40 hover:bg-gray-100 cursor-pointer text-xs"
+                >
+                  ‹ Prev
+                </button>
+                <div className="flex items-center gap-0.5">
+                  {currentPage > 2 && (
                     <>
-                      <div className="flex items-center justify-between gap-1 text-xs">
-                        <button
-                          onClick={() => goToColumnPage(status, currentPage - 1)}
-                          disabled={currentPage === 1}
-                          className="px-2 py-0.5 rounded border disabled:opacity-40 hover:bg-gray-100 cursor-pointer text-xs"
-                        >
-                          ‹ Prev
-                        </button>
-
-                        <div className="flex items-center gap-0.5">
-                          {currentPage > 2 && (
-                            <>
-                              <button
-                                onClick={() => goToColumnPage(status, 1)}
-                                className="px-1.5 py-0.5 rounded border hover:bg-gray-100 cursor-pointer text-xs"
-                              >
-                                1
-                              </button>
-                              {currentPage > 3 && <span className="text-gray-400 text-xs">…</span>}
-                            </>
-                          )}
-                          {Array.from({ length: totalPages }, (_, i) => i + 1)
-                            .filter((p) => p >= currentPage - 1 && p <= currentPage + 1)
-                            .map((p) => (
-                              <button
-                                key={p}
-                                onClick={() => goToColumnPage(status, p)}
-                                className={`px-1.5 py-0.5 rounded border cursor-pointer text-xs ${
-                                  p === currentPage
-                                    ? "bg-blue-600 text-white border-blue-600"
-                                    : "hover:bg-gray-100"
-                                }`}
-                              >
-                                {p}
-                              </button>
-                            ))}
-                          {currentPage < totalPages - 1 && (
-                            <>
-                              {currentPage < totalPages - 2 && <span className="text-gray-400 text-xs">…</span>}
-                              <button
-                                onClick={() => goToColumnPage(status, totalPages)}
-                                className="px-1.5 py-0.5 rounded border hover:bg-gray-100 cursor-pointer text-xs"
-                              >
-                                {totalPages}
-                              </button>
-                            </>
-                          )}
-                        </div>
-
-                        <button
-                          onClick={() => goToColumnPage(status, currentPage + 1)}
-                          disabled={currentPage === totalPages}
-                          className="px-2 py-0.5 rounded border disabled:opacity-40 hover:bg-gray-100 cursor-pointer text-xs"
-                        >
-                          Next ›
-                        </button>
-                      </div>
-                      <div className="text-center text-[10px] text-gray-400 mt-0.5">
-                        Page {currentPage} of {totalPages} · {totalItems} total
-                      </div>
+                      <button onClick={() => goToColumnPage(status, 1)} className="px-1.5 py-0.5 rounded border hover:bg-gray-100 cursor-pointer text-xs">1</button>
+                      {currentPage > 3 && <span className="text-gray-400 text-xs">…</span>}
                     </>
-                  ) : (
-                    <div className="text-center text-[10px] text-gray-400">
-                      {totalItems} {totalItems === 1 ? "record" : "records"}
-                    </div>
+                  )}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p >= currentPage - 1 && p <= currentPage + 1)
+                    .map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => goToColumnPage(status, p)}
+                        className={`px-1.5 py-0.5 rounded border cursor-pointer text-xs ${p === currentPage ? "bg-blue-600 text-white border-blue-600" : "hover:bg-gray-100"}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  {currentPage < totalPages - 1 && (
+                    <>
+                      {currentPage < totalPages - 2 && <span className="text-gray-400 text-xs">…</span>}
+                      <button onClick={() => goToColumnPage(status, totalPages)} className="px-1.5 py-0.5 rounded border hover:bg-gray-100 cursor-pointer text-xs">{totalPages}</button>
+                    </>
                   )}
                 </div>
-
+                <button
+                  onClick={() => goToColumnPage(status, currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-0.5 rounded border disabled:opacity-40 hover:bg-gray-100 cursor-pointer text-xs"
+                >
+                  Next ›
+                </button>
               </div>
-            );
-          })}
+              <div className="text-center text-[10px] text-gray-400 mt-0.5">
+                Page {currentPage} of {totalPages} · {totalItems} total
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-[10px] text-gray-400">
+              {totalItems} {totalItems === 1 ? "record" : "records"}
+            </div>
+          )}
         </div>
+      </div>
+    );
+  };
 
-        {/* CONFIRM DELETE DIALOG */}
-        <ActDeleteDialog
-          open={showDeleteConfirm}
-          onOpenChange={setShowDeleteConfirm}
-          selectedToDeleteCount={selectedToDelete.length}
-          deleting={deleting}
-          onConfirm={handleDeleteConfirm}
-        />
+  return (
+    <div className="flex flex-col gap-4">
+      {/* TOP ROW: Companies (left) + Activities header + 2x2 grid (right) */}
+      <div className="flex flex-col md:flex-row gap-4">
 
-        <ActFilterDialog
-          filterDialogOpen={filterDialogOpen}
-          setFilterDialogOpen={setFilterDialogOpen}
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-          sortField={sortField}
-          setSortField={setSortField}
-          sortOrder={sortOrder}
-          setSortOrder={setSortOrder}
-          mergedData={filteredAndSortedData}
-          sortableFields={sortableFields}
-          agents={agents}
-        />
-      </Card>
+        {/* LEFT SIDE — COMPANIES */}
+        <Card className="w-full md:w-80 shrink-0 p-3 rounded-lg flex flex-col">
+          <CardHeader className="p-0">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold">Companies</CardTitle>
+              <AddCompanyModal referenceid={referenceid} onCreated={fetchCompanies} />
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0 flex flex-col flex-grow overflow-hidden">
+            <Input
+              type="search"
+              placeholder="Search company, email, contact, person..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+
+            {displayedCompanies.length === 0 ? (
+              <div className="text-muted-foreground text-sm p-3 border rounded-lg">
+                No company info available.
+              </div>
+            ) : (
+              <Accordion type="multiple" className="overflow-auto space-y-2 p-2 max-h-[700px]">
+                {displayedCompanies.map((c) => {
+                  const agentDetails = agents.find((a) => a.ReferenceID === c.referenceid);
+                  const fullName = agentDetails
+                    ? `${agentDetails.Firstname} ${agentDetails.Lastname}`
+                    : "(Unknown Agent)";
+                  return (
+                    <AccordionItem key={c.account_reference_number} value={c.account_reference_number}>
+                      <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
+                        <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
+                          <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
+                            <span className="break-words whitespace-normal cap">
+                              {c.company_name?.trim() ? c.company_name : c.contact_person}
+                            </span>
+                            {isNewCompany(c.date_created) && (
+                              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-300 text-[9px] font-semibold">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
+                                </span>
+                                NEW
+                              </span>
+                            )}
+                          </span>
+                        </AccordionTrigger>
+                        <Button
+                          variant="outline"
+                          disabled={
+                            addingAccount === c.account_reference_number ||
+                            addingLock.has(c.account_reference_number)
+                          }
+                          onClick={(e) => { e.stopPropagation(); handleAddActivity(c); }}
+                          className="text-xs px-3 py-1 cursor-pointer"
+                        >
+                          {addingAccount === c.account_reference_number ? "Adding..." : "Add"}
+                        </Button>
+                      </div>
+                      <AccordionContent className="text-xs px-4 pb-2 pt-0">
+                        <p><strong>Contact Number:</strong> {c.contact_number || "-"}</p>
+                        <p><strong>Email Address:</strong> {c.email_address || "-"}</p>
+                        {!c.company_name?.trim() && c.contact_person?.trim() ? null : (
+                          <p className="capitalize"><strong>Contact Person:</strong> {c.contact_person || "-"}</p>
+                        )}
+                        <p className="mb-2"><strong>Type Client:</strong> {c.type_client || "-"}</p>
+                        <p className="uppercase">
+                          <strong>Current Handler: <Badge>{fullName}</Badge></strong>
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* RIGHT SIDE — ACTIVITIES */}
+        <Card className="flex-1 min-w-0 p-4 rounded-xl flex flex-col">
+          <div className="mb-2 text-xs font-bold">
+            Total Activities: {filteredAndSortedData.length}
+          </div>
+
+          <div className="flex mb-3 space-x-2 items-center flex-wrap gap-y-2">
+            <input
+              type="search"
+              placeholder="Search activities by company, status, reference number..."
+              value={activitySearchTerm}
+              onChange={(e) => setActivitySearchTerm(e.target.value)}
+              className="flex-grow px-3 py-2 border rounded-md text-sm"
+            />
+            <Button
+              variant="outline"
+              disabled={filteredAndSortedData.length === 0}
+              onClick={() => handleExportCsv(filteredAndSortedData)}
+              className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
+            >
+              Download CSV
+            </Button>
+            <Button className="cursor-pointer" onClick={() => setFilterDialogOpen(true)}>
+              Filter
+            </Button>
+            <Button
+              variant={showCheckboxes ? "secondary" : "outline"}
+              disabled={filteredAndSortedData.length === 0}
+              onClick={() => {
+                if (showCheckboxes) { setShowCheckboxes(false); setSelectedToDelete([]); }
+                else { setShowCheckboxes(true); }
+              }}
+              className="whitespace-nowrap cursor-pointer"
+            >
+              {showCheckboxes ? "Cancel" : "Delete"}
+            </Button>
+            {showCheckboxes && selectedToDelete.length > 0 && (
+              <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
+                Delete Selected ({selectedToDelete.length})
+              </Button>
+            )}
+          </div>
+
+          {/* ── 2 × 2 GRID ── */}
+          <div className="grid grid-cols-2 gap-3">
+            {STATUS_COLUMNS.map((status) => renderColumn(status))}
+          </div>
+
+          {/* DIALOGS */}
+          <ActDeleteDialog
+            open={showDeleteConfirm}
+            onOpenChange={setShowDeleteConfirm}
+            selectedToDeleteCount={selectedToDelete.length}
+            deleting={deleting}
+            onConfirm={handleDeleteConfirm}
+          />
+          <ActFilterDialog
+            filterDialogOpen={filterDialogOpen}
+            setFilterDialogOpen={setFilterDialogOpen}
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+            sortField={sortField}
+            setSortField={setSortField}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            mergedData={filteredAndSortedData}
+            sortableFields={sortableFields}
+            agents={agents}
+          />
+        </Card>
+      </div>
 
       <DoneDialog
         open={dialogOpen}
@@ -1084,10 +1068,7 @@ export const Ticket: React.FC<TicketProps> = ({
       />
 
       {exporting && (
-        <div
-          className="fixed top-4 right-4 z-50 w-full max-w-md flex flex-col gap-4 rounded-xl shadow-lg bg-white p-4"
-          style={{ borderRadius: "1rem" }}
-        >
+        <div className="fixed top-4 right-4 z-50 w-full max-w-md flex flex-col gap-4 rounded-xl shadow-lg bg-white p-4" style={{ borderRadius: "1rem" }}>
           <Item variant="outline">
             <ItemMedia variant="icon"><Spinner /></ItemMedia>
             <ItemContent>
