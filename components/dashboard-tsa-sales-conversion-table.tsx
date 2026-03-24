@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
 import { type DateRange } from "react-day-picker";
 import { useImperativeHandle } from "react";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 interface Activity {
   agent?: string;
@@ -363,15 +364,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
       ),
     ].join("\n");
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "tsa-sales-conversion.csv";
-    link.click();
-
-    URL.revokeObjectURL(url);
+    downloadStyledWorkbookFromCsv(csv, "tsa-sales-conversion.xlsx");
   },
 }));
 

@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 function TooltipInfo({ children }: { children: React.ReactNode }) {
   return (
@@ -126,15 +127,7 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
     ["Total", totals.week1, totals.week2, totals.week3, totals.week4, totals.total].join(","),
   ].join("\n");
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", "weekly-inbound-channel-count.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  downloadStyledWorkbookFromCsv(csv, "weekly-inbound-channel-count.xlsx");
 }; 
 
 useImperativeHandle(ref, () => ({

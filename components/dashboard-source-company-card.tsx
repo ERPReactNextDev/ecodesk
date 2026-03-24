@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 import {
   Table,
@@ -137,15 +138,7 @@ useImperativeHandle(ref, () => ({
       ),
     ].join("\n");
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "source-company-distribution.csv";
-    link.click();
-
-    URL.revokeObjectURL(url);
+    downloadStyledWorkbookFromCsv(csv, "source-company-distribution.xlsx");
   },
 }));
 

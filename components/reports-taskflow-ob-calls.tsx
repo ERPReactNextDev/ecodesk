@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { type DateRange } from "react-day-picker";
 import { ObcCallsFilterDialog } from "@/components/reports-taskflow-ob-calls-filter-dialog";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 import {
     Table,
     TableBody,
@@ -310,16 +311,8 @@ export function OBCalls({
                 .join(",")
         );
 
-        const blob = new Blob([[headers.join(","), ...rows].join("\n")], {
-            type: "text/csv",
-        });
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "outbound_calls.csv";
-        a.click();
-        URL.revokeObjectURL(url);
+        const csv = [headers.join(","), ...rows].join("\n");
+        downloadStyledWorkbookFromCsv(csv, "outbound_calls.xlsx");
     };
 
     /* ================= UI ================= */
