@@ -625,7 +625,7 @@ export const Ticket: React.FC<TicketProps> = ({
       setExporting(true);
       await new Promise((r) => setTimeout(r, 1000));
       const headers = [
-        "CSR Agent", "Company Name", "Status", "Date Created", "Date Updated",
+        "CSR Agent", "CSR Ticket Number", "Company Name", "Status", "Date Created", "Date Updated",
         "Contact Person", "Contact Number", "Email Address", "Gender",
         "Ticket Received", "Ticket Endorsed", "Inquiry Received", "Response to Inquiry",
         "Handling CSR", "Traffic", "Source Company", "Channel", "Wrap Up", "Source",
@@ -642,7 +642,10 @@ export const Ticket: React.FC<TicketProps> = ({
         return isNaN(d.getTime()) ? "-" : d.toLocaleString();
       };
       const rows = data.map((item: MergedActivity) => [
-        getAgentNameByReferenceID(item.referenceid), item.company_name, item.status,
+        getAgentNameByReferenceID(item.referenceid),
+        item.ticket_reference_number || "-",
+        item.company_name,
+        item.status,
         formatDate(item.date_created), formatDate(item.date_updated),
         item.contact_person || "-", item.contact_number || "-", item.email_address || "-",
         item.gender || "-", formatDate(item.ticket_received), formatDate(item.ticket_endorsed),

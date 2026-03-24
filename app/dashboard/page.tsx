@@ -92,6 +92,19 @@ interface Activity {
   remarks: string;
 }
 
+async function readJsonSafely(res: Response) {
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return null;
+  }
+
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 function DashboardContent() {
   const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
     React.useState<DateRange | undefined>(undefined);
@@ -233,7 +246,8 @@ function DashboardContent() {
           `/api/user?id=${encodeURIComponent(userId)}`,
         );
         if (!response.ok) throw new Error("Failed to fetch user data");
-        const data = await response.json();
+        const data = await readJsonSafely(response);
+        if (!data) throw new Error("User endpoint returned a non-JSON response");
 
         setUserDetails({
           referenceid: data.ReferenceID || "",
@@ -272,7 +286,8 @@ function DashboardContent() {
         },
       });
       if (!res.ok) throw new Error("Failed to fetch company data");
-      const data = await res.json();
+      const data = await readJsonSafely(res);
+      if (!data) throw new Error("Company endpoint returned a non-JSON response");
       setCompanies(data.data || []);
     } catch (err: any) {
       setErrorCompanies(err.message || "Error fetching company data");
@@ -304,11 +319,12 @@ function DashboardContent() {
       });
 
       if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error || "Failed to fetch activities");
+        const json = await readJsonSafely(res);
+        throw new Error(json?.error || "Failed to fetch activities");
       }
 
-      const json = await res.json();
+      const json = await readJsonSafely(res);
+      if (!json) throw new Error("Activities endpoint returned a non-JSON response");
       let fetchedActivities: Activity[] = json.data || [];
 
       // Merge company info by matching account_reference_number
