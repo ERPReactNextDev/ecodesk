@@ -714,7 +714,7 @@ export function UpdateTicketDialog({
             type="button"
             variant="outline"
             onClick={() => setSheetOpen(true)}
-            className="cursor-pointer"
+            className="w-full cursor-pointer text-xs"
           >
             Update
           </Button>
