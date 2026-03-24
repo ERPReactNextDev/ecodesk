@@ -202,6 +202,7 @@ export const Ticket: React.FC<TicketProps> = ({
   const [deleting, setDeleting] = useState(false);
 
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [acknowledgedTicketIds, setAcknowledgedTicketIds] = useState<Set<string>>(new Set());
 
   const [filters, setFilters] = useState<{
     referenceid?: string;
@@ -226,6 +227,48 @@ export const Ticket: React.FC<TicketProps> = ({
     const ONE_DAY_MS = 24 * 60 * 60 * 1000;
     return diffMs <= ONE_DAY_MS;
   };
+
+  const isRecentTicket = (dateCreated?: string) => {
+    if (!dateCreated) return false;
+    const created = new Date(dateCreated.replace(" ", "T"));
+    if (isNaN(created.getTime())) return false;
+    const now = new Date();
+    const diffMs = now.getTime() - created.getTime();
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    return diffMs <= ONE_DAY_MS;
+  };
+
+  const markTicketAcknowledged = useCallback((ticketId: string) => {
+    if (!ticketId) return;
+
+    setAcknowledgedTicketIds((prev) => {
+      if (prev.has(ticketId)) return prev;
+      const next = new Set(prev);
+      next.add(ticketId);
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "acknowledgedTicketIds",
+          JSON.stringify(Array.from(next)),
+        );
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("acknowledgedTicketIds");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setAcknowledgedTicketIds(new Set(parsed.filter((v) => typeof v === "string")));
+      }
+    } catch (error) {
+      console.error("Failed to load acknowledged tickets:", error);
+    }
+  }, []);
 
   const sortableFields = [
     "source_company", "source", "wrap_up", "traffic", "department",
@@ -885,10 +928,17 @@ export const Ticket: React.FC<TicketProps> = ({
                     <div className="p-2 space-y-2">
                       {columnItems.map((item, index) => {
                         const isChecked = selectedToDelete.includes(item._id);
+                        const shouldGlow =
+                          isRecentTicket(item.date_created) &&
+                          !acknowledgedTicketIds.has(item._id);
                         return (
                           <div
                             key={`${item._id}-${index}`}
-                            className="bg-white border rounded-lg p-2.5 flex items-start justify-between gap-2 shadow-sm hover:shadow-md transition-shadow"
+                            className={`bg-white border rounded-lg p-2.5 flex items-start justify-between gap-2 transition-all ${
+                              shouldGlow
+                                ? "ring-2 ring-green-500 shadow-[0_0_18px_rgba(34,197,94,0.75)] animate-pulse"
+                                : "shadow-sm hover:shadow-md"
+                            }`}
                           >
                             {/* LEFT INFO */}
                             <div className="flex-1 text-xs min-w-0">
@@ -937,20 +987,27 @@ export const Ticket: React.FC<TicketProps> = ({
                             {/* RIGHT ACTIONS */}
                             {!showCheckboxes && (
                               <div className="flex flex-col gap-1 shrink-0">
-                                <TicketHistoryDialog item={item} />
-                                <UpdateTicketDialog
-                                  {...item}
-                                  onCreated={async () => {
-                                    await fetchActivities();
-                                    await fetchCompanies();
-                                  }}
-                                />
+                                <div onClick={() => markTicketAcknowledged(item._id)}>
+                                  <TicketHistoryDialog item={item} />
+                                </div>
+                                <div onClick={() => markTicketAcknowledged(item._id)}>
+                                  <UpdateTicketDialog
+                                    {...item}
+                                    onCreated={async () => {
+                                      await fetchActivities();
+                                      await fetchCompanies();
+                                    }}
+                                  />
+                                </div>
                                 <Button
                                   type="button"
                                   variant="secondary"
                                   size="sm"
                                   disabled={updatingId === item._id}
-                                  onClick={() => openDoneDialog(item._id)}
+                                  onClick={() => {
+                                    markTicketAcknowledged(item._id);
+                                    openDoneDialog(item._id);
+                                  }}
                                   className="text-xs"
                                 >
                                   {updatingId === item._id ? "Updating..." : "Closed"}
