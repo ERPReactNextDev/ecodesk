@@ -19,26 +19,9 @@ export default async function handler(
     };
 
     // SPECIAL BUSINESS RULE FOR TSM
-    if (role) {
-      if (
-        role === "Territory Sales Manager" &&
-        department === "Sales"
-      ) {
-        query.$or = [
-          { Role: "Territory Sales Manager" },
-          {
-            Role: "Manager",
-            $or: [
-              { TSM: { $exists: false } },
-              { TSM: null },
-              { TSM: "" },
-            ],
-          },
-        ];
-      } else {
-        query.Role = String(role);
-      }
-    }
+if (role) {
+  query.Role = String(role); // 🔥 STRICT FILTER
+}
 
     if (department) query.Department = String(department);
     if (manager) query.Manager = String(manager);
