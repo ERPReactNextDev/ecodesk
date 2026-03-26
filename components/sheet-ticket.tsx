@@ -600,7 +600,6 @@ export function TicketSheet(props: TicketSheetProps) {
     "DT-PH-994793",
     "SH-NCR-560908",
     "BR-PH-358329",
-    "MM-PH-104083",
     "AP-NCR-858614"
   ];
 
