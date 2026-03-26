@@ -71,6 +71,7 @@ export function AddCompanyModal({
   // ✅ MULTIPLE CONTACT NUMBERS STATE
   // numbers
   const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
+  const [emailAddresses, setEmailAddresses] = useState<string[]>([""]);
 
   // names
   const [contactPersons, setContactPersons] = useState<
@@ -295,6 +296,11 @@ export function AddCompanyModal({
         .filter(Boolean)
         .join(" / ");
 
+const joinedEmails = emailAddresses
+  .map((e) => e.trim())
+  .filter(Boolean)
+  .join(" / ");
+
       const joinedPersons = contactPersons
         .map((p) => `${p.title} ${p.name}`.trim())
         .filter((p) => p !== "")
@@ -307,9 +313,10 @@ export function AddCompanyModal({
           referenceid,
           account_reference_number,
           ...formData,
-          contact_person: joinedPersons, // 🔥 joined names
-          contact_number: joinedContacts,
-          date_created: new Date().toISOString(),
+contact_person: joinedPersons,
+contact_number: joinedContacts,
+email_address: joinedEmails,
+date_created: new Date().toISOString(),
         }),
       });
 
@@ -346,6 +353,7 @@ export function AddCompanyModal({
       status: "Active",
     });
     setContactNumbers([""]);
+    setEmailAddresses([""]);
     setDuplicate({ contact: false });
     setContactPersons([{ title: "Mr.", name: "" }]);
   };
@@ -485,29 +493,48 @@ export function AddCompanyModal({
               </div>
             </Field>
 
-            <Field>
-              <FieldLabel>Email Address</FieldLabel>
-              <Input
-                type="email"
-                value={formData.email_address}
-                onChange={(e) =>
-                  setFormData({ ...formData, email_address: e.target.value })
-                }
-                className={
-                  formData.email_address &&
-                  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address)
-                    ? "border-red-500"
-                    : ""
-                }
-              />
+<Field>
+  <FieldLabel>Email Address</FieldLabel>
 
-              {formData.email_address &&
-                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address) && (
-                  <p className="text-xs text-red-600 mt-1">
-                    Please enter a valid email address
-                  </p>
-                )}
-            </Field>
+  <div className="space-y-2">
+    {emailAddresses.map((email, idx) => (
+      <div key={idx} className="flex gap-2 items-center">
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => {
+            const updated = [...emailAddresses];
+            updated[idx] = e.target.value;
+            setEmailAddresses(updated);
+          }}
+          placeholder="email@example.com"
+          className="flex-grow"
+        />
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (emailAddresses.length === 1) return;
+            const updated = [...emailAddresses];
+            updated.splice(idx, 1);
+            setEmailAddresses(updated);
+          }}
+        >
+          −
+        </Button>
+      </div>
+    ))}
+
+    <Button
+      type="button"
+      variant="secondary"
+      onClick={() => setEmailAddresses((prev) => [...prev, ""])}
+    >
+      + Add another email
+    </Button>
+  </div>
+</Field>
 
             <Field>
               <FieldLabel>Address *</FieldLabel>

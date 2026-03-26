@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 import {
   ChartContainer,
@@ -144,13 +145,8 @@ const rows = [
       "data:text/csv;charset=utf-8," +
       [header, ...rows].map((e) => e.join(",")).join("\n");
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "wrapup_counts.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csv = csvContent.replace(/^data:text\/csv;charset=utf-8,/, "");
+    downloadStyledWorkbookFromCsv(csv, "wrapup_counts.xlsx");
   };
 
   // Expose downloadCSV to parent via ref

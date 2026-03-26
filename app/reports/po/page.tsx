@@ -26,6 +26,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { toast } from "sonner";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -346,17 +347,11 @@ function POContent() {
 
     rows.push(["", "", "", "", totalAmount.toString(), "", "", "", "", "", "", "", "", "", "", "Total"]);
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers, ...rows].map((e) => e.join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `po_records_${userDetails.referenceid || "all"}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csvContent = [headers, ...rows].map((e) => e.join(",")).join("\n");
+    downloadStyledWorkbookFromCsv(
+      csvContent,
+      `po_records_${userDetails.referenceid || "all"}.xlsx`,
+    );
   };
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));

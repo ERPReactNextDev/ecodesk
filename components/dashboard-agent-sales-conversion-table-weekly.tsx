@@ -22,6 +22,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 /* ---------------- Tooltip ---------------- */
 function TooltipInfo({ children }: { children: React.ReactNode }) {
@@ -222,15 +223,7 @@ const downloadCSV = () => {
     ].join(","),
   ].join("\n");
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "weekly-agent-sales-conversion.csv";
-  link.click();
-
-  URL.revokeObjectURL(url);
+  downloadStyledWorkbookFromCsv(csv, "weekly-agent-sales-conversion.xlsx");
 };
 
 useImperativeHandle(ref, () => ({
@@ -293,15 +286,7 @@ const filterText = `${from} - ${to}`;
       ),
     ].join("\n");
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "weekly-agent-sales-conversion.csv";
-    link.click();
-
-    URL.revokeObjectURL(url);
+    downloadStyledWorkbookFromCsv(csv, "weekly-agent-sales-conversion.xlsx");
   },
 }));
     return (

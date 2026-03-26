@@ -4,6 +4,7 @@ import React, { useState, useEffect, forwardRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
 import { type DateRange } from "react-day-picker";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 interface Activity {
     department_head?: string;
@@ -332,25 +333,7 @@ downloadCSV() {
     ].join("\n");
 
 
-    const blob = new Blob([csv], {
-
-        type: "text/csv;charset=utf-8;"
-
-    });
-
-    const url = URL.createObjectURL(blob);
-
-
-    const link = document.createElement("a");
-
-    link.href = url;
-
-    link.download = "department-head-sales.csv";
-
-    link.click();
-
-
-    URL.revokeObjectURL(url);
+    downloadStyledWorkbookFromCsv(csv, "department-head-sales.xlsx");
 
 }
 

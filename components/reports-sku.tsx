@@ -30,6 +30,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ReportsSkuTicketDialog } from "./reports-sku-ticket-dialog";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 interface Company {
   id: string;
@@ -645,15 +646,7 @@ export const SKU: React.FC<TicketProps> = ({
         ),
       ].join("\n");
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `SKU_LISTING_${Date.now()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadStyledWorkbookFromCsv(csvContent, `SKU_LISTING_${Date.now()}.xlsx`);
 
       toast.success("CSV file downloaded.");
     } catch (error) {

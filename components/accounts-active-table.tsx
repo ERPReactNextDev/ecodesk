@@ -17,6 +17,7 @@ import { AccountsActiveFilter } from "./accounts-active-filter";
 import { AccountsActivePagination } from "./accounts-active-pagination";
 import { AccountsActiveDeleteDialog } from "./accounts-active-delete-dialog";
 import { TransferDialog } from "./accounts-transfer-dialog";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 interface Account {
   id: string;
@@ -191,15 +192,7 @@ export function AccountsTable({
       toast.error("No data to download.");
       return;
     }
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "accounts.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadStyledWorkbookFromCsv(csv, "accounts.xlsx");
   }
 
   const columns = useMemo<ColumnDef<Account>[]>(

@@ -30,6 +30,7 @@ import {
 
 import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemMedia, ItemTitle, } from "@/components/ui/item";
 import { Progress } from "@/components/ui/progress";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 interface Company {
     id: string;
@@ -434,15 +435,7 @@ export const DCT: React.FC<TicketProps> = ({
             return;
         }
 
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `DAILY_CSR_TRANSACTION_${Date.now()}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        downloadStyledWorkbookFromCsv(csv, `DAILY_CSR_TRANSACTION_${Date.now()}.xlsx`);
 
         // Reset state pagkatapos ng konting delay para ma-visualize progress bar tapos
         setTimeout(() => {

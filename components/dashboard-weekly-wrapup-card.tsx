@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 // Tooltip component
 function TooltipInfo({ children }: { children: React.ReactNode }) {
@@ -225,15 +226,7 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
           ),
         ].join("\n");
 
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "weekly-wrapup-distribution.csv";
-        link.click();
-
-        URL.revokeObjectURL(url);
+        downloadStyledWorkbookFromCsv(csv, "weekly-wrapup-distribution.xlsx");
       },
     }));
     return (

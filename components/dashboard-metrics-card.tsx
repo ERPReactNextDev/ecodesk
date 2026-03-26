@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 import {
   Table,
@@ -223,21 +224,7 @@ export const MetricsCard = React.forwardRef<
     ].join("\n");
 
 
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;"
-    });
-
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-
-    link.href = url;
-
-    link.download = "channel-traffic-metrics.csv";
-
-    link.click();
-
-    URL.revokeObjectURL(url);
+    downloadStyledWorkbookFromCsv(csv, "channel-traffic-metrics.xlsx");
 
   }
 }));

@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 function TooltipInfo({ children }: { children: React.ReactNode }) {
   return (
@@ -86,6 +87,19 @@ export interface AgentSalesConversionCardRef {
 const MAX_HANDLING_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_RESPONSE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+async function readJsonSafely(res: Response) {
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return null;
+  }
+
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 const AgentSalesTableCard: ForwardRefRenderFunction<
   AgentSalesConversionCardRef,
   AgentSalesConversionCardProps
@@ -116,11 +130,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => null);
+          const err = await readJsonSafely(res);
           throw new Error(err?.error || "Failed to fetch agents");
         }
 
-        const json = await res.json();
+        const json = await readJsonSafely(res);
 
         // Support both { data: [...] } and raw array
         const agentsData = Array.isArray(json)
@@ -155,11 +169,11 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
           },
         });
         if (!res.ok) {
-          const json = await res.json();
-          throw new Error(json.error || "Failed to fetch activities");
+          const json = await readJsonSafely(res);
+          throw new Error(json?.error || "Failed to fetch activities");
         }
-        const json = await res.json();
-        setActivities(json.data || []);
+        const json = await readJsonSafely(res);
+        setActivities(Array.isArray(json?.data) ? json.data : []);
       } catch (err: any) {
         setError(err.message || "Error fetching activities");
       } finally {
@@ -529,15 +543,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         ),
       ].join("\n");
 
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "csr-sales-conversion.csv";
-      link.click();
-
-      URL.revokeObjectURL(url);
+      downloadStyledWorkbookFromCsv(csv, "csr-sales-conversion.xlsx");
     },
   }));
   return (
@@ -644,7 +650,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableHead className="text-right">CSR Handling Time</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableHeader>
+              <TableBody>
                 <TableRow className="font-bold bg-muted/50">
                   <TableCell className="text-center sticky left-0 bg-white z-30">-</TableCell>
                   <TableCell className="sticky left-[50px] bg-white z-30 border-r">Total</TableCell>
@@ -663,7 +669,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableCell className="text-right">{formatMs(avgCSRResponseTime)}</TableCell>
                   <TableCell className="text-right">{formatMs(avgCSRHandlingTime)}</TableCell>
                 </TableRow>
-              </TableHeader>
+              </TableBody>
 
               <TableBody>
                 {groupedData

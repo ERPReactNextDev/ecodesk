@@ -16,6 +16,7 @@ import { AddRecordModal } from "@/components/reports-tracking-add-dialog";
 import { EditRecordModal } from "@/components/reports-tracking-edit-dialog";
 import { ReportsTrackingFilterDialog } from "@/components/reports-tracking-filter-dialog";
 import { HideRecordModal } from "@/components/reports-tracking-delete-dialog";
+import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 
 export interface RecordType {
     _id: string;
@@ -215,10 +216,7 @@ export function DTR({
             ),
         ].join("\n");
 
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-        link.download = "d_tracking.csv";
-        link.click();
+        downloadStyledWorkbookFromCsv(csv, "d_tracking.xlsx");
     };
 
     /* Search highlight helper */
