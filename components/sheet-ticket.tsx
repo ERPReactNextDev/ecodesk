@@ -615,6 +615,50 @@ export function TicketSheet(props: TicketSheetProps) {
     Connection: string;
   }
 
+  const graceLumabaoManager: User = {
+    ReferenceID: "GL-CSR-586725",
+    Firstname: "Grace",
+    Lastname: "Lumabao",
+    Role: "Admin",
+    Department: "CSR",
+    Connection: "Online",
+  };
+
+  const graceLumabaoTeam: User[] = [
+    {
+      ReferenceID: "MG-NCR-829953",
+      Firstname: "Maureen",
+      Lastname: "Gabriel",
+      Role: "Staff",
+      Department: "CSR",
+      Connection: "Online",
+    },
+    {
+      ReferenceID: "EM-NCR-600530",
+      Firstname: "Erica",
+      Lastname: "Maestro",
+      Role: "Staff",
+      Department: "CSR",
+      Connection: "Online",
+    },
+    {
+      ReferenceID: "RP-CSR-451122",
+      Firstname: "Rikki",
+      Lastname: "Paje",
+      Role: "Staff",
+      Department: "CSR",
+      Connection: "Online",
+    },
+    {
+      ReferenceID: "MC-CSR-947264",
+      Firstname: "mark vincent",
+      Lastname: "capin",
+      Role: "Staff",
+      Department: "CSR",
+      Connection: "Online",
+    },
+  ];
+
   const [managersList, setManagersList] = useState<User[]>([]);
   const [managersAvailable, setManagersAvailable] = useState(0);
   const [agentsList, setAgentsList] = useState<User[]>([]);
@@ -729,10 +773,18 @@ export function TicketSheet(props: TicketSheetProps) {
       .then((res) => res.json())
       .then((json) => {
         const list = json.data || [];
-        setManagersList(list);
-        setManagersAvailable(list.length);
+        const listWithGrace = list.some(
+          (user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID,
+        )
+          ? list
+          : [...list, graceLumabaoManager];
+        setManagersList(listWithGrace);
+        setManagersAvailable(listWithGrace.length);
       })
-      .catch(() => setManagersList([]))
+      .catch(() => {
+        setManagersList([graceLumabaoManager]);
+        setManagersAvailable(1);
+      })
       .finally(() => setLoadingManagers(false));
   }, [department]);
 
@@ -762,6 +814,11 @@ export function TicketSheet(props: TicketSheetProps) {
     if (!manager) {
       setAgentsList([]);
       setAgent("");
+      return;
+    }
+
+    if (manager === graceLumabaoManager.ReferenceID) {
+      setAgentsList(graceLumabaoTeam);
       return;
     }
 
@@ -1054,9 +1111,10 @@ export function TicketSheet(props: TicketSheetProps) {
   ].sort((a, b) => a.label.localeCompare(b.label));
 
   // Options for Radio Groups
-  const departmentOptions: Option[] = [
+const departmentOptions: Option[] = [
     { value: "Accounting", title: "Accounting", description: "Handle initial client contact for financial matters and updates." },
     { value: "Business Development", title: "Business Development", description: "Manage client outreach and relationship building activities." },
+    { value: "CS", title: "CS", description: "Handle customer service concerns and support requests." },
     { value: "E-Commerce", title: "E-Commerce", description: "Conduct follow-up calls to monitor progress and gather additional requirements." },
     { value: "Engineering", title: "Engineering", description: "Provide technical support and follow up on project developments." },
     { value: "Human Resources", title: "Human Resources", description: "Manage employee relations and follow-up on HR-related inquiries." },
@@ -1707,7 +1765,8 @@ export function TicketSheet(props: TicketSheetProps) {
 
           {/* AGENT */}
           {wrapUp !== "Job Applicants" &&
-            (department === "Sales" ||
+            (manager === graceLumabaoManager.ReferenceID ||
+              department === "Sales" ||
               department === "Business Development" ||
               department === "Marketing" ||
               department === "E-Commerce") && (
