@@ -87,22 +87,32 @@ export function NavUser({
     setIsLoggingOut(true);
 
     try {
-      logLogoutActivity().catch(console.error);
+      // 🔥 STOP ALL POPUPS/SOUNDS FIRST - before anything else
+      localStorage.setItem("userLoggedOut", "true");
+      localStorage.removeItem("ticketSoundPlayedFor");
+      localStorage.removeItem("dismissedEndorsedTickets");
+      
+      // Log activity
+      await logLogoutActivity();
 
+      // Clear session cookie
       await fetch("/api/logout", {
         method: "POST",
       });
+
+      // 🔥 HARD CLEAN - clear all session data
+      localStorage.removeItem("userid");
+      localStorage.removeItem("deviceId");
+      localStorage.removeItem("userLoggedOut"); // cleanup flag
+
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
-      // 🔥 HARD CLEAN — SAME LOGIC AS OTHER PROJECT
-      localStorage.removeItem("userid"); // ✅ CORRECT KEY
-      localStorage.removeItem("deviceId"); // optional cleanup
-
       setIsLoggingOut(false);
       setIsDialogOpen(false);
 
-      router.replace("/login");
+      // 🔥 FORCE FULL PAGE RESET - prevents any lingering components
+      window.location.href = "/login";
     }
   };
 

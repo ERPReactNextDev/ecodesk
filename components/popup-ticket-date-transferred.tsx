@@ -39,6 +39,19 @@ export function PopupTicketDateTransferred() {
 
   const today = new Date().toISOString().split("T")[0];
 
+  // Check if user logged out - prevent any popups
+  useEffect(() => {
+    const checkLogout = () => {
+      if (localStorage.getItem("userLoggedOut") === "true") {
+        setOpen(false);
+      }
+    };
+    
+    checkLogout();
+    window.addEventListener("storage", checkLogout);
+    return () => window.removeEventListener("storage", checkLogout);
+  }, []);
+
   // Fetch Agents List
   useEffect(() => {
     async function fetchAgents() {

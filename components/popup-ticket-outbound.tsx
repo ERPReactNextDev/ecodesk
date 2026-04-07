@@ -94,6 +94,23 @@ export function TicketHistory() {
 
     const queryUserId = searchParams?.get("id") ?? "";
 
+    // Check if user logged out - prevent any popups/sounds
+    useEffect(() => {
+        const checkLogout = () => {
+            if (localStorage.getItem("userLoggedOut") === "true") {
+                setOpen(false);
+                if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current = null;
+                }
+            }
+        };
+        
+        checkLogout();
+        window.addEventListener("storage", checkLogout);
+        return () => window.removeEventListener("storage", checkLogout);
+    }, []);
+
     // Sync URL query param with userId context
     useEffect(() => {
         if (queryUserId && queryUserId !== userId) {
