@@ -26,6 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
 
 interface Activity {
@@ -226,7 +227,7 @@ const CountTickets: ForwardRefRenderFunction<CountTicketsRef, CountTicketsProps>
                     })}
                 </TableBody>
 
-                <tfoot>
+                <TableFooter>
                   <TableRow>
                     <TableCell colSpan={2} className="text-right font-semibold">
                       Total Tickets:
@@ -235,7 +236,7 @@ const CountTickets: ForwardRefRenderFunction<CountTicketsRef, CountTicketsProps>
                       {groupedData.reduce((sum, row) => sum + row.totalCount, 0)}
                     </TableCell>
                   </TableRow>
-                </tfoot>
+                </TableFooter>
               </Table>
             </div>
           )}

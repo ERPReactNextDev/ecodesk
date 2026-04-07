@@ -412,7 +412,7 @@ export function TicketHistory() {
                                 )}
                             </DialogTitle>
 
-                            <DialogDescription>
+                            <div className="text-sm text-muted-foreground mt-1.5">
 
                             {receivedTickets.length > 0 ? (
                                 <div className="max-h-[320px] overflow-y-auto mt-4 space-y-6 pr-2">
@@ -571,7 +571,7 @@ export function TicketHistory() {
                             ) : (
                                 <p className="text-gray-500 text-center py-10">No tickets received.</p>
                             )}
-                        </DialogDescription>
+                        </div>
                     </DialogHeader>
                     <DialogFooter className="flex items-center justify-between">
                         {/* Duration on left */}

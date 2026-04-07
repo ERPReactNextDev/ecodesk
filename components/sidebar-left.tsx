@@ -230,14 +230,6 @@ export function SidebarLeft({ ...props }: React.ComponentProps<typeof Sidebar>) 
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center justify-center">
-            <Button onClick={() => handleRaiseTicketClick(userId ?? undefined)}
-              className="bg-black text-white py-6 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-[#d11a2a] transition-all shadow-lg shadow-gray-200"
-            >
-              <Plus size={18} /> Raise a Concern
-            </Button>
-          </SidebarMenuItem>
-
         </SidebarMenu>
       </SidebarFooter>
 

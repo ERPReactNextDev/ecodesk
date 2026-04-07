@@ -669,9 +669,6 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                   <TableCell className="text-right">{formatMs(avgCSRResponseTime)}</TableCell>
                   <TableCell className="text-right">{formatMs(avgCSRHandlingTime)}</TableCell>
                 </TableRow>
-              </TableBody>
-
-              <TableBody>
                 {groupedData
                   .slice()
                   .sort((a, b) => b.amount - a.amount)
