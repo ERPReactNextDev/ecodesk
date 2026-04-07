@@ -229,18 +229,26 @@ export function TicketHistory() {
             const tickets: HistoryTicket[] = json.activities || [];
 
             const dismissedTickets: string[] = JSON.parse(localStorage.getItem("dismissedEndorsedTickets") || "[]");
+            const dismissedSignature = localStorage.getItem("dismissedEndorsedTicketsSignature") || "";
+            
+            // Create signature of current tickets (sorted IDs)
+            const currentSignature = tickets.map(t => t.id).sort().join(",");
+            
+            // Check if this exact set was previously dismissed
+            const wasBatchDismissed = dismissedSignature === currentSignature && tickets.length > 0;
+            
             const newTickets = tickets.filter(ticket => !dismissedTickets.includes(ticket.id));
 
             setReceivedTickets(prevTickets => {
                 const currentIds = prevTickets.map(t => t.id).sort().join(",");
                 const newIds = newTickets.map(t => t.id).sort().join(",");
 
-                if (newTickets.length > 0 && currentIds !== newIds) {
+                if (newTickets.length > 0 && currentIds !== newIds && !wasBatchDismissed) {
                     setOpen(true);
                     localStorage.removeItem("ticketSoundPlayedFor");
                     setSoundPlayed(false);
                     return newTickets;
-                } else if (newTickets.length === 0) {
+                } else if (newTickets.length === 0 || wasBatchDismissed) {
                     setOpen(false);
                     return [];
                 }
@@ -318,6 +326,10 @@ export function TicketHistory() {
         const dismissedTickets: string[] = JSON.parse(localStorage.getItem("dismissedEndorsedTickets") || "[]");
         const newDismissed = [...dismissedTickets, ...receivedTickets.map(t => t.id)];
         localStorage.setItem("dismissedEndorsedTickets", JSON.stringify(newDismissed));
+        
+        // Store signature of dismissed batch to prevent re-showing after logout/login
+        const signature = receivedTickets.map(t => t.id).sort().join(",");
+        localStorage.setItem("dismissedEndorsedTicketsSignature", signature);
 
         localStorage.removeItem("ticketSoundPlayedFor");
         setSoundPlayed(false);

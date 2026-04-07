@@ -51,11 +51,8 @@ export function TicketReceived() {
 
   const queryUserId = searchParams?.get("id") ?? "";
 
-  // Check if user logged out - prevent any popups/sounds
+  // Clear dismissed tickets on logout
   useEffect(() => {
-    // Clear old localStorage key to prevent conflicts with new key
-    localStorage.removeItem("dismissedEndorsedTickets");
-    
     const checkLogout = () => {
       if (localStorage.getItem("userLoggedOut") === "true") {
         setOpen(false);
@@ -159,20 +156,27 @@ export function TicketReceived() {
       const tickets: EndorsedTicket[] = json.activities || [];
 
       const dismissedTickets: string[] = JSON.parse(localStorage.getItem("dismissedReceivedTickets") || "[]");
+      const dismissedSignature = localStorage.getItem("dismissedReceivedTicketsSignature") || "";
+      
+      // Create signature of current tickets (sorted IDs)
+      const currentSignature = tickets.map(t => t.id).sort().join(",");
 
       // Filter tickets: not dismissed (regardless of date)
       const newTickets = tickets.filter(ticket => !dismissedTickets.includes(ticket.id));
+
+      // Check if this exact set was previously dismissed
+      const wasBatchDismissed = dismissedSignature === currentSignature && tickets.length > 0;
 
       // Check if tickets are new compared to current state
       const currentIds = receivedTickets.map(t => t.id).sort().join(",");
       const newIds = newTickets.map(t => t.id).sort().join(",");
 
-      if (newTickets.length > 0 && currentIds !== newIds) {
+      if (newTickets.length > 0 && currentIds !== newIds && !wasBatchDismissed) {
         setReceivedTickets(newTickets);
         setOpen(true);
         localStorage.removeItem("ticketSoundPlayedFor"); // Reset sound flag for new tickets
         setSoundPlayed(false);
-      } else if (newTickets.length === 0) {
+      } else if (newTickets.length === 0 || wasBatchDismissed) {
         setReceivedTickets([]);
         setOpen(false);
       }
@@ -242,13 +246,16 @@ export function TicketReceived() {
     const dismissedTickets: string[] = JSON.parse(localStorage.getItem("dismissedReceivedTickets") || "[]");
     const newDismissed = [...dismissedTickets, ...receivedTickets.map(t => t.id)];
     localStorage.setItem("dismissedReceivedTickets", JSON.stringify(newDismissed));
+    
+    // Store signature of dismissed batch to prevent re-showing after logout/login
+    const signature = receivedTickets.map(t => t.id).sort().join(",");
+    localStorage.setItem("dismissedReceivedTicketsSignature", signature);
 
     localStorage.removeItem("ticketSoundPlayedFor");
     setSoundPlayed(false);
 
     setShowDismissConfirm(false);
     setOpen(false);
-
   }
 
   function cancelDismiss() {

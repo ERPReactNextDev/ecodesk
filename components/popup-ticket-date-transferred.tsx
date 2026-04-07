@@ -76,6 +76,7 @@ export function PopupTicketDateTransferred() {
       const dismissedTickets: string[] = JSON.parse(
         localStorage.getItem("dismissedTransferTickets") || "[]",
       );
+      const dismissedSignature = localStorage.getItem("dismissedTransferTicketsSignature") || "";
 
       const { data, error } = await supabase
         .from("endorsed-ticket")
@@ -90,13 +91,21 @@ export function PopupTicketDateTransferred() {
         return;
       }
 
-      const filtered = (data || []).filter(
+      const allTickets = data || [];
+      
+      // Create signature of current tickets (sorted IDs)
+      const currentSignature = allTickets.map((t: any) => String(t.id)).sort().join(",");
+      
+      // Check if this exact set was previously dismissed
+      const wasBatchDismissed = dismissedSignature === currentSignature && allTickets.length > 0;
+
+      const filtered = allTickets.filter(
         (t: any) => !dismissedTickets.includes(String(t.id)),
       );
 
       setTickets(filtered);
 
-      if (filtered.length > 0) {
+      if (filtered.length > 0 && !wasBatchDismissed) {
         setOpen(true);
       } else {
         setOpen(false);
@@ -154,6 +163,10 @@ export function PopupTicketDateTransferred() {
       "dismissedTransferTickets",
       JSON.stringify(newDismissed),
     );
+    
+    // Store signature of dismissed batch to prevent re-showing after logout/login
+    const signature = tickets.map(t => String(t.id)).sort().join(",");
+    localStorage.setItem("dismissedTransferTicketsSignature", signature);
 
     setShowDismissConfirm(false);
     setOpen(false);
