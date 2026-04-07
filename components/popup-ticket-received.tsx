@@ -53,6 +53,9 @@ export function TicketReceived() {
 
   // Check if user logged out - prevent any popups/sounds
   useEffect(() => {
+    // Clear old localStorage key to prevent conflicts with new key
+    localStorage.removeItem("dismissedEndorsedTickets");
+    
     const checkLogout = () => {
       if (localStorage.getItem("userLoggedOut") === "true") {
         setOpen(false);
@@ -155,14 +158,10 @@ export function TicketReceived() {
       const json = await res.json();
       const tickets: EndorsedTicket[] = json.activities || [];
 
-      const today = new Date().toISOString().split("T")[0];
-      const dismissedTickets: string[] = JSON.parse(localStorage.getItem("dismissedEndorsedTickets") || "[]");
+      const dismissedTickets: string[] = JSON.parse(localStorage.getItem("dismissedReceivedTickets") || "[]");
 
-      // Filter tickets: not dismissed and created today
-      const newTickets = tickets.filter(ticket => {
-        const ticketDate = new Date(ticket.date_created).toISOString().split("T")[0];
-        return !dismissedTickets.includes(ticket.id) && ticketDate === today;
-      });
+      // Filter tickets: not dismissed (regardless of date)
+      const newTickets = tickets.filter(ticket => !dismissedTickets.includes(ticket.id));
 
       // Check if tickets are new compared to current state
       const currentIds = receivedTickets.map(t => t.id).sort().join(",");
@@ -240,9 +239,9 @@ export function TicketReceived() {
   }
 
   function confirmDismiss() {
-    const dismissedTickets: string[] = JSON.parse(localStorage.getItem("dismissedEndorsedTickets") || "[]");
+    const dismissedTickets: string[] = JSON.parse(localStorage.getItem("dismissedReceivedTickets") || "[]");
     const newDismissed = [...dismissedTickets, ...receivedTickets.map(t => t.id)];
-    localStorage.setItem("dismissedEndorsedTickets", JSON.stringify(newDismissed));
+    localStorage.setItem("dismissedReceivedTickets", JSON.stringify(newDismissed));
 
     localStorage.removeItem("ticketSoundPlayedFor");
     setSoundPlayed(false);
