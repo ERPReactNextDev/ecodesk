@@ -108,6 +108,7 @@ function SettingsContent() {
                       <SelectItem value="disruptive">Disruptive Solutions</SelectItem>
                       <SelectItem value="outlook">Outlook</SelectItem>
                       <SelectItem value="viber">Viber</SelectItem>
+                      <SelectItem value="chicago-bulls">Chicago Bulls</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

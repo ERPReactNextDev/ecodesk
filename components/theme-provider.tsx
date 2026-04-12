@@ -23,6 +23,7 @@ export function ThemeProvider({
         ecoshift: "ecoshift",
         outlook: "outlook",
         viber: "viber",
+        "chicago-bulls": "chicago-bulls",
       }}
     >
 
