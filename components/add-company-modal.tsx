@@ -186,12 +186,12 @@ export function AddCompanyModal({
     const person = contactPersons
       .map((p) => `${p.title} ${p.name}`.toLowerCase().trim())
       .filter(Boolean)
-      .join(" / ");
+      .join(", ");
 
     const numbers = contactNumbers
       .map((n) => n.toLowerCase().trim())
       .filter(Boolean)
-      .join(" / ");
+      .join(", ");
 
     const email = (formData.email_address || "").toLowerCase().trim();
 
@@ -294,17 +294,21 @@ export function AddCompanyModal({
       const joinedContacts = contactNumbers
         .map((n) => n.trim())
         .filter(Boolean)
-        .join(" / ");
+        .join(", ");
 
 const joinedEmails = emailAddresses
   .map((e) => e.trim())
-  .filter(Boolean)
-  .join(" / ");
+  .filter((e) => {
+    if (!e) return false;
+    const atCount = (e.match(/@/g) || []).length;
+    return atCount === 1 && !e.includes(",") && !e.includes("/");
+  })
+  .join(", ");
 
       const joinedPersons = contactPersons
         .map((p) => `${p.title} ${p.name}`.trim())
         .filter((p) => p !== "")
-        .join(" / ");
+        .join(", ");
 
       const res = await fetch("/api/com-save-company", {
         method: "POST",
@@ -423,8 +427,9 @@ date_created: new Date().toISOString(),
                     <Input
                       value={person.name}
                       onChange={(e) => {
+                        const cleaned = e.target.value.replace(/[,/]/g, "");
                         const updated = [...contactPersons];
-                        updated[idx].name = e.target.value;
+                        updated[idx].name = cleaned;
                         setContactPersons(updated);
                       }}
                       placeholder="Customer Name"
@@ -470,7 +475,10 @@ date_created: new Date().toISOString(),
                     <Input
                       type="tel"
                       value={num}
-                      onChange={(e) => handleContactChange(idx, e.target.value)}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/[,/]/g, "");
+                        handleContactChange(idx, cleaned);
+                      }}
                       placeholder="+63 9123456789"
                       className="flex-grow"
                     />
@@ -503,8 +511,17 @@ date_created: new Date().toISOString(),
           type="email"
           value={email}
           onChange={(e) => {
+            let value = e.target.value;
+            // Block commas and slashes
+            value = value.replace(/[,/]/g, "");
+            // Block second @ symbol
+            const atCount = (value.match(/@/g) || []).length;
+            if (atCount > 1) {
+              const firstAtIndex = value.indexOf("@");
+              value = value.substring(0, firstAtIndex + 1) + value.substring(firstAtIndex + 1).replace(/@/g, "");
+            }
             const updated = [...emailAddresses];
-            updated[idx] = e.target.value;
+            updated[idx] = value;
             setEmailAddresses(updated);
           }}
           placeholder="email@example.com"

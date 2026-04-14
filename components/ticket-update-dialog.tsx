@@ -368,7 +368,7 @@ export function UpdateTicketDialog({
     setCompanyName(company_name || "");
     setContactPersons(
       contact_person
-        ? contact_person.split(" / ").map((full) => {
+        ? contact_person.split(", ").map((full) => {
             const parts = full.trim().split(" ");
             const possibleTitle = parts[0];
             const titles = ["Mr.", "Mrs.", "Ms."];
@@ -387,8 +387,8 @@ export function UpdateTicketDialog({
           })
         : [{ title: "Mr.", name: "" }],
     );
-    setContactNumbers(contact_number ? contact_number.split(" / ") : [""]);
-    setEmailAddresses(email_address ? email_address.split(" / ") : [""]);
+    setContactNumbers(contact_number ? contact_number.split(", ") : [""]);
+    setEmailAddresses(email_address ? email_address.split(", ") : [""]);
 
     setDateCreated(toDatetimeLocal(date_created));
   }, [
@@ -477,15 +477,19 @@ export function UpdateTicketDialog({
       contact_number: contactNumbers
         .map((n) => n.trim())
         .filter(Boolean)
-        .join(" / "),
+        .join(", "),
       contact_person: contactPersons
         .map((p) => `${p.title} ${p.name}`.trim())
         .filter((p) => p !== "")
-        .join(" / "),
+        .join(", "),
       email_address: emailAddresses
         .map((e) => e.trim())
-        .filter(Boolean)
-        .join(" / "),
+        .filter((e) => {
+          if (!e) return false;
+          const atCount = (e.match(/@/g) || []).length;
+          return atCount === 1 && !e.includes(",") && !e.includes("/");
+        })
+        .join(", "),
 
       // ✅ ADD THESE
       tsm_acknowledge_date: tsmAcknowledgeDate,
@@ -862,8 +866,9 @@ export function UpdateTicketDialog({
                                 <Input
                                   value={person.name}
                                   onChange={(e) => {
+                                    const cleaned = e.target.value.replace(/[,/]/g, "");
                                     const updated = [...contactPersons];
-                                    updated[idx].name = e.target.value;
+                                    updated[idx].name = cleaned;
                                     setContactPersons(updated);
                                   }}
                                   className="flex-1"
@@ -916,8 +921,9 @@ export function UpdateTicketDialog({
                             <Input
                               value={num}
                               onChange={(e) => {
+                                const cleaned = e.target.value.replace(/[,/]/g, "");
                                 const updated = [...contactNumbers];
-                                updated[idx] = e.target.value;
+                                updated[idx] = cleaned;
                                 setContactNumbers(updated);
                               }}
                               className="flex-1"
@@ -963,8 +969,17 @@ export function UpdateTicketDialog({
                               type="email"
                               value={email}
                               onChange={(e) => {
+                                let value = e.target.value;
+                                // Block commas and slashes
+                                value = value.replace(/[,/]/g, "");
+                                // Block second @ symbol
+                                const atCount = (value.match(/@/g) || []).length;
+                                if (atCount > 1) {
+                                  const firstAtIndex = value.indexOf("@");
+                                  value = value.substring(0, firstAtIndex + 1) + value.substring(firstAtIndex + 1).replace(/@/g, "");
+                                }
                                 const updated = [...emailAddresses];
-                                updated[idx] = e.target.value;
+                                updated[idx] = value;
                                 setEmailAddresses(updated);
                               }}
                               className="flex-1"
