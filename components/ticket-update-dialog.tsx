@@ -41,6 +41,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandEmpty,
+} from "@/components/ui/command";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { Input } from "@/components/ui/input";
 
@@ -263,7 +277,255 @@ export function UpdateTicketDialog({
   const [contactPersons, setContactPersons] = useState<
     { title: string; name: string }[]
   >([{ title: "Mr.", name: "" }]);
-  const [contactNumbers, setContactNumbers] = useState<string[]>([""]);
+  // ✅ MULTIPLE CONTACT NUMBERS STATE with country code
+  interface ContactNumber {
+    countryCode: string;
+    number: string;
+  }
+  const [contactNumbers, setContactNumbers] = useState<ContactNumber[]>([{ countryCode: "+63", number: "" }]);
+
+  // Country codes list (PH first, then all other countries A-Z)
+  const countryCodes = [
+    { code: "+63", country: "Philippines", flag: "🇵🇭" },
+    { code: "+93", country: "Afghanistan", flag: "🇦🇫" },
+    { code: "+355", country: "Albania", flag: "🇦🇱" },
+    { code: "+213", country: "Algeria", flag: "🇩🇿" },
+    { code: "+1-684", country: "American Samoa", flag: "🇦🇸" },
+    { code: "+376", country: "Andorra", flag: "🇦🇩" },
+    { code: "+244", country: "Angola", flag: "🇦🇴" },
+    { code: "+1-264", country: "Anguilla", flag: "🇦🇮" },
+    { code: "+672", country: "Antarctica", flag: "🇦🇶" },
+    { code: "+1-268", country: "Antigua and Barbuda", flag: "🇦🇬" },
+    { code: "+54", country: "Argentina", flag: "🇦🇷" },
+    { code: "+374", country: "Armenia", flag: "🇦🇲" },
+    { code: "+297", country: "Aruba", flag: "🇦🇼" },
+    { code: "+61", country: "Australia", flag: "🇦🇺" },
+    { code: "+43", country: "Austria", flag: "🇦🇹" },
+    { code: "+994", country: "Azerbaijan", flag: "🇦🇿" },
+    { code: "+1-242", country: "Bahamas", flag: "🇧🇸" },
+    { code: "+973", country: "Bahrain", flag: "🇧🇭" },
+    { code: "+880", country: "Bangladesh", flag: "🇧🇩" },
+    { code: "+1-246", country: "Barbados", flag: "🇧🇧" },
+    { code: "+375", country: "Belarus", flag: "🇧🇾" },
+    { code: "+32", country: "Belgium", flag: "🇧🇪" },
+    { code: "+501", country: "Belize", flag: "🇧🇿" },
+    { code: "+229", country: "Benin", flag: "🇧🇯" },
+    { code: "+1-441", country: "Bermuda", flag: "🇧🇲" },
+    { code: "+975", country: "Bhutan", flag: "🇧🇹" },
+    { code: "+591", country: "Bolivia", flag: "🇧🇴" },
+    { code: "+387", country: "Bosnia and Herzegovina", flag: "🇧🇦" },
+    { code: "+267", country: "Botswana", flag: "🇧🇼" },
+    { code: "+47", country: "Bouvet Island", flag: "🇧🇻" },
+    { code: "+55", country: "Brazil", flag: "🇧🇷" },
+    { code: "+246", country: "British Indian Ocean Territory", flag: "🇮🇴" },
+    { code: "+1-284", country: "British Virgin Islands", flag: "🇻🇬" },
+    { code: "+673", country: "Brunei", flag: "🇧🇳" },
+    { code: "+359", country: "Bulgaria", flag: "🇧🇬" },
+    { code: "+226", country: "Burkina Faso", flag: "🇧🇫" },
+    { code: "+257", country: "Burundi", flag: "🇧🇮" },
+    { code: "+855", country: "Cambodia", flag: "🇰🇭" },
+    { code: "+237", country: "Cameroon", flag: "🇨🇲" },
+    { code: "+1", country: "Canada", flag: "🇨🇦" },
+    { code: "+238", country: "Cape Verde", flag: "🇨🇻" },
+    { code: "+1-345", country: "Cayman Islands", flag: "🇰🇾" },
+    { code: "+236", country: "Central African Republic", flag: "🇨🇫" },
+    { code: "+235", country: "Chad", flag: "🇹🇩" },
+    { code: "+56", country: "Chile", flag: "🇨🇱" },
+    { code: "+86", country: "China", flag: "🇨🇳" },
+    { code: "+61", country: "Christmas Island", flag: "🇨🇽" },
+    { code: "+61", country: "Cocos Islands", flag: "🇨🇨" },
+    { code: "+57", country: "Colombia", flag: "🇨🇴" },
+    { code: "+269", country: "Comoros", flag: "🇰🇲" },
+    { code: "+682", country: "Cook Islands", flag: "🇨🇰" },
+    { code: "+506", country: "Costa Rica", flag: "🇨🇷" },
+    { code: "+385", country: "Croatia", flag: "🇭🇷" },
+    { code: "+53", country: "Cuba", flag: "🇨🇺" },
+    { code: "+599", country: "Curacao", flag: "🇨🇼" },
+    { code: "+357", country: "Cyprus", flag: "🇨🇾" },
+    { code: "+420", country: "Czech Republic", flag: "🇨🇿" },
+    { code: "+243", country: "Democratic Republic of the Congo", flag: "🇨🇩" },
+    { code: "+45", country: "Denmark", flag: "🇩🇰" },
+    { code: "+253", country: "Djibouti", flag: "🇩🇯" },
+    { code: "+1-767", country: "Dominica", flag: "🇩🇲" },
+    { code: "+1-809", country: "Dominican Republic", flag: "🇩🇴" },
+    { code: "+670", country: "East Timor", flag: "🇹🇱" },
+    { code: "+593", country: "Ecuador", flag: "🇪🇨" },
+    { code: "+20", country: "Egypt", flag: "🇪🇬" },
+    { code: "+503", country: "El Salvador", flag: "🇸🇻" },
+    { code: "+240", country: "Equatorial Guinea", flag: "🇬🇶" },
+    { code: "+291", country: "Eritrea", flag: "🇪🇷" },
+    { code: "+372", country: "Estonia", flag: "🇪🇪" },
+    { code: "+251", country: "Ethiopia", flag: "🇪🇹" },
+    { code: "+500", country: "Falkland Islands", flag: "🇫🇰" },
+    { code: "+298", country: "Faroe Islands", flag: "🇫🇴" },
+    { code: "+679", country: "Fiji", flag: "🇫🇯" },
+    { code: "+358", country: "Finland", flag: "🇫🇮" },
+    { code: "+33", country: "France", flag: "🇫🇷" },
+    { code: "+689", country: "French Polynesia", flag: "🇵🇫" },
+    { code: "+262", country: "French Southern Territories", flag: "🇹🇫" },
+    { code: "+241", country: "Gabon", flag: "🇬🇦" },
+    { code: "+220", country: "Gambia", flag: "🇬🇲" },
+    { code: "+995", country: "Georgia", flag: "🇬🇪" },
+    { code: "+49", country: "Germany", flag: "🇩🇪" },
+    { code: "+233", country: "Ghana", flag: "🇬🇭" },
+    { code: "+350", country: "Gibraltar", flag: "🇬🇮" },
+    { code: "+30", country: "Greece", flag: "🇬🇷" },
+    { code: "+299", country: "Greenland", flag: "🇬🇱" },
+    { code: "+1-473", country: "Grenada", flag: "🇬🇩" },
+    { code: "+1-671", country: "Guam", flag: "🇬🇺" },
+    { code: "+502", country: "Guatemala", flag: "🇬🇹" },
+    { code: "+44-1481", country: "Guernsey", flag: "🇬🇬" },
+    { code: "+224", country: "Guinea", flag: "🇬🇳" },
+    { code: "+245", country: "Guinea-Bissau", flag: "🇬🇼" },
+    { code: "+592", country: "Guyana", flag: "🇬🇾" },
+    { code: "+509", country: "Haiti", flag: "🇭🇹" },
+    { code: "+504", country: "Honduras", flag: "🇭🇳" },
+    { code: "+852", country: "Hong Kong", flag: "🇭🇰" },
+    { code: "+36", country: "Hungary", flag: "🇭🇺" },
+    { code: "+354", country: "Iceland", flag: "🇮🇸" },
+    { code: "+91", country: "India", flag: "🇮🇳" },
+    { code: "+62", country: "Indonesia", flag: "🇮🇩" },
+    { code: "+98", country: "Iran", flag: "🇮🇷" },
+    { code: "+964", country: "Iraq", flag: "🇮🇶" },
+    { code: "+353", country: "Ireland", flag: "🇮🇪" },
+    { code: "+44-1624", country: "Isle of Man", flag: "🇮🇲" },
+    { code: "+972", country: "Israel", flag: "🇮🇱" },
+    { code: "+39", country: "Italy", flag: "🇮🇹" },
+    { code: "+1-876", country: "Jamaica", flag: "🇯🇲" },
+    { code: "+81", country: "Japan", flag: "🇯🇵" },
+    { code: "+44-1534", country: "Jersey", flag: "🇯🇪" },
+    { code: "+962", country: "Jordan", flag: "🇯🇴" },
+    { code: "+7", country: "Kazakhstan", flag: "🇰🇿" },
+    { code: "+254", country: "Kenya", flag: "🇰🇪" },
+    { code: "+686", country: "Kiribati", flag: "🇰🇮" },
+    { code: "+383", country: "Kosovo", flag: "🇽🇰" },
+    { code: "+965", country: "Kuwait", flag: "🇰🇼" },
+    { code: "+996", country: "Kyrgyzstan", flag: "🇰🇬" },
+    { code: "+856", country: "Laos", flag: "🇱🇦" },
+    { code: "+371", country: "Latvia", flag: "🇱🇻" },
+    { code: "+961", country: "Lebanon", flag: "🇱🇧" },
+    { code: "+266", country: "Lesotho", flag: "🇱🇸" },
+    { code: "+231", country: "Liberia", flag: "🇱🇷" },
+    { code: "+218", country: "Libya", flag: "🇱🇾" },
+    { code: "+423", country: "Liechtenstein", flag: "🇱🇮" },
+    { code: "+370", country: "Lithuania", flag: "🇱🇹" },
+    { code: "+352", country: "Luxembourg", flag: "🇱🇺" },
+    { code: "+853", country: "Macau", flag: "🇲🇴" },
+    { code: "+261", country: "Madagascar", flag: "🇲🇬" },
+    { code: "+265", country: "Malawi", flag: "🇲🇼" },
+    { code: "+60", country: "Malaysia", flag: "🇲🇾" },
+    { code: "+960", country: "Maldives", flag: "🇲🇻" },
+    { code: "+223", country: "Mali", flag: "🇲🇱" },
+    { code: "+356", country: "Malta", flag: "🇲🇹" },
+    { code: "+692", country: "Marshall Islands", flag: "🇲🇭" },
+    { code: "+222", country: "Mauritania", flag: "🇲🇷" },
+    { code: "+230", country: "Mauritius", flag: "🇲🇺" },
+    { code: "+262", country: "Mayotte", flag: "🇾🇹" },
+    { code: "+52", country: "Mexico", flag: "🇲🇽" },
+    { code: "+691", country: "Micronesia", flag: "🇫🇲" },
+    { code: "+373", country: "Moldova", flag: "🇲🇩" },
+    { code: "+377", country: "Monaco", flag: "🇲🇨" },
+    { code: "+976", country: "Mongolia", flag: "🇲🇳" },
+    { code: "+382", country: "Montenegro", flag: "🇲🇪" },
+    { code: "+1-664", country: "Montserrat", flag: "🇲🇸" },
+    { code: "+212", country: "Morocco", flag: "🇲🇦" },
+    { code: "+258", country: "Mozambique", flag: "🇲🇿" },
+    { code: "+95", country: "Myanmar", flag: "🇲🇲" },
+    { code: "+264", country: "Namibia", flag: "🇳🇦" },
+    { code: "+674", country: "Nauru", flag: "🇳🇷" },
+    { code: "+977", country: "Nepal", flag: "🇳🇵" },
+    { code: "+31", country: "Netherlands", flag: "🇳🇱" },
+    { code: "+687", country: "New Caledonia", flag: "🇳🇨" },
+    { code: "+64", country: "New Zealand", flag: "🇳🇿" },
+    { code: "+505", country: "Nicaragua", flag: "🇳🇮" },
+    { code: "+227", country: "Niger", flag: "🇳🇪" },
+    { code: "+234", country: "Nigeria", flag: "🇳🇬" },
+    { code: "+683", country: "Niue", flag: "🇳🇺" },
+    { code: "+672", country: "Norfolk Island", flag: "🇳🇫" },
+    { code: "+850", country: "North Korea", flag: "🇰🇵" },
+    { code: "+1-670", country: "Northern Mariana Islands", flag: "🇲🇵" },
+    { code: "+47", country: "Norway", flag: "🇳🇴" },
+    { code: "+968", country: "Oman", flag: "🇴🇲" },
+    { code: "+92", country: "Pakistan", flag: "🇵🇰" },
+    { code: "+680", country: "Palau", flag: "🇵🇼" },
+    { code: "+970", country: "Palestine", flag: "🇵🇸" },
+    { code: "+507", country: "Panama", flag: "🇵🇦" },
+    { code: "+675", country: "Papua New Guinea", flag: "🇵🇬" },
+    { code: "+595", country: "Paraguay", flag: "🇵🇾" },
+    { code: "+51", country: "Peru", flag: "🇵🇪" },
+    { code: "+48", country: "Poland", flag: "🇵🇱" },
+    { code: "+351", country: "Portugal", flag: "🇵🇹" },
+    { code: "+1-787", country: "Puerto Rico", flag: "🇵🇷" },
+    { code: "+974", country: "Qatar", flag: "🇶🇦" },
+    { code: "+242", country: "Republic of the Congo", flag: "🇨🇬" },
+    { code: "+262", country: "Reunion", flag: "🇷🇪" },
+    { code: "+40", country: "Romania", flag: "🇷🇴" },
+    { code: "+7", country: "Russia", flag: "🇷🇺" },
+    { code: "+250", country: "Rwanda", flag: "🇷🇼" },
+    { code: "+590", country: "Saint Barthelemy", flag: "🇧🇱" },
+    { code: "+290", country: "Saint Helena", flag: "🇸🇭" },
+    { code: "+1-869", country: "Saint Kitts and Nevis", flag: "🇰🇳" },
+    { code: "+1-758", country: "Saint Lucia", flag: "🇱🇨" },
+    { code: "+590", country: "Saint Martin", flag: "🇲🇫" },
+    { code: "+508", country: "Saint Pierre and Miquelon", flag: "🇵🇲" },
+    { code: "+1-784", country: "Saint Vincent and the Grenadines", flag: "🇻🇨" },
+    { code: "+685", country: "Samoa", flag: "🇼🇸" },
+    { code: "+378", country: "San Marino", flag: "🇸🇲" },
+    { code: "+239", country: "Sao Tome and Principe", flag: "🇸🇹" },
+    { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
+    { code: "+221", country: "Senegal", flag: "🇸🇳" },
+    { code: "+381", country: "Serbia", flag: "🇷🇸" },
+    { code: "+248", country: "Seychelles", flag: "🇸🇨" },
+    { code: "+232", country: "Sierra Leone", flag: "🇸🇱" },
+    { code: "+65", country: "Singapore", flag: "🇸🇬" },
+    { code: "+1-721", country: "Sint Maarten", flag: "🇸🇽" },
+    { code: "+421", country: "Slovakia", flag: "🇸🇰" },
+    { code: "+386", country: "Slovenia", flag: "🇸🇮" },
+    { code: "+677", country: "Solomon Islands", flag: "🇸🇧" },
+    { code: "+252", country: "Somalia", flag: "🇸🇴" },
+    { code: "+27", country: "South Africa", flag: "🇿🇦" },
+    { code: "+82", country: "South Korea", flag: "🇰🇷" },
+    { code: "+211", country: "South Sudan", flag: "🇸🇸" },
+    { code: "+34", country: "Spain", flag: "🇪🇸" },
+    { code: "+94", country: "Sri Lanka", flag: "🇱🇰" },
+    { code: "+249", country: "Sudan", flag: "🇸🇩" },
+    { code: "+597", country: "Suriname", flag: "🇸🇷" },
+    { code: "+47", country: "Svalbard and Jan Mayen", flag: "🇸🇯" },
+    { code: "+268", country: "Swaziland", flag: "🇸🇿" },
+    { code: "+46", country: "Sweden", flag: "🇸🇪" },
+    { code: "+41", country: "Switzerland", flag: "🇨🇭" },
+    { code: "+963", country: "Syria", flag: "🇸🇾" },
+    { code: "+886", country: "Taiwan", flag: "🇹🇼" },
+    { code: "+992", country: "Tajikistan", flag: "🇹🇯" },
+    { code: "+255", country: "Tanzania", flag: "🇹🇿" },
+    { code: "+66", country: "Thailand", flag: "🇹🇭" },
+    { code: "+228", country: "Togo", flag: "🇹🇬" },
+    { code: "+690", country: "Tokelau", flag: "🇹🇰" },
+    { code: "+676", country: "Tonga", flag: "🇹🇴" },
+    { code: "+1-868", country: "Trinidad and Tobago", flag: "🇹🇹" },
+    { code: "+216", country: "Tunisia", flag: "🇹🇳" },
+    { code: "+90", country: "Turkey", flag: "🇹🇷" },
+    { code: "+993", country: "Turkmenistan", flag: "🇹🇲" },
+    { code: "+1-649", country: "Turks and Caicos Islands", flag: "🇹🇨" },
+    { code: "+688", country: "Tuvalu", flag: "🇹🇻" },
+    { code: "+1-340", country: "U.S. Virgin Islands", flag: "🇻🇮" },
+    { code: "+256", country: "Uganda", flag: "🇺🇬" },
+    { code: "+380", country: "Ukraine", flag: "🇺🇦" },
+    { code: "+971", country: "United Arab Emirates", flag: "🇦🇪" },
+    { code: "+44", country: "United Kingdom", flag: "🇬🇧" },
+    { code: "+1", country: "United States", flag: "🇺🇸" },
+    { code: "+598", country: "Uruguay", flag: "🇺🇾" },
+    { code: "+998", country: "Uzbekistan", flag: "🇺🇿" },
+    { code: "+678", country: "Vanuatu", flag: "🇻🇺" },
+    { code: "+379", country: "Vatican", flag: "🇻🇦" },
+    { code: "+58", country: "Venezuela", flag: "🇻🇪" },
+    { code: "+84", country: "Vietnam", flag: "🇻🇳" },
+    { code: "+681", country: "Wallis and Futuna", flag: "🇼🇫" },
+    { code: "+212", country: "Western Sahara", flag: "🇪🇭" },
+    { code: "+967", country: "Yemen", flag: "🇾🇪" },
+    { code: "+260", country: "Zambia", flag: "🇿🇲" },
+    { code: "+263", country: "Zimbabwe", flag: "🇿🇼" },
+  ];
   const [emailAddresses, setEmailAddresses] = useState<string[]>([""]);
 
   const [clientSegment, setClientSegment] = useState("");
@@ -387,7 +649,18 @@ export function UpdateTicketDialog({
           })
         : [{ title: "Mr.", name: "" }],
     );
-    setContactNumbers(contact_number ? contact_number.split(", ") : [""]);
+    // Parse contact numbers with country codes
+    const parseContactNumbers = (contactStr: string): ContactNumber[] => {
+      if (!contactStr) return [{ countryCode: "+63", number: "" }];
+      return contactStr.split(", ").map((full) => {
+        const match = full.trim().match(/^(\+\d+)\s*(.*)$/);
+        if (match) {
+          return { countryCode: match[1], number: match[2] };
+        }
+        return { countryCode: "+63", number: full.trim() };
+      });
+    };
+    setContactNumbers(parseContactNumbers(contact_number));
     setEmailAddresses(email_address ? email_address.split(", ") : [""]);
 
     setDateCreated(toDatetimeLocal(date_created));
@@ -475,8 +748,8 @@ export function UpdateTicketDialog({
 
       company_name: companyName,
       contact_number: contactNumbers
-        .map((n) => n.trim())
-        .filter(Boolean)
+        .map((n) => `${n.countryCode} ${n.number}`.trim())
+        .filter((n) => n.replace(/\+\d+/, "").trim())
         .join(", "),
       contact_person: contactPersons
         .map((p) => `${p.title} ${p.name}`.trim())
@@ -672,9 +945,9 @@ export function UpdateTicketDialog({
             .filter((p) => p !== "")
             .join(" / "),
           contact_number: contactNumbers
-            .map((n) => n.trim())
-            .filter(Boolean)
-            .join(" / "),
+            .map((n) => `${n.countryCode} ${n.number}`.trim())
+            .filter((n) => n.replace(/\+\d+/, "").trim())
+            .join(", "),
           email_address: emailAddresses
             .map((e) => e.trim())
             .filter(Boolean)
@@ -917,13 +1190,56 @@ export function UpdateTicketDialog({
 
                       <div className="space-y-2">
                         {contactNumbers.map((num, idx) => (
-                          <div key={idx} className="flex gap-2">
+                          <div key={idx} className="flex gap-2 items-center">
+                            {/* Country Code Selector */}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-[100px] justify-between px-2"
+                                  type="button"
+                                >
+                                  <span className="mr-1">{countryCodes.find(c => c.code === num.countryCode)?.flag}</span>
+                                  {num.countryCode}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[280px] p-0" onWheel={(e) => e.stopPropagation()}>
+                                <Command>
+                                  <CommandInput placeholder="Search country..." />
+                                  <CommandList className="max-h-[300px] overflow-y-auto overflow-x-hidden" onWheel={(e) => e.stopPropagation()}>
+                                    <CommandEmpty>No country found</CommandEmpty>
+                                    {countryCodes.map((country) => (
+                                      <CommandItem
+                                        key={country.code}
+                                        value={`${country.country} ${country.code}`}
+                                        onSelect={() => {
+                                          const updated = [...contactNumbers];
+                                          updated[idx] = { ...updated[idx], countryCode: country.code };
+                                          setContactNumbers(updated);
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            num.countryCode === country.code ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        <span className="mr-2">{country.flag}</span>
+                                        <span className="flex-1">{country.country}</span>
+                                        <span className="text-muted-foreground">{country.code}</span>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+
                             <Input
-                              value={num}
+                              value={num.number}
                               onChange={(e) => {
                                 const cleaned = e.target.value.replace(/[,/]/g, "");
                                 const updated = [...contactNumbers];
-                                updated[idx] = cleaned;
+                                updated[idx] = { ...updated[idx], number: cleaned };
                                 setContactNumbers(updated);
                               }}
                               className="flex-1"
@@ -947,7 +1263,7 @@ export function UpdateTicketDialog({
                           type="button"
                           variant="secondary"
                           onClick={() =>
-                            setContactNumbers((prev) => [...prev, ""])
+                            setContactNumbers((prev) => [...prev, { countryCode: "+63", number: "" }])
                           }
                         >
                           + Add another number
