@@ -616,29 +616,29 @@ export function TicketSheet(props: TicketSheetProps) {
   }
 
   const graceLumabaoManager: User = {
-    ReferenceID: "GL-CSR-586725",
+    ReferenceID: "GL-NCR-521362",
     Firstname: "Grace",
     Lastname: "Lumabao",
     Role: "Admin",
-    Department: "CSR",
+    Department: "Sales",
     Connection: "Online",
   };
 
   const graceLumabaoTeam: User[] = [
     {
-      ReferenceID: "MG-NCR-829953",
+      ReferenceID: "MG-NCR-764104",
       Firstname: "Maureen",
       Lastname: "Gabriel",
       Role: "Staff",
-      Department: "CSR",
+      Department: "Sales",
       Connection: "Online",
     },
     {
-      ReferenceID: "EM-NCR-600530",
+      ReferenceID: "EM-NCR-333464",
       Firstname: "Erica",
       Lastname: "Maestro",
       Role: "Staff",
-      Department: "CSR",
+      Department: "Sales",
       Connection: "Online",
     },
     {
@@ -646,15 +646,15 @@ export function TicketSheet(props: TicketSheetProps) {
       Firstname: "Rikki",
       Lastname: "Paje",
       Role: "Staff",
-      Department: "CSR",
+      Department: "Sales",
       Connection: "Online",
     },
     {
-      ReferenceID: "MC-CSR-947264",
+      ReferenceID: "MC-NCR-443381",
       Firstname: "mark vincent",
       Lastname: "capin",
       Role: "Staff",
-      Department: "CSR",
+      Department: "Sales",
       Connection: "Online",
     },
   ];
