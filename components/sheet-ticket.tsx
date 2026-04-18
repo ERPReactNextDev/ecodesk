@@ -184,7 +184,7 @@ function computeNonQuotationHT(remarks: string, baseTime: string) {
     "PO RECEIVED",
     "PENDING QUOTATION",
     "FOR OCCULAR INSPECTION",
-  ];
+  ];//test
 
   return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
 }
