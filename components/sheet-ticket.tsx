@@ -624,6 +624,15 @@ export function TicketSheet(props: TicketSheetProps) {
     Connection: "Online",
   };
 
+  const karlieGarciaManager: User = {
+    ReferenceID: "KG-PH-878400",
+    Firstname: "Karlie",
+    Lastname: "Garcia",
+    Role: "Admin",
+    Department: "Marketing",
+    Connection: "Online",
+  };
+
   const graceLumabaoTeam: User[] = [
     {
       ReferenceID: "MG-NCR-764104",
@@ -655,6 +664,17 @@ export function TicketSheet(props: TicketSheetProps) {
       Lastname: "capin",
       Role: "Staff",
       Department: "Sales",
+      Connection: "Online",
+    },
+  ];
+
+  const karlieGarciaTeam: User[] = [
+    {
+      ReferenceID: "KP-NCR-673258",
+      Firstname: "Katherine",
+      Lastname: "Picao",
+      Role: "Staff",
+      Department: "Marketing",
       Connection: "Online",
     },
   ];
@@ -819,6 +839,11 @@ export function TicketSheet(props: TicketSheetProps) {
 
     if (manager === graceLumabaoManager.ReferenceID) {
       setAgentsList(graceLumabaoTeam);
+      return;
+    }
+
+    if (manager === karlieGarciaManager.ReferenceID) {
+      setAgentsList(karlieGarciaTeam);
       return;
     }
 
