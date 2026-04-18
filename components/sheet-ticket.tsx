@@ -624,15 +624,6 @@ export function TicketSheet(props: TicketSheetProps) {
     Connection: "Online",
   };
 
-  const karlieGarciaManager: User = {
-    ReferenceID: "KG-PH-878400",
-    Firstname: "Karlie",
-    Lastname: "Garcia",
-    Role: "Admin",
-    Department: "Marketing",
-    Connection: "Online",
-  };
-
   const graceLumabaoTeam: User[] = [
     {
       ReferenceID: "MG-NCR-764104",
@@ -664,17 +655,6 @@ export function TicketSheet(props: TicketSheetProps) {
       Lastname: "capin",
       Role: "Staff",
       Department: "Sales",
-      Connection: "Online",
-    },
-  ];
-
-  const karlieGarciaTeam: User[] = [
-    {
-      ReferenceID: "KP-NCR-673258",
-      Firstname: "Katherine",
-      Lastname: "Picao",
-      Role: "Staff",
-      Department: "Marketing",
       Connection: "Online",
     },
   ];
@@ -786,7 +766,7 @@ export function TicketSheet(props: TicketSheetProps) {
     setLoadingManagers(true);
 
     fetch(
-      `/api/fetch-users-by-role?role=Territory Sales Manager&department=${encodeURIComponent(
+      `/api/fetch-users-by-role?filterManagers=true&department=${encodeURIComponent(
         department,
       )}&currentUser=${manager || ""}`,
     )
@@ -842,16 +822,11 @@ export function TicketSheet(props: TicketSheetProps) {
       return;
     }
 
-    if (manager === karlieGarciaManager.ReferenceID) {
-      setAgentsList(karlieGarciaTeam);
-      return;
-    }
-
     setLoadingAgents(true);
 
     fetch(
-      `/api/fetch-users-by-role?role=Territory Sales Associate&department=Sales&tsm=${encodeURIComponent(
-        manager,
+      `/api/fetch-users-by-role?filterAgents=true&department=${encodeURIComponent(
+        department,
       )}&currentUser=${agent || ""}`,
     )
       .then((res) => res.json())
@@ -860,7 +835,7 @@ export function TicketSheet(props: TicketSheetProps) {
       })
       .catch(() => setAgentsList([]))
       .finally(() => setLoadingAgents(false));
-  }, [manager]);
+  }, [manager, department]);
 
   // 1️⃣ Ticket Received vs Ticket Endorsed validation
   useEffect(() => {
