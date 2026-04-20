@@ -21,11 +21,13 @@ export default async function handler(
     // 🔥 FILTER MANAGERS BY DEPARTMENT (for Manager dropdown)
     if (filterManagers === "true" && department) {
       query.Role = "Manager";
-      query.Department = String(department);
+      // Case-insensitive department matching
+      query.Department = { $regex: new RegExp(`^${String(department)}$`, "i") };
     }
     // 🔥 FILTER AGENTS BY DEPARTMENT (for Agent dropdown - exclude managers)
     else if (filterAgents === "true" && department) {
-      query.Department = String(department);
+      // Case-insensitive department matching
+      query.Department = { $regex: new RegExp(`^${String(department)}$`, "i") };
       query.Role = { $ne: "Manager" };
     }
     // SPECIAL BUSINESS RULE FOR TSM
