@@ -624,15 +624,6 @@ export function TicketSheet(props: TicketSheetProps) {
     Connection: "Online",
   };
 
-  const karlieGarciaManager: User = {
-    ReferenceID: "KG-PH-878400",
-    Firstname: "Karlie",
-    Lastname: "Garcia",
-    Role: "Manager",
-    Department: "Marketing",
-    Connection: "Online",
-  };
-
   const graceLumabaoTeam: User[] = [
     {
       ReferenceID: "MG-NCR-764104",
@@ -782,40 +773,17 @@ export function TicketSheet(props: TicketSheetProps) {
       .then((res) => res.json())
       .then((json) => {
         const list = json.data || [];
-        let finalList = [...list];
-
-        // Add Grace Lumabao for Sales and Business Development departments
-        if (department === "Sales" || department === "Business Development") {
-          const hasGrace = list.some(
-            (user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID,
-          );
-          if (!hasGrace) {
-            finalList.push(graceLumabaoManager);
-          }
-        }
-
-        // Add Karlie Garcia for Marketing department
-        if (department === "Marketing") {
-          const hasKarlie = list.some(
-            (user: User) => user.ReferenceID === karlieGarciaManager.ReferenceID,
-          );
-          if (!hasKarlie) {
-            finalList.push(karlieGarciaManager);
-          }
-        }
-
-        setManagersList(finalList);
-        setManagersAvailable(finalList.length);
+        const listWithGrace = list.some(
+          (user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID,
+        )
+          ? list
+          : [...list, graceLumabaoManager];
+        setManagersList(listWithGrace);
+        setManagersAvailable(listWithGrace.length);
       })
       .catch(() => {
-        // Fallback to department-specific hardcoded managers
-        if (department === "Marketing") {
-          setManagersList([karlieGarciaManager]);
-          setManagersAvailable(1);
-        } else {
-          setManagersList([graceLumabaoManager]);
-          setManagersAvailable(1);
-        }
+        setManagersList([graceLumabaoManager]);
+        setManagersAvailable(1);
       })
       .finally(() => setLoadingManagers(false));
   }, [department]);
