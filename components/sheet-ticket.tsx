@@ -624,15 +624,6 @@ export function TicketSheet(props: TicketSheetProps) {
     Connection: "Online",
   };
 
-  const karlieGarciaManager: User = {
-    ReferenceID: "KG-PH-878400",
-    Firstname: "Karlie",
-    Lastname: "Garcia",
-    Role: "Manager",
-    Department: "Marketing",
-    Connection: "Online",
-  };
-
   const graceLumabaoTeam: User[] = [
     {
       ReferenceID: "MG-NCR-764104",
@@ -774,6 +765,7 @@ export function TicketSheet(props: TicketSheetProps) {
 
     setLoadingManagers(true);
 
+    console.log(`[sheet-ticket] Fetching managers for department: ${department}`);
     fetch(
       `/api/fetch-users-by-role?filterManagers=true&department=${encodeURIComponent(
         department,
@@ -781,31 +773,19 @@ export function TicketSheet(props: TicketSheetProps) {
     )
       .then((res) => res.json())
       .then((json) => {
-        let list = json.data || [];
-        console.log("[Manager Fetch] Department:", department, "| API returned:", list.length, "managers");
-        console.log("[Manager Fetch] Manager names:", list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.Department})`));
-        // Add department-specific fallback managers if not present
-        if (department === "Sales" && !list.some((user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID)) {
-          list = [...list, graceLumabaoManager];
-          console.log("[Manager Fetch] Added Grace Lumabao fallback");
-        }
-        if (department === "Marketing" && !list.some((user: User) => user.ReferenceID === karlieGarciaManager.ReferenceID)) {
-          list = [...list, karlieGarciaManager];
-          console.log("[Manager Fetch] Added Karlie Garcia fallback");
-        }
-        console.log("[Manager Fetch] Final list:", list.map((u: User) => `${u.Firstname} ${u.Lastname}`));
-        setManagersList(list);
-        setManagersAvailable(list.length);
+        const list = json.data || [];
+        console.log(`[sheet-ticket] Received ${list.length} managers:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+        const listWithGrace = list.some(
+          (user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID,
+        )
+          ? list
+          : [...list, graceLumabaoManager];
+        setManagersList(listWithGrace);
+        setManagersAvailable(listWithGrace.length);
       })
       .catch(() => {
-        // Fallback based on department
-        if (department === "Marketing") {
-          setManagersList([karlieGarciaManager]);
-          setManagersAvailable(1);
-        } else {
-          setManagersList([graceLumabaoManager]);
-          setManagersAvailable(1);
-        }
+        setManagersList([graceLumabaoManager]);
+        setManagersAvailable(1);
       })
       .finally(() => setLoadingManagers(false));
   }, [department]);
@@ -846,6 +826,7 @@ export function TicketSheet(props: TicketSheetProps) {
 
     setLoadingAgents(true);
 
+    console.log(`[sheet-ticket] Fetching agents for department: ${department}`);
     fetch(
       `/api/fetch-users-by-role?filterAgents=true&department=${encodeURIComponent(
         department,
@@ -853,7 +834,9 @@ export function TicketSheet(props: TicketSheetProps) {
     )
       .then((res) => res.json())
       .then((json) => {
-        setAgentsList(json.data || []);
+        const list = json.data || [];
+        console.log(`[sheet-ticket] Received ${list.length} agents:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+        setAgentsList(list);
       })
       .catch(() => setAgentsList([]))
       .finally(() => setLoadingAgents(false));

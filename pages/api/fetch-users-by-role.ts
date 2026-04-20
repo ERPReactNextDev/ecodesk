@@ -11,8 +11,6 @@ export default async function handler(
 
   const { role, department, manager, tsm, currentUser, filterManagers, filterAgents } = req.query;
 
-  console.log("[fetch-users-by-role] Query params:", { filterManagers, filterAgents, department, role });
-
   try {
     const db = await connectToDatabase();
 
@@ -24,25 +22,29 @@ export default async function handler(
     if (filterManagers === "true" && department) {
       query.Role = "Manager";
       query.Department = String(department);
-      console.log("[fetch-users-by-role] Filtering managers by department:", query.Department);
+      console.log(`[fetch-users-by-role] Fetching MANAGERS for department: ${department}`);
     }
+
     // 🔥 FILTER AGENTS BY DEPARTMENT (for Agent dropdown - exclude managers)
-    else if (filterAgents === "true" && department) {
+    if (filterAgents === "true" && department) {
       query.Department = String(department);
       query.Role = { $ne: "Manager" };
+      console.log(`[fetch-users-by-role] Fetching AGENTS for department: ${department} (excluding managers)`);
     }
-    // SPECIAL BUSINESS RULE FOR TSM
-    else if (role) {
+
+    // SPECIAL BUSINESS RULE FOR TSM (only if not using department filters)
+    if (role && filterManagers !== "true" && filterAgents !== "true") {
       query.Role = String(role);
+      console.log(`[fetch-users-by-role] Fetching by ROLE: ${role}`);
     }
+
+    console.log("[fetch-users-by-role] Final query:", JSON.stringify(query));
 
     // Only filter by manager/tsm if NOT using the new department-based filters
     if (!filterManagers && !filterAgents) {
       if (manager) query.Manager = String(manager);
       if (tsm) query.TSM = String(tsm);
     }
-
-    console.log("[fetch-users-by-role] Final MongoDB query:", JSON.stringify(query));
 
     // NORMAL ACTIVE USERS
     const users = await db
@@ -56,9 +58,6 @@ export default async function handler(
       })
       .sort({ Firstname: 1 })
       .toArray();
-
-    console.log("[fetch-users-by-role] Found users count:", users.length);
-    console.log("[fetch-users-by-role] First 3 users:", users.slice(0, 3).map(u => ({ name: `${u.Firstname} ${u.Lastname}`, role: u.Role, dept: u.Department })));
 
     let finalUsers = [...users];
 
@@ -88,6 +87,8 @@ export default async function handler(
         }
       }
     }
+
+    console.log(`[fetch-users-by-role] Returning ${finalUsers.length} users:`, finalUsers.map((u: any) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID}) - Role: ${u.Role}, Dept: ${u.Department}`));
 
     res.status(200).json({ data: finalUsers });
   } catch (error) {
