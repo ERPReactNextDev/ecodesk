@@ -782,13 +782,18 @@ export function TicketSheet(props: TicketSheetProps) {
       .then((res) => res.json())
       .then((json) => {
         let list = json.data || [];
+        console.log("[Manager Fetch] Department:", department, "| API returned:", list.length, "managers");
+        console.log("[Manager Fetch] Manager names:", list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.Department})`));
         // Add department-specific fallback managers if not present
         if (department === "Sales" && !list.some((user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID)) {
           list = [...list, graceLumabaoManager];
+          console.log("[Manager Fetch] Added Grace Lumabao fallback");
         }
         if (department === "Marketing" && !list.some((user: User) => user.ReferenceID === karlieGarciaManager.ReferenceID)) {
           list = [...list, karlieGarciaManager];
+          console.log("[Manager Fetch] Added Karlie Garcia fallback");
         }
+        console.log("[Manager Fetch] Final list:", list.map((u: User) => `${u.Firstname} ${u.Lastname}`));
         setManagersList(list);
         setManagersAvailable(list.length);
       })

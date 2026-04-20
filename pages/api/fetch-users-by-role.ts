@@ -11,6 +11,8 @@ export default async function handler(
 
   const { role, department, manager, tsm, currentUser, filterManagers, filterAgents } = req.query;
 
+  console.log("[fetch-users-by-role] Query params:", { filterManagers, filterAgents, department, role });
+
   try {
     const db = await connectToDatabase();
 
@@ -22,6 +24,7 @@ export default async function handler(
     if (filterManagers === "true" && department) {
       query.Role = "Manager";
       query.Department = String(department);
+      console.log("[fetch-users-by-role] Filtering managers by department:", query.Department);
     }
     // 🔥 FILTER AGENTS BY DEPARTMENT (for Agent dropdown - exclude managers)
     else if (filterAgents === "true" && department) {
@@ -39,6 +42,8 @@ export default async function handler(
       if (tsm) query.TSM = String(tsm);
     }
 
+    console.log("[fetch-users-by-role] Final MongoDB query:", JSON.stringify(query));
+
     // NORMAL ACTIVE USERS
     const users = await db
       .collection("users")
@@ -51,6 +56,9 @@ export default async function handler(
       })
       .sort({ Firstname: 1 })
       .toArray();
+
+    console.log("[fetch-users-by-role] Found users count:", users.length);
+    console.log("[fetch-users-by-role] First 3 users:", users.slice(0, 3).map(u => ({ name: `${u.Firstname} ${u.Lastname}`, role: u.Role, dept: u.Department })));
 
     let finalUsers = [...users];
 
