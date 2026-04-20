@@ -624,6 +624,15 @@ export function TicketSheet(props: TicketSheetProps) {
     Connection: "Online",
   };
 
+  const karlieGarciaManager: User = {
+    ReferenceID: "KG-PH-878400",
+    Firstname: "Karlie",
+    Lastname: "Garcia",
+    Role: "Manager",
+    Department: "Marketing",
+    Connection: "Online",
+  };
+
   const graceLumabaoTeam: User[] = [
     {
       ReferenceID: "MG-NCR-764104",
@@ -642,7 +651,7 @@ export function TicketSheet(props: TicketSheetProps) {
       Connection: "Online",
     },
     {
-      ReferenceID: "RP-CSR-451122",
+      ReferenceID: "RP-NCR-246445",
       Firstname: "Rikki",
       Lastname: "Paje",
       Role: "Staff",
@@ -772,18 +781,26 @@ export function TicketSheet(props: TicketSheetProps) {
     )
       .then((res) => res.json())
       .then((json) => {
-        const list = json.data || [];
-        const listWithGrace = list.some(
-          (user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID,
-        )
-          ? list
-          : [...list, graceLumabaoManager];
-        setManagersList(listWithGrace);
-        setManagersAvailable(listWithGrace.length);
+        let list = json.data || [];
+        // Add department-specific fallback managers if not present
+        if (department === "Sales" && !list.some((user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID)) {
+          list = [...list, graceLumabaoManager];
+        }
+        if (department === "Marketing" && !list.some((user: User) => user.ReferenceID === karlieGarciaManager.ReferenceID)) {
+          list = [...list, karlieGarciaManager];
+        }
+        setManagersList(list);
+        setManagersAvailable(list.length);
       })
       .catch(() => {
-        setManagersList([graceLumabaoManager]);
-        setManagersAvailable(1);
+        // Fallback based on department
+        if (department === "Marketing") {
+          setManagersList([karlieGarciaManager]);
+          setManagersAvailable(1);
+        } else {
+          setManagersList([graceLumabaoManager]);
+          setManagersAvailable(1);
+        }
       })
       .finally(() => setLoadingManagers(false));
   }, [department]);
