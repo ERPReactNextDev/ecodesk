@@ -9,7 +9,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { role, department, manager, tsm, currentUser, filterDepartmentHeads, filterManagers, filterAgents, filterMarketingManagers, filterMarketingAgents } = req.query;
+  const { role, department, manager, tsm, currentUser, filterDepartmentHeads, filterManagers, filterAgents, filterMarketingManagers, filterMarketingAgents, filterAgentsByTSM } = req.query;
 
   try {
     const db = await connectToDatabase();
@@ -51,6 +51,13 @@ export default async function handler(
       query.Department = String(department);
       query.Role = { $ne: "Manager" };
       console.log(`[fetch-users-by-role] Fetching MARKETING AGENTS for department: ${department}, under manager: ${manager}`);
+    }
+
+    // 🔥 FILTER AGENTS BY TSM: For special cases like Sette Hosena who is Manager with no TSM
+    else if (filterAgentsByTSM === "true" && tsm) {
+      query.Role = "Territory Sales Associate";
+      query.TSM = String(tsm);
+      console.log(`[fetch-users-by-role] Fetching AGENTS by TSM reference: ${tsm}`);
     }
 
     // FALLBACK: Original role-based fetch

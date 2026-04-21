@@ -711,7 +711,27 @@ export function TicketSheet(props: TicketSheetProps) {
 
   // ================= FETCH AGENTS (TS Associate / Marketing Agent) =================
   useEffect(() => {
-    // Only fetch agents when manager is selected
+    // Special case: Sette Hosena (SH-NCR-560908) - fetch agents by her ReferenceID in TSM field
+    const SETTE_HOSENA_REF_ID = "SH-NCR-560908";
+    if (department_head === SETTE_HOSENA_REF_ID) {
+      setLoadingAgents(true);
+
+      console.log(`[sheet-ticket] Special case: Fetching agents for Sette Hosena by TSM reference`);
+      fetch(
+        `/api/fetch-users-by-role?filterAgentsByTSM=true&tsm=${encodeURIComponent(SETTE_HOSENA_REF_ID)}&currentUser=${agent || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} agents for Sette Hosena:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setAgentsList(list);
+        })
+        .catch(() => setAgentsList([]))
+        .finally(() => setLoadingAgents(false));
+      return;
+    }
+
+    // Only fetch agents when manager is selected (for regular cases)
     if (!manager) {
       setAgentsList([]);
       setAgent("");
@@ -752,7 +772,7 @@ export function TicketSheet(props: TicketSheetProps) {
       })
       .catch(() => setAgentsList([]))
       .finally(() => setLoadingAgents(false));
-  }, [department, manager, agent]);
+  }, [department, department_head, manager, agent]);
 
   // ================= FETCH ACTIVITIES =================
   const fetchActivities = useCallback(() => {
@@ -1693,36 +1713,38 @@ export function TicketSheet(props: TicketSheetProps) {
             </Field>
           )}
 
-          {/* MANAGER */}
-          <Field>
-            <FieldLabel>Manager</FieldLabel>
-            <FieldDescription>Select the manager responsible for this task or client.</FieldDescription>
-            <ComboboxField
-              value={manager}
-              onChange={(value) => {
-                setManager(value);
-                setAgent("");
-              }}
-              placeholder="Select a Manager"
-              options={
-                loadingManagers
-                  ? [{ value: "__loading__", label: "Loading managers..." }]
-                  : (() => {
-                      const baseOptions = managersList.map((m) => ({
-                        value: m.ReferenceID,
-                        label: `${m.Firstname} ${m.Lastname}`,
-                      }));
-                      if (manager && !baseOptions.some((o) => o.value === manager)) {
-                        baseOptions.push({
-                          value: manager,
-                          label: `${manager} (Loading...)`,
-                        });
-                      }
-                      return baseOptions;
-                    })()
-              }
-            />
-          </Field>
+          {/* MANAGER - Hidden for Sette Hosena (SH-NCR-560908) special case */}
+          {department_head !== "SH-NCR-560908" && (
+            <Field>
+              <FieldLabel>Manager</FieldLabel>
+              <FieldDescription>Select the manager responsible for this task or client.</FieldDescription>
+              <ComboboxField
+                value={manager}
+                onChange={(value) => {
+                  setManager(value);
+                  setAgent("");
+                }}
+                placeholder="Select a Manager"
+                options={
+                  loadingManagers
+                    ? [{ value: "__loading__", label: "Loading managers..." }]
+                    : (() => {
+                        const baseOptions = managersList.map((m) => ({
+                          value: m.ReferenceID,
+                          label: `${m.Firstname} ${m.Lastname}`,
+                        }));
+                        if (manager && !baseOptions.some((o) => o.value === manager)) {
+                          baseOptions.push({
+                            value: manager,
+                            label: `${manager} (Loading...)`,
+                          });
+                        }
+                        return baseOptions;
+                      })()
+                }
+              />
+            </Field>
+          )}
 
           {/* AGENT */}
           {wrapUp !== "Job Applicants" &&
@@ -1744,7 +1766,7 @@ export function TicketSheet(props: TicketSheetProps) {
                     value={agent}
                     onChange={setAgent}
                     placeholder="Select an Agent"
-                    disabled={!manager}
+                    disabled={!manager && department_head !== "SH-NCR-560908"}
                     options={
                       loadingAgents
                         ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
