@@ -788,7 +788,7 @@ export function TicketSheet(props: TicketSheetProps) {
         setManagersAvailable(1);
       })
       .finally(() => setLoadingManagers(false));
-  }, [department]);
+  }, [department, manager]);
 
   const fetchActivities = useCallback(() => {
     setLoadingActivities(true);
@@ -840,7 +840,7 @@ export function TicketSheet(props: TicketSheetProps) {
       })
       .catch(() => setAgentsList([]))
       .finally(() => setLoadingAgents(false));
-  }, [manager, department]);
+  }, [manager, department, agent]);
 
   // 1️⃣ Ticket Received vs Ticket Endorsed validation
   useEffect(() => {
@@ -1760,10 +1760,20 @@ const departmentOptions: Option[] = [
               options={
                 loadingManagers
                   ? [{ value: "__loading__", label: "Loading managers..." }]
-                  : managersList.map((m) => ({
-                      value: m.ReferenceID,
-                      label: `${m.Firstname} ${m.Lastname}`,
-                    }))
+                  : (() => {
+                      const baseOptions = managersList.map((m) => ({
+                        value: m.ReferenceID,
+                        label: `${m.Firstname} ${m.Lastname}`,
+                      }));
+                      // Ensure selected manager is always in options even if not in fetched list
+                      if (manager && !baseOptions.some((o) => o.value === manager)) {
+                        baseOptions.push({
+                          value: manager,
+                          label: `${manager} (Loading...)`,
+                        });
+                      }
+                      return baseOptions;
+                    })()
               }
             />
           </Field>
@@ -1793,17 +1803,28 @@ const departmentOptions: Option[] = [
                     options={
                       loadingAgents
                         ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
-                        : agentsList.map((a) => ({
-                            value: a.ReferenceID,
-                            label: `${a.Firstname} ${a.Lastname}${
-                              a.Connection === "Online"
-                                ? " 🟢"
-                                : a.Connection === "Offline"
-                                  ? " ⚫"
-                                  : " ⚫"
-                            }`,
-                            disabled: a.Connection !== "Online",
-                          }))
+                        : (() => {
+                            const baseOptions = agentsList.map((a) => ({
+                              value: a.ReferenceID,
+                              label: `${a.Firstname} ${a.Lastname}${
+                                a.Connection === "Online"
+                                  ? " 🟢"
+                                  : a.Connection === "Offline"
+                                    ? " ⚫"
+                                    : " ⚫"
+                              }`,
+                              disabled: a.Connection !== "Online",
+                            }));
+                            // Ensure selected agent is always in options even if not in fetched list
+                            if (agent && !baseOptions.some((o) => o.value === agent)) {
+                              baseOptions.push({
+                                value: agent,
+                                label: `${agent} (Loading...)`,
+                                disabled: false,
+                              });
+                            }
+                            return baseOptions;
+                          })()
                     }
                   />
                 </div>
