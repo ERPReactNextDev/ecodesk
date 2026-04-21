@@ -9,7 +9,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { role, department, manager, tsm, currentUser, filterManagers, filterAgents } = req.query;
+  const { role, department, manager, tsm, currentUser, filterDepartmentHeads, filterManagers, filterAgents, filterMarketingManagers, filterMarketingAgents } = req.query;
 
   try {
     const db = await connectToDatabase();
@@ -18,33 +18,51 @@ export default async function handler(
       Status: "Active",
     };
 
-    // 🔥 FILTER MANAGERS BY DEPARTMENT (for Manager dropdown)
-    if (filterManagers === "true" && department) {
+    // 🔥 FILTER DEPARTMENT HEADS: Department=X, Role=Manager
+    if (filterDepartmentHeads === "true" && department) {
       query.Role = "Manager";
       query.Department = String(department);
-      console.log(`[fetch-users-by-role] Fetching MANAGERS for department: ${department}`);
+      console.log(`[fetch-users-by-role] Fetching DEPARTMENT HEADS for department: ${department}`);
     }
 
-    // 🔥 FILTER AGENTS BY DEPARTMENT (for Agent dropdown - exclude managers)
-    if (filterAgents === "true" && department) {
+    // 🔥 FILTER MANAGERS (TSM): Role=Territory Sales Manager, Manager=departmentHead
+    else if (filterManagers === "true" && manager) {
+      query.Role = "Territory Sales Manager";
+      query.Manager = String(manager);
+      console.log(`[fetch-users-by-role] Fetching MANAGERS (TSM) under department head: ${manager}`);
+    }
+
+    // 🔥 FILTER AGENTS (TS Associate): Role=Territory Sales Associate, TSM=manager
+    else if (filterAgents === "true" && tsm) {
+      query.Role = "Territory Sales Associate";
+      query.TSM = String(tsm);
+      console.log(`[fetch-users-by-role] Fetching AGENTS (TS Associate) under TSM: ${tsm}`);
+    }
+
+    // 🔥 FILTER MARKETING MANAGERS: Department=Marketing, Role=Manager
+    else if (filterMarketingManagers === "true" && department) {
+      query.Role = "Manager";
+      query.Department = String(department);
+      console.log(`[fetch-users-by-role] Fetching MARKETING MANAGERS for department: ${department}`);
+    }
+
+    // 🔥 FILTER MARKETING AGENTS: Department=Marketing, Role != Manager
+    else if (filterMarketingAgents === "true" && department && manager) {
       query.Department = String(department);
       query.Role = { $ne: "Manager" };
-      console.log(`[fetch-users-by-role] Fetching AGENTS for department: ${department} (excluding managers)`);
+      console.log(`[fetch-users-by-role] Fetching MARKETING AGENTS for department: ${department}, under manager: ${manager}`);
     }
 
-    // SPECIAL BUSINESS RULE FOR TSM (only if not using department filters)
-    if (role && filterManagers !== "true" && filterAgents !== "true") {
+    // FALLBACK: Original role-based fetch
+    else if (role) {
       query.Role = String(role);
       console.log(`[fetch-users-by-role] Fetching by ROLE: ${role}`);
     }
 
     console.log("[fetch-users-by-role] Final query:", JSON.stringify(query));
 
-    // Only filter by manager/tsm if NOT using the new department-based filters
-    if (!filterManagers && !filterAgents) {
-      if (manager) query.Manager = String(manager);
-      if (tsm) query.TSM = String(tsm);
-    }
+    // Note: hierarchical filters above already set Manager/TSM fields as needed
+    // This section reserved for future additional filters
 
     // NORMAL ACTIVE USERS
     const users = await db

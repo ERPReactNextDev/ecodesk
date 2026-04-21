@@ -184,7 +184,7 @@ function computeNonQuotationHT(remarks: string, baseTime: string) {
     "PO RECEIVED",
     "PENDING QUOTATION",
     "FOR OCCULAR INSPECTION",
-  ];//test
+  ];
 
   return list.includes((remarks || "").toUpperCase()) ? baseTime : "";
 }
@@ -610,186 +610,151 @@ export function TicketSheet(props: TicketSheetProps) {
     ReferenceID: string;
     Firstname: string;
     Lastname: string;
-    Role: string;
-    Department: string;
-    Connection: string;
+    Role?: string;
+    Department?: string;
+    Connection?: string;
   }
-
-  const graceLumabaoManager: User = {
-    ReferenceID: "GL-NCR-521362",
-    Firstname: "Grace",
-    Lastname: "Lumabao",
-    Role: "Admin",
-    Department: "Sales",
-    Connection: "Online",
-  };
-
-  const graceLumabaoTeam: User[] = [
-    {
-      ReferenceID: "MG-NCR-764104",
-      Firstname: "Maureen",
-      Lastname: "Gabriel",
-      Role: "Staff",
-      Department: "Sales",
-      Connection: "Online",
-    },
-    {
-      ReferenceID: "EM-NCR-333464",
-      Firstname: "Erica",
-      Lastname: "Maestro",
-      Role: "Staff",
-      Department: "Sales",
-      Connection: "Online",
-    },
-    {
-      ReferenceID: "RP-NCR-246445",
-      Firstname: "Rikki",
-      Lastname: "Paje",
-      Role: "Staff",
-      Department: "Sales",
-      Connection: "Online",
-    },
-    {
-      ReferenceID: "MC-NCR-443381",
-      Firstname: "mark vincent",
-      Lastname: "capin",
-      Role: "Staff",
-      Department: "Sales",
-      Connection: "Online",
-    },
-  ];
 
   const [managersList, setManagersList] = useState<User[]>([]);
   const [managersAvailable, setManagersAvailable] = useState(0);
   const [agentsList, setAgentsList] = useState<User[]>([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
   const [loadingAgents, setLoadingAgents] = useState(false);
-  const [loadingActivities, setLoadingActivities] = useState(false);
-  const [errorActivities, setErrorActivities] = useState(null);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const isJobApplicant = wrapUp === "Job Applicants" || wrapUp === "Inquiry";
-  const isHrActive = Boolean(hrAcknowledgeDate);
-
-  // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
-
-  const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
-
-  const isTsmComplete = Boolean(tsmAcknowledgeDate && tsmHandlingTime);
-  const isTsaComplete = Boolean(tsaAcknowledgeDate && tsaHandlingTime);
-
-  const tsmResponseTime = isTsmComplete
-    ? computeTSMResponseTime(wrapUp, tsmAcknowledgeDate, ticketEndorsed)
-    : "";
-
-  const tsmHandlingTimeFinal = isTsmComplete
-    ? computeTSMHandlingTime(
-        wrapUp,
-        tsmAcknowledgeDate,
-        tsmHandlingTime,
-        ticketReceived,
-      )
-    : "";
-
-  const tsaResponseTime = isTsaComplete
-    ? computeTSAResponseTime(
-        wrapUp,
-        tsaAcknowledgeDate,
-        tsaHandlingTime,
-        ticketEndorsed,
-      )
-    : "";
-
-  const tsaHandlingTimeFinal =
-    isTsaComplete && ticketReceived
-      ? formatDuration(
-          new Date(tsaHandlingTime).getTime() -
-            new Date(ticketReceived).getTime(),
-        )
-      : "";
-
-  const baseHT = isTsaComplete
-    ? tsaHandlingTimeFinal
-    : isTsmComplete
-      ? tsmHandlingTimeFinal
-      : "";
-
-  const nonQuotationHT = baseHT ? computeNonQuotationHT(remarks, baseHT) : "";
-  const quotationHT = baseHT ? computeQuotationHT(remarks, baseHT) : "";
-  const spfHT = baseHT ? computeSpfHT(remarks, baseHT) : "";
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [errorActivities, setErrorActivities] = useState<string | null>(null);
 
   // ================= FETCH DEPARTMENT HEADS =================
 
   useEffect(() => {
+    // Marketing department doesn't have Department Heads - skip fetching
+    if (department === "Marketing") {
+      setDepartmentHeadsList([]);
+      setDepartmentHead(""); // Clear any existing department head
+      return;
+    }
+
+    // Only fetch department heads when department is selected
+    if (!department) {
+      setDepartmentHeadsList([]);
+      setDepartmentHead("");
+      return;
+    }
+
     setLoadingDepartmentHeads(true);
 
-    fetch(`/api/fetch-users-by-role?role=Manager`)
+    fetch(`/api/fetch-users-by-role?filterDepartmentHeads=true&department=${encodeURIComponent(department)}`)
       .then((res) => res.json())
       .then((json) => {
-        const all: User[] = json.data || [];
-
-        const filtered = all.filter((user) =>
-          allowedDepartmentHeads.includes(user.ReferenceID),
-        );
-
-        const bossExists = filtered.some(
-          (user) => user.ReferenceID === "DT-PH-994793",
-        );
-
-        if (!bossExists) {
-          filtered.unshift({
-            ReferenceID: "DT-PH-994793",
-            Firstname: "Dexter",
-            Lastname: "Tan",
-            Role: "Director",
-            Department: "Owner",
-            Connection: "Online",
-          });
-        }
-
-        setDepartmentHeadsList(filtered);
+        const list: User[] = json.data || [];
+        console.log(`[sheet-ticket] Received ${list.length} department heads for ${department}:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+        setDepartmentHeadsList(list);
       })
       .catch(() => setDepartmentHeadsList([]))
       .finally(() => setLoadingDepartmentHeads(false));
-  }, []);
+  }, [department, setDepartmentHead]);
 
-  // ================= FETCH MANAGERS =================
+  // ================= FETCH MANAGERS (TSM / Marketing Manager) =================
 
   useEffect(() => {
-    if (!department) {
+    // Marketing department doesn't use department head - fetch manager directly by department
+    if (department === "Marketing") {
+      setLoadingManagers(true);
+
+      console.log(`[sheet-ticket] Fetching Marketing managers for department: ${department}`);
+      fetch(
+        `/api/fetch-users-by-role?filterMarketingManagers=true&department=${encodeURIComponent(department)}&currentUser=${manager || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} Marketing managers:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setManagersList(list);
+          setManagersAvailable(list.length);
+        })
+        .catch(() => {
+          setManagersList([]);
+          setManagersAvailable(0);
+        })
+        .finally(() => setLoadingManagers(false));
+      return;
+    }
+
+    // For non-Marketing departments: Only fetch managers when department head is selected
+    if (!department_head) {
       setManagersList([]);
-      setAgentsList([]);
       setManager("");
+      setAgentsList([]);
       setAgent("");
       return;
     }
 
     setLoadingManagers(true);
 
-    console.log(`[sheet-ticket] Fetching managers for department: ${department}`);
+    console.log(`[sheet-ticket] Fetching managers (TSM) under department head: ${department_head}`);
     fetch(
-      `/api/fetch-users-by-role?filterManagers=true&department=${encodeURIComponent(
-        department,
-      )}&currentUser=${manager || ""}`,
+      `/api/fetch-users-by-role?filterManagers=true&manager=${encodeURIComponent(department_head)}&currentUser=${manager || ""}`,
     )
       .then((res) => res.json())
       .then((json) => {
         const list = json.data || [];
-        console.log(`[sheet-ticket] Received ${list.length} managers:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
-        const listWithGrace = list.some(
-          (user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID,
-        )
-          ? list
-          : [...list, graceLumabaoManager];
-        setManagersList(listWithGrace);
-        setManagersAvailable(listWithGrace.length);
+        console.log(`[sheet-ticket] Received ${list.length} managers (TSM):`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+        setManagersList(list);
+        setManagersAvailable(list.length);
       })
       .catch(() => {
-        setManagersList([graceLumabaoManager]);
-        setManagersAvailable(1);
+        setManagersList([]);
+        setManagersAvailable(0);
       })
       .finally(() => setLoadingManagers(false));
-  }, [department, manager]);
+  }, [department, department_head, manager]);
 
+  // ================= FETCH AGENTS (TS Associate / Marketing Agent) =================
+  useEffect(() => {
+    // Only fetch agents when manager is selected
+    if (!manager) {
+      setAgentsList([]);
+      setAgent("");
+      return;
+    }
+
+    // Marketing department: fetch agents by department, role != Manager
+    if (department === "Marketing") {
+      setLoadingAgents(true);
+
+      console.log(`[sheet-ticket] Fetching Marketing agents for department: ${department}, under manager: ${manager}`);
+      fetch(
+        `/api/fetch-users-by-role?filterMarketingAgents=true&department=${encodeURIComponent(department)}&manager=${encodeURIComponent(manager)}&currentUser=${agent || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} Marketing agents:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setAgentsList(list);
+        })
+        .catch(() => setAgentsList([]))
+        .finally(() => setLoadingAgents(false));
+      return;
+    }
+
+    // For non-Marketing departments: fetch agents by TSM
+    setLoadingAgents(true);
+
+    console.log(`[sheet-ticket] Fetching agents (TS Associate) under TSM: ${manager}`);
+    fetch(
+      `/api/fetch-users-by-role?filterAgents=true&tsm=${encodeURIComponent(manager)}&currentUser=${agent || ""}`,
+    )
+      .then((res) => res.json())
+      .then((json) => {
+        const list = json.data || [];
+        console.log(`[sheet-ticket] Received ${list.length} agents (TS Associate):`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+        setAgentsList(list);
+      })
+      .catch(() => setAgentsList([]))
+      .finally(() => setLoadingAgents(false));
+  }, [department, manager, agent]);
+
+  // ================= FETCH ACTIVITIES =================
   const fetchActivities = useCallback(() => {
     setLoadingActivities(true);
     setErrorActivities(null);
@@ -810,37 +775,6 @@ export function TicketSheet(props: TicketSheetProps) {
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
-
-  // ================= FETCH AGENTS =================
-  useEffect(() => {
-    if (!manager) {
-      setAgentsList([]);
-      setAgent("");
-      return;
-    }
-
-    if (manager === graceLumabaoManager.ReferenceID) {
-      setAgentsList(graceLumabaoTeam);
-      return;
-    }
-
-    setLoadingAgents(true);
-
-    console.log(`[sheet-ticket] Fetching agents for department: ${department}`);
-    fetch(
-      `/api/fetch-users-by-role?filterAgents=true&department=${encodeURIComponent(
-        department,
-      )}&currentUser=${agent || ""}`,
-    )
-      .then((res) => res.json())
-      .then((json) => {
-        const list = json.data || [];
-        console.log(`[sheet-ticket] Received ${list.length} agents:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
-        setAgentsList(list);
-      })
-      .catch(() => setAgentsList([]))
-      .finally(() => setLoadingAgents(false));
-  }, [manager, department, agent]);
 
   // 1️⃣ Ticket Received vs Ticket Endorsed validation
   useEffect(() => {
@@ -991,7 +925,7 @@ export function TicketSheet(props: TicketSheetProps) {
     status?: string;
     customerStatus?: string;
     customerType?: string;
-  }>({}); //test
+  }>({});
 
   const [timeError, setTimeError] = useState<string | null>(null);
   const [tsmTimeError, setTsmTimeError] = useState<string | null>(null);
@@ -1000,6 +934,15 @@ export function TicketSheet(props: TicketSheetProps) {
   const isManagerRequiredButMissing = managersAvailable > 0 && !manager;
   const [highlightAgent, setHighlightAgent] = useState(false);
   const [agentReassigned, setAgentReassigned] = useState(false);
+
+  // ===== HANDLING TIME COMPUTATIONS =====
+  const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
+  const tsaResponseTime = computeSimpleDiff(inquiryReceived, responseToInquiry);
+  const tsaHandlingTimeFinal = computeSimpleDiff(tsaAcknowledgeDate, tsaHandlingTime);
+  const baseHT = computeSimpleDiff(ticketReceived, ticketEndorsed);
+  const nonQuotationHT = computeNonQuotationHT(remarks, baseHT);
+  const quotationHT = computeQuotationHT(remarks, baseHT);
+  const spfHT = computeSpfHT(remarks, baseHT);
 
   // ===== ALL DROPDOWN OPTIONS (ALPHABETICAL) =====
 
@@ -1116,7 +1059,7 @@ export function TicketSheet(props: TicketSheetProps) {
   ].sort((a, b) => a.label.localeCompare(b.label));
 
   // Options for Radio Groups
-const departmentOptions: Option[] = [
+  const departmentOptions: Option[] = [
     { value: "Accounting", title: "Accounting", description: "Handle initial client contact for financial matters and updates." },
     { value: "Business Development", title: "Business Development", description: "Manage client outreach and relationship building activities." },
     { value: "CS", title: "CS", description: "Handle customer service concerns and support requests." },
@@ -1195,6 +1138,8 @@ const departmentOptions: Option[] = [
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const isJobApplicant = wrapUp === "Job Applicants";
 
   const onNext = () => {
     if (step === 3) {
@@ -1722,29 +1667,31 @@ const departmentOptions: Option[] = [
         <>
           <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
 
-          {/* DEPARTMENT HEAD */}
-          <Field>
-            <FieldLabel>Department Head</FieldLabel>
-            <FieldDescription>Please select the department head responsible.</FieldDescription>
-            <ComboboxField
-              value={department_head}
-              onChange={setDepartmentHead}
-              placeholder="Select Department Head"
-              options={
-                loadingDepartmentHeads
-                  ? [{ value: "__loading__", label: "Loading department heads..." }]
-                  : departmentHeadsList
-                      .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
-                      .map((dh) => ({
-                        value: dh.ReferenceID,
-                        label:
-                          dh.ReferenceID === "DT-PH-994793"
-                            ? "Dexter Tan"
-                            : `${dh.Firstname} ${dh.Lastname}`,
-                      }))
-              }
-            />
-          </Field>
+          {/* DEPARTMENT HEAD - Hidden for Marketing department */}
+          {department !== "Marketing" && (
+            <Field>
+              <FieldLabel>Department Head</FieldLabel>
+              <FieldDescription>Please select the department head responsible.</FieldDescription>
+              <ComboboxField
+                value={department_head}
+                onChange={setDepartmentHead}
+                placeholder="Select Department Head"
+                options={
+                  loadingDepartmentHeads
+                    ? [{ value: "__loading__", label: "Loading department heads..." }]
+                    : departmentHeadsList
+                        .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
+                        .map((dh) => ({
+                          value: dh.ReferenceID,
+                          label:
+                            dh.ReferenceID === "DT-PH-994793"
+                              ? "Dexter Tan"
+                              : `${dh.Firstname} ${dh.Lastname}`,
+                        }))
+                }
+              />
+            </Field>
+          )}
 
           {/* MANAGER */}
           <Field>
@@ -1765,7 +1712,6 @@ const departmentOptions: Option[] = [
                         value: m.ReferenceID,
                         label: `${m.Firstname} ${m.Lastname}`,
                       }));
-                      // Ensure selected manager is always in options even if not in fetched list
                       if (manager && !baseOptions.some((o) => o.value === manager)) {
                         baseOptions.push({
                           value: manager,
@@ -1780,8 +1726,7 @@ const departmentOptions: Option[] = [
 
           {/* AGENT */}
           {wrapUp !== "Job Applicants" &&
-            (manager === graceLumabaoManager.ReferenceID ||
-              department === "Sales" ||
+            (department === "Sales" ||
               department === "Business Development" ||
               department === "Marketing" ||
               department === "E-Commerce") && (
@@ -1815,7 +1760,6 @@ const departmentOptions: Option[] = [
                               }`,
                               disabled: a.Connection !== "Online",
                             }));
-                            // Ensure selected agent is always in options even if not in fetched list
                             if (agent && !baseOptions.some((o) => o.value === agent)) {
                               baseOptions.push({
                                 value: agent,
