@@ -634,6 +634,13 @@ export function TicketSheet(props: TicketSheetProps) {
       return;
     }
 
+    // CSR department doesn't have Department Heads - skip fetching
+    if (department === "CSR") {
+      setDepartmentHeadsList([]);
+      setDepartmentHead(""); // Clear any existing department head
+      return;
+    }
+
     // Only fetch department heads when department is selected
     if (!department) {
       setDepartmentHeadsList([]);
@@ -680,7 +687,30 @@ export function TicketSheet(props: TicketSheetProps) {
       return;
     }
 
-    // For non-Marketing departments: Only fetch managers when department head is selected
+    // CSR department doesn't use department head - fetch CSR Admin as manager
+    if (department === "CSR") {
+      setLoadingManagers(true);
+
+      console.log(`[sheet-ticket] Fetching CSR Admin as manager for department: ${department}`);
+      fetch(
+        `/api/fetch-users-by-role?filterCSRAdmin=true&department=${encodeURIComponent(department)}&currentUser=${manager || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} CSR Admin (manager):`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setManagersList(list);
+          setManagersAvailable(list.length);
+        })
+        .catch(() => {
+          setManagersList([]);
+          setManagersAvailable(0);
+        })
+        .finally(() => setLoadingManagers(false));
+      return;
+    }
+
+    // For non-Marketing/CSR departments: Only fetch managers when department head is selected
     if (!department_head) {
       setManagersList([]);
       setManager("");
@@ -757,7 +787,26 @@ export function TicketSheet(props: TicketSheetProps) {
       return;
     }
 
-    // For non-Marketing departments: fetch agents by TSM
+    // CSR department: fetch CSR Staff as agents
+    if (department === "CSR") {
+      setLoadingAgents(true);
+
+      console.log(`[sheet-ticket] Fetching CSR Staff as agents for department: ${department}`);
+      fetch(
+        `/api/fetch-users-by-role?filterCSRStaff=true&department=${encodeURIComponent(department)}&currentUser=${agent || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} CSR Staff (agents):`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setAgentsList(list);
+        })
+        .catch(() => setAgentsList([]))
+        .finally(() => setLoadingAgents(false));
+      return;
+    }
+
+    // For non-Marketing/CSR departments: fetch agents by TSM
     setLoadingAgents(true);
 
     console.log(`[sheet-ticket] Fetching agents (TS Associate) under TSM: ${manager}`);
@@ -1687,8 +1736,8 @@ export function TicketSheet(props: TicketSheetProps) {
         <>
           <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
 
-          {/* DEPARTMENT HEAD - Hidden for Marketing department */}
-          {department !== "Marketing" && (
+          {/* DEPARTMENT HEAD - Hidden for Marketing and CSR departments */}
+          {department !== "Marketing" && department !== "CSR" && (
             <Field>
               <FieldLabel>Department Head</FieldLabel>
               <FieldDescription>Please select the department head responsible.</FieldDescription>
@@ -1748,7 +1797,8 @@ export function TicketSheet(props: TicketSheetProps) {
             (department === "Sales" ||
               department === "Business Development" ||
               department === "Marketing" ||
-              department === "E-Commerce") && (
+              department === "E-Commerce" ||
+              department === "CSR") && (
               <Field>
                 <FieldLabel>Agent</FieldLabel>
                 <FieldDescription>

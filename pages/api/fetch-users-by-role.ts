@@ -9,7 +9,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { role, department, manager, tsm, currentUser, filterDepartmentHeads, filterManagers, filterAgents, filterMarketingManagers, filterMarketingAgents, filterAgentsByTSM } = req.query;
+  const { role, department, manager, tsm, currentUser, filterDepartmentHeads, filterManagers, filterAgents, filterMarketingManagers, filterMarketingAgents, filterAgentsByTSM, filterCSRAdmin, filterCSRStaff } = req.query;
 
   try {
     const db = await connectToDatabase();
@@ -58,6 +58,20 @@ export default async function handler(
       query.Role = "Territory Sales Associate";
       query.TSM = String(tsm);
       console.log(`[fetch-users-by-role] Fetching AGENTS by TSM reference: ${tsm}`);
+    }
+
+    // 🔥 FILTER CSR ADMIN: Role=Admin, Department=CSR
+    else if (filterCSRAdmin === "true" && department) {
+      query.Role = "Admin";
+      query.Department = "CSR";
+      console.log(`[fetch-users-by-role] Fetching CSR ADMIN for department: ${department}`);
+    }
+
+    // 🔥 FILTER CSR STAFF: Role=Staff, Department=CSR
+    else if (filterCSRStaff === "true" && department) {
+      query.Role = "Staff";
+      query.Department = "CSR";
+      console.log(`[fetch-users-by-role] Fetching CSR STAFF for department: ${department}`);
     }
 
     // FALLBACK: Original role-based fetch
