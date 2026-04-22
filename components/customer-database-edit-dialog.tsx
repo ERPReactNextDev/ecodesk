@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 import {
   Sheet,
@@ -18,6 +20,20 @@ import {
   FieldLabel,
   FieldSet,
 } from "@/components/ui/field";
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 interface EditModalProps {
   isOpen: boolean;
@@ -39,6 +55,75 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
   const [address, setAddress] = useState("");
   const [industry, setIndustry] = useState("");
   const [loading, setLoading] = useState(false);
+
+  /* CLIENT SEGMENT (DYNAMIC FROM DATABASE) */
+  const [clientSegments, setClientSegments] = useState<string[]>([]);
+  const [newIndustry, setNewIndustry] = useState("");
+  const [addingIndustry, setAddingIndustry] = useState(false);
+  const [industryDuplicate, setIndustryDuplicate] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  /* FETCH INDUSTRIES */
+  const fetchIndustries = async () => {
+    try {
+      const res = await fetch("/api/com-fetch-industry");
+      const data = await res.json();
+
+      if (data.success) {
+        setClientSegments(data.data.map((i: any) => i.industry_name));
+      }
+    } catch (err) {
+      console.error("Industry fetch error", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchIndustries();
+  }, []);
+
+  useEffect(() => {
+    const exists = clientSegments.some(
+      (seg) => seg.toLowerCase().trim() === newIndustry.toLowerCase().trim(),
+    );
+    setIndustryDuplicate(exists);
+  }, [newIndustry, clientSegments]);
+
+  /* ADD NEW INDUSTRY */
+  const handleAddIndustry = async () => {
+    if (!newIndustry.trim()) return;
+
+    if (industryDuplicate) {
+      toast.error("Client segment already exists");
+      return;
+    }
+
+    try {
+      setAddingIndustry(true);
+
+      const res = await fetch("/api/com-add-industry", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          industry_name: newIndustry.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) throw new Error(data.error);
+
+      setNewIndustry("");
+      await fetchIndustries();
+      toast.success("Industry added");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to add industry");
+    } finally {
+      setAddingIndustry(false);
+    }
+  };
 
   /* LOAD DATA */
   useEffect(() => {
@@ -242,12 +327,81 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
 
             <Field>
               <FieldLabel>Client Segment</FieldLabel>
-              <FieldContent>
-                <Input
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                />
-              </FieldContent>
+              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between"
+                  >
+                    {industry || "Select client segment"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search client segment..." />
+
+                    <CommandList
+                      className="max-h-[240px] overflow-y-auto overscroll-contain"
+                      style={{ scrollbarWidth: "thin" }}
+                    >
+                      <CommandEmpty>No segment found</CommandEmpty>
+
+                      {clientSegments.map((segment) => (
+                        <CommandItem
+                          key={segment}
+                          value={segment}
+                          onSelect={() => {
+                            setIndustry(segment);
+                            setPopoverOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              industry === segment
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                          {segment}
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+
+                    <div className="border-t p-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add new segment"
+                          value={newIndustry}
+                          onChange={(e) => setNewIndustry(e.target.value)}
+                          className={industryDuplicate ? "border-red-500" : ""}
+                        />
+
+                        <Button
+                          size="sm"
+                          onClick={handleAddIndustry}
+                          disabled={
+                            addingIndustry ||
+                            industryDuplicate ||
+                            !newIndustry.trim()
+                          }
+                        >
+                          {addingIndustry ? "..." : "Add"}
+                        </Button>
+                      </div>
+
+                      {industryDuplicate && (
+                        <p className="text-xs text-red-600">
+                          Client segment already exists
+                        </p>
+                      )}
+                    </div>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </Field>
           </FieldSet>
         </form>
