@@ -469,7 +469,7 @@ const filteredAccounts = accounts
                   {currentAccounts.map((acc) => (
                     <TableRow key={acc.id} className="hover:bg-gray-50">
                       <TableCell className="flex gap-2">
-                        {acc.type_client === "CSR Client" && (
+                        {acc.type_client === "New Client" && (
                           <>
                             <Button
                             className="cursor-pointer"

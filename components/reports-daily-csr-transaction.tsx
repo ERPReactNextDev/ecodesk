@@ -514,7 +514,7 @@ export const DCT: React.FC<TicketProps> = ({
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedGroupedData.map((group) => {
+                                {paginatedGroupedData.map((group, index) => {
                                     const latestActivity = group.activities.reduce((prev, curr) =>
                                         new Date(curr.date_updated) > new Date(prev.date_updated)
                                             ? curr
@@ -523,7 +523,7 @@ export const DCT: React.FC<TicketProps> = ({
 
                                     return (
                                         <tr
-                                            key={group.ticket_reference_number}
+                                            key={`${group.ticket_reference_number}-${index}`}
                                             className="border-b border-gray-200"
                                         >
                                             <td className="p-2">{group.company_name}</td>

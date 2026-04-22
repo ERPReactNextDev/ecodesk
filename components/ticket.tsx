@@ -783,13 +783,13 @@ export const Ticket: React.FC<TicketProps> = ({
             </div>
           ) : (
             <Accordion type="multiple" className="overflow-auto space-y-2 p-2 max-h-[700px]">
-              {displayedCompanies.map((c) => {
+              {displayedCompanies.map((c, index) => {
                 const agentDetails = agents.find((a) => a.ReferenceID === c.referenceid);
                 const fullName = agentDetails
                   ? `${agentDetails.Firstname} ${agentDetails.Lastname}`
                   : "(Unknown Agent)";
                 return (
-                  <AccordionItem key={c.account_reference_number} value={c.account_reference_number}>
+                  <AccordionItem key={`${c.account_reference_number}-${index}`} value={c.account_reference_number}>
                     <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
                       <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
                         <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>

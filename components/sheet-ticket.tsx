@@ -1703,10 +1703,7 @@ export function TicketSheet(props: TicketSheetProps) {
                         .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
                         .map((dh) => ({
                           value: dh.ReferenceID,
-                          label:
-                            dh.ReferenceID === "DT-PH-994793"
-                              ? "Dexter Tan"
-                              : `${dh.Firstname} ${dh.Lastname}`,
+                          label: `${dh.Firstname} ${dh.Lastname}`,
                         }))
                 }
               />
