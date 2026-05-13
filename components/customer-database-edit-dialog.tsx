@@ -132,13 +132,13 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
 
       setContactPersons(
         account.contact_person
-          ? account.contact_person.split(" / ").filter(Boolean)
+          ? account.contact_person.split(", ").filter(Boolean)
           : [""]
       );
 
       setContactNumbers(
         account.contact_number && account.contact_number !== "none"
-          ? account.contact_number.split(" / ").filter(Boolean)
+          ? account.contact_number.split(", ").filter(Boolean)
           : [""]
       );
 
@@ -155,12 +155,12 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
     const joinedPersons = contactPersons
       .map((p) => p.trim())
       .filter(Boolean)
-      .join(" / ");
+      .join(", ");
 
     const joinedNumbers = contactNumbers
       .map((n) => n.trim())
       .filter(Boolean)
-      .join(" / ");
+      .join(", ");
 
     setLoading(true);
     try {

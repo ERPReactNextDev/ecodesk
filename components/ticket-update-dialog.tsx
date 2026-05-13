@@ -943,7 +943,7 @@ export function UpdateTicketDialog({
           contact_person: contactPersons
             .map((p) => `${p.title} ${p.name}`.trim())
             .filter((p) => p !== "")
-            .join(" / "),
+            .join(", "),
           contact_number: contactNumbers
             .map((n) => `${n.countryCode} ${n.number}`.trim())
             .filter((n) => n.replace(/\+\d+/, "").trim())
@@ -951,7 +951,7 @@ export function UpdateTicketDialog({
           email_address: emailAddresses
             .map((e) => e.trim())
             .filter(Boolean)
-            .join(" / "),
+            .join(", "),
           address,
         }),
       });
