@@ -1005,7 +1005,7 @@ export function UpdateTicketDialog({
           <SheetHeader>
             <SheetTitle>Update Activity</SheetTitle>
             <SheetDescription>
-              Fill out the steps to update activity.
+              Fill out the steps to updated activity.
             </SheetDescription>
           </SheetHeader>
 
