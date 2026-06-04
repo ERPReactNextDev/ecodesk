@@ -2074,7 +2074,7 @@ export function TicketSheet(props: TicketSheetProps) {
                 {/* TSA HANDLING */}
                 <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsaHandlingTime)}`}>
                   <Field>
-                    <FieldLabel>TSA Handling Time *</FieldLabel>
+                    <FieldLabel>TSA Handling Time*</FieldLabel>
                     <InputField
                       type="datetime-local"
                       value={tsaHandlingTime}
@@ -2086,11 +2086,11 @@ export function TicketSheet(props: TicketSheetProps) {
                 </div>
 
                 <p className="text-xs text-gray-600 italic">
-                  Note: Either TSM or TSA acknowledgement details must be completed before closing the ticket.
+                  Note: Either TSM or TSA's acknowledgement details must be completed before closing the ticket.
                 </p>
               </div>
 
-              {/* CLOSE REASON */}
+              
               {status === "Closed" && (
                 <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
                   <h4 className="font-semibold text-sm text-red-700">
