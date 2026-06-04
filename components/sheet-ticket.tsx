@@ -621,6 +621,13 @@ export function TicketSheet(props: TicketSheetProps) {
   const [agentsList, setAgentsList] = useState<User[]>([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
   const [loadingAgents, setLoadingAgents] = useState(false);
+
+  // ================= REVERT MODE =================
+  const [revertMode, setRevertMode] = useState(false);
+  const [revertDepartmentHeadsList, setRevertDepartmentHeadsList] = useState<User[]>([]);
+  const [revertManagersList, setRevertManagersList] = useState<User[]>([]);
+  const [revertAgentsList, setRevertAgentsList] = useState<User[]>([]);
+  const [loadingRevert, setLoadingRevert] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [errorActivities, setErrorActivities] = useState<string | null>(null);
@@ -823,6 +830,55 @@ export function TicketSheet(props: TicketSheetProps) {
       .catch(() => setAgentsList([]))
       .finally(() => setLoadingAgents(false));
   }, [department, department_head, manager, agent]);
+
+  // ================= FETCH REVERT MODE USERS =================
+  useEffect(() => {
+    if (!revertMode) return;
+
+    setLoadingRevert(true);
+
+    Promise.all([
+      // All managers (Role=Manager, any department) as department heads
+      fetch(`/api/fetch-users-by-role?filterDepartmentHeads=true&department=${encodeURIComponent(department || "Sales")}`)
+        .then((r) => r.json())
+        .then((j) => {
+          // Fetch ALL department heads across common departments
+          return Promise.all(
+            ["Sales", "Business Development", "Marketing", "E-Commerce", "CSR", "Accounting", "Engineering", "Procurement", "Warehouse", "Human Resources"].map((dept) =>
+              fetch(`/api/fetch-users-by-role?filterDepartmentHeads=true&department=${encodeURIComponent(dept)}`)
+                .then((r) => r.json())
+                .then((j) => j.data || [])
+                .catch(() => [])
+            )
+          ).then((results) => {
+            const all: User[] = results.flat();
+            // Deduplicate by ReferenceID
+            const seen = new Set<string>();
+            return all.filter((u) => {
+              if (seen.has(u.ReferenceID)) return false;
+              seen.add(u.ReferenceID);
+              return true;
+            });
+          });
+        }),
+      // All TSM (Territory Sales Manager)
+      fetch(`/api/fetch-users-by-role?role=Territory Sales Manager`)
+        .then((r) => r.json())
+        .then((j) => j.data || [])
+        .catch(() => []),
+      // All TS Associates
+      fetch(`/api/fetch-users-by-role?role=Territory Sales Associate`)
+        .then((r) => r.json())
+        .then((j) => j.data || [])
+        .catch(() => []),
+    ])
+      .then(([dhs, mgrs, agts]) => {
+        setRevertDepartmentHeadsList(dhs as User[]);
+        setRevertManagersList(mgrs as User[]);
+        setRevertAgentsList(agts as User[]);
+      })
+      .finally(() => setLoadingRevert(false));
+  }, [revertMode, department]);
 
   // ================= FETCH ACTIVITIES =================
   const fetchActivities = useCallback(() => {
@@ -1737,8 +1793,25 @@ export function TicketSheet(props: TicketSheetProps) {
         <>
           <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
 
-          {/* DEPARTMENT HEAD - Hidden for Marketing and CSR departments */}
-          {department !== "Marketing" && department !== "CSR" && (
+          {/* REVERT CASE BUTTON */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-gray-500">
+              {revertMode
+                ? "Revert mode: All fields are freely selectable."
+                : "Normal mode: Fields depend on department hierarchy."}
+            </p>
+            <Button
+              variant={revertMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setRevertMode((prev) => !prev)}
+              className={`cursor-pointer text-xs ${revertMode ? "bg-orange-500 hover:bg-orange-600 text-white" : "border-orange-400 text-orange-600 hover:bg-orange-50"}`}
+            >
+              {revertMode ? "Exit Revert Mode" : "Revert Case"}
+            </Button>
+          </div>
+
+          {/* DEPARTMENT HEAD - Hidden for Marketing and CSR departments (normal mode only) */}
+          {(revertMode || (department !== "Marketing" && department !== "CSR")) && (
             <Field>
               <FieldLabel>Department Head</FieldLabel>
               <FieldDescription>Please select the department head responsible.</FieldDescription>
@@ -1747,21 +1820,30 @@ export function TicketSheet(props: TicketSheetProps) {
                 onChange={setDepartmentHead}
                 placeholder="Select Department Head"
                 options={
-                  loadingDepartmentHeads
-                    ? [{ value: "__loading__", label: "Loading department heads..." }]
-                    : departmentHeadsList
-                        .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
-                        .map((dh) => ({
-                          value: dh.ReferenceID,
-                          label: `${dh.Firstname} ${dh.Lastname}`,
-                        }))
+                  revertMode
+                    ? loadingRevert
+                      ? [{ value: "__loading__", label: "Loading..." }]
+                      : revertDepartmentHeadsList
+                          .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
+                          .map((dh) => ({
+                            value: dh.ReferenceID,
+                            label: `${dh.Firstname} ${dh.Lastname}`,
+                          }))
+                    : loadingDepartmentHeads
+                      ? [{ value: "__loading__", label: "Loading department heads..." }]
+                      : departmentHeadsList
+                          .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
+                          .map((dh) => ({
+                            value: dh.ReferenceID,
+                            label: `${dh.Firstname} ${dh.Lastname}`,
+                          }))
                 }
               />
             </Field>
           )}
 
-          {/* MANAGER - Hidden for Sette Hosena (SH-NCR-560908) special case */}
-          {department_head !== "SH-NCR-560908" && (
+          {/* MANAGER - Hidden for Sette Hosena (SH-NCR-560908) special case (normal mode only) */}
+          {(revertMode || department_head !== "SH-NCR-560908") && (
             <Field>
               <FieldLabel>Manager</FieldLabel>
               <FieldDescription>Select the manager responsible for this task or client.</FieldDescription>
@@ -1769,25 +1851,38 @@ export function TicketSheet(props: TicketSheetProps) {
                 value={manager}
                 onChange={(value) => {
                   setManager(value);
-                  setAgent("");
+                  if (!revertMode) setAgent("");
                 }}
                 placeholder="Select a Manager"
                 options={
-                  loadingManagers
-                    ? [{ value: "__loading__", label: "Loading managers..." }]
-                    : (() => {
-                        const baseOptions = managersList.map((m) => ({
-                          value: m.ReferenceID,
-                          label: `${m.Firstname} ${m.Lastname}`,
-                        }));
-                        if (manager && !baseOptions.some((o) => o.value === manager)) {
-                          baseOptions.push({
-                            value: manager,
-                            label: `${manager} (Loading...)`,
-                          });
-                        }
-                        return baseOptions;
-                      })()
+                  revertMode
+                    ? loadingRevert
+                      ? [{ value: "__loading__", label: "Loading..." }]
+                      : (() => {
+                          const baseOptions = revertManagersList.map((m) => ({
+                            value: m.ReferenceID,
+                            label: `${m.Firstname} ${m.Lastname}`,
+                          }));
+                          if (manager && !baseOptions.some((o) => o.value === manager)) {
+                            baseOptions.push({ value: manager, label: `${manager} (Loading...)` });
+                          }
+                          return baseOptions;
+                        })()
+                    : loadingManagers
+                      ? [{ value: "__loading__", label: "Loading managers..." }]
+                      : (() => {
+                          const baseOptions = managersList.map((m) => ({
+                            value: m.ReferenceID,
+                            label: `${m.Firstname} ${m.Lastname}`,
+                          }));
+                          if (manager && !baseOptions.some((o) => o.value === manager)) {
+                            baseOptions.push({
+                              value: manager,
+                              label: `${manager} (Loading...)`,
+                            });
+                          }
+                          return baseOptions;
+                        })()
                 }
               />
             </Field>
@@ -1795,7 +1890,8 @@ export function TicketSheet(props: TicketSheetProps) {
 
           {/* AGENT */}
           {wrapUp !== "Job Applicants" &&
-            (department === "Sales" ||
+            (revertMode ||
+              department === "Sales" ||
               department === "Business Development" ||
               department === "Marketing" ||
               department === "E-Commerce" ||
@@ -1814,31 +1910,51 @@ export function TicketSheet(props: TicketSheetProps) {
                     value={agent}
                     onChange={setAgent}
                     placeholder="Select an Agent"
-                    disabled={!manager && department_head !== "SH-NCR-560908"}
+                    disabled={!revertMode && !manager && department_head !== "SH-NCR-560908"}
                     options={
-                      loadingAgents
-                        ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
-                        : (() => {
-                            const baseOptions = agentsList.map((a) => ({
-                              value: a.ReferenceID,
-                              label: `${a.Firstname} ${a.Lastname}${
-                                a.Connection === "Online"
-                                  ? " 🟢"
-                                  : a.Connection === "Offline"
-                                    ? " ⚫"
-                                    : " ⚫"
-                              }`,
-                              disabled: a.Connection !== "Online",
-                            }));
-                            if (agent && !baseOptions.some((o) => o.value === agent)) {
-                              baseOptions.push({
-                                value: agent,
-                                label: `${agent} (Loading...)`,
+                      revertMode
+                        ? loadingRevert
+                          ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
+                          : (() => {
+                              const baseOptions = revertAgentsList.map((a) => ({
+                                value: a.ReferenceID,
+                                label: `${a.Firstname} ${a.Lastname}${
+                                  a.Connection === "Online" ? " 🟢" : " ⚫"
+                                }`,
                                 disabled: false,
-                              });
-                            }
-                            return baseOptions;
-                          })()
+                              }));
+                              if (agent && !baseOptions.some((o) => o.value === agent)) {
+                                baseOptions.push({
+                                  value: agent,
+                                  label: `${agent} (Loading...)`,
+                                  disabled: false,
+                                });
+                              }
+                              return baseOptions;
+                            })()
+                        : loadingAgents
+                          ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
+                          : (() => {
+                              const baseOptions = agentsList.map((a) => ({
+                                value: a.ReferenceID,
+                                label: `${a.Firstname} ${a.Lastname}${
+                                  a.Connection === "Online"
+                                    ? " 🟢"
+                                    : a.Connection === "Offline"
+                                      ? " ⚫"
+                                      : " ⚫"
+                                }`,
+                                disabled: a.Connection !== "Online",
+                              }));
+                              if (agent && !baseOptions.some((o) => o.value === agent)) {
+                                baseOptions.push({
+                                  value: agent,
+                                  label: `${agent} (Loading...)`,
+                                  disabled: false,
+                                });
+                              }
+                              return baseOptions;
+                            })()
                     }
                   />
                 </div>
