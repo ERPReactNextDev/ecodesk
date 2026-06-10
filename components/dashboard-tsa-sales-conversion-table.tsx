@@ -45,6 +45,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showOnlyHighlighted, setShowOnlyHighlighted] = useState(true);
 
   useEffect(() => {
     async function fetchAgents() {
@@ -218,15 +219,23 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
       .map((a) => {
         const avg = (arr: number[]) =>
           arr.length > 0 ? arr.reduce((sum, t) => sum + t, 0) / arr.length : 0;
+        const avgResponseTime = avg(a.responseTimes);
+        const avgQuotationHandlingTime = avg(a.quotationHandlingTimes);
+        const avgNonQuotationHandlingTime = avg(a.nonQuotationHandlingTimes);
+        const isHighlighted = avgResponseTime >= (10 / 60) ||
+                               avgQuotationHandlingTime >= 4 ||
+                               avgNonQuotationHandlingTime >= 8;
         return {
           ...a,
-          avgResponseTime: avg(a.responseTimes),
-          avgQuotationHandlingTime: avg(a.quotationHandlingTimes),
-          avgNonQuotationHandlingTime: avg(a.nonQuotationHandlingTimes),
+          avgResponseTime,
+          avgQuotationHandlingTime,
+          avgNonQuotationHandlingTime,
           avgSPFHandlingTime: avg(a.spfHandlingTimes),
+          isHighlighted,
         };
-      });
-  }, [activities, agents, dateCreatedFilterRange, searchTerm]);
+      })
+      .filter((a) => !showOnlyHighlighted || !a.isHighlighted);
+  }, [activities, agents, dateCreatedFilterRange, searchTerm, showOnlyHighlighted]);
 
   const formatHoursToHMS = (hours: number) => {
     const totalSeconds = Math.round(hours * 3600); // ROUND instead of floor
@@ -234,6 +243,16 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const shouldHighlightRow = (avgResponseTime: number, avgQuotationHandlingTime: number, avgNonQuotationHandlingTime: number) => {
+    const TSA_RESPONSE_THRESHOLD = 10 / 60; // 0:10:00 in hours
+    const QUOTATION_HT_THRESHOLD = 4; // 4:00:00 in hours
+    const NON_QUOTATION_HT_THRESHOLD = 8; // 8:00:00 in hours
+
+    return avgResponseTime >= TSA_RESPONSE_THRESHOLD ||
+           avgQuotationHandlingTime >= QUOTATION_HT_THRESHOLD ||
+           avgNonQuotationHandlingTime >= NON_QUOTATION_HT_THRESHOLD;
   };
 
   const totalSales = groupedAgents.reduce((sum, a) => sum + a.salesCount, 0);
@@ -265,7 +284,9 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   downloadCSV() {
     if (!groupedAgents || groupedAgents.length === 0) return;
 
-    const rows = groupedAgents.map((a, index) => {
+    const filteredData = groupedAgents.filter((a) => !showOnlyHighlighted || !a.isHighlighted);
+
+    const rows = filteredData.map((a, index) => {
       const inquiryToSalesPercent =
         a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
 
@@ -373,13 +394,24 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <CardTitle>Agent's and Other Users</CardTitle>
-        <input
-          type="text"
-          placeholder="Search Agent..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="border rounded-md px-3 py-1 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+          <input
+            type="text"
+            placeholder="Search Agent..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border rounded-md px-3 py-1 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showOnlyHighlighted}
+              onChange={(e) => setShowOnlyHighlighted(e.target.checked)}
+              className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+            />
+            Do not show highlighted
+          </label>
+        </div>
       </CardHeader>
 
       <CardContent>
@@ -439,9 +471,9 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
               {groupedAgents.map((a, index) => {
                 const inquiryToSalesPercent = a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
                 return (
-                  <TableRow key={a.agentName}>
+                  <TableRow key={a.agentName} className={`${a.isHighlighted ? "bg-red-100 hover:bg-red-200" : ""} group`}>
                     <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
-                    <TableCell className="sticky left-[20px] bg-white z-20 uppercase border-r">{a.agentName}</TableCell>
+                    <TableCell className={`sticky left-[20px] z-20 uppercase border-r ${a.isHighlighted ? "bg-red-100 group-hover:bg-red-200" : "bg-white"}`}>{a.agentName}</TableCell>
                     <TableCell>{a.salesCount}</TableCell>
                     <TableCell>{a.nonSalesCount}</TableCell>
                     <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>

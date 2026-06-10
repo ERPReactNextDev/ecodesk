@@ -725,7 +725,7 @@ export const Ticket: React.FC<TicketProps> = ({
           </div>
         </CardHeader>
 
-        <CardContent className="p-0 flex flex-col flex-grow overflow-hidden">
+        <CardContent className="p-0 flex flex-col overflow-hidden">
           <Input
             type="search"
             placeholder="Search company, email, contact, person..."
