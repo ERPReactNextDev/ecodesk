@@ -1,4 +1,4 @@
-"use client";
+"use client"; //ticket history outbound
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
