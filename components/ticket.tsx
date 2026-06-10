@@ -275,9 +275,9 @@ export const Ticket: React.FC<TicketProps> = ({
   const sortableFields = [
     "source_company", "source", "wrap_up", "traffic", "department",
     "channel", "customer_status", "customer_type", "remarks", "status",
-    "date_created", "date_updated",
+    "date_created",
   ];
-  const [sortField, setSortField] = useState<string>("date_updated");
+  const [sortField, setSortField] = useState<string>("date_created");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [exporting, setExporting] = useState(false);
