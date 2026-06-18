@@ -334,75 +334,21 @@ export function AddCompanyModal({
   >([]);
 
   const [duplicate, setDuplicate] = useState({ contact: false });
+  const [companyExists, setCompanyExists] = useState(false);
 
-  /* CLIENT SEGMENT (DYNAMIC FROM DATABASE) */
-  const [clientSegments, setClientSegments] = useState<string[]>([]);
-  const [newIndustry, setNewIndustry] = useState("");
-  const [addingIndustry, setAddingIndustry] = useState(false);
-  const [industryDuplicate, setIndustryDuplicate] = useState(false);
-
-  /* FETCH INDUSTRIES */
-  const fetchIndustries = async () => {
-    try {
-      const res = await fetch("/api/com-fetch-industry");
-      const data = await res.json();
-
-      if (data.success) {
-        setClientSegments(data.data.map((i: any) => i.industry_name));
-      }
-    } catch (err) {
-      console.error("Industry fetch error", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchIndustries();
-  }, []);
-  useEffect(() => {
-    const exists = clientSegments.some(
-      (seg) => seg.toLowerCase().trim() === newIndustry.toLowerCase().trim(),
-    );
-
-    setIndustryDuplicate(exists);
-  }, [newIndustry, clientSegments]);
-  /* ADD NEW INDUSTRY */
-  const handleAddIndustry = async () => {
-    if (!newIndustry.trim()) return;
-
-    if (industryDuplicate) {
-      toast.error("Client segment already exists");
-      return;
-    }
-
-    try {
-      setAddingIndustry(true);
-
-      const res = await fetch("/api/com-add-industry", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          industry_name: newIndustry.trim(),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) throw new Error(data.error);
-
-      setNewIndustry("");
-
-      await fetchIndustries();
-
-      toast.success("Industry added");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to add industry");
-    } finally {
-      setAddingIndustry(false);
-    }
-  };
+  /* CLIENT SEGMENT (HARDCODED) */
+  const clientSegments = [
+    "Technology / Manufacturing / Telco / Data Center/ Agriculture",
+    "Healthcare/ Education - Private",
+    "Construction/ Real Estate",
+    "Energy / Mining",
+    "Finance/ Commercial/ Hospitality/ Retail",
+    "Government / LGU - Retrofit",
+    "Government/ Infra",
+    "Trading / Individual - Reseller/ Dealer/Influencer/ End User",
+    "Distributorship",
+    "Transportation",
+  ];
   const genders = ["Male", "Female"];
 
   /* FETCH EXISTING COMPANIES */
@@ -460,6 +406,15 @@ export function AddCompanyModal({
     existingCompanies,
   ]);
 
+  /* COMPANY NAME EXISTENCE CHECK */
+  useEffect(() => {
+    const name = formData.company_name.toLowerCase().trim();
+    const exists = existingCompanies.some(
+      (c) => c.company_name === name
+    );
+    setCompanyExists(exists);
+  }, [formData.company_name, existingCompanies]);
+
   const isFormValid = () => {
     const hasAnyInput =
       formData.company_name.trim() ||
@@ -476,7 +431,7 @@ export function AddCompanyModal({
     if (!hasAnyInput) return false;
     if (!emailValid) return false;
 
-    // ❌ IMPORTANT: block save if duplicate
+    // ❌ IMPORTANT: block save if exact duplicate (all fields match)
     if (duplicate.contact) return false;
 
     return true;
@@ -611,6 +566,7 @@ date_created: new Date().toISOString(),
     setContactNumbers([{ countryCode: "+63", number: "" }]);
     setEmailAddresses([""]);
     setDuplicate({ contact: false });
+    setCompanyExists(false);
     setContactPersons([{ title: "Mr.", name: "" }]);
   };
 
@@ -902,36 +858,6 @@ date_created: new Date().toISOString(),
                         </CommandItem>
                       ))}
                     </CommandList>
-
-                    {/* ADD NEW SEGMENT */}
-                    <div className="p-2 border-t flex flex-col gap-1">
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Add new segment"
-                          value={newIndustry}
-                          onChange={(e) => setNewIndustry(e.target.value)}
-                          className={industryDuplicate ? "border-red-500" : ""}
-                        />
-
-                        <Button
-                          size="sm"
-                          onClick={handleAddIndustry}
-                          disabled={
-                            addingIndustry ||
-                            industryDuplicate ||
-                            !newIndustry.trim()
-                          }
-                        >
-                          {addingIndustry ? "..." : "Add"}
-                        </Button>
-                      </div>
-
-                      {industryDuplicate && (
-                        <p className="text-xs text-red-600">
-                          Client segment already exists
-                        </p>
-                      )}
-                    </div>
                   </Command>
                 </PopoverContent>
               </Popover>
