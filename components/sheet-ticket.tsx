@@ -1057,7 +1057,7 @@ export function TicketSheet(props: TicketSheetProps) {
   const [tsmTimeError, setTsmTimeError] = useState<string | null>(null);
   const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
   const [inquiryTimeError, setInquiryTimeError] = useState<string | null>(null);
-  const isManagerRequiredButMissing = managersAvailable > 0 && !manager;
+  const isManagerRequiredButMissing = !revertMode && managersAvailable > 0 && !manager;
   const [highlightAgent, setHighlightAgent] = useState(false);
   const [agentReassigned, setAgentReassigned] = useState(false);
 
