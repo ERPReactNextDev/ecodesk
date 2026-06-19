@@ -1095,7 +1095,10 @@ const [formData, setFormData] = useState<FormData>({
                   <PopoverContent className="w-full p-0">
                     <Command>
                       <CommandInput placeholder="Search industry..." />
-                      <CommandList className="max-h-[240px] overflow-y-auto">
+                      <CommandList
+  className="max-h-[240px] overflow-y-auto"
+  onWheel={(e) => e.stopPropagation()}
+  onTouchMove={(e) => e.stopPropagation()}>
                         <CommandEmpty>No industry found</CommandEmpty>
                         {INDUSTRY_OPTIONS.map((industry) => (
                           <CommandItem
