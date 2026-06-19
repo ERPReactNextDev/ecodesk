@@ -106,7 +106,6 @@ function formatByType(value: string, type: string) {
       return formatPhMobile(value);
     case "+44":
       return formatLandlineNumber(value);
-    case "+1":
     case "+86":
       return formatIntlNumber(value, type);
     case "+81":
@@ -269,7 +268,7 @@ const [formData, setFormData] = useState<FormData>({
   };
 
   const isFormValid = () => {
-    // Required fields: company_name, contact_number, contact_person, email_address, industry, remarks
+    // Required fields: company_name, contact_number, contact_person, email_address, industry, type_client, remarks
     const hasCompanyName = formData.company_name.trim() !== "";
     const hasContactNumber = formData.contact_number.some((n) => n.trim() !== "");
     const hasContactPerson = formData.contact_person.some((p) => p.trim() !== "");
@@ -278,6 +277,7 @@ const [formData, setFormData] = useState<FormData>({
       return trimmed !== "" && isValidEmail(trimmed);
     });
     const hasIndustry = formData.industry.trim() !== "";
+    const hasTypeClient = formData.type_client.trim() !== "";
     const hasRemarks = formData.remarks.trim() !== "";
     
     // Check for invalid special characters (commas) in array fields
@@ -285,7 +285,7 @@ const [formData, setFormData] = useState<FormData>({
     const hasInvalidContactNumber = formData.contact_number.some((n) => n.trim() !== "" && hasInvalidSpecialCharacters(n));
     const hasInvalidEmail = formData.email_address.some((e) => e.trim() !== "" && hasInvalidSpecialCharacters(e));
     
-    return hasCompanyName && hasContactNumber && hasContactPerson && hasValidEmail && hasIndustry && hasRemarks && !hasInvalidContactPerson && !hasInvalidContactNumber && !hasInvalidEmail;
+    return hasCompanyName && hasContactNumber && hasContactPerson && hasValidEmail && hasIndustry && hasTypeClient && hasRemarks && !hasInvalidContactPerson && !hasInvalidContactNumber && !hasInvalidEmail;
   };
 
   const handleAddContactPerson = () => {
@@ -736,7 +736,7 @@ const [formData, setFormData] = useState<FormData>({
           <TabsContent value="user-info" className="space-y-4 mt-4">
             <div className="space-y-3">
               <div>
-                <Label className="text-sm font-medium">Company Name *</Label>
+                <Label className="text-sm font-medium">Company Name <span className="text-red-500">*</span></Label>
                 <Input
                   placeholder="Enter the official registered name of the company."
                   value={formData.company_name}
@@ -772,7 +772,7 @@ const [formData, setFormData] = useState<FormData>({
 
               <div>
                 <Label className="text-sm font-medium">
-                  Contact Person(s) *
+                  Contact Person(s) <span className="text-red-500">*</span>
                 </Label>
                 <div className="space-y-2 mt-1">
                   {formData.contact_person.map((person, idx) => (
@@ -823,7 +823,7 @@ const [formData, setFormData] = useState<FormData>({
 
               <div>
                 <Label className="text-sm font-medium">
-                  Contact Number(s) *
+                  Contact Number(s) <span className="text-red-500">*</span>
                 </Label>
                 <div className="space-y-2 mt-1">
                   {formData.contact_number.map((number, idx) => (
@@ -851,8 +851,7 @@ const [formData, setFormData] = useState<FormData>({
                               ? "(0XX) XXXX-XXX"
                               : contactNumberTypes[idx] === "+81"
                               ? "Enter any value"
-                              : contactNumberTypes[idx] === "+1" ||
-                                contactNumberTypes[idx] === "+86"
+                              : contactNumberTypes[idx] === "+86"
                               ? "+CC XXX XXX XXXX XXX"
                               : "09XX-XXX-XXXX"
                           }
@@ -911,7 +910,7 @@ const [formData, setFormData] = useState<FormData>({
 
               <div>
                 <Label className="text-sm font-medium">
-                  Email Address(es) *
+                  Email Address(es) <span className="text-red-500">*</span>
                 </Label>
                 <div className="space-y-2 mt-1">
                   {formData.email_address.map((email, idx) => (
@@ -1032,7 +1031,7 @@ const [formData, setFormData] = useState<FormData>({
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">
-                  Type of Client <span className="text-xs text-gray-500">(optional)</span>
+                  Type of Client <span className="text-xs text-red-500">*</span>
                 </Label>
                 <div className="grid grid-cols-2 gap-3 mt-2">
                   {TYPE_CLIENT_OPTIONS.map((type) => (
