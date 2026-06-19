@@ -147,6 +147,16 @@ function isValidEmail(email: string): boolean {
   return true;
 }
 
+// Validate that array field doesn't contain special characters (commas and forward slashes)
+function hasInvalidSpecialCharacters(value: string): boolean {
+  return /[,/]/.test(value);
+}
+
+// Filter out special characters (commas and forward slashes) from input
+function filterSpecialCharacters(value: string): string {
+  return value.replace(/[,/]/g, '');
+}
+
 const REGION_OPTIONS = [
   "Ilocos Region",
   "Cagayan Valley",
@@ -270,7 +280,12 @@ const [formData, setFormData] = useState<FormData>({
     const hasIndustry = formData.industry.trim() !== "";
     const hasRemarks = formData.remarks.trim() !== "";
     
-    return hasCompanyName && hasContactNumber && hasContactPerson && hasValidEmail && hasIndustry && hasRemarks;
+    // Check for invalid special characters (commas) in array fields
+    const hasInvalidContactPerson = formData.contact_person.some((p) => p.trim() !== "" && hasInvalidSpecialCharacters(p));
+    const hasInvalidContactNumber = formData.contact_number.some((n) => n.trim() !== "" && hasInvalidSpecialCharacters(n));
+    const hasInvalidEmail = formData.email_address.some((e) => e.trim() !== "" && hasInvalidSpecialCharacters(e));
+    
+    return hasCompanyName && hasContactNumber && hasContactPerson && hasValidEmail && hasIndustry && hasRemarks && !hasInvalidContactPerson && !hasInvalidContactNumber && !hasInvalidEmail;
   };
 
   const handleAddContactPerson = () => {
@@ -292,7 +307,7 @@ const [formData, setFormData] = useState<FormData>({
     setFormData((prev) => ({
       ...prev,
       contact_person: prev.contact_person.map((p, i) =>
-        i === index ? value : p
+        i === index ? filterSpecialCharacters(value) : p
       ),
     }));
   };
@@ -317,7 +332,7 @@ const [formData, setFormData] = useState<FormData>({
   const handleContactNumberChange = (index: number, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      contact_number: prev.contact_number.map((n, i) => (i === index ? value : n)),
+      contact_number: prev.contact_number.map((n, i) => (i === index ? filterSpecialCharacters(value) : n)),
     }));
   };
 
@@ -340,7 +355,7 @@ const [formData, setFormData] = useState<FormData>({
     setFormData((prev) => ({
       ...prev,
       email_address: prev.email_address.map((e, i) =>
-        i === index ? value : e
+        i === index ? filterSpecialCharacters(value) : e
       ),
     }));
   };
@@ -359,6 +374,18 @@ const [formData, setFormData] = useState<FormData>({
     if (invalidEmails.length > 0) {
       toast.error(
         "Invalid email address(es). Please use valid email addresses."
+      );
+      return;
+    }
+
+    // Validate special characters (commas and forward slashes) in array fields
+    const invalidContactPerson = formData.contact_person.filter((p) => p.trim() !== "" && hasInvalidSpecialCharacters(p));
+    const invalidContactNumber = formData.contact_number.filter((n) => n.trim() !== "" && hasInvalidSpecialCharacters(n));
+    const invalidEmailChars = formData.email_address.filter((e) => e.trim() !== "" && hasInvalidSpecialCharacters(e));
+
+    if (invalidContactPerson.length > 0 || invalidContactNumber.length > 0 || invalidEmailChars.length > 0) {
+      toast.error(
+        "Special characters (commas and forward slashes) are not allowed in array fields. Please remove them."
       );
       return;
     }
@@ -532,6 +559,18 @@ const [formData, setFormData] = useState<FormData>({
     if (invalidEmails.length > 0) {
       toast.error(
         "Invalid email address(es). Please use valid email addresses."
+      );
+      return;
+    }
+
+    // Validate special characters (commas and forward slashes) in array fields
+    const invalidContactPerson = formData.contact_person.filter((p) => p.trim() !== "" && hasInvalidSpecialCharacters(p));
+    const invalidContactNumber = formData.contact_number.filter((n) => n.trim() !== "" && hasInvalidSpecialCharacters(n));
+    const invalidEmailChars = formData.email_address.filter((e) => e.trim() !== "" && hasInvalidSpecialCharacters(e));
+
+    if (invalidContactPerson.length > 0 || invalidContactNumber.length > 0 || invalidEmailChars.length > 0) {
+      toast.error(
+        "Special characters (commas and forward slashes) are not allowed in array fields. Please remove them."
       );
       return;
     }
@@ -744,7 +783,12 @@ const [formData, setFormData] = useState<FormData>({
                         onChange={(e) =>
                           handleContactPersonChange(idx, e.target.value)
                         }
-                        className="flex-1"
+                        className={cn(
+                          "flex-1",
+                          person.trim() !== "" && hasInvalidSpecialCharacters(person)
+                            ? "border-red-500 bg-red-50"
+                            : ""
+                        )}
                       />
                       {formData.contact_person.length > 1 && (
                         <Button
@@ -767,6 +811,13 @@ const [formData, setFormData] = useState<FormData>({
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Add Contact Person
                   </Button>
+                  {formData.contact_person.some(
+                    (p) => p.trim() !== "" && hasInvalidSpecialCharacters(p)
+                  ) && (
+                    <p className="text-xs text-red-600">
+                      Special characters (commas and forward slashes) are not allowed.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -820,7 +871,12 @@ const [formData, setFormData] = useState<FormData>({
                               ? undefined
                               : 20
                           }
-                          className="flex-1"
+                          className={cn(
+                            "flex-1",
+                            number.trim() !== "" && hasInvalidSpecialCharacters(number)
+                              ? "border-red-500 bg-red-50"
+                              : ""
+                          )}
                         />
                       {formData.contact_number.length > 1 && (
                         <Button
@@ -843,6 +899,13 @@ const [formData, setFormData] = useState<FormData>({
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Add Contact Number
                   </Button>
+                  {formData.contact_number.some(
+                    (n) => n.trim() !== "" && hasInvalidSpecialCharacters(n)
+                  ) && (
+                    <p className="text-xs text-red-600">
+                      Special characters (commas and forward slashes) are not allowed.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -860,7 +923,7 @@ const [formData, setFormData] = useState<FormData>({
                         onChange={(e) => handleEmailChange(idx, e.target.value)}
                         className={cn(
                           "flex-1",
-                          email.trim() !== "" && !isValidEmail(email.trim())
+                          email.trim() !== "" && (!isValidEmail(email.trim()) || hasInvalidSpecialCharacters(email))
                             ? "border-red-500 bg-red-50"
                             : ""
                         )}
@@ -891,6 +954,13 @@ const [formData, setFormData] = useState<FormData>({
                   ) && (
                     <p className="text-xs text-red-600">
                       Invalid email address. Placeholder emails (none@, na@, test@, etc.) are not accepted.
+                    </p>
+                  )}
+                  {formData.email_address.some(
+                    (e) => e.trim() !== "" && hasInvalidSpecialCharacters(e)
+                  ) && (
+                    <p className="text-xs text-red-600">
+                      Special characters (commas and forward slashes) are not allowed.
                     </p>
                   )}
                 </div>
