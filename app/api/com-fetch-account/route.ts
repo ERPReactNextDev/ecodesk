@@ -11,7 +11,7 @@ const Xchire_sql = neon(Xchire_databaseUrl);
 
 export async function GET(req: Request) {
   try {
-    // Fetch all accounts excluding Removed
+    // Fetch active accounts only
     // CSR Client first, then alphabetical by company_name
     const Xchire_fetch = await Xchire_sql`
       SELECT 
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
         status,
         date_created -- ✅ REQUIRED FOR "NEW" BADGE
       FROM accounts
-      WHERE status IS DISTINCT FROM 'Removed'
+      WHERE status = 'Active'
       ORDER BY 
         CASE 
           WHEN type_client = 'CSR Client' THEN 0
