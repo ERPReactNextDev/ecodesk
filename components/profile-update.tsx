@@ -73,7 +73,7 @@ export default function ProfileClient() {
         const data = await res.json();
 
         setUserDetails({
-          id: data._id || "",
+          id: data.UserId || "",
           Firstname: data.Firstname || "",
           Lastname: data.Lastname || "",
           Email: data.Email || "",
@@ -208,7 +208,10 @@ export default function ProfileClient() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to update profile");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update profile");
+      }
 
       toast.success("Profile updated successfully");
 

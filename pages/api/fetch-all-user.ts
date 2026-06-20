@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { connectToDatabase } from "@/lib/mongodb";
+import { supabase } from "@/lib/supabase";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -8,7 +8,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const db = await connectToDatabase();
     const referenceId = req.query.id as string; // This is the TSM ReferenceID passed as query param
 
     if (!referenceId) {
@@ -16,19 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Fetch all agents whose TSM field matches the provided ReferenceID
-    const agents = await db
-      .collection("users")
-      .find({ TSM: referenceId })
-      .project({
-        Firstname: 1,
-        Lastname: 1,
-        ReferenceID: 1,
-        profilePicture: 1,
-        _id: 0,
-      })
-      .toArray();
+    const { data: agents, error } = await supabase
+      .from("users")
+      .select("Firstname, Lastname, ReferenceID, profilePicture")
+      .eq("TSM", referenceId);
 
-    if (agents.length === 0) {
+    if (error || !agents || agents.length === 0) {
       return res.status(404).json({ error: "No agents found for this TSM" });
     }
 

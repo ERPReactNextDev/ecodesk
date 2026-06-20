@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { connectToDatabase } from "@/lib/mongodb";
+import { supabase } from "@/lib/supabase";
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,93 +12,79 @@ export default async function handler(
   const { role, department, manager, tsm, currentUser, filterDepartmentHeads, filterManagers, filterAgents, filterMarketingManagers, filterMarketingAgents, filterAgentsByTSM, filterCSRAdmin, filterCSRStaff } = req.query;
 
   try {
-    const db = await connectToDatabase();
-
-    const query: any = {
-      Status: "Active",
-    };
+    let query = supabase
+      .from("users")
+      .select("*")
+      .eq("Status", "Active");
 
     // 🔥 FILTER DEPARTMENT HEADS: Department=X, Role=Manager
     if (filterDepartmentHeads === "true" && department) {
-      query.Role = "Manager";
-      query.Department = String(department);
+      query = query.eq("Role", "Manager").eq("Department", String(department));
       console.log(`[fetch-users-by-role] Fetching DEPARTMENT HEADS for department: ${department}`);
     }
 
     // 🔥 FILTER MANAGERS (TSM): Role=Territory Sales Manager, Manager=departmentHead
     else if (filterManagers === "true" && manager) {
-      query.Role = "Territory Sales Manager";
-      query.Manager = String(manager);
+      query = query.eq("Role", "Territory Sales Manager").eq("Manager", String(manager));
       console.log(`[fetch-users-by-role] Fetching MANAGERS (TSM) under department head: ${manager}`);
     }
 
     // 🔥 FILTER AGENTS (TS Associate): Role=Territory Sales Associate, TSM=manager
     else if (filterAgents === "true" && tsm) {
-      query.Role = "Territory Sales Associate";
-      query.TSM = String(tsm);
+      query = query.eq("Role", "Territory Sales Associate").eq("TSM", String(tsm));
       console.log(`[fetch-users-by-role] Fetching AGENTS (TS Associate) under TSM: ${tsm}`);
     }
 
     // 🔥 FILTER MARKETING MANAGERS: Department=Marketing, Role=Manager
     else if (filterMarketingManagers === "true" && department) {
-      query.Role = "Manager";
-      query.Department = String(department);
+      query = query.eq("Role", "Manager").eq("Department", String(department));
       console.log(`[fetch-users-by-role] Fetching MARKETING MANAGERS for department: ${department}`);
     }
 
     // 🔥 FILTER MARKETING AGENTS: Department=Marketing, Role != Manager
     else if (filterMarketingAgents === "true" && department && manager) {
-      query.Department = String(department);
-      query.Role = { $ne: "Manager" };
+      query = query.eq("Department", String(department)).neq("Role", "Manager");
       console.log(`[fetch-users-by-role] Fetching MARKETING AGENTS for department: ${department}, under manager: ${manager}`);
     }
 
     // 🔥 FILTER AGENTS BY TSM: For special cases like Sette Hosena who is Manager with no TSM
     else if (filterAgentsByTSM === "true" && tsm) {
-      query.Role = "Territory Sales Associate";
-      query.TSM = String(tsm);
+      query = query.eq("Role", "Territory Sales Associate").eq("TSM", String(tsm));
       console.log(`[fetch-users-by-role] Fetching AGENTS by TSM reference: ${tsm}`);
     }
 
     // 🔥 FILTER CSR ADMIN: Role=Admin, Department=CSR
     else if (filterCSRAdmin === "true" && department) {
-      query.Role = "Admin";
-      query.Department = "CSR";
+      query = query.eq("Role", "Admin").eq("Department", "CSR");
       console.log(`[fetch-users-by-role] Fetching CSR ADMIN for department: ${department}`);
     }
 
     // 🔥 FILTER CSR STAFF: Role=Staff, Department=CSR
     else if (filterCSRStaff === "true" && department) {
-      query.Role = "Staff";
-      query.Department = "CSR";
+      query = query.eq("Role", "Staff").eq("Department", "CSR");
       console.log(`[fetch-users-by-role] Fetching CSR STAFF for department: ${department}`);
     }
 
     // FALLBACK: Original role-based fetch
     else if (role) {
-      query.Role = String(role);
+      query = query.eq("Role", String(role));
       console.log(`[fetch-users-by-role] Fetching by ROLE: ${role}`);
     }
 
-    console.log("[fetch-users-by-role] Final query:", JSON.stringify(query));
+    const { data: users, error } = await query.order("Firstname", { ascending: true });
 
-    // Note: hierarchical filters above already set Manager/TSM fields as needed
-    // This section reserved for future additional filters
+    if (error) {
+      console.error("fetch-users-by-role error:", error);
+      return res.status(500).json({ error: "Failed to fetch users" });
+    }
 
-    // NORMAL ACTIVE USERS
-    const users = await db
-      .collection("users")
-      .find(query, {
-        projection: {
-          Password: 0,
-          LoginAttempts: 0,
-          LockUntil: 0,
-        },
-      })
-      .sort({ Firstname: 1 })
-      .toArray();
+    // Remove sensitive fields
+    const filteredUsers = users.map((user: any) => {
+      const { Password, LoginAttempts, LockUntil, ...rest } = user;
+      return rest;
+    });
 
-    let finalUsers = [...users];
+    let finalUsers = [...filteredUsers];
 
     // 🔥 THIS IS THE REAL FIX
     // Add ONLY the exact stored user if missing
@@ -108,21 +94,15 @@ export default async function handler(
       );
 
       if (!existing) {
-        const oldUser = await db
-          .collection("users")
-          .findOne(
-            { ReferenceID: currentUser },
-            {
-              projection: {
-                Password: 0,
-                LoginAttempts: 0,
-                LockUntil: 0,
-              },
-            },
-          );
+        const { data: oldUser } = await supabase
+          .from("users")
+          .select("*")
+          .eq("ReferenceID", currentUser)
+          .single();
 
         if (oldUser) {
-          finalUsers.push(oldUser);
+          const { Password, LoginAttempts, LockUntil, ...rest } = oldUser;
+          finalUsers.push(rest);
         }
       }
     }

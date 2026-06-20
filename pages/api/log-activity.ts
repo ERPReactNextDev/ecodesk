@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { connectToDatabase } from '@/lib/mongodb';
+import { logActivity } from '@/lib/supabase-logging';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
@@ -11,9 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const db = await connectToDatabase();
-
-    // Get client IP s
+    // Get client IP
     const xForwardedFor = req.headers['x-forwarded-for'];
     const ip =
       (typeof xForwardedFor === 'string' ? xForwardedFor.split(',')[0].trim() : undefined) ||
@@ -22,8 +20,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       'Unknown';
 
     const userAgent = req.headers['user-agent'] || 'Unknown';
-   
-    const doc: any = {
+
+    const activityLog = {
       email,
       department,
       status,
@@ -31,23 +29,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ipAddress: ip,
       userAgent,
       deviceId: deviceId || 'Unknown',
+      latitude: location?.latitude,
+      longitude: location?.longitude,
     };
 
-    // 🔹 Save latitude & longitude directly if provided
-    if (
-      location &&
-      typeof location.latitude === 'number' &&
-      typeof location.longitude === 'number'
-    ) {
-      doc.latitude = location.latitude;
-      doc.longitude = location.longitude;
-    }
-
-    const result = await db.collection('activityLogs').insertOne(doc);
+    const result = await logActivity(activityLog);
 
     return res.status(200).json({
       message: 'Activity logged successfully.',
-      id: result.insertedId,
+      id: result.id,
     });
   } catch (error) {
     console.error('Logging error:', error);

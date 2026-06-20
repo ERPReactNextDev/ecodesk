@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { validateUser, connectToDatabase } from "@/lib/mongodb";
+import { validateUser, getUserByEmail, updateUserLoginAttempts, lockUserAccount, resetUserLoginAttempts, updateUserLastLogin } from "@/lib/supabase-auth";
 import { serialize } from "cookie";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -13,11 +13,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: "All fields are required." });
   }
 
-  const db = await connectToDatabase();
-  const usersCollection = db.collection("users");
-
   // Find the user
-  const user = await usersCollection.findOne({ Email });
+  const user = await getUserByEmail(Email);
 
   if (!user) {
     return res.status(401).json({ message: "Invalid credentials." });
@@ -51,16 +48,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (attempts >= 3) {
       const newLockUntil = new Date(now.getTime() + lockDuration);
 
-      await usersCollection.updateOne(
-        { Email },
-        {
-          $set: {
-            LoginAttempts: attempts,
-            Status: "Locked",
-            LockUntil: newLockUntil.toISOString(),
-          },
-        }
-      );
+      await lockUserAccount(Email, newLockUntil.toISOString());
+      await updateUserLoginAttempts(Email, attempts);
 
       return res.status(403).json({
         message: `Account locked after 3 failed attempts. Try again after ${newLockUntil.toLocaleString()}.`,
@@ -68,10 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    await usersCollection.updateOne(
-      { Email },
-      { $set: { LoginAttempts: attempts } }
-    );
+    await updateUserLoginAttempts(Email, attempts);
 
     return res.status(401).json({ message: "Invalid credentials." });
   }
@@ -84,18 +70,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Reset attempts after success
-  await usersCollection.updateOne(
-    { Email },
-    {
-      $set: {
-        LoginAttempts: 0,
-        Status: "Active",
-        LockUntil: null,
-      },
-    }
-  );
+  await resetUserLoginAttempts(Email);
+  await updateUserLastLogin(Email);
 
-  const userId = result.user._id.toString();
+  const userId = result.user.UserId;
 
   // Create session cookie
   res.setHeader(

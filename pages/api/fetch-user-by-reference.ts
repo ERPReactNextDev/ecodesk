@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { connectToDatabase } from "@/lib/mongodb";
+import { supabase } from "@/lib/supabase";
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,21 +16,13 @@ export default async function handler(
   }
 
   try {
-    const db = await connectToDatabase();
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("Firstname, Lastname, ReferenceID, Connection")
+      .eq("ReferenceID", reference)
+      .single();
 
-    const user = await db.collection("users").findOne(
-      { ReferenceID: reference },
-      {
-        projection: {
-          Firstname: 1,
-          Lastname: 1,
-          ReferenceID: 1,
-          Connection: 1,
-        },
-      }
-    );
-
-    if (!user) {
+    if (error || !user) {
       return res.status(404).json({ error: "User not found" });
     }
 

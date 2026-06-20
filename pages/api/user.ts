@@ -1,10 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { connectToDatabase } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { supabase } from "@/lib/supabase";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "GET") {
-    const db = await connectToDatabase();
     const userId = req.query.id as string;
 
     if (!userId) {
@@ -12,19 +10,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      // Find the user by ID
-      const user = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+      // Find the user by UserId (UUID)
+      const { data: user, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("UserId", userId)
+        .single();
 
-      if (user) {
-        // Respond with all user fields except the password
-        const { password, ...userData } = user;
-        res.status(200).json(userData);
-      } else {
-        res.status(404).json({ error: "User not found" });
+      if (error || !user) {
+        return res.status(404).json({ error: "User not found" });
       }
+
+      // Respond with all user fields except the password
+      const { Password, ...userData } = user;
+      res.status(200).json(userData);
     } catch (error) {
       console.error("Error fetching user data:", error);
-      res.status(500).json({ error: "Invalid user ID format or server error" });
+      res.status(500).json({ error: "Server error" });
     }
   } else {
     res.setHeader("Allow", ["GET"]);
