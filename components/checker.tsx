@@ -4,10 +4,17 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { type DateRange } from "react-day-picker";
 import {
   Search, RefreshCcw, Loader2, ChevronUp, ChevronDown,
-  Filter, FileText, AlertCircle,
+  Filter, FileText, AlertCircle, Download,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Agent {
+  ReferenceID: string;
+  Firstname: string;
+  Lastname: string;
+}
 
 interface Ticket {
   _id: string;
@@ -208,6 +215,8 @@ export const Checker: React.FC<TicketProps> = ({
   const [activities, setActivities] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<Agent[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   // Filters
   const [filterReference,     setFilterReference]     = useState("All");
@@ -254,7 +263,28 @@ export const Checker: React.FC<TicketProps> = ({
     }
   }, [role, referenceid]);
 
-  useEffect(() => { fetchActivities(); }, [fetchActivities]);
+  const fetchUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/fetch-users-by-role");
+      if (!res.ok) throw new Error("Failed to fetch users");
+      const data = await res.json();
+      setUsers(data.data || []);
+    } catch (err) {
+      console.error(err);
+      setUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchActivities(); fetchUsers(); }, [fetchActivities, fetchUsers]);
+
+  const resolveUser = (referenceId: string | undefined): string => {
+    if (!referenceId) return "";
+    const user = users.find(u => u.ReferenceID === referenceId);
+    return user ? `${user.Firstname} ${user.Lastname}` : referenceId;
+  };
 
   // ─── Unique filter options ───────────────────────────────────────────────────
 
@@ -264,10 +294,34 @@ export const Checker: React.FC<TicketProps> = ({
     [activities]
   );
 
-  const uniqueRefs      = useMemo(() => uniq("referenceid"),    [uniq]);
-  const uniqueAgents    = useMemo(() => uniq("agent"),          [uniq]);
-  const uniqueManagers  = useMemo(() => uniq("manager"),        [uniq]);
+  // Create maps for ID ↔ name lookup
+  const idToNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach(u => map.set(u.ReferenceID, `${u.Firstname} ${u.Lastname}`));
+    return map;
+  }, [users]);
+
+  const nameToIdMap = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach(u => map.set(`${u.Firstname} ${u.Lastname}`, u.ReferenceID));
+    return map;
+  }, [users]);
+
+  const getFilterOptions = (field: keyof Ticket): string[] => {
+    const ids = Array.from(new Set(activities.map((a) => a[field]).filter(Boolean))) as string[];
+    return ids.map(id => idToNameMap.get(id) || id);
+  };
+
+  const uniqueRefs      = useMemo(() => getFilterOptions("referenceid"),    [activities, idToNameMap]);
+  const uniqueAgents    = useMemo(() => getFilterOptions("agent"),          [activities, idToNameMap]);
+  const uniqueManagers  = useMemo(() => getFilterOptions("manager"),        [activities, idToNameMap]);
   const uniqueStatuses  = useMemo(() => uniq("customer_status"),[uniq]);
+
+  // Helper to get ID from filter value (which might be name or ID)
+  const getIdFromFilterValue = (value: string): string => {
+    if (value === "All") return value;
+    return nameToIdMap.get(value) || value;
+  };
 
   // ─── Filter + search + sort ──────────────────────────────────────────────────
 
@@ -275,10 +329,14 @@ export const Checker: React.FC<TicketProps> = ({
     const fromKey = dateCreatedFilterRange?.from ? toDateKey(dateCreatedFilterRange.from) : null;
     const toKey   = dateCreatedFilterRange?.to   ? toDateKey(dateCreatedFilterRange.to)   : null;
 
+    const filterRefId = getIdFromFilterValue(filterReference);
+    const filterAgentId = getIdFromFilterValue(filterAgent);
+    const filterManagerId = getIdFromFilterValue(filterManager);
+
     let result = activities.filter((a) => {
-      if (filterReference     !== "All" && a.referenceid      !== filterReference)     return false;
-      if (filterAgent         !== "All" && a.agent            !== filterAgent)         return false;
-      if (filterManager       !== "All" && a.manager          !== filterManager)       return false;
+      if (filterReference     !== "All" && a.referenceid      !== filterRefId)     return false;
+      if (filterAgent         !== "All" && a.agent            !== filterAgentId)         return false;
+      if (filterManager       !== "All" && a.manager          !== filterManagerId)       return false;
       if (filterCustomerStatus!== "All" && a.customer_status  !== filterCustomerStatus)return false;
 
       // Date filter using YYYY-MM-DD string comparison
@@ -292,7 +350,11 @@ export const Checker: React.FC<TicketProps> = ({
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const found = COLUMNS.some(({ key }) => {
-          const v = (a as any)[key];
+          let v = (a as any)[key];
+          // Resolve user IDs for search
+          if (["referenceid", "agent", "manager", "department_head"].includes(key)) {
+            v = resolveUser(v);
+          }
           return v && String(v).toLowerCase().includes(q);
         });
         if (!found) return false;
@@ -448,6 +510,32 @@ export const Checker: React.FC<TicketProps> = ({
         </span>
 
         <button
+          onClick={() => {
+            const data = filteredActivities.map(act => {
+              const row: Record<string, any> = {};
+              COLUMNS.forEach(col => {
+                if (col.computed) {
+                  row[col.label] = getComputedValue(act, col.key);
+                } else if (["referenceid", "agent", "manager", "department_head"].includes(col.key)) {
+                  row[col.label] = resolveUser(act[col.key]);
+                } else {
+                  row[col.label] = act[col.key] ?? "";
+                }
+              });
+              return row;
+            });
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, "Checker Data");
+            XLSX.writeFile(wb, `checker_data_${Date.now()}.xlsx`);
+          }}
+          className="h-8 px-3 border border-gray-200 text-xs text-gray-500 hover:text-gray-800 hover:border-gray-400 flex items-center gap-1.5 transition-colors shrink-0"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Download Excel
+        </button>
+
+        <button
           onClick={fetchActivities}
           className="h-8 px-3 border border-gray-200 text-xs text-gray-500 hover:text-gray-800 hover:border-gray-400 flex items-center gap-1.5 transition-colors shrink-0"
         >
@@ -531,9 +619,14 @@ export const Checker: React.FC<TicketProps> = ({
 
                   {COLUMNS.map((col) => {
                     const isComputed = !!col.computed;
-                    const rawValue   = isComputed
+                    let rawValue   = isComputed
                       ? getComputedValue(act, col.key)
                       : (act[col.key] ?? "");
+                    
+                    // Resolve user IDs to names for display
+                    if (["referenceid", "agent", "manager", "department_head"].includes(col.key)) {
+                      rawValue = resolveUser(rawValue);
+                    }
 
                     return (
                       <td
@@ -546,17 +639,17 @@ export const Checker: React.FC<TicketProps> = ({
                         <input
                           type="text"
                           value={rawValue}
-                          readOnly={!col.editable || isComputed}
+                          readOnly={!col.editable || isComputed || ["referenceid", "agent", "manager", "department_head"].includes(col.key)}
                           onChange={(e) =>
-                            col.editable && !isComputed &&
+                            col.editable && !isComputed && !["referenceid", "agent", "manager", "department_head"].includes(col.key) &&
                             handleCellChange(act._id, col.key, e.target.value)
                           }
                           className={`w-full h-7 px-2.5 text-xs font-mono bg-transparent focus:outline-none
-                            ${!col.editable || isComputed
+                            ${!col.editable || isComputed || ["referenceid", "agent", "manager", "department_head"].includes(col.key)
                               ? "text-gray-400 cursor-default select-none caret-transparent"
                               : "text-gray-800 focus:bg-blue-50 focus:ring-1 focus:ring-inset focus:ring-blue-400"
                             }`}
-                          tabIndex={col.editable && !isComputed ? 0 : -1}
+                          tabIndex={col.editable && !isComputed && !["referenceid", "agent", "manager", "department_head"].includes(col.key) ? 0 : -1}
                         />
                       </td>
                     );

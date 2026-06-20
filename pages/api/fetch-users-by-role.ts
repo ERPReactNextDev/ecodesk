@@ -9,7 +9,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { role, department, manager, tsm, currentUser } = req.query;
+  const { role, department, manager, tsm, currentUser, filterDepartmentHeads, filterManagers, filterAgents, filterMarketingManagers, filterMarketingAgents, filterAgentsByTSM, filterCSRAdmin, filterCSRStaff } = req.query;
 
   try {
     const db = await connectToDatabase();
@@ -18,14 +18,72 @@ export default async function handler(
       Status: "Active",
     };
 
-    // SPECIAL BUSINESS RULE FOR TSM
-if (role) {
-  query.Role = String(role); // 🔥 STRICT FILTER
-}
+    // 🔥 FILTER DEPARTMENT HEADS: Department=X, Role=Manager
+    if (filterDepartmentHeads === "true" && department) {
+      query.Role = "Manager";
+      query.Department = String(department);
+      console.log(`[fetch-users-by-role] Fetching DEPARTMENT HEADS for department: ${department}`);
+    }
 
-    if (department) query.Department = String(department);
-    if (manager) query.Manager = String(manager);
-    if (tsm) query.TSM = String(tsm);
+    // 🔥 FILTER MANAGERS (TSM): Role=Territory Sales Manager, Manager=departmentHead
+    else if (filterManagers === "true" && manager) {
+      query.Role = "Territory Sales Manager";
+      query.Manager = String(manager);
+      console.log(`[fetch-users-by-role] Fetching MANAGERS (TSM) under department head: ${manager}`);
+    }
+
+    // 🔥 FILTER AGENTS (TS Associate): Role=Territory Sales Associate, TSM=manager
+    else if (filterAgents === "true" && tsm) {
+      query.Role = "Territory Sales Associate";
+      query.TSM = String(tsm);
+      console.log(`[fetch-users-by-role] Fetching AGENTS (TS Associate) under TSM: ${tsm}`);
+    }
+
+    // 🔥 FILTER MARKETING MANAGERS: Department=Marketing, Role=Manager
+    else if (filterMarketingManagers === "true" && department) {
+      query.Role = "Manager";
+      query.Department = String(department);
+      console.log(`[fetch-users-by-role] Fetching MARKETING MANAGERS for department: ${department}`);
+    }
+
+    // 🔥 FILTER MARKETING AGENTS: Department=Marketing, Role != Manager
+    else if (filterMarketingAgents === "true" && department && manager) {
+      query.Department = String(department);
+      query.Role = { $ne: "Manager" };
+      console.log(`[fetch-users-by-role] Fetching MARKETING AGENTS for department: ${department}, under manager: ${manager}`);
+    }
+
+    // 🔥 FILTER AGENTS BY TSM: For special cases like Sette Hosena who is Manager with no TSM
+    else if (filterAgentsByTSM === "true" && tsm) {
+      query.Role = "Territory Sales Associate";
+      query.TSM = String(tsm);
+      console.log(`[fetch-users-by-role] Fetching AGENTS by TSM reference: ${tsm}`);
+    }
+
+    // 🔥 FILTER CSR ADMIN: Role=Admin, Department=CSR
+    else if (filterCSRAdmin === "true" && department) {
+      query.Role = "Admin";
+      query.Department = "CSR";
+      console.log(`[fetch-users-by-role] Fetching CSR ADMIN for department: ${department}`);
+    }
+
+    // 🔥 FILTER CSR STAFF: Role=Staff, Department=CSR
+    else if (filterCSRStaff === "true" && department) {
+      query.Role = "Staff";
+      query.Department = "CSR";
+      console.log(`[fetch-users-by-role] Fetching CSR STAFF for department: ${department}`);
+    }
+
+    // FALLBACK: Original role-based fetch
+    else if (role) {
+      query.Role = String(role);
+      console.log(`[fetch-users-by-role] Fetching by ROLE: ${role}`);
+    }
+
+    console.log("[fetch-users-by-role] Final query:", JSON.stringify(query));
+
+    // Note: hierarchical filters above already set Manager/TSM fields as needed
+    // This section reserved for future additional filters
 
     // NORMAL ACTIVE USERS
     const users = await db
@@ -68,6 +126,8 @@ if (role) {
         }
       }
     }
+
+    console.log(`[fetch-users-by-role] Returning ${finalUsers.length} users:`, finalUsers.map((u: any) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID}) - Role: ${u.Role}, Dept: ${u.Department}`));
 
     res.status(200).json({ data: finalUsers });
   } catch (error) {

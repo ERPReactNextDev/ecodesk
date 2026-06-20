@@ -600,7 +600,8 @@ export function TicketSheet(props: TicketSheetProps) {
     "DT-PH-994793",
     "SH-NCR-560908",
     "BR-PH-358329",
-    "AP-NCR-858614"
+    "AP-NCR-858614",
+    "MT-PH-922405"
   ];
 
   const [departmentHeadsList, setDepartmentHeadsList] = useState<User[]>([]);
@@ -610,184 +611,276 @@ export function TicketSheet(props: TicketSheetProps) {
     ReferenceID: string;
     Firstname: string;
     Lastname: string;
-    Role: string;
-    Department: string;
-    Connection: string;
+    Role?: string;
+    Department?: string;
+    Connection?: string;
   }
-
-  const graceLumabaoManager: User = {
-    ReferenceID: "GL-CSR-586725",
-    Firstname: "Grace",
-    Lastname: "Lumabao",
-    Role: "Admin",
-    Department: "CSR",
-    Connection: "Online",
-  };
-
-  const graceLumabaoTeam: User[] = [
-    {
-      ReferenceID: "MG-NCR-829953",
-      Firstname: "Maureen",
-      Lastname: "Gabriel",
-      Role: "Staff",
-      Department: "CSR",
-      Connection: "Online",
-    },
-    {
-      ReferenceID: "EM-NCR-600530",
-      Firstname: "Erica",
-      Lastname: "Maestro",
-      Role: "Staff",
-      Department: "CSR",
-      Connection: "Online",
-    },
-    {
-      ReferenceID: "RP-CSR-451122",
-      Firstname: "Rikki",
-      Lastname: "Paje",
-      Role: "Staff",
-      Department: "CSR",
-      Connection: "Online",
-    },
-    {
-      ReferenceID: "MC-CSR-947264",
-      Firstname: "mark vincent",
-      Lastname: "capin",
-      Role: "Staff",
-      Department: "CSR",
-      Connection: "Online",
-    },
-  ];
 
   const [managersList, setManagersList] = useState<User[]>([]);
   const [managersAvailable, setManagersAvailable] = useState(0);
   const [agentsList, setAgentsList] = useState<User[]>([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
   const [loadingAgents, setLoadingAgents] = useState(false);
-  const [loadingActivities, setLoadingActivities] = useState(false);
-  const [errorActivities, setErrorActivities] = useState(null);
+
+  // ================= REVERT MODE =================
+  const [revertMode, setRevertMode] = useState(false);
+  const [revertDepartmentHeadsList, setRevertDepartmentHeadsList] = useState<User[]>([]);
+  const [revertManagersList, setRevertManagersList] = useState<User[]>([]);
+  const [revertAgentsList, setRevertAgentsList] = useState<User[]>([]);
+  const [loadingRevert, setLoadingRevert] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const isJobApplicant = wrapUp === "Job Applicants" || wrapUp === "Inquiry";
-  const isHrActive = Boolean(hrAcknowledgeDate);
-
-  // ===== LIVE COMPUTED TIMES (DISPLAY ONLY) =====
-
-  const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
-
-  const isTsmComplete = Boolean(tsmAcknowledgeDate && tsmHandlingTime);
-  const isTsaComplete = Boolean(tsaAcknowledgeDate && tsaHandlingTime);
-
-  const tsmResponseTime = isTsmComplete
-    ? computeTSMResponseTime(wrapUp, tsmAcknowledgeDate, ticketEndorsed)
-    : "";
-
-  const tsmHandlingTimeFinal = isTsmComplete
-    ? computeTSMHandlingTime(
-        wrapUp,
-        tsmAcknowledgeDate,
-        tsmHandlingTime,
-        ticketReceived,
-      )
-    : "";
-
-  const tsaResponseTime = isTsaComplete
-    ? computeTSAResponseTime(
-        wrapUp,
-        tsaAcknowledgeDate,
-        tsaHandlingTime,
-        ticketEndorsed,
-      )
-    : "";
-
-  const tsaHandlingTimeFinal =
-    isTsaComplete && ticketReceived
-      ? formatDuration(
-          new Date(tsaHandlingTime).getTime() -
-            new Date(ticketReceived).getTime(),
-        )
-      : "";
-
-  const baseHT = isTsaComplete
-    ? tsaHandlingTimeFinal
-    : isTsmComplete
-      ? tsmHandlingTimeFinal
-      : "";
-
-  const nonQuotationHT = baseHT ? computeNonQuotationHT(remarks, baseHT) : "";
-  const quotationHT = baseHT ? computeQuotationHT(remarks, baseHT) : "";
-  const spfHT = baseHT ? computeSpfHT(remarks, baseHT) : "";
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [errorActivities, setErrorActivities] = useState<string | null>(null);
 
   // ================= FETCH DEPARTMENT HEADS =================
 
   useEffect(() => {
+    // Marketing department doesn't have Department Heads - skip fetching
+    if (department === "Marketing") {
+      setDepartmentHeadsList([]);
+      setDepartmentHead(""); // Clear any existing department head
+      return;
+    }
+
+    // CSR department doesn't have Department Heads - skip fetching
+    if (department === "CSR") {
+      setDepartmentHeadsList([]);
+      setDepartmentHead(""); // Clear any existing department head
+      return;
+    }
+
+    // Only fetch department heads when department is selected
+    if (!department) {
+      setDepartmentHeadsList([]);
+      setDepartmentHead("");
+      return;
+    }
+
     setLoadingDepartmentHeads(true);
 
-    fetch(`/api/fetch-users-by-role?role=Manager`)
+    fetch(`/api/fetch-users-by-role?filterDepartmentHeads=true&department=${encodeURIComponent(department)}`)
       .then((res) => res.json())
       .then((json) => {
-        const all: User[] = json.data || [];
-
-        const filtered = all.filter((user) =>
-          allowedDepartmentHeads.includes(user.ReferenceID),
-        );
-
-        const bossExists = filtered.some(
-          (user) => user.ReferenceID === "DT-PH-994793",
-        );
-
-        if (!bossExists) {
-          filtered.unshift({
-            ReferenceID: "DT-PH-994793",
-            Firstname: "Dexter",
-            Lastname: "Tan",
-            Role: "Director",
-            Department: "Owner",
-            Connection: "Online",
-          });
-        }
-
-        setDepartmentHeadsList(filtered);
+        const list: User[] = json.data || [];
+        console.log(`[sheet-ticket] Received ${list.length} department heads for ${department}:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+        setDepartmentHeadsList(list);
       })
       .catch(() => setDepartmentHeadsList([]))
       .finally(() => setLoadingDepartmentHeads(false));
-  }, []);
+  }, [department, setDepartmentHead]);
 
-  // ================= FETCH MANAGERS =================
+  // ================= FETCH MANAGERS (TSM / Marketing Manager) =================
 
   useEffect(() => {
-    if (!department) {
+    // Marketing department doesn't use department head - fetch manager directly by department
+    if (department === "Marketing") {
+      setLoadingManagers(true);
+
+      console.log(`[sheet-ticket] Fetching Marketing managers for department: ${department}`);
+      fetch(
+        `/api/fetch-users-by-role?filterMarketingManagers=true&department=${encodeURIComponent(department)}&currentUser=${manager || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} Marketing managers:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setManagersList(list);
+          setManagersAvailable(list.length);
+        })
+        .catch(() => {
+          setManagersList([]);
+          setManagersAvailable(0);
+        })
+        .finally(() => setLoadingManagers(false));
+      return;
+    }
+
+    // CSR department doesn't use department head - fetch CSR Admin as manager
+    if (department === "CSR") {
+      setLoadingManagers(true);
+
+      console.log(`[sheet-ticket] Fetching CSR Admin as manager for department: ${department}`);
+      fetch(
+        `/api/fetch-users-by-role?filterCSRAdmin=true&department=${encodeURIComponent(department)}&currentUser=${manager || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} CSR Admin (manager):`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setManagersList(list);
+          setManagersAvailable(list.length);
+        })
+        .catch(() => {
+          setManagersList([]);
+          setManagersAvailable(0);
+        })
+        .finally(() => setLoadingManagers(false));
+      return;
+    }
+
+    // For non-Marketing/CSR departments: Only fetch managers when department head is selected
+    if (!department_head) {
       setManagersList([]);
-      setAgentsList([]);
       setManager("");
+      setAgentsList([]);
       setAgent("");
       return;
     }
 
     setLoadingManagers(true);
 
+    console.log(`[sheet-ticket] Fetching managers (TSM) under department head: ${department_head}`);
     fetch(
-      `/api/fetch-users-by-role?role=Territory Sales Manager&department=${encodeURIComponent(
-        department,
-      )}&currentUser=${manager || ""}`,
+      `/api/fetch-users-by-role?filterManagers=true&manager=${encodeURIComponent(department_head)}&currentUser=${manager || ""}`,
     )
       .then((res) => res.json())
       .then((json) => {
         const list = json.data || [];
-        const listWithGrace = list.some(
-          (user: User) => user.ReferenceID === graceLumabaoManager.ReferenceID,
-        )
-          ? list
-          : [...list, graceLumabaoManager];
-        setManagersList(listWithGrace);
-        setManagersAvailable(listWithGrace.length);
+        console.log(`[sheet-ticket] Received ${list.length} managers (TSM):`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+        setManagersList(list);
+        setManagersAvailable(list.length);
       })
       .catch(() => {
-        setManagersList([graceLumabaoManager]);
-        setManagersAvailable(1);
+        setManagersList([]);
+        setManagersAvailable(0);
       })
       .finally(() => setLoadingManagers(false));
-  }, [department]);
+  }, [department, department_head, manager]);
 
+  // ================= FETCH AGENTS (TS Associate / Marketing Agent) =================
+  useEffect(() => {
+    // Special case: Sette Hosena (SH-NCR-560908) - fetch agents by her ReferenceID in TSM field
+    const SETTE_HOSENA_REF_ID = "SH-NCR-560908";
+    if (department_head === SETTE_HOSENA_REF_ID) {
+      setLoadingAgents(true);
+
+      console.log(`[sheet-ticket] Special case: Fetching agents for Sette Hosena by TSM reference`);
+      fetch(
+        `/api/fetch-users-by-role?filterAgentsByTSM=true&tsm=${encodeURIComponent(SETTE_HOSENA_REF_ID)}&currentUser=${agent || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} agents for Sette Hosena:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setAgentsList(list);
+        })
+        .catch(() => setAgentsList([]))
+        .finally(() => setLoadingAgents(false));
+      return;
+    }
+
+    // Only fetch agents when manager is selected (for regular cases)
+    if (!manager) {
+      setAgentsList([]);
+      setAgent("");
+      return;
+    }
+
+    // Marketing department: fetch agents by department, role != Manager
+    if (department === "Marketing") {
+      setLoadingAgents(true);
+
+      console.log(`[sheet-ticket] Fetching Marketing agents for department: ${department}, under manager: ${manager}`);
+      fetch(
+        `/api/fetch-users-by-role?filterMarketingAgents=true&department=${encodeURIComponent(department)}&manager=${encodeURIComponent(manager)}&currentUser=${agent || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} Marketing agents:`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setAgentsList(list);
+        })
+        .catch(() => setAgentsList([]))
+        .finally(() => setLoadingAgents(false));
+      return;
+    }
+
+    // CSR department: fetch CSR Staff as agents
+    if (department === "CSR") {
+      setLoadingAgents(true);
+
+      console.log(`[sheet-ticket] Fetching CSR Staff as agents for department: ${department}`);
+      fetch(
+        `/api/fetch-users-by-role?filterCSRStaff=true&department=${encodeURIComponent(department)}&currentUser=${agent || ""}`,
+      )
+        .then((res) => res.json())
+        .then((json) => {
+          const list = json.data || [];
+          console.log(`[sheet-ticket] Received ${list.length} CSR Staff (agents):`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+          setAgentsList(list);
+        })
+        .catch(() => setAgentsList([]))
+        .finally(() => setLoadingAgents(false));
+      return;
+    }
+
+    // For non-Marketing/CSR departments: fetch agents by TSM
+    setLoadingAgents(true);
+
+    console.log(`[sheet-ticket] Fetching agents (TS Associate) under TSM: ${manager}`);
+    fetch(
+      `/api/fetch-users-by-role?filterAgents=true&tsm=${encodeURIComponent(manager)}&currentUser=${agent || ""}`,
+    )
+      .then((res) => res.json())
+      .then((json) => {
+        const list = json.data || [];
+        console.log(`[sheet-ticket] Received ${list.length} agents (TS Associate):`, list.map((u: User) => `${u.Firstname} ${u.Lastname} (${u.ReferenceID})`));
+        setAgentsList(list);
+      })
+      .catch(() => setAgentsList([]))
+      .finally(() => setLoadingAgents(false));
+  }, [department, department_head, manager, agent]);
+
+  // ================= FETCH REVERT MODE USERS =================
+  useEffect(() => {
+    if (!revertMode) return;
+
+    setLoadingRevert(true);
+
+    Promise.all([
+      // All managers (Role=Manager, any department) as department heads
+      fetch(`/api/fetch-users-by-role?filterDepartmentHeads=true&department=${encodeURIComponent(department || "Sales")}`)
+        .then((r) => r.json())
+        .then((j) => {
+          // Fetch ALL department heads across common departments
+          return Promise.all(
+            ["Sales", "Business Development", "Marketing", "E-Commerce", "CSR", "Accounting", "Engineering", "Procurement", "Warehouse", "Human Resources"].map((dept) =>
+              fetch(`/api/fetch-users-by-role?filterDepartmentHeads=true&department=${encodeURIComponent(dept)}`)
+                .then((r) => r.json())
+                .then((j) => j.data || [])
+                .catch(() => [])
+            )
+          ).then((results) => {
+            const all: User[] = results.flat();
+            // Deduplicate by ReferenceID
+            const seen = new Set<string>();
+            return all.filter((u) => {
+              if (seen.has(u.ReferenceID)) return false;
+              seen.add(u.ReferenceID);
+              return true;
+            });
+          });
+        }),
+      // All TSM (Territory Sales Manager)
+      fetch(`/api/fetch-users-by-role?role=Territory Sales Manager`)
+        .then((r) => r.json())
+        .then((j) => j.data || [])
+        .catch(() => []),
+      // All TS Associates
+      fetch(`/api/fetch-users-by-role?role=Territory Sales Associate`)
+        .then((r) => r.json())
+        .then((j) => j.data || [])
+        .catch(() => []),
+    ])
+      .then(([dhs, mgrs, agts]) => {
+        setRevertDepartmentHeadsList(dhs as User[]);
+        setRevertManagersList(mgrs as User[]);
+        setRevertAgentsList(agts as User[]);
+      })
+      .finally(() => setLoadingRevert(false));
+  }, [revertMode, department]);
+
+  // ================= FETCH ACTIVITIES =================
   const fetchActivities = useCallback(() => {
     setLoadingActivities(true);
     setErrorActivities(null);
@@ -808,34 +901,6 @@ export function TicketSheet(props: TicketSheetProps) {
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
-
-  // ================= FETCH AGENTS =================
-  useEffect(() => {
-    if (!manager) {
-      setAgentsList([]);
-      setAgent("");
-      return;
-    }
-
-    if (manager === graceLumabaoManager.ReferenceID) {
-      setAgentsList(graceLumabaoTeam);
-      return;
-    }
-
-    setLoadingAgents(true);
-
-    fetch(
-      `/api/fetch-users-by-role?role=Territory Sales Associate&department=Sales&tsm=${encodeURIComponent(
-        manager,
-      )}&currentUser=${agent || ""}`,
-    )
-      .then((res) => res.json())
-      .then((json) => {
-        setAgentsList(json.data || []);
-      })
-      .catch(() => setAgentsList([]))
-      .finally(() => setLoadingAgents(false));
-  }, [manager]);
 
   // 1️⃣ Ticket Received vs Ticket Endorsed validation
   useEffect(() => {
@@ -992,9 +1057,18 @@ export function TicketSheet(props: TicketSheetProps) {
   const [tsmTimeError, setTsmTimeError] = useState<string | null>(null);
   const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
   const [inquiryTimeError, setInquiryTimeError] = useState<string | null>(null);
-  const isManagerRequiredButMissing = managersAvailable > 0 && !manager;
+  const isManagerRequiredButMissing = !revertMode && managersAvailable > 0 && !manager;
   const [highlightAgent, setHighlightAgent] = useState(false);
   const [agentReassigned, setAgentReassigned] = useState(false);
+
+  // ===== HANDLING TIME COMPUTATIONS =====
+  const csrTime = computeCSRResponseTime(ticketReceived, ticketEndorsed);
+  const tsaResponseTime = computeSimpleDiff(inquiryReceived, responseToInquiry);
+  const tsaHandlingTimeFinal = computeSimpleDiff(tsaAcknowledgeDate, tsaHandlingTime);
+  const baseHT = computeSimpleDiff(ticketReceived, ticketEndorsed);
+  const nonQuotationHT = computeNonQuotationHT(remarks, baseHT);
+  const quotationHT = computeQuotationHT(remarks, baseHT);
+  const spfHT = computeSpfHT(remarks, baseHT);
 
   // ===== ALL DROPDOWN OPTIONS (ALPHABETICAL) =====
 
@@ -1111,7 +1185,7 @@ export function TicketSheet(props: TicketSheetProps) {
   ].sort((a, b) => a.label.localeCompare(b.label));
 
   // Options for Radio Groups
-const departmentOptions: Option[] = [
+  const departmentOptions: Option[] = [
     { value: "Accounting", title: "Accounting", description: "Handle initial client contact for financial matters and updates." },
     { value: "Business Development", title: "Business Development", description: "Manage client outreach and relationship building activities." },
     { value: "CS", title: "CS", description: "Handle customer service concerns and support requests." },
@@ -1168,7 +1242,7 @@ const departmentOptions: Option[] = [
       newErrors.status = "Status is required.";
     }
 
-    if (status === "Closed") {
+    if (status === "Closed" || status === "Converted into Sales") {
       if (!tsmAcknowledgeDate && !tsaAcknowledgeDate) {
         newErrors.status = "Either TSM or TSA Acknowledgement Date is required when closing or converting to sales.";
       }
@@ -1191,6 +1265,8 @@ const departmentOptions: Option[] = [
     return Object.keys(newErrors).length === 0;
   };
 
+  const isJobApplicant = wrapUp === "Job Applicants";
+
   const onNext = () => {
     if (step === 3) {
       if (timeError || inquiryTimeError) return;
@@ -1209,6 +1285,13 @@ const departmentOptions: Option[] = [
 
   const [loadingSave, setLoadingSave] = useState(false);
   const [loadingLoad, setLoadingLoad] = useState(false);
+
+  // Validate step 6 whenever relevant fields change
+  useEffect(() => {
+    if (step === 6) {
+      validateStep6();
+    }
+  }, [status, tsmAcknowledgeDate, tsmHandlingTime, tsaAcknowledgeDate, tsaHandlingTime, closeReason, counterOffer, clientSpecs, step]);
 
   const onUpdate = async () => {
     if (!validateStep6()) return;
@@ -1717,59 +1800,109 @@ const departmentOptions: Option[] = [
         <>
           <h2 className="text-sm font-semibold mt-4">Step 6 — Assignee</h2>
 
-          {/* DEPARTMENT HEAD */}
-          <Field>
-            <FieldLabel>Department Head</FieldLabel>
-            <FieldDescription>Please select the department head responsible.</FieldDescription>
-            <ComboboxField
-              value={department_head}
-              onChange={setDepartmentHead}
-              placeholder="Select Department Head"
-              options={
-                loadingDepartmentHeads
-                  ? [{ value: "__loading__", label: "Loading department heads..." }]
-                  : departmentHeadsList
-                      .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
-                      .map((dh) => ({
-                        value: dh.ReferenceID,
-                        label:
-                          dh.ReferenceID === "DT-PH-994793"
-                            ? "Dexter Tan"
-                            : `${dh.Firstname} ${dh.Lastname}`,
-                      }))
-              }
-            />
-          </Field>
+          {/* REVERT CASE BUTTON */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-gray-500">
+              {revertMode
+                ? "Revert mode: All fields are freely selectable."
+                : "Normal mode: Fields depend on department hierarchy."}
+            </p>
+            <Button
+              variant={revertMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setRevertMode((prev) => !prev)}
+              className={`cursor-pointer text-xs ${revertMode ? "bg-orange-500 hover:bg-orange-600 text-white" : "border-orange-400 text-orange-600 hover:bg-orange-50"}`}
+            >
+              {revertMode ? "Exit Revert Mode" : "Revert Case"}
+            </Button>
+          </div>
 
-          {/* MANAGER */}
-          <Field>
-            <FieldLabel>Manager</FieldLabel>
-            <FieldDescription>Select the manager responsible for this task or client.</FieldDescription>
-            <ComboboxField
-              value={manager}
-              onChange={(value) => {
-                setManager(value);
-                setAgent("");
-              }}
-              placeholder="Select a Manager"
-              options={
-                loadingManagers
-                  ? [{ value: "__loading__", label: "Loading managers..." }]
-                  : managersList.map((m) => ({
-                      value: m.ReferenceID,
-                      label: `${m.Firstname} ${m.Lastname}`,
-                    }))
-              }
-            />
-          </Field>
+          {/* DEPARTMENT HEAD - Hidden for Marketing and CSR departments (normal mode only) */}
+          {(revertMode || (department !== "Marketing" && department !== "CSR")) && (
+            <Field>
+              <FieldLabel>Department Head</FieldLabel>
+              <FieldDescription>Please select the department head responsible.</FieldDescription>
+              <ComboboxField
+                value={department_head}
+                onChange={setDepartmentHead}
+                placeholder="Select Department Head"
+                options={
+                  revertMode
+                    ? loadingRevert
+                      ? [{ value: "__loading__", label: "Loading..." }]
+                      : revertDepartmentHeadsList
+                          .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
+                          .map((dh) => ({
+                            value: dh.ReferenceID,
+                            label: `${dh.Firstname} ${dh.Lastname}`,
+                          }))
+                    : loadingDepartmentHeads
+                      ? [{ value: "__loading__", label: "Loading department heads..." }]
+                      : departmentHeadsList
+                          .filter((dh) => allowedDepartmentHeads.includes(dh.ReferenceID))
+                          .map((dh) => ({
+                            value: dh.ReferenceID,
+                            label: `${dh.Firstname} ${dh.Lastname}`,
+                          }))
+                }
+              />
+            </Field>
+          )}
+
+          {/* MANAGER - Hidden for Sette Hosena (SH-NCR-560908) special case (normal mode only) */}
+          {(revertMode || department_head !== "SH-NCR-560908") && (
+            <Field>
+              <FieldLabel>Manager</FieldLabel>
+              <FieldDescription>Select the manager responsible for this task or client.</FieldDescription>
+              <ComboboxField
+                value={manager}
+                onChange={(value) => {
+                  setManager(value);
+                  if (!revertMode) setAgent("");
+                }}
+                placeholder="Select a Manager"
+                options={
+                  revertMode
+                    ? loadingRevert
+                      ? [{ value: "__loading__", label: "Loading..." }]
+                      : (() => {
+                          const baseOptions = revertManagersList.map((m) => ({
+                            value: m.ReferenceID,
+                            label: `${m.Firstname} ${m.Lastname}`,
+                          }));
+                          if (manager && !baseOptions.some((o) => o.value === manager)) {
+                            baseOptions.push({ value: manager, label: `${manager} (Loading...)` });
+                          }
+                          return baseOptions;
+                        })()
+                    : loadingManagers
+                      ? [{ value: "__loading__", label: "Loading managers..." }]
+                      : (() => {
+                          const baseOptions = managersList.map((m) => ({
+                            value: m.ReferenceID,
+                            label: `${m.Firstname} ${m.Lastname}`,
+                          }));
+                          if (manager && !baseOptions.some((o) => o.value === manager)) {
+                            baseOptions.push({
+                              value: manager,
+                              label: `${manager} (Loading...)`,
+                            });
+                          }
+                          return baseOptions;
+                        })()
+                }
+              />
+            </Field>
+          )}
 
           {/* AGENT */}
           {wrapUp !== "Job Applicants" &&
-            (manager === graceLumabaoManager.ReferenceID ||
+            (revertMode ||
               department === "Sales" ||
               department === "Business Development" ||
               department === "Marketing" ||
-              department === "E-Commerce") && (
+              department === "E-Commerce" ||
+              department === "CSR") && (
               <Field>
                 <FieldLabel>Agent</FieldLabel>
                 <FieldDescription>
@@ -1784,21 +1917,51 @@ const departmentOptions: Option[] = [
                     value={agent}
                     onChange={setAgent}
                     placeholder="Select an Agent"
-                    disabled={!manager}
+                    disabled={!revertMode && !manager && department_head !== "SH-NCR-560908"}
                     options={
-                      loadingAgents
-                        ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
-                        : agentsList.map((a) => ({
-                            value: a.ReferenceID,
-                            label: `${a.Firstname} ${a.Lastname}${
-                              a.Connection === "Online"
-                                ? " 🟢"
-                                : a.Connection === "Offline"
-                                  ? " ⚫"
-                                  : " ⚫"
-                            }`,
-                            disabled: a.Connection !== "Online",
-                          }))
+                      revertMode
+                        ? loadingRevert
+                          ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
+                          : (() => {
+                              const baseOptions = revertAgentsList.map((a) => ({
+                                value: a.ReferenceID,
+                                label: `${a.Firstname} ${a.Lastname}${
+                                  a.Connection === "Online" ? " 🟢" : " ⚫"
+                                }`,
+                                disabled: false,
+                              }));
+                              if (agent && !baseOptions.some((o) => o.value === agent)) {
+                                baseOptions.push({
+                                  value: agent,
+                                  label: `${agent} (Loading...)`,
+                                  disabled: false,
+                                });
+                              }
+                              return baseOptions;
+                            })()
+                        : loadingAgents
+                          ? [{ value: "__loading__", label: "Loading agents...", disabled: true }]
+                          : (() => {
+                              const baseOptions = agentsList.map((a) => ({
+                                value: a.ReferenceID,
+                                label: `${a.Firstname} ${a.Lastname}${
+                                  a.Connection === "Online"
+                                    ? " 🟢"
+                                    : a.Connection === "Offline"
+                                      ? " ⚫"
+                                      : " ⚫"
+                                }`,
+                                disabled: a.Connection !== "Online",
+                              }));
+                              if (agent && !baseOptions.some((o) => o.value === agent)) {
+                                baseOptions.push({
+                                  value: agent,
+                                  label: `${agent} (Loading...)`,
+                                  disabled: false,
+                                });
+                              }
+                              return baseOptions;
+                            })()
                     }
                   />
                 </div>
@@ -1918,7 +2081,7 @@ const departmentOptions: Option[] = [
                 {/* TSA HANDLING */}
                 <div className={`p-4 rounded-xl border-2 shadow-sm transition-all duration-300 ${getTimeOfDayCardStyle(tsaHandlingTime)}`}>
                   <Field>
-                    <FieldLabel>TSA Handling Time *</FieldLabel>
+                    <FieldLabel>TSA Handling Time*</FieldLabel>
                     <InputField
                       type="datetime-local"
                       value={tsaHandlingTime}
@@ -1930,12 +2093,12 @@ const departmentOptions: Option[] = [
                 </div>
 
                 <p className="text-xs text-gray-600 italic">
-                  Note: Either TSM or TSA acknowledgement details must be completed before closing the ticket.
+                  Note: Either TSM or TSA's acknowledgement details must be completed before closing the ticket.
                 </p>
               </div>
 
-              {/* CLOSE REASON */}
-              {status === "Closed" && (
+              
+              {(status === "Closed" || status === "Converted into Sales") && (
                 <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
                   <h4 className="font-semibold text-sm text-red-700">
                     On Closing of Ticket (Required)
@@ -2024,7 +2187,8 @@ const departmentOptions: Option[] = [
               loadingSave ||
               loadingLoad ||
               !!timeError ||
-              isManagerRequiredButMissing
+              isManagerRequiredButMissing ||
+              Object.keys(errors).length > 0
             }
           >
             {loadingSave ? "Saving..." : "Save"}

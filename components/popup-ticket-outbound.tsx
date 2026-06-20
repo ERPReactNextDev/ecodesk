@@ -1,4 +1,4 @@
-"use client";
+"use client"; //
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
@@ -413,7 +413,7 @@ export function TicketHistory() {
         <>
             {/* Main Dialog */}
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent style={{ width: "40vw", maxWidth: "none" }}>
+                <DialogContent className="max-w-[600px] w-[90vw] max-h-[85vh] overflow-y-auto">
                             <DialogHeader>
                             <DialogTitle className="flex flex-col gap-1">
                                 <span>Your Ticket Status Has Been Updated</span>

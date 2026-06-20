@@ -33,7 +33,9 @@ import { Progress } from "@/components/ui/progress";
 import { AddCompanyModal } from "./add-company-modal";
 import { Separator } from "@/components/ui/separator";
 import { TicketHistoryDialog } from "./ticket-history-dialog";
-import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
+
+// ─── NEW: replace the old downloadStyledWorkbookFromCsv import ───────────────
+import { downloadTicketsWorkbook } from "@/lib/download-tickets-workbook";
 
 interface Company {
   id: string;
@@ -273,9 +275,9 @@ export const Ticket: React.FC<TicketProps> = ({
   const sortableFields = [
     "source_company", "source", "wrap_up", "traffic", "department",
     "channel", "customer_status", "customer_type", "remarks", "status",
-    "date_created", "date_updated",
+    "date_created",
   ];
-  const [sortField, setSortField] = useState<string>("date_updated");
+  const [sortField, setSortField] = useState<string>("date_created");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [exporting, setExporting] = useState(false);
@@ -663,67 +665,21 @@ export const Ticket: React.FC<TicketProps> = ({
     finally { setDeleting(false); setShowDeleteConfirm(false); }
   };
 
-  async function handleExportCsv(data: MergedActivity[]) {
+  // ─── NEW: export handler using downloadTicketsWorkbook ──────────────────────
+  async function handleExportXlsx(data: MergedActivity[]) {
     if (!data.length) { toast.error("No data to export."); return; }
     try {
       setExporting(true);
-      await new Promise((r) => setTimeout(r, 1000));
-      const headers = [
-        "CSR Agent", "CSR Ticket Number", "Company Name", "Status", "Date Created", "Date Updated",
-        "Contact Person", "Contact Number", "Email Address", "Gender",
-        "Ticket Received", "Ticket Endorsed", "Inquiry Received", "Response to Inquiry",
-        "Handling CSR", "Traffic", "Source Company", "Channel", "Wrap Up", "Source",
-        "Customer Type", "Customer Status", "Department", "Territory Sales Manager",
-        "TSM Acknowledge Time", "TSM Handling Time", "Territory Sales Associate",
-        "TSA Acknowledge Time", "TSA Handling Time", "Remarks", "Inquiry",
-        "Item Code", "Item Description", "PO Number", "SO Date", "SO Number",
-        "SO Amount", "Qty Sold", "Quotation Number", "Quotation Amount",
-        "Payment Terms", "PO Source", "Payment Date", "Delivery Date", "Close Reason",
-      ];
-      const formatDate = (dateStr?: string) => {
-        if (!dateStr) return "-";
-        const d = new Date(dateStr);
-        return isNaN(d.getTime()) ? "-" : d.toLocaleString();
-      };
-      const rows = data.map((item: MergedActivity) => [
-        getAgentNameByReferenceID(item.referenceid),
-        item.ticket_reference_number || "-",
-        item.company_name,
-        item.status,
-        formatDate(item.date_created), formatDate(item.date_updated),
-        item.contact_person || "-", item.contact_number || "-", item.email_address || "-",
-        item.gender || "-", formatDate(item.ticket_received), formatDate(item.ticket_endorsed),
-        formatDate(item.inquiry_received), formatDate(item.response_to_inquiry),
-        item.handling_csr || "-", item.traffic || "-", item.source_company || "-",
-        item.channel || "-", item.wrap_up || "-", item.source || "-",
-        item.customer_type || "-", item.customer_status || "-", item.department || "-",
-        getAgentNameByReferenceID(item.manager), formatDate(item.tsm_acknowledge_date),
-        formatDate(item.tsm_handling_time), getAgentNameByReferenceID(item.agent),
-        formatDate(item.tsa_acknowledge_date), formatDate(item.tsa_handling_time),
-        item.remarks || "-", item.inquiry || "-", item.item_code || "-",
-        item.item_description || "-", item.po_number || "-", formatDate(item.so_date),
-        item.so_number || "-", item.so_amount || "-", item.qty_sold || "-",
-        item.quotation_number || "-", item.quotation_amount || "-",
-        item.payment_terms || "-", item.po_source || "-",
-        formatDate(item.payment_date), formatDate(item.delivery_date), item.close_reason || "-",
-      ]);
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(",")),
-      ].join("\n");
-      downloadStyledWorkbookFromCsv(csvContent, `TICKETS_${Date.now()}.xlsx`);
-      toast.success("CSV file downloaded.");
+      await new Promise((r) => setTimeout(r, 500)); // allow progress bar to show
+      downloadTicketsWorkbook(data, agents, `TICKETS_${Date.now()}.xlsx`);
+      toast.success("Excel file downloaded.");
     } catch (error) {
-      toast.error("Failed to export CSV.");
+      toast.error("Failed to export Excel file.");
       console.error(error);
-    } finally { setExporting(false); }
+    } finally {
+      setExporting(false);
+    }
   }
-
-  const getAgentNameByReferenceID = (refId: string | null | undefined): string => {
-    if (!refId) return "-";
-    const agent = agents.find((a) => a.ReferenceID === refId);
-    return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
-  };
 
   if (isLoading) {
     return (
@@ -769,7 +725,7 @@ export const Ticket: React.FC<TicketProps> = ({
           </div>
         </CardHeader>
 
-        <CardContent className="p-0 flex flex-col flex-grow overflow-hidden">
+        <CardContent className="p-0 flex flex-col overflow-hidden">
           <Input
             type="search"
             placeholder="Search company, email, contact, person..."
@@ -783,13 +739,13 @@ export const Ticket: React.FC<TicketProps> = ({
             </div>
           ) : (
             <Accordion type="multiple" className="overflow-auto space-y-2 p-2 max-h-[700px]">
-              {displayedCompanies.map((c) => {
+              {displayedCompanies.map((c, index) => {
                 const agentDetails = agents.find((a) => a.ReferenceID === c.referenceid);
                 const fullName = agentDetails
                   ? `${agentDetails.Firstname} ${agentDetails.Lastname}`
                   : "(Unknown Agent)";
                 return (
-                  <AccordionItem key={c.account_reference_number} value={c.account_reference_number}>
+                  <AccordionItem key={`${c.account_reference_number}-${index}`} value={c.account_reference_number}>
                     <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
                       <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
                         <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
@@ -852,13 +808,14 @@ export const Ticket: React.FC<TicketProps> = ({
             onChange={(e) => setActivitySearchTerm(e.target.value)}
             className="flex-grow px-3 py-2 border rounded-md text-sm"
           />
+          {/* ── Download button now calls handleExportXlsx ── */}
           <Button
             variant="outline"
             disabled={filteredAndSortedData.length === 0}
-            onClick={() => handleExportCsv(filteredAndSortedData)}
+            onClick={() => handleExportXlsx(filteredAndSortedData)}
             className="bg-green-500 text-white hover:bg-green-600 cursor-pointer"
           >
-            Download CSV
+            Download Excel
           </Button>
           <Button className="cursor-pointer" onClick={() => setFilterDialogOpen(true)}>
             Filter
@@ -890,7 +847,6 @@ export const Ticket: React.FC<TicketProps> = ({
             const totalPages = totalPagesByStatus[status];
 
             return (
-              /* Each column is a flex column with fixed total height so all 4 are equal */
               <div
                 key={status}
                 className="flex flex-col border rounded-xl overflow-hidden"
@@ -918,7 +874,7 @@ export const Ticket: React.FC<TicketProps> = ({
                   />
                 </div>
 
-                {/* SCROLLABLE ITEMS LIST — takes remaining height */}
+                {/* SCROLLABLE ITEMS LIST */}
                 <div className="overflow-y-auto flex-1 bg-gray-50/50 custom-scrollbar">
                   {columnItems.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-xs text-muted-foreground p-4 text-center">
@@ -979,7 +935,10 @@ export const Ticket: React.FC<TicketProps> = ({
                                 </span>
                                 <span className="text-[10px] text-gray-400">–</span>
                                 <span className="text-[10px] capitalize font-semibold truncate">
-                                  {getAgentNameByReferenceID(item.referenceid)}
+                                  {(() => {
+                                    const a = agents.find((ag) => ag.ReferenceID === item.referenceid);
+                                    return a ? `${a.Firstname} ${a.Lastname}` : "-";
+                                  })()}
                                 </span>
                               </div>
                             </div>
@@ -1021,7 +980,7 @@ export const Ticket: React.FC<TicketProps> = ({
                   )}
                 </div>
 
-                {/* PAGINATION FOOTER — always pinned at bottom */}
+                {/* PAGINATION FOOTER */}
                 <div className="border-t bg-white px-2 py-2 shrink-0">
                   {totalPages > 1 ? (
                     <>
