@@ -112,6 +112,73 @@ function fmtDateTime(raw?: string): string {
   });
 }
 
+/** Parse date with forced year 2026 if wrong */
+function parseDateFixYear(dateStr?: string) {
+  if (!dateStr) return new Date(NaN);
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return new Date(NaN);
+  if (d.getFullYear() < 2026) d.setFullYear(2026);
+  return d;
+}
+
+/** Format hours to HH:MM:SS */
+function formatHoursToHMS(hours: number) {
+  const totalSeconds = Math.round(hours * 3600);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+/** Calculate TSA Response Time per ticket */
+function calculateTSAResponseTime(ticket: Ticket): string {
+  if (ticket.tsa_acknowledge_date && ticket.ticket_endorsed) {
+    const ack = parseDateFixYear(ticket.tsa_acknowledge_date).getTime();
+    const end = parseDateFixYear(ticket.ticket_endorsed).getTime();
+    if (!isNaN(ack) && !isNaN(end) && ack >= end) {
+      const diffHours = (ack - end) / (1000 * 60 * 60);
+      return formatHoursToHMS(diffHours);
+    }
+  }
+  return "-";
+}
+
+/** Calculate Quotation Handling Time, Non-Quotation Handling Time, SPF Handling Duration per ticket */
+function calculateHandlingTimes(ticket: Ticket): { quotation: string; nonQuotation: string; spf: string } {
+  const tsaTime = parseDateFixYear(ticket.tsa_handling_time).getTime();
+  const ticketReceived = parseDateFixYear(ticket.ticket_received).getTime();
+  if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
+    const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
+    const remarksLower = ticket.remarks?.trim().toLowerCase();
+    const nonQuotationRemarks = [
+      "no stocks / insufficient stocks",
+      "item not carried",
+      "unable to contact customer",
+      "customer request cancellation",
+      "accreditation / partnership",
+      "no response for client",
+      "assisted",
+      "dissaproved quotation",
+      "for site visit",
+      "non standard item",
+      "po received",
+      "not converted to sales",
+      "for occular inspection",
+      "waiting for client confirmation",
+      "pending quotation"
+    ];
+
+    if (remarksLower === "quotation for approval" || remarksLower === "sold") {
+      return { quotation: formatHoursToHMS(diffHours), nonQuotation: "-", spf: "-" };
+    } else if (remarksLower === "for spf") {
+      return { quotation: "-", nonQuotation: "-", spf: formatHoursToHMS(diffHours) };
+    } else if (remarksLower && nonQuotationRemarks.includes(remarksLower)) {
+      return { quotation: "-", nonQuotation: formatHoursToHMS(diffHours), spf: "-" };
+    }
+  }
+  return { quotation: "-", nonQuotation: "-", spf: "-" };
+}
+
 /** Resolve user full name from ReferenceID */
 function resolveUser(referenceid: string | undefined, users: Agent[]): string {
   if (!referenceid) return "-";
@@ -259,6 +326,12 @@ function buildColumns(users: Agent[]): Array<{
 
     // ── Closure
     { header: "Close Reason",       width: 20, value: (t) => t.close_reason || "-" },
+
+    // ── New Duration Columns
+    { header: "TSA Response Time",       width: 18, value: (t) => calculateTSAResponseTime(t) },
+    { header: "Non-Quotation HT",        width: 18, value: (t) => calculateHandlingTimes(t).nonQuotation },
+    { header: "Quotation HT",            width: 18, value: (t) => calculateHandlingTimes(t).quotation },
+    { header: "SPF Handling Duration",   width: 22, value: (t) => calculateHandlingTimes(t).spf },
   ];
 }
 
