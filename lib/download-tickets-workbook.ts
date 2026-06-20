@@ -112,10 +112,26 @@ function fmtDateTime(raw?: string): string {
   });
 }
 
-/** Resolve agent full name from ReferenceID */
-function resolveAgent(referenceid: string, agents: Agent[]): string {
-  const a = agents.find((ag) => ag.ReferenceID === referenceid);
+/** Resolve user full name from ReferenceID */
+function resolveUser(referenceid: string | undefined, users: Agent[]): string {
+  if (!referenceid) return "-";
+  const a = users.find((ag) => ag.ReferenceID === referenceid);
   return a ? `${a.Firstname} ${a.Lastname}` : "-";
+}
+
+/** Resolve CSR Agent full name */
+function resolveCSRAgent(referenceid: string, users: Agent[]): string {
+  return resolveUser(referenceid, users);
+}
+
+/** Resolve Territory Sales Manager full name */
+function resolveManager(managerId: string | undefined, users: Agent[]): string {
+  return resolveUser(managerId, users);
+}
+
+/** Resolve Territory Sales Associate full name */
+function resolveTSA(agentId: string | undefined, users: Agent[]): string {
+  return resolveUser(agentId, users);
 }
 
 /** Apply header row style */
@@ -168,14 +184,14 @@ function styleDataRow(
  * Each entry: [header label, width in chars, value extractor fn]
  * DateTime fields are split into *Date and *Time pairs.
  */
-function buildColumns(agents: Agent[]): Array<{
+function buildColumns(users: Agent[]): Array<{
   header: string;
   width: number;
   value: (t: Ticket) => string;
 }> {
   return [
     // ── Identity
-    { header: "CSR Agent",          width: 22, value: (t) => resolveAgent(t.referenceid, agents) },
+    { header: "CSR Agent",          width: 22, value: (t) => resolveCSRAgent(t.referenceid, users) },
     { header: "Company Name",       width: 28, value: (t) => t.company_name || "-" },
     { header: "Status",             width: 20, value: (t) => t.status || "-" },
 
@@ -209,7 +225,7 @@ function buildColumns(agents: Agent[]): Array<{
     { header: "Department",         width: 14, value: (t) => t.department || "-" },
 
     // ── TSM
-    { header: "Territory Sales Manager",    width: 22, value: (t) => t.manager || "-" },
+    { header: "Territory Sales Manager",    width: 22, value: (t) => resolveManager(t.manager, users) },
 
     // ── TSM Acknowledge (split)
     { header: "TSM Acknowledge Date", width: 22, value: (t) => fmtDate(t.tsm_acknowledge_date) },
@@ -220,7 +236,7 @@ function buildColumns(agents: Agent[]): Array<{
     { header: "TSM Handling Time",  width: 18, value: (t) => fmtTime(t.tsm_handling_time) },
 
     // ── TSA
-    { header: "Territory Sales Associate",  width: 22, value: (t) => t.agent || "-" },
+    { header: "Territory Sales Associate",  width: 22, value: (t) => resolveTSA(t.agent, users) },
 
     // ── TSA Acknowledge (split)
     { header: "TSA Acknowledge Date", width: 22, value: (t) => fmtDate(t.tsa_acknowledge_date) },
