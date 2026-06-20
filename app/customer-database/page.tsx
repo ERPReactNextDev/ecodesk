@@ -41,6 +41,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { FormatProvider } from "@/contexts/FormatContext";
 import { type DateRange } from "react-day-picker";
@@ -276,6 +282,23 @@ const filteredAccounts = accounts
     return agent ? `${agent.Firstname} ${agent.Lastname}` : "-";
   };
 
+  // Calculate account progress
+  const calculateAccountProgress = (account: Account) => {
+    const fields = [
+      account.contact_person,
+      account.contact_number,
+      account.email_address,
+      account.address
+    ];
+    const filledFields = fields.filter(field => field && field.trim() !== "").length;
+    const percentage = (filledFields / fields.length) * 100;
+    return {
+      filled: filledFields,
+      total: fields.length,
+      percentage: percentage
+    };
+  };
+
   return (
     <>
       <SidebarLeft />
@@ -450,10 +473,12 @@ const filteredAccounts = accounts
           {/* Table container */}
           {!loading && !error && currentAccounts.length > 0 && (
             <div className="overflow-auto">
-              <Table className="min-w-[1000px]">
+              <Table className="min-w-[1200px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Actions</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Progress</TableHead>
                     <TableHead>Type Client</TableHead>
                     <TableHead>Account Owner</TableHead>
                     <TableHead>Company Name</TableHead>
@@ -466,58 +491,117 @@ const filteredAccounts = accounts
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentAccounts.map((acc) => (
-                    <TableRow key={acc.id} className="hover:bg-gray-50">
-                      <TableCell className="flex gap-2">
-                        {acc.type_client === "New Client" && (
-                          <>
-                            <Button
-                            className="cursor-pointer"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingAccount(acc);
-                                setEditModalOpen(true);
-                              }}
+                  {currentAccounts.map((acc) => {
+                    const progress = calculateAccountProgress(acc);
+                    return (
+                      <TableRow key={acc.id} className="hover:bg-gray-50">
+                        <TableCell className="flex gap-2">
+                          {acc.type_client === "New Client" && (
+                            <>
+                              <Button
+                              className="cursor-pointer"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingAccount(acc);
+                                  setEditModalOpen(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                              className="cursor-pointer"
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(acc)}
+                              >
+                                Delete
+                              </Button>
+                            </>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {acc.status ? (
+                            <Badge
+                              className={
+                                acc.status === "Active"
+                                  ? "bg-green-100 text-green-800 border border-green-300 capitalize"
+                                  : "bg-orange-100 text-orange-800 border border-orange-300 capitalize"
+                              }
                             >
-                              Edit
-                            </Button>
-                            <Button
-                            className="cursor-pointer"
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(acc)}
+                              {acc.status}
+                            </Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="w-32 cursor-help">
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span>{progress.filled}/{progress.total}</span>
+                                    <span>{Math.round(progress.percentage)}%</span>
+                                  </div>
+                                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full ${progress.percentage === 100 ? "bg-green-500" : "bg-blue-500"}`}
+                                      style={{ width: `${progress.percentage}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <div className="text-xs space-y-1">
+                                  <p className="font-medium mb-2">Fields:</p>
+                                  <div className="flex items-center gap-2">
+                                    <span className={acc.contact_person?.trim() ? "text-green-600" : "text-gray-400"}>•</span>
+                                    <span>Contact Person: {acc.contact_person?.trim() ? "✓" : "✗"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={acc.contact_number?.trim() ? "text-green-600" : "text-gray-400"}>•</span>
+                                    <span>Contact Number: {acc.contact_number?.trim() ? "✓" : "✗"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={acc.email_address?.trim() ? "text-green-600" : "text-gray-400"}>•</span>
+                                    <span>Email Address: {acc.email_address?.trim() ? "✓" : "✗"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={acc.address?.trim() ? "text-green-600" : "text-gray-400"}>•</span>
+                                    <span>Address: {acc.address?.trim() ? "✓" : "✗"}</span>
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
+                        <TableCell>
+                          {acc.type_client ? (
+                            <Badge
+                              className={
+                                acc.type_client === "CSR Client"
+                                  ? "bg-green-100 text-green-800 border border-green-300 capitalize"
+                                  : "bg-gray-100 text-gray-800 border border-gray-200 capitalize"
+                              }
                             >
-                              Delete
-                            </Button>
-                          </>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {acc.type_client ? (
-                          <Badge
-                            className={
-                              acc.type_client === "CSR Client"
-                                ? "bg-green-100 text-green-800 border border-green-300 capitalize"
-                                : "bg-gray-100 text-gray-800 border border-gray-200 capitalize"
-                            }
-                          >
-                            {acc.type_client}
-                          </Badge>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell className="capitalize">{getAgentNameByReferenceID(acc.referenceid)}</TableCell>
-                      <TableCell>{acc.company_name ?? "-"}</TableCell>
-                      <TableCell>{acc.contact_person ?? "-"}</TableCell>
-                      <TableCell>{acc.contact_number ?? "-"}</TableCell>
-                      <TableCell>{acc.email_address ?? "-"}</TableCell>
-                      <TableCell>{acc.address ?? "-"}</TableCell>
-                      <TableCell>{acc.region ?? "-"}</TableCell>
-                      <TableCell>{acc.industry ?? "-"}</TableCell>
-                    </TableRow>
-                  ))}
+                              {acc.type_client}
+                            </Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="capitalize">{getAgentNameByReferenceID(acc.referenceid)}</TableCell>
+                        <TableCell>{acc.company_name ?? "-"}</TableCell>
+                        <TableCell>{acc.contact_person ?? "-"}</TableCell>
+                        <TableCell>{acc.contact_number ?? "-"}</TableCell>
+                        <TableCell>{acc.email_address ?? "-"}</TableCell>
+                        <TableCell>{acc.address ?? "-"}</TableCell>
+                        <TableCell>{acc.region ?? "-"}</TableCell>
+                        <TableCell>{acc.industry ?? "-"}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
