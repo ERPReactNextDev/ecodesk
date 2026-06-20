@@ -2091,7 +2091,7 @@ export function TicketSheet(props: TicketSheetProps) {
               </div>
 
               
-              {status === "Closed" && (
+              {(status === "Closed" || status === "Converted into Sales") && (
                 <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 space-y-4">
                   <h4 className="font-semibold text-sm text-red-700">
                     On Closing of Ticket (Required)
