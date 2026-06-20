@@ -40,7 +40,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-mono`}>
         <UserProvider>
-          <ThemeProvider attribute="class" defaultTheme="chicago-bulls" enableSystem>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <Suspense fallback={null}>
               <TicketReceived />
               <TicketHistory />
