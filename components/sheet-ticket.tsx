@@ -1242,7 +1242,7 @@ export function TicketSheet(props: TicketSheetProps) {
       newErrors.status = "Status is required.";
     }
 
-    if (status === "Closed") {
+    if (status === "Closed" || status === "Converted into Sales") {
       if (!tsmAcknowledgeDate && !tsaAcknowledgeDate) {
         newErrors.status = "Either TSM or TSA Acknowledgement Date is required when closing or converting to sales.";
       }
@@ -1285,6 +1285,13 @@ export function TicketSheet(props: TicketSheetProps) {
 
   const [loadingSave, setLoadingSave] = useState(false);
   const [loadingLoad, setLoadingLoad] = useState(false);
+
+  // Validate step 6 whenever relevant fields change
+  useEffect(() => {
+    if (step === 6) {
+      validateStep6();
+    }
+  }, [status, tsmAcknowledgeDate, tsmHandlingTime, tsaAcknowledgeDate, tsaHandlingTime, closeReason, counterOffer, clientSpecs, step]);
 
   const onUpdate = async () => {
     if (!validateStep6()) return;
@@ -2180,7 +2187,8 @@ export function TicketSheet(props: TicketSheetProps) {
               loadingSave ||
               loadingLoad ||
               !!timeError ||
-              isManagerRequiredButMissing
+              isManagerRequiredButMissing ||
+              Object.keys(errors).length > 0
             }
           >
             {loadingSave ? "Saving..." : "Save"}

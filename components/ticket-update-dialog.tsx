@@ -822,11 +822,11 @@ export function UpdateTicketDialog({
   client_specs: clientSpecs,
 }),
 
-      // 🔥 IF SAVING AS CONVERTED INTO SALES – CLEAR CLOSE FIELDS
+      // 🔥 IF SAVING AS CONVERTED INTO SALES – KEEP CLOSE FIELDS
       ...(statusState === "Converted into Sales" && {
-        close_reason: "",
-        counter_offer: "",
-        client_specs: "",
+        close_reason: closeReason,
+        counter_offer: counterOffer,
+        client_specs: clientSpecs,
       }),
     };
 
