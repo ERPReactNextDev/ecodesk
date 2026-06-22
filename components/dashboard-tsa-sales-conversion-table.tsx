@@ -49,6 +49,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [companySearchTerm, setCompanySearchTerm] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function fetchAgents() {
@@ -523,14 +524,28 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                           <div className="space-y-2">
                             <h4 className="font-semibold text-sm text-gray-700">Companies & Ticket References:</h4>
                             {a.companies && a.companies.length > 0 ? (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                {a.companies.map((company: string, idx: number) => (
-                                  <div key={idx} className="bg-white p-2 rounded border text-sm">
-                                    <div className="font-medium">{company}</div>
-                                    <div className="text-gray-600 text-xs">{a.ticketReferences[idx] || 'N/A'}</div>
-                                  </div>
-                                ))}
-                              </div>
+                              <>
+                                <input
+                                  type="text"
+                                  placeholder="Search companies..."
+                                  value={companySearchTerm[a.agentName] || ''}
+                                  onChange={(e) => setCompanySearchTerm(prev => ({ ...prev, [a.agentName]: e.target.value }))}
+                                  className="border rounded-md px-3 py-2 text-sm w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <div className="max-h-60 overflow-y-auto border rounded-md bg-white">
+                                  {a.companies
+                                    .filter((company: string) => 
+                                      company.toLowerCase().includes((companySearchTerm[a.agentName] || '').toLowerCase()) ||
+                                      (a.ticketReferences[a.companies.indexOf(company)] || '').toLowerCase().includes((companySearchTerm[a.agentName] || '').toLowerCase())
+                                    )
+                                    .map((company: string, idx: number) => (
+                                      <div key={idx} className="p-3 border-b last:border-b-0 hover:bg-gray-50">
+                                        <div className="font-medium text-sm">{company}</div>
+                                        <div className="text-gray-600 text-xs mt-1">{a.ticketReferences[idx] || 'N/A'}</div>
+                                      </div>
+                                    ))}
+                                </div>
+                              </>
                             ) : (
                               <p className="text-gray-500 text-sm">No company data available</p>
                             )}
