@@ -6,6 +6,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFoo
 import { type DateRange } from "react-day-picker";
 import { useImperativeHandle } from "react";
 import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Activity {
   manager?: string;
@@ -20,6 +21,8 @@ interface Activity {
   ticket_received?: string;
   remarks?: string;
   customer_status?: string;
+  company_name?: string;
+  ticket_reference_number?: string;
 }
 
 interface Agent {
@@ -45,7 +48,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showOnlyHighlighted, setShowOnlyHighlighted] = useState(true);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function fetchAgents() {
@@ -75,7 +78,10 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           },
         });
         const json = await res.json();
-        setActivities(json.data || []);
+        const filteredActivities = (json.data || []).filter((activity: Activity) => 
+          activity.manager && activity.manager.trim() !== ""
+        );
+        setActivities(filteredActivities);
       } catch (err: any) {
         setError(err.message || "Failed to fetch activities");
       } finally {
@@ -134,6 +140,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             newNonBuyingConvertedAmount: 0,
             existingActiveConvertedAmount: 0,
             existingInactiveConvertedAmount: 0,
+            companies: [],
+            ticketReferences: [],
           };
         }
 
@@ -168,6 +176,12 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             map[a.manager || name].existingInactiveCount += 1;
             if (a.status === "Converted into Sales") map[a.manager || name].existingInactiveConvertedAmount += amount;
             break;
+        }
+
+        // Collect company and ticket reference information
+        if (a.company_name && a.ticket_reference_number) {
+          map[a.manager || name].companies.push(a.company_name);
+          map[a.manager || name].ticketReferences.push(a.ticket_reference_number);
         }
 
         // ----- TSA Response Time -----
@@ -222,20 +236,15 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         const avgResponseTime = avg(a.responseTimes);
         const avgQuotationHandlingTime = avg(a.quotationHandlingTimes);
         const avgNonQuotationHandlingTime = avg(a.nonQuotationHandlingTimes);
-        const isHighlighted = avgResponseTime >= (10 / 60) ||
-                               avgQuotationHandlingTime >= 4 ||
-                               avgNonQuotationHandlingTime >= 8;
         return {
           ...a,
           avgResponseTime,
           avgQuotationHandlingTime,
           avgNonQuotationHandlingTime,
           avgSPFHandlingTime: avg(a.spfHandlingTimes),
-          isHighlighted,
         };
       })
-      .filter((a) => !showOnlyHighlighted || !a.isHighlighted);
-  }, [activities, agents, dateCreatedFilterRange, searchTerm, showOnlyHighlighted]);
+  }, [activities, agents, dateCreatedFilterRange, searchTerm]);
 
   const formatHoursToHMS = (hours: number) => {
     const totalSeconds = Math.round(hours * 3600); // ROUND instead of floor
@@ -253,6 +262,18 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     return avgResponseTime >= TSA_RESPONSE_THRESHOLD ||
            avgQuotationHandlingTime >= QUOTATION_HT_THRESHOLD ||
            avgNonQuotationHandlingTime >= NON_QUOTATION_HT_THRESHOLD;
+  };
+
+  const toggleRow = (agentName: string) => {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(agentName)) {
+        newSet.delete(agentName);
+      } else {
+        newSet.add(agentName);
+      }
+      return newSet;
+    });
   };
 
   const totalSales = groupedManager.reduce((sum, a) => sum + a.salesCount, 0);
@@ -284,7 +305,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   downloadCSV() {
     if (!groupedManager || groupedManager.length === 0) return;
 
-    const filteredData = groupedManager.filter((a) => !showOnlyHighlighted || !a.isHighlighted);
+    const filteredData = groupedManager;
 
     const rows = filteredData.map((a, index) => {
       const inquiryToSalesPercent =
@@ -399,15 +420,6 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border rounded-md px-3 py-1 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showOnlyHighlighted}
-              onChange={(e) => setShowOnlyHighlighted(e.target.checked)}
-              className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
-            />
-            Do not show highlighted
-          </label>
         </div>
       </CardHeader>
 
@@ -467,29 +479,63 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             <TableBody>
               {groupedManager.map((a, index) => {
                 const inquiryToSalesPercent = a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
+                const isExpanded = expandedRows.has(a.agentName);
                 return (
-                  <TableRow key={a.agentName} className={`${a.isHighlighted ? "bg-red-100 hover:bg-red-200" : ""} group`}>
-                    <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
-                    <TableCell className={`sticky left-[20px] z-20 uppercase border-r ${a.isHighlighted ? "bg-red-100 group-hover:bg-red-200" : "bg-white"}`}>{a.agentName}</TableCell>
-                    <TableCell>{a.salesCount}</TableCell>
-                    <TableCell>{a.nonSalesCount}</TableCell>
-                    <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>
-                    <TableCell>₱{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>{a.convertedSalesCount}</TableCell>
-                    <TableCell>{inquiryToSalesPercent.toFixed(2)}%</TableCell>
-                    <TableCell>{a.newClientCount}</TableCell>
-                    <TableCell>{a.newNonBuyingCount}</TableCell>
-                    <TableCell>{a.existingActiveCount}</TableCell>
-                    <TableCell>{a.existingInactiveCount}</TableCell>
-                    <TableCell>₱{a.newClientConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>₱{a.newNonBuyingConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>₱{a.existingActiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>₱{a.existingInactiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
-                    <TableCell>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
-                    <TableCell>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
-                    <TableCell>{formatHoursToHMS(a.avgSPFHandlingTime)}</TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow key={a.agentName} className="group">
+                      <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
+                      <TableCell className={`sticky left-[20px] z-20 uppercase border-r bg-white`}>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleRow(a.agentName)}
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                          >
+                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            <span>{a.agentName}</span>
+                          </button>
+                        </div>
+                      </TableCell>
+                      <TableCell>{a.salesCount}</TableCell>
+                      <TableCell>{a.nonSalesCount}</TableCell>
+                      <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>
+                      <TableCell>₱{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>{a.convertedSalesCount}</TableCell>
+                      <TableCell>{inquiryToSalesPercent.toFixed(2)}%</TableCell>
+                      <TableCell>{a.newClientCount}</TableCell>
+                      <TableCell>{a.newNonBuyingCount}</TableCell>
+                      <TableCell>{a.existingActiveCount}</TableCell>
+                      <TableCell>{a.existingInactiveCount}</TableCell>
+                      <TableCell>₱{a.newClientConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>₱{a.newNonBuyingConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>₱{a.existingActiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>₱{a.existingInactiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
+                      <TableCell>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
+                      <TableCell>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
+                      <TableCell>{formatHoursToHMS(a.avgSPFHandlingTime)}</TableCell>
+                    </TableRow>
+                    {isExpanded && (
+                      <TableRow>
+                        <TableCell colSpan={21} className="bg-gray-50 p-4">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm text-gray-700">Companies & Ticket References:</h4>
+                            {a.companies && a.companies.length > 0 ? (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {a.companies.map((company: string, idx: number) => (
+                                  <div key={idx} className="bg-white p-2 rounded border text-sm">
+                                    <div className="font-medium">{company}</div>
+                                    <div className="text-gray-600 text-xs">{a.ticketReferences[idx] || 'N/A'}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-gray-500 text-sm">No company data available</p>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 );
               })}
             </TableBody>
