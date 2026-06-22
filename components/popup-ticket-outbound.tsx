@@ -427,7 +427,7 @@ export function TicketHistory() {
                             <div className="text-sm text-muted-foreground mt-1.5">
 
                             {receivedTickets.length > 0 ? (
-                                <div className="max-h-[320px] overflow-y-auto mt-4 space-y-6 pr-2">
+                                <div className="max-h-80 overflow-y-auto mt-4 space-y-6 pr-2">
                                     {receivedTickets.map((t, i) => {
                                         const agentDetails = agents.find((a) => a.ReferenceID === t.referenceid);
                                         const fullName = agentDetails

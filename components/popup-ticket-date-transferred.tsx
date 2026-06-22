@@ -217,7 +217,7 @@ export function PopupTicketDateTransferred() {
 
             <DialogDescription>
               {tickets.length > 0 ? (
-                <div className="max-h-[320px] overflow-y-auto mt-4 space-y-6 pr-2">
+                <div className="max-h-80 overflow-y-auto mt-4 space-y-6 pr-2">
                   {tickets.map((t, i) => (
                     <div
                       key={t.id || i}

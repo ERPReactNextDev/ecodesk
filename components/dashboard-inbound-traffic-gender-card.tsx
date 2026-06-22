@@ -161,7 +161,7 @@ useImperativeHandle(ref, () => ({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-grow overflow-auto">
+      <CardContent className="grow overflow-auto">
         {loading && <p>Loading activities...</p>}
         {error && <p className="text-destructive">{error}</p>}
 

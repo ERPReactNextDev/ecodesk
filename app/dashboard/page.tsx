@@ -508,7 +508,7 @@ function DashboardContent() {
     <>
       <SidebarLeft />
       <SidebarInset>
-        <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2 px-3 z-[50]">
+        <header className="bg-background sticky top-0 flex h-14 shrink-0 items-center gap-2 px-3 z-50">
           <SidebarTrigger />
           <Separator
             orientation="vertical"

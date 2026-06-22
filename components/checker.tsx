@@ -704,7 +704,7 @@ const FilterSelect: React.FC<FilterSelectProps> = ({ label, value, onChange, opt
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-8 border border-gray-200 text-xs bg-white px-2 focus:outline-none focus:ring-1 focus:ring-gray-400 max-w-[160px]"
+      className="h-8 border border-gray-200 text-xs bg-white px-2 focus:outline-none focus:ring-1 focus:ring-gray-400 max-w-40"
     >
       <option value="All">All</option>
       {options.map((o) => (

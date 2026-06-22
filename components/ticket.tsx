@@ -749,7 +749,7 @@ export const Ticket: React.FC<TicketProps> = ({
                     <div className="flex items-center justify-between text-xs font-semibold gap-2 px-4 py-2">
                       <AccordionTrigger className="text-xs font-semibold flex-1 text-left">
                         <span className="flex items-center gap-2 flex-wrap" style={{ minWidth: 0 }}>
-                          <span className="break-words whitespace-normal cap">
+                          <span className="wrap-break-word whitespace-normal cap">
                             {c.company_name?.trim() ? c.company_name : c.contact_person}
                           </span>
                           {isNewCompany(c.date_created) && (
@@ -806,7 +806,7 @@ export const Ticket: React.FC<TicketProps> = ({
             placeholder="Search activities by company, status, reference number..."
             value={activitySearchTerm}
             onChange={(e) => setActivitySearchTerm(e.target.value)}
-            className="flex-grow px-3 py-2 border rounded-md text-sm"
+            className="grow px-3 py-2 border rounded-md text-sm"
           />
           {/* ── Download button now calls handleExportXlsx ── */}
           <Button
@@ -839,7 +839,7 @@ export const Ticket: React.FC<TicketProps> = ({
         </div>
 
         {/* ===================== 4 STATUS COLUMNS ===================== */}
-        <div className="grid grid grid-cols-1 md:grid-cols-2 gap-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {STATUS_COLUMNS.map((status) => {
             const columnItems = paginatedByStatus[status];
             const totalItems = groupedByStatus[status].length;

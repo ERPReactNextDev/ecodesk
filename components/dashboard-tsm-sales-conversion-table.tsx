@@ -524,7 +524,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             <TableHeader>
               <TableRow>
                 <TableHead className="sticky left-0 bg-white z-30">#</TableHead>
-                <TableHead className="sticky left-[20px] bg-white z-30 border-r">TSM Name</TableHead>
+                <TableHead className="sticky left-5 bg-white z-30 border-r">TSM Name</TableHead>
                 <TableHead>Sales</TableHead>
                 <TableHead>Non-Sales</TableHead>
                 <TableHead>Total</TableHead>
@@ -546,9 +546,9 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
               </TableRow>
             </TableHeader>
 
-            <TableHeader className="font-semibold bg-muted/80 border-b">
+            <TableRow className="font-semibold bg-muted/80 border-b">
               <TableCell className="sticky left-0 bg-white z-30">-</TableCell>
-              <TableCell className="sticky left-[20px] bg-white z-30 border-r">Total</TableCell>
+              <TableCell className="sticky left-5 bg-white z-30 border-r">Total</TableCell>
               <TableCell>{totalSales}</TableCell>
               <TableCell>{totalNonSales}</TableCell>
               <TableCell>{totalSales + totalNonSales}</TableCell>
@@ -567,17 +567,17 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
               <TableCell className={getTextColorClass(avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
               <TableCell className={getTextColorClass(avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
               <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
-            </TableHeader>
+            </TableRow>
 
             <TableBody>
               {groupedManager.map((a, index) => {
                 const inquiryToSalesPercent = a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
                 const isExpanded = expandedRows.has(a.agentName);
                 return (
-                  <>
+                  <React.Fragment key={a.agentName}>
                     <TableRow key={a.agentName} className="group">
                       <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
-                      <TableCell className={`sticky left-[20px] z-20 uppercase border-r bg-white`}>
+                      <TableCell className={`sticky left-5 z-20 uppercase border-r bg-white`}>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleRow(a.agentName)}
@@ -643,7 +643,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })}
             </TableBody>

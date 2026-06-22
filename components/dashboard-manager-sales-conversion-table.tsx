@@ -368,14 +368,14 @@ downloadCSV() {
                             </TableRow>
                         </TableHeader>
 
-                        <TableHeader className="font-semibold bg-muted/80 border-b">
+                        <TableRow className="font-semibold bg-muted/80 border-b">
                             <TableCell>-</TableCell>
                             <TableCell>Total</TableCell>
                             <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
                             <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
                             <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
                             <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
-                        </TableHeader>
+                        </TableRow>
 
                         <TableBody>
                             {groupedAgents.map((a, index) => {

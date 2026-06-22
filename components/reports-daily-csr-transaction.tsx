@@ -489,7 +489,7 @@ export const DCT: React.FC<TicketProps> = ({
                                     setActivitySearchTerm(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="flex-grow px-3 py-2 border rounded-md text-sm"
+                                className="grow px-3 py-2 border rounded-md text-sm"
                             />
 
                             <Button
