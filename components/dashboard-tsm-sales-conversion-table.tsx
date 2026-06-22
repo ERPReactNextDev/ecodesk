@@ -50,6 +50,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [companySearchTerm, setCompanySearchTerm] = useState<Record<string, string>>({});
+  const [recordFilter, setRecordFilter] = useState<string>("all");
 
   useEffect(() => {
     async function fetchAgents() {
@@ -111,6 +112,10 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     if (to && date > to) return false;
     return true;
   };
+
+  const TSA_RESPONSE_THRESHOLD = 10 / 60; // 10 minutes in hours
+  const NON_QUOTATION_HT_THRESHOLD = 8; // 8 hours
+  const QUOTATION_HT_THRESHOLD = 4; // 4 hours
 
   const groupedManager = useMemo(() => {
     const map: Record<string, any> = {};
@@ -245,7 +250,25 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           avgSPFHandlingTime: avg(a.spfHandlingTimes),
         };
       })
-  }, [activities, agents, dateCreatedFilterRange, searchTerm]);
+      .filter((a) => {
+        if (recordFilter === "all") return true;
+        if (recordFilter === "clean") {
+          return a.avgResponseTime <= TSA_RESPONSE_THRESHOLD &&
+                 a.avgNonQuotationHandlingTime <= NON_QUOTATION_HT_THRESHOLD &&
+                 a.avgQuotationHandlingTime <= QUOTATION_HT_THRESHOLD;
+        }
+        if (recordFilter === "tsa-response") {
+          return a.avgResponseTime > TSA_RESPONSE_THRESHOLD;
+        }
+        if (recordFilter === "non-quotation") {
+          return a.avgNonQuotationHandlingTime > NON_QUOTATION_HT_THRESHOLD;
+        }
+        if (recordFilter === "quotation") {
+          return a.avgQuotationHandlingTime > QUOTATION_HT_THRESHOLD;
+        }
+        return true;
+      })
+  }, [activities, agents, dateCreatedFilterRange, searchTerm, recordFilter]);
 
   const formatHoursToHMS = (hours: number) => {
     const totalSeconds = Math.round(hours * 3600); // ROUND instead of floor
@@ -253,6 +276,24 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const getTextColorClass = (value: number, threshold: number, columnName: string) => {
+    if (recordFilter === "clean") return "";
+    if (recordFilter === "all") {
+      return value > threshold ? "text-red-600 font-semibold" : "";
+    }
+    // For specific filters, only highlight the matching column
+    if (recordFilter === "tsa-response" && columnName === "TSA Response Time") {
+      return value > threshold ? "text-red-600 font-semibold" : "";
+    }
+    if (recordFilter === "non-quotation" && columnName === "Non-Quotation HT") {
+      return value > threshold ? "text-red-600 font-semibold" : "";
+    }
+    if (recordFilter === "quotation" && columnName === "Quotation HT") {
+      return value > threshold ? "text-red-600 font-semibold" : "";
+    }
+    return "";
   };
 
   const shouldHighlightRow = (avgResponseTime: number, avgQuotationHandlingTime: number, avgNonQuotationHandlingTime: number) => {
@@ -405,7 +446,43 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
       ),
     ].join("\n");
 
-    downloadStyledWorkbookFromCsv(csv, "tsm-sales-conversion.xlsx");
+    // Apply red font formatting based on current filter
+    let downloadOptions;
+    if (recordFilter === "all") {
+      downloadOptions = {
+        redFontColumns: ["TSA Response Time", "Non-Quotation HT", "Quotation HT"],
+        thresholds: {
+          "TSA Response Time": TSA_RESPONSE_THRESHOLD,
+          "Non-Quotation HT": NON_QUOTATION_HT_THRESHOLD,
+          "Quotation HT": QUOTATION_HT_THRESHOLD,
+        },
+      };
+    } else if (recordFilter === "tsa-response") {
+      downloadOptions = {
+        redFontColumns: ["TSA Response Time"],
+        thresholds: {
+          "TSA Response Time": TSA_RESPONSE_THRESHOLD,
+        },
+      };
+    } else if (recordFilter === "non-quotation") {
+      downloadOptions = {
+        redFontColumns: ["Non-Quotation HT"],
+        thresholds: {
+          "Non-Quotation HT": NON_QUOTATION_HT_THRESHOLD,
+        },
+      };
+    } else if (recordFilter === "quotation") {
+      downloadOptions = {
+        redFontColumns: ["Quotation HT"],
+        thresholds: {
+          "Quotation HT": QUOTATION_HT_THRESHOLD,
+        },
+      };
+    } else if (recordFilter === "clean") {
+      downloadOptions = undefined;
+    }
+
+    downloadStyledWorkbookFromCsv(csv, "tsm-sales-conversion.xlsx", downloadOptions);
   },
 }));
 
@@ -421,6 +498,17 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border rounded-md px-3 py-1 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <select
+            value={recordFilter}
+            onChange={(e) => setRecordFilter(e.target.value)}
+            className="border rounded-md px-3 py-1 text-sm w-full md:w-48 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Records</option>
+            <option value="clean">Clean Records</option>
+            <option value="tsa-response">TSA Response Time (&gt;10 min.)</option>
+            <option value="non-quotation">Non-Quotation HT (&gt;8 hrs.)</option>
+            <option value="quotation">Quotation HT (&gt;4 hrs.)</option>
+          </select>
         </div>
       </CardHeader>
 
@@ -471,9 +559,9 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
               <TableCell>₱{groupedManager.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell>₱{groupedManager.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell>₱{groupedManager.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
-              <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
-              <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
+              <TableCell className={getTextColorClass(avgTSAResponseTime, TSA_RESPONSE_THRESHOLD, "TSA Response Time")}>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
+              <TableCell className={getTextColorClass(avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
+              <TableCell className={getTextColorClass(avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
               <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
             </TableHeader>
 
@@ -510,9 +598,9 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                       <TableCell>₱{a.newNonBuyingConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell>₱{a.existingActiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell>₱{a.existingInactiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                      <TableCell>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
-                      <TableCell>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
-                      <TableCell>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
+                      <TableCell className={getTextColorClass(a.avgResponseTime, TSA_RESPONSE_THRESHOLD, "TSA Response Time")}>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
+                      <TableCell className={getTextColorClass(a.avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
+                      <TableCell className={getTextColorClass(a.avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
                       <TableCell>{formatHoursToHMS(a.avgSPFHandlingTime)}</TableCell>
                     </TableRow>
                     {isExpanded && (

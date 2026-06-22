@@ -36,6 +36,10 @@ function findHeaderRow(worksheet: XLSX.WorkSheet, range: XLSX.Range): number | n
 export function downloadStyledWorkbookFromCsv(
   csvContent: string,
   filename: string,
+  options?: {
+    redFontColumns?: string[];
+    thresholds?: Record<string, number>;
+  },
 ) {
   const workbook = XLSX.read(csvContent, { type: "string" });
   const firstSheetName = workbook.SheetNames[0];
@@ -48,6 +52,18 @@ export function downloadStyledWorkbookFromCsv(
 
   const range = XLSX.utils.decode_range(worksheet["!ref"]);
   const headerRow = findHeaderRow(worksheet, range);
+
+  // Get column indices for red font columns
+  const redFontColIndices: Record<string, number> = {};
+  if (options?.redFontColumns && headerRow !== null) {
+    for (let col = range.s.c; col <= range.e.c; col += 1) {
+      const address = XLSX.utils.encode_cell({ r: headerRow, c: col });
+      const headerText = getCellText(worksheet[address]);
+      if (options.redFontColumns.includes(headerText)) {
+        redFontColIndices[headerText] = col;
+      }
+    }
+  }
 
   for (let row = range.s.r; row <= range.e.r; row += 1) {
     const dateFilterRow = isDateFilterRow(worksheet, row, range.s.c);
@@ -63,8 +79,24 @@ export function downloadStyledWorkbookFromCsv(
         : dateFilterRow
           ? "FACC15"
           : undefined;
-      const fontColor = tableHeaderRow ? "FFFFFF" : "000000";
+      let fontColor = tableHeaderRow ? "FFFFFF" : "000000";
       const bold = tableHeaderRow || dateFilterRow;
+
+      // Apply red font for cells that exceed thresholds
+      if (!tableHeaderRow && !dateFilterRow && options?.redFontColumns && options?.thresholds) {
+        const headerAddress = XLSX.utils.encode_cell({ r: headerRow || 0, c: col });
+        const headerText = getCellText(worksheet[headerAddress]);
+        if (options.redFontColumns.includes(headerText) && options.thresholds[headerText]) {
+          const cellValue = getCellText(cell);
+          const threshold = options.thresholds[headerText];
+          
+          // Parse time value to hours for comparison
+          const hours = parseTimeToHours(cellValue);
+          if (hours > threshold) {
+            fontColor = "FF0000";
+          }
+        }
+      }
 
       cell.s = {
         alignment: {
@@ -87,4 +119,16 @@ export function downloadStyledWorkbookFromCsv(
   }
 
   XLSX.writeFile(workbook, ensureXlsxExtension(filename));
+}
+
+function parseTimeToHours(timeStr: string): number {
+  if (!timeStr) return 0;
+  const parts = timeStr.split(':');
+  if (parts.length === 3) {
+    const hours = parseFloat(parts[0]) || 0;
+    const minutes = parseFloat(parts[1]) || 0;
+    const seconds = parseFloat(parts[2]) || 0;
+    return hours + (minutes / 60) + (seconds / 3600);
+  }
+  return 0;
 }
