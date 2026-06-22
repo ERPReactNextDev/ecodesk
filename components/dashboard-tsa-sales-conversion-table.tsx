@@ -7,6 +7,7 @@ import { type DateRange } from "react-day-picker";
 import { useImperativeHandle } from "react";
 import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { TicketHistoryDialog } from "@/components/ticket-history-dialog";
 
 interface Activity {
   agent?: string;
@@ -51,6 +52,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [companySearchTerm, setCompanySearchTerm] = useState<Record<string, string>>({});
   const [recordFilter, setRecordFilter] = useState<string>("all");
+  const [selectedTicket, setSelectedTicket] = useState<Activity | null>(null);
 
   useEffect(() => {
     async function fetchAgents() {
@@ -146,8 +148,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             newNonBuyingConvertedAmount: 0,
             existingActiveConvertedAmount: 0,
             existingInactiveConvertedAmount: 0,
-            companies: [],
-            ticketReferences: [],
+            companyTickets: [],
           };
         }
 
@@ -186,8 +187,11 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
 
         // Collect company and ticket reference information
         if (a.company_name && a.ticket_reference_number) {
-          map[a.agent || name].companies.push(a.company_name);
-          map[a.agent || name].ticketReferences.push(a.ticket_reference_number);
+          map[a.agent || name].companyTickets.push({
+            company_name: a.company_name,
+            ticket_reference_number: a.ticket_reference_number,
+            activity: a,
+          });
         }
 
         // ----- TSA Response Time -----
@@ -611,7 +615,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                         <TableCell colSpan={21} className="bg-gray-50 p-4">
                           <div className="space-y-2">
                             <h4 className="font-semibold text-sm text-gray-700">Companies & Ticket References:</h4>
-                            {a.companies && a.companies.length > 0 ? (
+                            {a.companyTickets && a.companyTickets.length > 0 ? (
                               <>
                                 <input
                                   type="text"
@@ -621,15 +625,16 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                                   className="border rounded-md px-3 py-2 text-sm w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 <div className="max-h-60 overflow-y-auto border rounded-md bg-white">
-                                  {a.companies
-                                    .filter((company: string) => 
-                                      company.toLowerCase().includes((companySearchTerm[a.agentName] || '').toLowerCase()) ||
-                                      (a.ticketReferences[a.companies.indexOf(company)] || '').toLowerCase().includes((companySearchTerm[a.agentName] || '').toLowerCase())
+                                  {a.companyTickets
+                                    .filter((ticket: any) => 
+                                      ticket.company_name.toLowerCase().includes((companySearchTerm[a.agentName] || '').toLowerCase()) ||
+                                      ticket.ticket_reference_number.toLowerCase().includes((companySearchTerm[a.agentName] || '').toLowerCase())
                                     )
-                                    .map((company: string, idx: number) => (
-                                      <div key={idx} className="p-3 border-b last:border-b-0 hover:bg-gray-50">
-                                        <div className="font-medium text-sm">{company}</div>
-                                        <div className="text-gray-600 text-xs mt-1">{a.ticketReferences[idx] || 'N/A'}</div>
+                                    .map((ticket: any, idx: number) => (
+                                      <div key={idx} className="p-3 border-b last:border-b-0 hover:bg-gray-50 flex flex-col items-start">
+                                        <div className="font-medium text-sm">{ticket.company_name}</div>
+                                        <div className="text-gray-600 text-xs">{ticket.ticket_reference_number}</div>
+                                        <TicketHistoryDialog item={ticket.activity} />
                                       </div>
                                     ))}
                                 </div>
