@@ -161,26 +161,22 @@ export function TicketReceived() {
       // Create signature of current tickets (sorted IDs)
       const currentSignature = tickets.map(t => t.id).sort().join(",");
 
-      // Filter tickets: not dismissed (regardless of date)
+      // Filter tickets: not dismissed
       const newTickets = tickets.filter(ticket => !dismissedTickets.includes(ticket.id));
 
       // Check if this exact set was previously dismissed
       const wasBatchDismissed = dismissedSignature === currentSignature && tickets.length > 0;
 
-      // Check if tickets are new compared to current state
-      const currentIds = receivedTickets.map(t => t.id).sort().join(",");
-      const newIds = newTickets.map(t => t.id).sort().join(",");
-
-      if (newTickets.length > 0 && currentIds !== newIds && !wasBatchDismissed) {
+      // Only show if there are non-dismissed tickets and the batch wasn't already dismissed
+      if (newTickets.length > 0 && !wasBatchDismissed) {
         setReceivedTickets(newTickets);
         setOpen(true);
         localStorage.removeItem("ticketSoundPlayedFor"); // Reset sound flag for new tickets
         setSoundPlayed(false);
-      } else if (newTickets.length === 0 || wasBatchDismissed) {
+      } else {
         setReceivedTickets([]);
         setOpen(false);
       }
-      // else, same tickets, don't reopen
     } catch (err: any) {
       setErrorTickets(err.message || "Error fetching endorsed tickets");
       setReceivedTickets([]);

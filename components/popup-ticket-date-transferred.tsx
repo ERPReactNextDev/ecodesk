@@ -105,6 +105,7 @@ export function PopupTicketDateTransferred() {
 
       setTickets(filtered);
 
+      // Only show if there are non-dismissed tickets and the batch wasn't already dismissed
       if (filtered.length > 0 && !wasBatchDismissed) {
         setOpen(true);
       } else {
