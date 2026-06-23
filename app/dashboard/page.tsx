@@ -58,6 +58,10 @@ import TSMSalesTableCard from "@/components/dashboard-tsm-sales-conversion-table
 import ManagerSalesTableCard from "@/components/dashboard-manager-sales-conversion-table";
 //
 import CountTickets from "@/components/dashboard-agent-ticket-table";
+import TSMResponseTimeOfficeCard from "@/components/dashboard-tsm-response-time-office";
+import TSMResponseTimeProjectCard from "@/components/dashboard-tsm-response-time-project";
+import TSAResponseTimeOfficeCard from "@/components/dashboard-tsa-response-time-office";
+import TSAResponseTimeProjectCard from "@/components/dashboard-tsa-response-time-project";
 import { Info, Calendar } from "lucide-react";
 
 interface UserDetails {
@@ -164,6 +168,11 @@ function DashboardContent() {
   const departmentHeadSalesCardRef = useRef<{ downloadCSV: () => void } | null>(
     null,
   );
+
+  const tsmResponseTimeOfficeRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const tsmResponseTimeProjectRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const tsaResponseTimeOfficeRef = useRef<{ downloadCSV: () => void } | null>(null);
+  const tsaResponseTimeProjectRef = useRef<{ downloadCSV: () => void } | null>(null);
 
   const queryUserId = searchParams?.get("id") ?? "";
 
@@ -395,6 +404,18 @@ function DashboardContent() {
     if (departmentHeadSalesCardRef.current) {
       departmentHeadSalesCardRef.current.downloadCSV();
     }
+    if (tsmResponseTimeOfficeRef.current) {
+      tsmResponseTimeOfficeRef.current.downloadCSV();
+    }
+    if (tsmResponseTimeProjectRef.current) {
+      tsmResponseTimeProjectRef.current.downloadCSV();
+    }
+    if (tsaResponseTimeOfficeRef.current) {
+      tsaResponseTimeOfficeRef.current.downloadCSV();
+    }
+    if (tsaResponseTimeProjectRef.current) {
+      tsaResponseTimeProjectRef.current.downloadCSV();
+    }
 
     // Kung may iba pang cards na may export, idagdag rin dito
     toast.success("Exported all available data!");
@@ -497,6 +518,22 @@ function DashboardContent() {
       if (metricsCardRef.current) {
         metricsCardRef.current.downloadCSV();
       }
+    } else if (selectedExport === "Export TSM Response Time (Office)") {
+      if (tsmResponseTimeOfficeRef.current) {
+        tsmResponseTimeOfficeRef.current.downloadCSV();
+      }
+    } else if (selectedExport === "Export TSM Response Time (Project)") {
+      if (tsmResponseTimeProjectRef.current) {
+        tsmResponseTimeProjectRef.current.downloadCSV();
+      }
+    } else if (selectedExport === "Export TSA Response Time (Office)") {
+      if (tsaResponseTimeOfficeRef.current) {
+        tsaResponseTimeOfficeRef.current.downloadCSV();
+      }
+    } else if (selectedExport === "Export TSA Response Time (Project)") {
+      if (tsaResponseTimeProjectRef.current) {
+        tsaResponseTimeProjectRef.current.downloadCSV();
+      }
     } else if (selectedExport === "Export All") {
       handleExportAll();
     } else {
@@ -580,6 +617,18 @@ function DashboardContent() {
                   <SelectItem value="Export Wrap Up Distribution">
                     Export Wrap Up Distribution
                   </SelectItem>
+                  <SelectItem value="Export TSM Response Time (Office)">
+                    Export TSM Response Time (Office)
+                  </SelectItem>
+                  <SelectItem value="Export TSM Response Time (Project)">
+                    Export TSM Response Time (Project)
+                  </SelectItem>
+                  <SelectItem value="Export TSA Response Time (Office)">
+                    Export TSA Response Time (Office)
+                  </SelectItem>
+                  <SelectItem value="Export TSA Response Time (Project)">
+                    Export TSA Response Time (Project)
+                  </SelectItem>
                   <SelectItem value="Export All">Export All</SelectItem>
                 </SelectContent>
               </Select>
@@ -662,6 +711,38 @@ function DashboardContent() {
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
               role={userDetails.role}
               userReferenceId={userDetails.referenceid}
+            />
+
+            <TSMResponseTimeOfficeCard
+              ref={tsmResponseTimeOfficeRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              userReferenceId={userDetails.referenceid}
+              role={userDetails.role}
+            />
+
+            <TSMResponseTimeProjectCard
+              ref={tsmResponseTimeProjectRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              userReferenceId={userDetails.referenceid}
+              role={userDetails.role}
+            />
+
+            <TSAResponseTimeOfficeCard
+              ref={tsaResponseTimeOfficeRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              userReferenceId={userDetails.referenceid}
+              role={userDetails.role}
+            />
+
+            <TSAResponseTimeProjectCard
+              ref={tsaResponseTimeProjectRef}
+              dateCreatedFilterRange={dateCreatedFilterRange}
+              setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
+              userReferenceId={userDetails.referenceid}
+              role={userDetails.role}
             />
           </div>
 
