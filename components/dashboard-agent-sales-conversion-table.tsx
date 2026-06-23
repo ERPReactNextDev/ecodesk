@@ -626,10 +626,10 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-white z-30">
+                  <TableHead className="sticky left-0 z-30">
                     Rank
                   </TableHead>
-                  <TableHead className="sticky left-[50px] bg-white z-30 border-r">
+                  <TableHead className="sticky left-[50px] z-30 border-r">
                     CSR
                   </TableHead>
                   <TableHead className="text-right">Sales</TableHead>
@@ -652,8 +652,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
               </TableHeader>
               <TableBody>
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell className="text-center sticky left-0 bg-white z-30">-</TableCell>
-                  <TableCell className="sticky left-[50px] bg-white z-30 border-r">Total</TableCell>
+                  <TableCell className="text-center sticky left-0 z-30">-</TableCell>
+                  <TableCell className="sticky left-[50px] z-30 border-r">Total</TableCell>
                   <TableCell className="text-right">{totalSales}</TableCell>
                   <TableCell className="text-right">{groupedData.reduce((s, r) => s + r.nonSalesCount, 0)}</TableCell>
                   <TableCell className="text-right">₱{totalAmount.toLocaleString()}</TableCell>
@@ -692,8 +692,8 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
 
                     return (
                       <TableRow key={row.referenceid}>
-                        <TableCell className="text-center sticky left-0 bg-white z-30">{index + 1}</TableCell>
-                        <TableCell className="sticky left-[50px] bg-white z-30 border uppercase">{fullName}</TableCell>
+                        <TableCell className="text-center sticky left-0 z-30">{index + 1}</TableCell>
+                        <TableCell className="sticky left-[50px] z-30 border uppercase">{fullName}</TableCell>
                         <TableCell className="text-right">{row.salesCount}</TableCell>
                         <TableCell className="text-right">{row.nonSalesCount}</TableCell>
                         <TableCell className="text-right">₱{row.amount.toLocaleString()}</TableCell>

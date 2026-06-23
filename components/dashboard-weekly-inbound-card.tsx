@@ -164,7 +164,7 @@ useImperativeHandle(ref, () => ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-left sticky left-0 bg-white z-30">Channel</TableHead>
+                <TableHead className="text-left sticky left-0 z-30">Channel</TableHead>
                 <TableHead className="text-right">Week 1</TableHead>
                 <TableHead className="text-right">Week 2</TableHead>
                 <TableHead className="text-right">Week 3</TableHead>

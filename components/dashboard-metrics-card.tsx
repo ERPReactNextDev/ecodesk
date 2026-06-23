@@ -266,7 +266,7 @@ export const MetricsCard = React.forwardRef<
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 bg-white z-30 border-r">Channel</TableHead>
+                <TableHead className="sticky left-0 z-30 border-r">Channel</TableHead>
                 <TableHead className="text-right">Traffic</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Converted</TableHead>
@@ -279,7 +279,7 @@ export const MetricsCard = React.forwardRef<
             <TableBody>
               {groupedData.map((r) => (
                 <TableRow key={r.channel}>
-                  <TableCell className="sticky left-0 bg-white z-30 border-r">{r.channel}</TableCell>
+                  <TableCell className="sticky left-0 z-30 border-r">{r.channel}</TableCell>
                   <TableCell className="text-right">{r.traffic}</TableCell>
                   <TableCell className="text-right">₱{r.soAmountTotal.toLocaleString()}</TableCell>
                   <TableCell className="text-right">{r.convertedCount}</TableCell>
@@ -292,7 +292,7 @@ export const MetricsCard = React.forwardRef<
 
             <tfoot className="bg-muted font-semibold">
               <TableRow>
-                <TableCell className="sticky left-0 bg-white z-30 border-r">Total</TableCell>
+                <TableCell className="sticky left-0 z-30 border-r">Total</TableCell>
                 <TableCell className="text-right">{totalTraffic}</TableCell>
                 <TableCell className="text-right">₱{totalSoAmount.toLocaleString()}</TableCell>
                 <TableCell className="text-right">{totalConverted}</TableCell>

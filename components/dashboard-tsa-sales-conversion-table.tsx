@@ -526,8 +526,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 bg-white z-30">#</TableHead>
-                <TableHead className="sticky left-5 bg-white z-30 border-r">Agent Name</TableHead>
+                <TableHead className="sticky left-0 z-30">#</TableHead>
+                <TableHead className="sticky left-5 z-30 border-r">Agent Name</TableHead>
                 <TableHead>Sales</TableHead>
                 <TableHead>Non-Sales</TableHead>
                 <TableHead>Total</TableHead>
@@ -550,8 +550,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             </TableHeader>
 
             <TableRow className="font-semibold bg-muted/80 border-b">
-              <TableCell className="sticky left-0 bg-white z-30">-</TableCell>
-              <TableCell className="sticky left-5 bg-white z-30 border-r">Total</TableCell>
+              <TableCell className="sticky left-0 z-30">-</TableCell>
+              <TableCell className="sticky left-5 z-30 border-r">Total</TableCell>
               <TableCell>{totalSales}</TableCell>
               <TableCell>{totalNonSales}</TableCell>
               <TableCell>{totalSales + totalNonSales}</TableCell>
@@ -579,8 +579,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 return (
                   <React.Fragment key={a.agentName}>
                     <TableRow key={a.agentName} className="group">
-                      <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
-                      <TableCell className={`sticky left-5 z-20 uppercase border-r bg-white`}>
+                      <TableCell className="sticky left-0 z-20">{index + 1}</TableCell>
+                      <TableCell className={`sticky left-5 z-20 uppercase border-r`}>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleRow(a.agentName)}

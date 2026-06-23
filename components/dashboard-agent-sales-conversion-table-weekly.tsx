@@ -315,8 +315,8 @@ const filterText = `${from} - ${to}`;
                     <Table className="min-w-[1200px]">
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="sticky left-0 bg-white z-30">#</TableHead>
-                                <TableHead className="sticky left-[50px] bg-white z-30">Agent</TableHead>
+                                <TableHead className="sticky left-0 z-30">#</TableHead>
+                                <TableHead className="sticky left-[50px] z-30">Agent</TableHead>
                                 <TableHead className="text-right">Week 1</TableHead>
                                 <TableHead className="text-right">Week 2</TableHead>
                                 <TableHead className="text-right">Week 3</TableHead>
@@ -330,8 +330,8 @@ const filterText = `${from} - ${to}`;
                         <TableBody>
                             {groupedData.map((row, index) => (
                                 <TableRow key={row.name}>
-                                    <TableCell className="sticky left-0 bg-white z-20">{index + 1}</TableCell>
-                                    <TableCell className="sticky left-[50px] bg-white z-20">{row.name}</TableCell>
+                                    <TableCell className="sticky left-0 z-20">{index + 1}</TableCell>
+                                    <TableCell className="sticky left-[50px] z-20">{row.name}</TableCell>
                                     <TableCell className="text-right">{row.week1.toLocaleString()}</TableCell>
                                     <TableCell className="text-right">{row.week2.toLocaleString()}</TableCell>
                                     <TableCell className="text-right">{row.week3.toLocaleString()}</TableCell>
@@ -345,8 +345,8 @@ const filterText = `${from} - ${to}`;
 
                         <tfoot>
                             <TableRow className="font-bold bg-muted/50">
-                                <TableCell className="sticky left-0 bg-white z-20">Total</TableCell>
-                                <TableCell className="sticky left-[50px] bg-white z-20">-</TableCell>
+                                <TableCell className="sticky left-0 z-20">Total</TableCell>
+                                <TableCell className="sticky left-[50px] z-20">-</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week1, 0).toLocaleString()}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0).toLocaleString()}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0).toLocaleString()}</TableCell>
