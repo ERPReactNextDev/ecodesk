@@ -73,6 +73,7 @@ const data = {
         { name: "Received PO", url: "/reports/po", icon: ShoppingCart },
         { name: "D-Tracking", url: "/reports/dtr", icon: Compass },
         { name: "Sales users", url: "/reports/tos", icon: Users },
+        { name: "CSR Quotations", url: "/reports/csr-quotations", icon: FileText },
         // { name: "Departmental", url: "/departmental-main", icon: Building2 },
       ],
     },

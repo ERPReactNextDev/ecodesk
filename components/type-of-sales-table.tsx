@@ -226,20 +226,8 @@ export function TypeOfSalesTable({ referenceid, role }: TypeOfSalesTableProps) {
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
-                    (pageNum) => (
-                      <Button
-                        key={pageNum}
-                        variant={pagination.page === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePageChange(pageNum)}
-                        className="w-8 h-8"
-                      >
-                        {pageNum}
-                      </Button>
-                    )
-                  )}
+                <div className="text-sm font-medium">
+                  Page {pagination.page} / {pagination.totalPages}
                 </div>
                 <Button
                   variant="outline"
