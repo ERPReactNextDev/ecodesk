@@ -53,8 +53,8 @@ import WrapUpCard from "@/components/dashboard-wrapup-card";
 import { WrapUpWeeklyCard } from "@/components/dashboard-weekly-wrapup-card";
 import AgentSalesTableCard from "@/components/dashboard-agent-sales-conversion-table";
 import AgentSalesTableWeeklyCard from "@/components/dashboard-agent-sales-conversion-table-weekly";
-import TSASalesTableCard from "@/components/dashboard-tsa-sales-conversion-table";
-import TSMSalesTableCard from "@/components/dashboard-tsm-sales-conversion-table";
+// import TSASalesTableCard from "@/components/dashboard-tsa-sales-conversion-table";
+// import TSMSalesTableCard from "@/components/dashboard-tsm-sales-conversion-table";
 import ManagerSalesTableCard from "@/components/dashboard-manager-sales-conversion-table";
 //
 import CountTickets from "@/components/dashboard-agent-ticket-table";
@@ -149,18 +149,18 @@ function DashboardContent() {
     null,
   );
   const wrapupCardRef = useRef<{ downloadCSV: () => void } | null>(null);
-  const tsaSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
-    null,
-  );
+  // const tsaSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
+  //   null,
+  // );
   const wrapupWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const metricsCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const agentSalesCardRef = useRef<{ downloadCSV: () => void } | null>(null);
   const agentSalesWeeklyCardRef = useRef<{ downloadCSV: () => void } | null>(
     null,
   );
-  const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
-    null,
-  );
+  // const tsmSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
+  //   null,
+  // );
   const managerSalesTrafficCardRef = useRef<{ downloadCSV: () => void } | null>(
     null,
   );
@@ -389,18 +389,18 @@ function DashboardContent() {
     if (wrapupCardRef.current) {
       wrapupCardRef.current.downloadCSV();
     }
-    if (tsaSalesTrafficCardRef.current) {
-      tsaSalesTrafficCardRef.current.downloadCSV();
-    }
+    // if (tsaSalesTrafficCardRef.current) {
+    //   tsaSalesTrafficCardRef.current.downloadCSV();
+    // }
     if (agentSalesCardRef.current) {
       agentSalesCardRef.current.downloadCSV();
     }
     if (agentSalesWeeklyCardRef.current) {
       agentSalesWeeklyCardRef.current.downloadCSV();
     }
-    if (tsmSalesTrafficCardRef.current) {
-      tsmSalesTrafficCardRef.current.downloadCSV();
-    }
+    // if (tsmSalesTrafficCardRef.current) {
+    //   tsmSalesTrafficCardRef.current.downloadCSV();
+    // }
     if (departmentHeadSalesCardRef.current) {
       departmentHeadSalesCardRef.current.downloadCSV();
     }
@@ -485,27 +485,27 @@ function DashboardContent() {
       if (agentSalesCardRef.current) {
         agentSalesCardRef.current.downloadCSV();
       }
-    } else if (selectedExport === "Export TSA Sales Traffic") {
-      if (tsaSalesTrafficCardRef.current) {
-        console.log("Calling downloadCSV from TSASalesTrafficCard");
-        tsaSalesTrafficCardRef.current.downloadCSV();
-      } else {
-        console.log("tsaSalesTrafficCardRef.current is null");
-      }
-    } else if (selectedExport === "Export Agent's and Other Users") {
-      if (tsaSalesTrafficCardRef.current) {
-        console.log("Calling downloadCSV from Agent's and Other Users");
-        tsaSalesTrafficCardRef.current.downloadCSV();
-      } else {
-        console.log("tsaSalesTrafficCardRef.current is null");
-      }
-    } else if (selectedExport === "Export TSM's and Other Manager List") {
-      if (tsmSalesTrafficCardRef.current) {
-        console.log("Calling downloadCSV from TSM's and Other Manager List");
-        tsmSalesTrafficCardRef.current.downloadCSV();
-      } else {
-        console.log("tsmSalesTrafficCardRef.current is null");
-      }
+    // } else if (selectedExport === "Export TSA Sales Traffic") {
+    //   if (tsaSalesTrafficCardRef.current) {
+    //     console.log("Calling downloadCSV from TSASalesTrafficCard");
+    //     tsaSalesTrafficCardRef.current.downloadCSV();
+    //   } else {
+    //     console.log("tsaSalesTrafficCardRef.current is null");
+    //   }
+    // } else if (selectedExport === "Export Agent's and Other Users") {
+    //   if (tsaSalesTrafficCardRef.current) {
+    //     console.log("Calling downloadCSV from Agent's and Other Users");
+    //     tsaSalesTrafficCardRef.current.downloadCSV();
+    //   } else {
+    //     console.log("tsaSalesTrafficCardRef.current is null");
+    //   }
+    // } else if (selectedExport === "Export TSM's and Other Manager List") {
+    //   if (tsmSalesTrafficCardRef.current) {
+    //     console.log("Calling downloadCSV from TSM's and Other Manager List");
+    //     tsmSalesTrafficCardRef.current.downloadCSV();
+    //   } else {
+    //     console.log("tsmSalesTrafficCardRef.current is null");
+    //   }
     } else if (selectedExport === "Export Manager Sales Traffic") {
       if (managerSalesTrafficCardRef.current) {
         managerSalesTrafficCardRef.current.downloadCSV();
@@ -575,12 +575,12 @@ function DashboardContent() {
                   <SelectItem value="Export CSR Sales Conversion">
                     Export CSR Sales Conversion
                   </SelectItem>
-                  <SelectItem value="Export Agent's and Other Users">
+                  {/* <SelectItem value="Export Agent's and Other Users">
                     Export Agent's and Other Users
                   </SelectItem>
                   <SelectItem value="Export TSM's and Other Manager List">
                     TSM's and Other Manager List
-                  </SelectItem>
+                  </SelectItem> */}
                   <SelectItem value="Export Department Head Sales">
                     Export Department Head Sales
                   </SelectItem>
@@ -689,7 +689,7 @@ function DashboardContent() {
               role={userDetails.role}
             />
 
-            <TSASalesTableCard
+            {/* <TSASalesTableCard
               ref={tsaSalesTrafficCardRef}
               dateCreatedFilterRange={dateCreatedFilterRange}
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
@@ -703,7 +703,7 @@ function DashboardContent() {
               setDateCreatedFilterRangeAction={setDateCreatedFilterRangeAction}
               role={userDetails.role}
               userReferenceId={userDetails.referenceid}
-            />
+            /> */}
 
             <ManagerSalesTableCard
               ref={departmentHeadSalesCardRef}

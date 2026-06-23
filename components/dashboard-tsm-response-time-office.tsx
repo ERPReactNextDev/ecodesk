@@ -6,6 +6,8 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { type DateRange } from "react-day-picker";
 import { useImperativeHandle } from "react";
 import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { TicketHistoryDialog } from "@/components/ticket-history-dialog";
 
 interface Activity {
   manager?: string;
@@ -51,6 +53,8 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [recordFilter, setRecordFilter] = useState<string>("all");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [companySearchTerm, setCompanySearchTerm] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function fetchAgents() {
@@ -92,6 +96,18 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
     }
     fetchActivities();
   }, [role, userReferenceId]);
+
+  const toggleRow = (agentName: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(agentName)) {
+        newSet.delete(agentName);
+      } else {
+        newSet.add(agentName);
+      }
+      return newSet;
+    });
+  };
 
   const parseDateFixYear = (dateStr?: string) => {
     if (!dateStr) return new Date(NaN);
@@ -150,6 +166,7 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
             newNonBuyingConvertedAmount: 0,
             existingActiveConvertedAmount: 0,
             existingInactiveConvertedAmount: 0,
+            companyTickets: [],
           };
         }
 
@@ -184,6 +201,15 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
             map[a.manager || name].existingInactiveCount += 1;
             if (a.status === "Converted into Sales") map[a.manager || name].existingInactiveConvertedAmount += amount;
             break;
+        }
+
+        // Collect company and ticket reference information
+        if (a.company_name && a.ticket_reference_number) {
+          map[a.manager || name].companyTickets.push({
+            company_name: a.company_name,
+            ticket_reference_number: a.ticket_reference_number,
+            activity: a,
+          });
         }
 
         // ----- TSM Response Time -----
@@ -297,6 +323,14 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
   const totalAmount = groupedManager.reduce((sum, a) => sum + a.amount, 0);
   const totalConvertedSales = groupedManager.reduce((sum, a) => sum + a.convertedSalesCount, 0);
   const totalInquiryToSalesPercent = totalSales > 0 ? (totalConvertedSales / totalSales) * 100 : 0;
+  const totalNewClient = groupedManager.reduce((sum, a) => sum + a.newClientCount, 0);
+  const totalNewNonBuying = groupedManager.reduce((sum, a) => sum + a.newNonBuyingCount, 0);
+  const totalExistingActive = groupedManager.reduce((sum, a) => sum + a.existingActiveCount, 0);
+  const totalExistingInactive = groupedManager.reduce((sum, a) => sum + a.existingInactiveCount, 0);
+  const totalNewClientConverted = groupedManager.reduce((sum, a) => sum + a.newClientConvertedAmount, 0);
+  const totalNewNonBuyingConverted = groupedManager.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0);
+  const totalExistingActiveConverted = groupedManager.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0);
+  const totalExistingInactiveConverted = groupedManager.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0);
 
   const AVERAGE = (values: number[]): number =>
     values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
@@ -334,6 +368,14 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
         Amount: a.amount,
         "Converted into Sales": a.convertedSalesCount,
         "% Inquiry to Sales": inquiryToSalesPercent.toFixed(2) + "%",
+        "New Client": a.newClientCount,
+        "New Non Buying": a.newNonBuyingCount,
+        "Existing Active": a.existingActiveCount,
+        "Existing Inactive": a.existingInactiveCount,
+        "New Client (Converted)": a.newClientConvertedAmount,
+        "New Non-Buying (Converted)": a.newNonBuyingConvertedAmount,
+        "Existing Active (Converted)": a.existingActiveConvertedAmount,
+        "Existing Inactive (Converted)": a.existingInactiveConvertedAmount,
         "TSM Response Time": formatHoursToHMS(a.avgResponseTime),
         "Non-Quotation HT": formatHoursToHMS(a.avgNonQuotationHandlingTime),
         "Quotation HT": formatHoursToHMS(a.avgQuotationHandlingTime),
@@ -350,6 +392,14 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
       "Amount",
       "Converted into Sales",
       "% Inquiry to Sales",
+      "New Client",
+      "New Non Buying",
+      "Existing Active",
+      "Existing Inactive",
+      "New Client (Converted)",
+      "New Non-Buying (Converted)",
+      "Existing Active (Converted)",
+      "Existing Inactive (Converted)",
       "TSM Response Time",
       "Non-Quotation HT",
       "Quotation HT",
@@ -443,6 +493,14 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
                 <TableHead>Amount</TableHead>
                 <TableHead>Converted into Sales</TableHead>
                 <TableHead>% Inquiry to Sales</TableHead>
+                <TableHead>New Client</TableHead>
+                <TableHead>New Non Buying</TableHead>
+                <TableHead>Existing Active</TableHead>
+                <TableHead>Existing Inactive</TableHead>
+                <TableHead>New Client (Converted)</TableHead>
+                <TableHead>New Non-Buying (Converted)</TableHead>
+                <TableHead>Existing Active (Converted)</TableHead>
+                <TableHead>Existing Inactive (Converted)</TableHead>
                 <TableHead>TSM Response Time</TableHead>
                 <TableHead>Non-Quotation HT</TableHead>
                 <TableHead>Quotation HT</TableHead>
@@ -459,6 +517,14 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
               <TableCell>₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell>{totalConvertedSales}</TableCell>
               <TableCell>{totalInquiryToSalesPercent.toFixed(2)}%</TableCell>
+              <TableCell>{totalNewClient}</TableCell>
+              <TableCell>{totalNewNonBuying}</TableCell>
+              <TableCell>{totalExistingActive}</TableCell>
+              <TableCell>{totalExistingInactive}</TableCell>
+              <TableCell>₱{totalNewClientConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{totalNewNonBuyingConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{totalExistingActiveConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell>₱{totalExistingInactiveConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell className={getTextColorClass(avgTSMResponseTime, TSA_RESPONSE_THRESHOLD, "TSM Response Time")}>{formatHoursToHMS(avgTSMResponseTime)}</TableCell>
               <TableCell className={getTextColorClass(avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
               <TableCell className={getTextColorClass(avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
@@ -468,21 +534,78 @@ const TSMResponseTimeOfficeCard = forwardRef((_props: Props, ref) => {
             <TableBody>
               {groupedManager.map((a, index) => {
                 const inquiryToSalesPercent = a.salesCount > 0 ? (a.convertedSalesCount / a.salesCount) * 100 : 0;
+                const isExpanded = expandedRows.has(a.agentName);
                 return (
-                  <TableRow key={a.agentName}>
-                    <TableCell className="sticky left-0 z-20">{index + 1}</TableCell>
-                    <TableCell className={`sticky left-5 z-20 uppercase border-r`}>{a.agentName}</TableCell>
-                    <TableCell>{a.salesCount}</TableCell>
-                    <TableCell>{a.nonSalesCount}</TableCell>
-                    <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>
-                    <TableCell>₱{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>{a.convertedSalesCount}</TableCell>
-                    <TableCell>{inquiryToSalesPercent.toFixed(2)}%</TableCell>
-                    <TableCell className={getTextColorClass(a.avgResponseTime, TSA_RESPONSE_THRESHOLD, "TSM Response Time")}>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
-                    <TableCell className={getTextColorClass(a.avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
-                    <TableCell className={getTextColorClass(a.avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
-                    <TableCell>{formatHoursToHMS(a.avgSPFHandlingTime)}</TableCell>
-                  </TableRow>
+                  <React.Fragment key={a.agentName}>
+                    <TableRow className="group">
+                      <TableCell className="sticky left-0 z-20">{index + 1}</TableCell>
+                      <TableCell className={`sticky left-5 z-20 uppercase border-r`}>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleRow(a.agentName)}
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                          >
+                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            <span>{a.agentName}</span>
+                          </button>
+                        </div>
+                      </TableCell>
+                      <TableCell>{a.salesCount}</TableCell>
+                      <TableCell>{a.nonSalesCount}</TableCell>
+                      <TableCell>{a.salesCount + a.nonSalesCount}</TableCell>
+                      <TableCell>₱{a.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>{a.convertedSalesCount}</TableCell>
+                      <TableCell>{inquiryToSalesPercent.toFixed(2)}%</TableCell>
+                      <TableCell>{a.newClientCount}</TableCell>
+                      <TableCell>{a.newNonBuyingCount}</TableCell>
+                      <TableCell>{a.existingActiveCount}</TableCell>
+                      <TableCell>{a.existingInactiveCount}</TableCell>
+                      <TableCell>₱{a.newClientConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>₱{a.newNonBuyingConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>₱{a.existingActiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell>₱{a.existingInactiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className={getTextColorClass(a.avgResponseTime, TSA_RESPONSE_THRESHOLD, "TSM Response Time")}>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
+                      <TableCell className={getTextColorClass(a.avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
+                      <TableCell className={getTextColorClass(a.avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
+                      <TableCell>{formatHoursToHMS(a.avgSPFHandlingTime)}</TableCell>
+                    </TableRow>
+                    {isExpanded && (
+                      <TableRow>
+                        <TableCell colSpan={21} className="bg-gray-50 p-4">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm text-gray-700">Companies & Ticket References:</h4>
+                            {a.companyTickets && a.companyTickets.length > 0 ? (
+                              <>
+                                <input
+                                  type="text"
+                                  placeholder="Search companies..."
+                                  value={companySearchTerm[a.agentName] || ''}
+                                  onChange={(e) => setCompanySearchTerm(prev => ({ ...prev, [a.agentName]: e.target.value }))}
+                                  className="border rounded-md px-3 py-2 text-sm w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <div className="max-h-60 overflow-y-auto border rounded-md bg-white">
+                                  {a.companyTickets
+                                    .filter((ticket: any) => 
+                                      ticket.company_name.toLowerCase().includes((companySearchTerm[a.agentName] || '').toLowerCase()) ||
+                                      ticket.ticket_reference_number.toLowerCase().includes((companySearchTerm[a.agentName] || '').toLowerCase())
+                                    )
+                                    .map((ticket: any, idx: number) => (
+                                      <div key={idx} className="p-3 border-b last:border-b-0 hover:bg-gray-50 flex flex-col items-start">
+                                        <div className="font-medium text-sm">{ticket.company_name}</div>
+                                        <div className="text-gray-600 text-xs">{ticket.ticket_reference_number}</div>
+                                        <TicketHistoryDialog item={ticket.activity} />
+                                      </div>
+                                    ))}
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-gray-500 text-sm">No company data available</p>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </TableBody>
