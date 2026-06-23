@@ -162,6 +162,13 @@ const STATUS_HEADER_STYLES: Record<string, string> = {
   "Converted into Sales": "bg-green-50 border-green-200 text-green-800",
 };
 
+const CARD_BG_STYLES: Record<string, string> = {
+  "On-Progress": "bg-blue-50 border-blue-200",
+  "Closed": "bg-gray-100 border-gray-300",
+  "Endorsed": "bg-purple-50 border-purple-200",
+  "Converted into Sales": "bg-green-50 border-green-200",
+};
+
 export const Ticket: React.FC<TicketProps> = ({
   referenceid,
   role,
@@ -850,18 +857,18 @@ export const Ticket: React.FC<TicketProps> = ({
               <div
                 key={status}
                 className="flex flex-col border rounded-xl overflow-hidden"
-                style={{ height: "680px" }}
+                style={{ height: "320px" }}
               >
                 {/* COLUMN HEADER */}
                 <div className={`flex items-center justify-between px-3 py-2 border-b shrink-0 ${STATUS_HEADER_STYLES[status]}`}>
                   <span className="text-xs font-bold truncate">{status}</span>
-                  <span className="text-[10px] font-semibold bg-white/70 border px-1.5 py-0.5 rounded-full ml-1 shrink-0">
+                  <span className="text-[10px] font-semibold bg-background/70 border px-1.5 py-0.5 rounded-full ml-1 shrink-0">
                     {totalItems}
                   </span>
                 </div>
 
                 {/* SEARCH BAR */}
-                <div className="px-2 py-1.5 border-b bg-white shrink-0">
+                <div className="px-2 py-1.5 border-b bg-card shrink-0">
                   <input
                     type="text"
                     placeholder="Search..."
@@ -890,11 +897,13 @@ export const Ticket: React.FC<TicketProps> = ({
                         return (
                           <div
                             key={`${item._id}-${index}`}
-                            className={`bg-white border rounded-lg p-2.5 flex items-start justify-between gap-2 transition-all ${
-                              shouldGlow
-                                ? "ring-2 ring-green-500 shadow-[0_0_18px_rgba(34,197,94,0.75)] animate-pulse"
-                                : "shadow-sm hover:shadow-md"
-                            }`}
+                            className={`border rounded-lg p-2.5 flex items-start justify-between gap-2 transition-all ${
+  CARD_BG_STYLES[item.status] ?? "bg-card"
+} ${
+  shouldGlow
+    ? "ring-2 ring-green-500 shadow-[0_0_18px_rgba(34,197,94,0.75)] animate-pulse"
+    : "shadow-sm hover:shadow-md"
+}`}
                           >
                             {/* LEFT INFO */}
                             <div className="flex-1 text-xs min-w-0">
@@ -981,7 +990,7 @@ export const Ticket: React.FC<TicketProps> = ({
                 </div>
 
                 {/* PAGINATION FOOTER */}
-                <div className="border-t bg-white px-2 py-2 shrink-0">
+                <div className="border-t bg-card px-2 py-2 shrink-0">
                   {totalPages > 1 ? (
                     <>
                       <div className="flex items-center justify-between gap-1 text-xs">
@@ -1097,7 +1106,7 @@ export const Ticket: React.FC<TicketProps> = ({
 
       {exporting && (
         <div
-          className="fixed top-4 right-4 z-50 w-full max-w-md flex flex-col gap-4 rounded-xl shadow-lg bg-white p-4"
+          className="fixed top-4 right-4 z-50 w-full max-w-md flex flex-col gap-4 rounded-xl shadow-lg bg-background p-4"
           style={{ borderRadius: "1rem" }}
         >
           <Item variant="outline">

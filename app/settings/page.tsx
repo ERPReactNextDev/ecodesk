@@ -40,6 +40,13 @@ function SettingsContent() {
   useEffect(() => setMounted(true), []);
 
   const { theme, setTheme } = useTheme();
+
+  // Set default theme to ecoshift
+  useEffect(() => {
+    if (mounted && !theme) {
+      setTheme("ecoshift");
+    }
+  }, [mounted, theme, setTheme]);
   const { timeFormat, setTimeFormat, dateFormat, setDateFormat } = useFormat();
 
   const onTimeFormatChange = (val: string) => {

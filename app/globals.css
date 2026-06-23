@@ -396,7 +396,6 @@
 
   /* Additional styles for animation */
   position: relative;
-  overflow: hidden;
   background-color: var(--sidebar);
   color: var(--sidebar-foreground);
 }
@@ -404,7 +403,6 @@
 .ecoshift {
   --radius: 0.625rem;
   position: relative;
-  overflow: hidden;
   background-color: var(--sidebar);
   color: var(--sidebar-foreground);
 }
@@ -647,7 +645,26 @@
 
   /* Firefox */
   .custom-scrollbar {
-    scrollbar-width: none;
+    scrollbar-width: auto;
+  }
+
+  /* Chrome, Edge, Safari */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.8);
   }
   
 
