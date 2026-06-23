@@ -18,7 +18,8 @@ import {
   Bot,
   Mail,
   Building2,
-  Plus
+  Plus,
+  Users
 } from "lucide-react";
 
 import { NavFavorites } from "@/components/nav-favorites";
@@ -71,6 +72,7 @@ const data = {
         { name: "SKU Listing", url: "/reports/sku", icon: ClipboardList },
         { name: "Received PO", url: "/reports/po", icon: ShoppingCart },
         { name: "D-Tracking", url: "/reports/dtr", icon: Compass },
+        { name: "Sales users", url: "/reports/tos", icon: Users },
         // { name: "Departmental", url: "/departmental-main", icon: Building2 },
       ],
     },
