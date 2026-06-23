@@ -566,9 +566,9 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
               <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell>₱{groupedAgents.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell className={getTextColorClass(avgTSAResponseTime, TSA_RESPONSE_THRESHOLD, "TSA Response Time")}>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
-              <TableCell className={getTextColorClass(avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
-              <TableCell className={getTextColorClass(avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
               <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
             </TableRow>
 

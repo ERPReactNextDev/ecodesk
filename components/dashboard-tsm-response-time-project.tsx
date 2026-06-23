@@ -16,7 +16,7 @@ interface Activity {
   wrap_up?: string;
   so_amount?: number | string;
   status?: string;
-  tsm_acknowledge_date?: string;
+  tsa_acknowledge_date?: string;
   ticket_endorsed?: string;
   tsm_handling_time?: string;
   tsa_handling_time?: string;
@@ -212,9 +212,9 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
           });
         }
 
-        // ----- TSM Response Time -----
-        if (a.tsm_acknowledge_date && a.ticket_endorsed) {
-          const ack = parseDateFixYear(a.tsm_acknowledge_date).getTime();
+        // ----- TSA Response Time -----
+        if (a.tsa_acknowledge_date && a.ticket_endorsed) {
+          const ack = parseDateFixYear(a.tsa_acknowledge_date).getTime();
           const end = parseDateFixYear(a.ticket_endorsed).getTime();
           if (!isNaN(ack) && !isNaN(end) && ack >= end) {
             map[a.manager || name].responseTimes.push((ack - end) / (1000 * 60 * 60));
@@ -306,7 +306,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
       return value > threshold ? "text-red-600 font-semibold" : "";
     }
     // For specific filters, only highlight the matching column
-    if (recordFilter === "tsa-response" && columnName === "TSM Response Time") {
+    if (recordFilter === "tsa-response" && columnName === "TSA Response Time") {
       return value > threshold ? "text-red-600 font-semibold" : "";
     }
     if (recordFilter === "non-quotation" && columnName === "Non-Quotation HT") {
@@ -376,7 +376,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
         "New Non-Buying (Converted)": a.newNonBuyingConvertedAmount,
         "Existing Active (Converted)": a.existingActiveConvertedAmount,
         "Existing Inactive (Converted)": a.existingInactiveConvertedAmount,
-        "TSM Response Time": formatHoursToHMS(a.avgResponseTime),
+        "TSA Response Time": formatHoursToHMS(a.avgResponseTime),
         "Non-Quotation HT": formatHoursToHMS(a.avgNonQuotationHandlingTime),
         "Quotation HT": formatHoursToHMS(a.avgQuotationHandlingTime),
         "SPF Handling Duration": formatHoursToHMS(a.avgSPFHandlingTime),
@@ -400,7 +400,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
       "New Non-Buying (Converted)",
       "Existing Active (Converted)",
       "Existing Inactive (Converted)",
-      "TSM Response Time",
+      "TSA Response Time",
       "Non-Quotation HT",
       "Quotation HT",
       "SPF Handling Duration",
@@ -440,9 +440,9 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
     ].join("\n");
 
     const downloadOptions = {
-      redFontColumns: ["TSM Response Time", "Non-Quotation HT", "Quotation HT"],
+      redFontColumns: ["TSA Response Time", "Non-Quotation HT", "Quotation HT"],
       thresholds: {
-        "TSM Response Time": TSA_RESPONSE_THRESHOLD,
+        "TSA Response Time": TSA_RESPONSE_THRESHOLD,
         "Non-Quotation HT": NON_QUOTATION_HT_THRESHOLD,
         "Quotation HT": QUOTATION_HT_THRESHOLD,
       },
@@ -471,7 +471,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
           >
             <option value="all">All Records</option>
             <option value="clean">Clean Records</option>
-            <option value="tsa-response">TSM Response Time (&gt;10 min.)</option>
+            <option value="tsa-response">TSA Response Time (&gt;10 min.)</option>
             <option value="non-quotation">Non-Quotation HT (&gt;8 hrs.)</option>
             <option value="quotation">Quotation HT (&gt;4 hrs.)</option>
           </select>
@@ -501,7 +501,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
                 <TableHead>New Non-Buying (Converted)</TableHead>
                 <TableHead>Existing Active (Converted)</TableHead>
                 <TableHead>Existing Inactive (Converted)</TableHead>
-                <TableHead>TSM Response Time</TableHead>
+                <TableHead>TSA Response Time</TableHead>
                 <TableHead>Non-Quotation HT</TableHead>
                 <TableHead>Quotation HT</TableHead>
                 <TableHead>SPF Handling Duration</TableHead>
@@ -525,9 +525,9 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
               <TableCell>₱{totalNewNonBuyingConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell>₱{totalExistingActiveConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell>₱{totalExistingInactiveConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell className={getTextColorClass(avgTSMResponseTime, TSA_RESPONSE_THRESHOLD, "TSM Response Time")}>{formatHoursToHMS(avgTSMResponseTime)}</TableCell>
-              <TableCell className={getTextColorClass(avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
-              <TableCell className={getTextColorClass(avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgTSMResponseTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
+              <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
               <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
             </TableRow>
 
@@ -564,7 +564,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
                       <TableCell>₱{a.newNonBuyingConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell>₱{a.existingActiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell>₱{a.existingInactiveConvertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                      <TableCell className={getTextColorClass(a.avgResponseTime, TSA_RESPONSE_THRESHOLD, "TSM Response Time")}>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
+                      <TableCell className={getTextColorClass(a.avgResponseTime, TSA_RESPONSE_THRESHOLD, "TSA Response Time")}>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
                       <TableCell className={getTextColorClass(a.avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(a.avgNonQuotationHandlingTime)}</TableCell>
                       <TableCell className={getTextColorClass(a.avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(a.avgQuotationHandlingTime)}</TableCell>
                       <TableCell>{formatHoursToHMS(a.avgSPFHandlingTime)}</TableCell>
