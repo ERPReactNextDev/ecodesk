@@ -41,10 +41,10 @@ function SettingsContent() {
 
   const { theme, setTheme } = useTheme();
 
-  // Set default theme to ecoshift
+  // Set default theme to Progressive Material Solutions
   useEffect(() => {
     if (mounted && !theme) {
-      setTheme("ecoshift");
+      setTheme("Progressive Material Solutions");
     }
   }, [mounted, theme, setTheme]);
   const { timeFormat, setTimeFormat, dateFormat, setDateFormat } = useFormat();
