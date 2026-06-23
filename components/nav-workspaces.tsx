@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
 import {
@@ -38,6 +39,17 @@ export function NavWorkspaces({
   openSections: Record<string, boolean>;
   onToggleSection: (section: string) => void;
 }) {
+  const pathname = usePathname() || "/";
+
+  // Helper to get base path without query params
+  const getBasePath = (url: string) => {
+    try {
+      return new URL(url, window.location.origin).pathname;
+    } catch {
+      return url;
+    }
+  };
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Workspaces</SidebarGroupLabel>
@@ -55,7 +67,7 @@ export function NavWorkspaces({
                   {/* This button toggles collapse */}
                   <SidebarMenuButton
                     onClick={() => onToggleSection(workspace.name)}
-                    className="flex items-center space-x-2 cursor-pointer flex-grow"
+                    className="flex items-center space-x-2 cursor-pointer grow"
                   >
                     <WorkspaceIcon className="w-5 h-5" />
                     <span>{workspace.name}</span>
@@ -87,9 +99,11 @@ export function NavWorkspaces({
                   <SidebarMenuSub>
                     {workspace.pages.map((page) => {
                       const PageIcon = page.icon;
+                      const basePath = getBasePath(page.url);
+                      const isActive = pathname === basePath || (basePath !== "/" && pathname.startsWith(basePath));
                       return (
                         <SidebarMenuSubItem key={page.name}>
-                          <SidebarMenuSubButton asChild>
+                          <SidebarMenuSubButton asChild isActive={isActive}>
                             <a href={page.url} className="flex items-center space-x-2">
                               <PageIcon className="w-4 h-4" />
                               <span>{page.name}</span>

@@ -1,5 +1,6 @@
 "use client"
 
+import { usePathname } from "next/navigation"
 import { type LucideIcon } from "lucide-react"
 
 import {
@@ -18,18 +19,33 @@ export function NavMain({
     isActive?: boolean
   }[]
 }) {
+  const pathname = usePathname() || "/"
+
+  // Helper to get base path without query params
+  const getBasePath = (url: string) => {
+    try {
+      return new URL(url, window.location.origin).pathname;
+    } catch {
+      return url;
+    }
+  }
+
   return (
     <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton asChild isActive={item.isActive}>
-            <a href={item.url}>
-              <item.icon />
-              <span>{item.title}</span>
-            </a>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+      {items.map((item) => {
+        const basePath = getBasePath(item.url)
+        const isActive = pathname === basePath || (basePath !== "/" && pathname.startsWith(basePath))
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild isActive={isActive}>
+              <a href={item.url}>
+                <item.icon />
+                <span>{item.title}</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )
+      })}
     </SidebarMenu>
   )
 }
