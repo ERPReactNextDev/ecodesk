@@ -91,6 +91,8 @@ export function CSRQuotationsTable() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [agentNames, setAgentNames] = useState<Record<string, string>>({});
+  const [managerNames, setManagerNames] = useState<Record<string, string>>({});
 
   const fetchUserName = async (referenceid: string) => {
     try {
@@ -131,6 +133,42 @@ export function CSRQuotationsTable() {
         }
       });
       setUserNames(nameMap);
+
+      // Fetch agent names for all quotations
+      const agentPromises = data.data.map(async (quotation: CSRQuotation) => {
+        if (quotation.agent) {
+          const name = await fetchUserName(quotation.agent);
+          return { referenceid: quotation.agent, name };
+        }
+        return null;
+      });
+
+      const agents = await Promise.all(agentPromises);
+      const agentMap: Record<string, string> = {};
+      agents.forEach((agent) => {
+        if (agent && agent.name) {
+          agentMap[agent.referenceid] = agent.name;
+        }
+      });
+      setAgentNames(agentMap);
+
+      // Fetch manager names for all quotations
+      const managerPromises = data.data.map(async (quotation: CSRQuotation) => {
+        if (quotation.manager) {
+          const name = await fetchUserName(quotation.manager);
+          return { referenceid: quotation.manager, name };
+        }
+        return null;
+      });
+
+      const managers = await Promise.all(managerPromises);
+      const managerMap: Record<string, string> = {};
+      managers.forEach((manager) => {
+        if (manager && manager.name) {
+          managerMap[manager.referenceid] = manager.name;
+        }
+      });
+      setManagerNames(managerMap);
     } catch (err) {
       setError("Failed to load quotations");
       console.error(err);
@@ -191,8 +229,7 @@ export function CSRQuotationsTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 z-30 bg-background">Reference ID</TableHead>
-                    <TableHead className="sticky left-[120px] z-30 bg-background">User Name</TableHead>
+                    <TableHead className="sticky left-0 z-30 bg-background">User Name</TableHead>
                     <TableHead>Account Ref #</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Company Name</TableHead>
@@ -252,9 +289,6 @@ export function CSRQuotationsTable() {
                   {quotations.map((quotation) => (
                     <TableRow key={quotation._id}>
                       <TableCell className="sticky left-0 z-20 bg-background font-medium">
-                        {quotation.referenceid}
-                      </TableCell>
-                      <TableCell className="sticky left-[120px] z-20 bg-background font-medium">
                         {userNames[quotation.referenceid] || quotation.referenceid}
                       </TableCell>
                       <TableCell>{quotation.account_reference_number}</TableCell>
@@ -280,7 +314,7 @@ export function CSRQuotationsTable() {
                       <TableCell>{quotation.activity_reference_number}</TableCell>
                       <TableCell>{formatDate(quotation.date_created)}</TableCell>
                       <TableCell>{formatDate(quotation.date_updated)}</TableCell>
-                      <TableCell>{quotation.agent}</TableCell>
+                      <TableCell>{agentNames[quotation.agent] || quotation.agent}</TableCell>
                       <TableCell>{quotation.channel}</TableCell>
                       <TableCell>{quotation.client_segment}</TableCell>
                       <TableCell>{quotation.customer_status}</TableCell>
@@ -295,7 +329,7 @@ export function CSRQuotationsTable() {
                       <TableCell>{quotation.inquiry_received || "-"}</TableCell>
                       <TableCell>{quotation.item_code || "-"}</TableCell>
                       <TableCell>{quotation.item_description || "-"}</TableCell>
-                      <TableCell>{quotation.manager}</TableCell>
+                      <TableCell>{managerNames[quotation.manager] || quotation.manager}</TableCell>
                       <TableCell>{quotation.payment_date || "-"}</TableCell>
                       <TableCell>{quotation.payment_terms || "-"}</TableCell>
                       <TableCell>{quotation.po_number || "-"}</TableCell>
