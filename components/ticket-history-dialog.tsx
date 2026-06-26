@@ -131,33 +131,36 @@ export function TicketHistoryDialog({ item }: Props) {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Ticket History</span>
+        <DialogContent className="max-h-[85vh] overflow-auto p-0">
+          <div className="sticky top-0 bg-background z-10 p-6 border-b">
+            <DialogHeader className="p-0">
+              <DialogTitle className="flex items-center justify-between">
+                <span>Ticket History</span>
 
-              <span
-                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold
-                  ${
-                    STATUS_STYLES[item.status ?? ""] ??
-                    "bg-slate-100 text-slate-700 border-slate-300"
-                  }`}
-              >
-                {item.status || "-"}
-              </span>
-            </DialogTitle>
-          </DialogHeader>
+                <span
+                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold
+                    ${
+                      STATUS_STYLES[item.status ?? ""] ??
+                      "bg-slate-100 text-slate-700 border-slate-300"
+                    }`}
+                >
+                  {item.status || "-"}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
 
-          <div className="space-y-1 text-sm">
-            <p className="uppercase font-semibold">
-              Ticket #: {item.ticket_reference_number || "-"}
-            </p>
-            <p className="text-muted-foreground">
-              Created on {formatDateTime(item.date_created)}
-            </p>
+            <div className="space-y-1 text-sm mt-4">
+              <p className="uppercase font-semibold">
+                Ticket #: {item.ticket_reference_number || "-"}
+              </p>
+              <p className="text-muted-foreground">
+                Created on {formatDateTime(item.date_created)}
+              </p>
+            </div>
           </div>
 
-          <Separator className="my-4" />
+          <div className="p-6">
+            <Separator className="my-4" />
 
           <p className="text-xl font-bold text-green-700 underline mb-4 capitalize">
             {item.company_name || "-"}
@@ -385,6 +388,7 @@ export function TicketHistoryDialog({ item }: Props) {
               </section>
             </>
           )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

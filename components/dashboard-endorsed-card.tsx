@@ -12,11 +12,72 @@ import {
 } from "@/components/ui/card";
 
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { TicketHistoryDialog } from "@/components/ticket-history-dialog";
 
 interface Activity {
+  _id?: string;
+  referenceid?: string;
+  account_reference_number?: string;
   status: string;
+  company_name?: string;
+  contact_person?: string;
+  contact_number?: string;
+  email_address?: string;
+  type_client?: string;
+  address?: string;
+  activity_reference_number?: string;
   date_created?: string;
+  date_updated?: string;
+  agent?: string;
+  channel?: string;
+  client_segment?: string;
+  customer_status?: string;
+  customer_type?: string;
+  delivery_date?: string;
+  department?: string;
+  department_head?: string;
+  gender?: string;
+  handling_csr?: string;
+  hr_acknowledge_date?: string;
+  inquiry?: string;
+  inquiry_received?: string;
+  item_code?: string;
+  item_description?: string;
+  manager?: string;
+  payment_date?: string;
+  payment_terms?: string;
+  po_number?: string;
+  po_source?: string;
+  qty_sold?: string;
+  quotation_amount?: string;
+  quotation_number?: string;
+  remarks?: string;
+  response_to_inquiry?: string;
+  so_amount?: string;
+  so_date?: string;
+  so_number?: string;
+  source?: string;
+  source_company?: string;
+  ticket_endorsed?: string;
+  ticket_received?: string;
+  ticket_reference_number?: string;
+  traffic?: string;
+  tsa_acknowledge_date?: string;
+  tsa_handling_time?: string;
+  tsm_acknowledge_date?: string;
+  tsm_handling_time?: string;
+  wrap_up?: string;
+  client_specs?: string;
+  close_reason?: string;
+  counter_offer?: string;
 }
 
 interface EndorsedProps {
@@ -36,6 +97,7 @@ export function EndorsedCard({
   dateCreatedFilterRange,
 }: EndorsedProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [endorsedDialogOpen, setEndorsedDialogOpen] = useState(false);
 
   const isDateInRange = (
     dateStr: string | undefined,
@@ -76,7 +138,7 @@ export function EndorsedCard({
     <>
       <Card>
         <CardHeader className="flex justify-between items-center">
-          <CardTitle>Endorsed Tickets</CardTitle>
+          <CardTitle>Open Tickets</CardTitle>
           <div
             className="relative cursor-pointer text-muted-foreground hover:text-foreground"
             onMouseEnter={() => setShowTooltip(true)}
@@ -95,14 +157,23 @@ export function EndorsedCard({
 
         <CardContent>
           {!loading && !error && (
-            <p className="flex justify-between items-center">
-              <span>Total Endorsed Tickets:</span>
-              <strong>
-                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                  {endorsedCount}
-                </Badge>
-              </strong>
-            </p>
+            <div className="space-y-4">
+              <p className="flex justify-between items-center">
+                <span>Total Endorsed Tickets:</span>
+                <strong>
+                  <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+                    {endorsedCount}
+                  </Badge>
+                </strong>
+              </p>
+              <Button
+                onClick={() => setEndorsedDialogOpen(true)}
+                className="w-full"
+                variant="outline"
+              >
+                Show Endorsed ticket
+              </Button>
+            </div>
           )}
         </CardContent>
 
@@ -112,6 +183,39 @@ export function EndorsedCard({
           Showing total activities with status Endorsed
         </CardFooter>
       </Card>
+
+      <Dialog open={endorsedDialogOpen} onOpenChange={setEndorsedDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Endorsed Tickets</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {activities
+              .filter(
+                (a) =>
+                  a.status &&
+                  a.status.toLowerCase() === "endorsed" &&
+                  isDateInRange(a.date_created, dateCreatedFilterRange)
+              )
+              .map((activity) => (
+                <div
+                  key={activity._id || activity.ticket_reference_number}
+                  className="border rounded-lg p-4 space-y-3"
+                >
+                  <div className="space-y-1">
+                    <p className="font-semibold text-lg">
+                      {activity.company_name || "-"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Ticket #: {activity.ticket_reference_number || "-"}
+                    </p>
+                  </div>
+                  <TicketHistoryDialog item={activity} />
+                </div>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
