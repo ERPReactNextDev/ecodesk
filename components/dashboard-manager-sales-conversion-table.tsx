@@ -241,6 +241,114 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
             });
     }, [activities, agents, dateCreatedFilterRange, searchTerm, recordFilter]);
 
+    // Calculate totals from ALL data (unfiltered by date)
+    const groupedAgentsAllData = useMemo(() => {
+        const map: Record<string, any> = {};
+
+        activities.forEach((a) => {
+            // ⛔ SKIP agad pag null / undefined / empty ang department_head
+            if (!a.department_head?.trim()) return;
+
+            const agentObj = agents.find(
+                (ag) => ag.ReferenceID === a.department_head
+            );
+
+            const name = agentObj
+                ? `${agentObj.Firstname} ${agentObj.Lastname}`
+                : null;
+
+            if (!name || name.toLowerCase() === "unknown") return;
+
+            if (!map[a.department_head]) {
+                map[a.department_head] = {
+                    agentName: name,
+                    responseTimes: [],
+                    quotationHandlingTimes: [],
+                    nonQuotationHandlingTimes: [],
+                    spfHandlingTimes: [],
+                    tickets: [],
+                };
+            }
+
+            // ----- TSA Response Time -----
+            if (a.tsa_acknowledge_date && a.ticket_endorsed) {
+                const ack = parseDateFixYear(a.tsa_acknowledge_date).getTime();
+                const end = parseDateFixYear(a.ticket_endorsed).getTime();
+
+                if (!isNaN(ack) && !isNaN(end) && ack >= end) {
+                    map[a.department_head].responseTimes.push(
+                        (ack - end) / (1000 * 60 * 60)
+                    );
+                }
+            }
+
+            // ----- Ticket Reference Numbers -----
+            if (a.ticket_reference_number) {
+                map[a.department_head].tickets.push(
+                    a.ticket_reference_number
+                );
+            }
+
+            // ----- Quotation / Non-Quotation / SPF Handling -----
+            const tsaTime = parseDateFixYear(a.tsa_handling_time).getTime();
+            const ticketReceived = parseDateFixYear(a.ticket_received).getTime();
+
+            if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
+                const diffHours =
+                    (tsaTime - ticketReceived) / (1000 * 60 * 60);
+
+                const remarksLower = a.remarks?.trim().toLowerCase();
+
+                const nonQuotationRemarks = [
+                    "no stocks / insufficient stocks",
+                    "item not carried",
+                    "unable to contact customer",
+                    "customer request cancellation",
+                    "accreditation / partnership",
+                    "no response for client",
+                    "assisted",
+                    "dissaproved quotation",
+                    "for site visit",
+                    "non standard item",
+                    "po received",
+                    "not converted to sales",
+                    "for occular inspection",
+                    "waiting for client confirmation",
+                    "pending quotation",
+                ];
+
+                if (
+                    remarksLower === "quotation for approval" ||
+                    remarksLower === "sold"
+                ) {
+                    map[a.department_head].quotationHandlingTimes.push(diffHours);
+                } else if (remarksLower === "for spf") {
+                    map[a.department_head].spfHandlingTimes.push(diffHours);
+                } else if (
+                    remarksLower &&
+                    nonQuotationRemarks.includes(remarksLower)
+                ) {
+                    map[a.department_head].nonQuotationHandlingTimes.push(diffHours);
+                }
+            }
+        });
+
+        return Object.values(map).map((a) => {
+            const avg = (arr: number[]) =>
+                arr.length
+                    ? arr.reduce((sum, t) => sum + t, 0) / arr.length
+                    : 0;
+
+            return {
+                ...a,
+                avgResponseTime: avg(a.responseTimes),
+                avgQuotationHandlingTime: avg(a.quotationHandlingTimes),
+                avgNonQuotationHandlingTime: avg(a.nonQuotationHandlingTimes),
+                avgSPFHandlingTime: avg(a.spfHandlingTimes),
+            };
+        });
+    }, [activities, agents]);
+
     const formatHoursToHMS = (hours: number) => {
         const totalSeconds = Math.round(hours * 3600); // ROUND instead of floor
         const h = Math.floor(totalSeconds / 3600);
@@ -271,19 +379,19 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
 
     const avgTSAResponseTime = AVERAGE(
-        groupedAgents.map(a => a.avgResponseTime).filter(v => v > 0)
+        groupedAgentsAllData.map(a => a.avgResponseTime).filter(v => v > 0)
     );
 
     const avgQuotationHandlingTime = AVERAGE(
-        groupedAgents.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
+        groupedAgentsAllData.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
     );
 
     const avgNonQuotationHandlingTime = AVERAGE(
-        groupedAgents.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
+        groupedAgentsAllData.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
     );
 
     const avgSPFHandlingTime = AVERAGE(
-        groupedAgents.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
+        groupedAgentsAllData.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
     );
 
     React.useImperativeHandle(ref, () => ({
@@ -383,7 +491,7 @@ downloadCSV() {
     return (
         <Card>
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                <CardTitle>Department Head's</CardTitle>
+                <CardTitle>Department Head</CardTitle>
                 <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                     <input
                         type="text"
@@ -414,7 +522,7 @@ downloadCSV() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>#</TableHead>
-                                <TableHead>Agent Name</TableHead>
+                                <TableHead>Head Name</TableHead>
                                 <TableHead>TSA Response Time</TableHead>
                                 <TableHead>Non-Quotation HT</TableHead>
                                 <TableHead>Quotation HT</TableHead>
@@ -425,9 +533,9 @@ downloadCSV() {
                         <TableRow className="font-semibold bg-muted/80 border-b">
                             <TableCell>-</TableCell>
                             <TableCell>Total</TableCell>
-                            <TableCell className={getTextColorClass(avgTSAResponseTime, TSA_RESPONSE_THRESHOLD, "TSA Response Time")}>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
-                            <TableCell className={getTextColorClass(avgNonQuotationHandlingTime, NON_QUOTATION_HT_THRESHOLD, "Non-Quotation HT")}>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
-                            <TableCell className={getTextColorClass(avgQuotationHandlingTime, QUOTATION_HT_THRESHOLD, "Quotation HT")}>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
+                            <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
+                            <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
+                            <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
                             <TableCell>{formatHoursToHMS(avgSPFHandlingTime)}</TableCell>
                         </TableRow>
 

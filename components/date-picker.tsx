@@ -25,6 +25,12 @@ export function DatePicker({ selectedDateRange, onDateSelectAction }: DatePicker
           onSelect={(range: DateRange | undefined) => {
             onDateSelectAction(range);
           }}
+          modifiers={{
+            today: new Date(),
+          }}
+          modifiersClassNames={{
+            today: "text-muted-foreground bg-muted/30",
+          }}
         />
       </SidebarGroupContent>
     </SidebarGroup>

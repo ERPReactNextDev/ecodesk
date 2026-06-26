@@ -292,6 +292,132 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
       });
   }, [activities, agents, dateCreatedFilterRange, searchTerm, recordFilter]);
 
+  // Calculate totals from ALL data (unfiltered by date)
+  const groupedManagerAllData = useMemo(() => {
+    const map: Record<string, any> = {};
+
+    activities.forEach((a) => {
+      // Filter by type_of_sales = PROJECT
+      const agentObj = agents.find((ag) => ag.ReferenceID === a.manager);
+      const typeOfSales = agentObj?.type_of_sales?.toUpperCase() || "PROJECT";
+      
+      if (typeOfSales !== "PROJECT") return;
+
+      const name = agentObj ? `${agentObj.Firstname} ${agentObj.Lastname}` : null;
+      if (!name || name.toLowerCase() === "unknown") return;
+
+      if (!map[a.manager || name]) {
+        map[a.manager || name] = {
+          agentName: name,
+          salesCount: 0,
+          nonSalesCount: 0,
+          amount: 0,
+          convertedSalesCount: 0,
+          responseTimes: [],
+          quotationHandlingTimes: [],
+          nonQuotationHandlingTimes: [],
+          spfHandlingTimes: [],
+          newClientCount: 0,
+          newNonBuyingCount: 0,
+          existingActiveCount: 0,
+          existingInactiveCount: 0,
+          newClientConvertedAmount: 0,
+          newNonBuyingConvertedAmount: 0,
+          existingActiveConvertedAmount: 0,
+          existingInactiveConvertedAmount: 0,
+        };
+      }
+
+      const wrapUpNormalized = a.wrap_up?.trim() || "";
+      if (SALES_WRAP_UPS.includes(wrapUpNormalized)) {
+        map[a.manager || name].salesCount += 1;
+      } else {
+        map[a.manager || name].nonSalesCount += 1;
+      }
+
+      const amount = Number(a.so_amount) || 0;
+      map[a.manager || name].amount += amount;
+
+      if (a.status === "Converted into Sales") {
+        map[a.manager || name].convertedSalesCount += 1;
+      }
+
+      switch (a.customer_status?.trim()) {
+        case "New Client":
+          map[a.manager || name].newClientCount += 1;
+          if (a.status === "Converted into Sales") map[a.manager || name].newClientConvertedAmount += amount;
+          break;
+        case "New Non-Buying":
+          map[a.manager || name].newNonBuyingCount += 1;
+          if (a.status === "Converted into Sales") map[a.manager || name].newNonBuyingConvertedAmount += amount;
+          break;
+        case "Existing Active":
+          map[a.manager || name].existingActiveCount += 1;
+          if (a.status === "Converted into Sales") map[a.manager || name].existingActiveConvertedAmount += amount;
+          break;
+        case "Existing Inactive":
+          map[a.manager || name].existingInactiveCount += 1;
+          if (a.status === "Converted into Sales") map[a.manager || name].existingInactiveConvertedAmount += amount;
+          break;
+      }
+
+      // ----- TSA Response Time -----
+      if (a.tsa_acknowledge_date && a.ticket_endorsed) {
+        const ack = parseDateFixYear(a.tsa_acknowledge_date).getTime();
+        const end = parseDateFixYear(a.ticket_endorsed).getTime();
+        if (!isNaN(ack) && !isNaN(end) && ack >= end) {
+          map[a.manager || name].responseTimes.push((ack - end) / (1000 * 60 * 60));
+        }
+      }
+
+      // ----- Quotation / Non-Quotation / SPF Handling -----
+      const tsaTime = parseDateFixYear(a.tsa_handling_time).getTime();
+      const ticketReceived = parseDateFixYear(a.ticket_received).getTime();
+      if (!isNaN(tsaTime) && !isNaN(ticketReceived) && tsaTime >= ticketReceived) {
+        const diffHours = (tsaTime - ticketReceived) / (1000 * 60 * 60);
+
+        const remarksLower = a.remarks?.trim().toLowerCase();
+        const nonQuotationRemarks = [
+          "no stocks / insufficient stocks",
+          "item not carried",
+          "unable to contact customer",
+          "customer request cancellation",
+          "accreditation / partnership",
+          "no response for client",
+          "assisted",
+          "dissaproved quotation",
+          "for site visit",
+          "non standard item",
+          "po received",
+          "not converted to sales",
+          "for occular inspection",
+          "waiting for client confirmation",
+          "pending quotation"
+        ];
+
+        if (remarksLower === "quotation for approval" || remarksLower === "sold") {
+          map[a.manager || name].quotationHandlingTimes.push(diffHours);
+        } else if (remarksLower === "for spf") {
+          map[a.manager || name].spfHandlingTimes.push(diffHours);
+        } else if (remarksLower && nonQuotationRemarks.includes(remarksLower)) {
+          map[a.manager || name].nonQuotationHandlingTimes.push(diffHours);
+        }
+      }
+    });
+
+    return Object.values(map).map((a) => {
+      const avg = (arr: number[]) =>
+        arr.length > 0 ? arr.reduce((sum, t) => sum + t, 0) / arr.length : 0;
+      return {
+        ...a,
+        avgResponseTime: avg(a.responseTimes),
+        avgQuotationHandlingTime: avg(a.quotationHandlingTimes),
+        avgNonQuotationHandlingTime: avg(a.nonQuotationHandlingTimes),
+        avgSPFHandlingTime: avg(a.spfHandlingTimes),
+      };
+    });
+  }, [activities, agents]);
+
   const formatHoursToHMS = (hours: number) => {
     const totalSeconds = Math.round(hours * 3600);
     const h = Math.floor(totalSeconds / 3600);
@@ -318,37 +444,37 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
     return "";
   };
 
-  const totalSales = groupedManager.reduce((sum, a) => sum + a.salesCount, 0);
-  const totalNonSales = groupedManager.reduce((sum, a) => sum + a.nonSalesCount, 0);
-  const totalAmount = groupedManager.reduce((sum, a) => sum + a.amount, 0);
-  const totalConvertedSales = groupedManager.reduce((sum, a) => sum + a.convertedSalesCount, 0);
+  const totalSales = groupedManagerAllData.reduce((sum, a) => sum + a.salesCount, 0);
+  const totalNonSales = groupedManagerAllData.reduce((sum, a) => sum + a.nonSalesCount, 0);
+  const totalAmount = groupedManagerAllData.reduce((sum, a) => sum + a.amount, 0);
+  const totalConvertedSales = groupedManagerAllData.reduce((sum, a) => sum + a.convertedSalesCount, 0);
   const totalInquiryToSalesPercent = totalSales > 0 ? (totalConvertedSales / totalSales) * 100 : 0;
-  const totalNewClient = groupedManager.reduce((sum, a) => sum + a.newClientCount, 0);
-  const totalNewNonBuying = groupedManager.reduce((sum, a) => sum + a.newNonBuyingCount, 0);
-  const totalExistingActive = groupedManager.reduce((sum, a) => sum + a.existingActiveCount, 0);
-  const totalExistingInactive = groupedManager.reduce((sum, a) => sum + a.existingInactiveCount, 0);
-  const totalNewClientConverted = groupedManager.reduce((sum, a) => sum + a.newClientConvertedAmount, 0);
-  const totalNewNonBuyingConverted = groupedManager.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0);
-  const totalExistingActiveConverted = groupedManager.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0);
-  const totalExistingInactiveConverted = groupedManager.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0);
+  const totalNewClient = groupedManagerAllData.reduce((sum, a) => sum + a.newClientCount, 0);
+  const totalNewNonBuying = groupedManagerAllData.reduce((sum, a) => sum + a.newNonBuyingCount, 0);
+  const totalExistingActive = groupedManagerAllData.reduce((sum, a) => sum + a.existingActiveCount, 0);
+  const totalExistingInactive = groupedManagerAllData.reduce((sum, a) => sum + a.existingInactiveCount, 0);
+  const totalNewClientConverted = groupedManagerAllData.reduce((sum, a) => sum + a.newClientConvertedAmount, 0);
+  const totalNewNonBuyingConverted = groupedManagerAllData.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0);
+  const totalExistingActiveConverted = groupedManagerAllData.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0);
+  const totalExistingInactiveConverted = groupedManagerAllData.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0);
 
   const AVERAGE = (values: number[]): number =>
     values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
 
   const avgTSMResponseTime = AVERAGE(
-    groupedManager.map(a => a.avgResponseTime).filter(v => v > 0)
+    groupedManagerAllData.map(a => a.avgResponseTime).filter(v => v > 0)
   );
 
   const avgQuotationHandlingTime = AVERAGE(
-    groupedManager.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
+    groupedManagerAllData.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
   );
 
   const avgNonQuotationHandlingTime = AVERAGE(
-    groupedManager.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
+    groupedManagerAllData.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
   );
 
   const avgSPFHandlingTime = AVERAGE(
-    groupedManager.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
+    groupedManagerAllData.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
   );
 
   useImperativeHandle(ref, () => ({
@@ -482,11 +608,12 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
         {loading && <p>Loading...</p>}
         {error && <p className="text-red-600">{error}</p>}
         {!loading && !error && groupedManager.length > 0 && (
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 z-30">#</TableHead>
-                <TableHead className="sticky left-5 z-30 border-r">TSM Name</TableHead>
+                <TableHead className="sticky left-0 z-30 bg-background">#</TableHead>
+                <TableHead className="sticky left-5 z-30 border-r bg-background">TSM Name</TableHead>
                 <TableHead>Sales</TableHead>
                 <TableHead>Non-Sales</TableHead>
                 <TableHead>Total</TableHead>
@@ -509,8 +636,8 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
             </TableHeader>
 
             <TableRow className="font-semibold bg-muted/80 border-b">
-              <TableCell className="sticky left-0 z-30">-</TableCell>
-              <TableCell className="sticky left-5 z-30 border-r">Total</TableCell>
+              <TableCell className="sticky left-0 z-30 bg-muted/80">-</TableCell>
+              <TableCell className="sticky left-5 z-30 border-r bg-muted/80">Total</TableCell>
               <TableCell>{totalSales}</TableCell>
               <TableCell>{totalNonSales}</TableCell>
               <TableCell>{totalSales + totalNonSales}</TableCell>
@@ -538,8 +665,8 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
                 return (
                   <React.Fragment key={a.agentName}>
                     <TableRow className="group">
-                      <TableCell className="sticky left-0 z-20">{index + 1}</TableCell>
-                      <TableCell className={`sticky left-5 z-20 uppercase border-r`}>
+                      <TableCell className="sticky left-0 z-20 bg-background">{index + 1}</TableCell>
+                      <TableCell className={`sticky left-5 z-20 uppercase border-r bg-background`}>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleRow(a.agentName)}
@@ -610,6 +737,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
               })}
             </TableBody>
           </Table>
+          </div>
         )}
 
         {!loading && !error && groupedManager.length === 0 && <p>No TSM found for Project sales.</p>}
