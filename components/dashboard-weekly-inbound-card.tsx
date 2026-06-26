@@ -39,7 +39,7 @@ interface WeeklyInboundCardProps {
   error: string | null;
   selectedMonth: number;
   selectedYear: number;
-  customWeekMapping: { [date: string]: number | undefined };
+  selectedWeeks: number[];
 }
 
 export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
@@ -48,7 +48,7 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
   error,
   selectedMonth,
   selectedYear,
-  customWeekMapping,
+  selectedWeeks,
 }: WeeklyInboundCardProps, ref: any) {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -58,9 +58,13 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
     return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
   };
 
-  const getWeekNumber = (date: Date): number | undefined => {
-    const key = date.toISOString().slice(0, 10);
-    return customWeekMapping[key]; // undefined if not assigned
+  const getWeekFromDate = (date: Date): number => {
+    const dayOfMonth = date.getDate();
+    if (dayOfMonth <= 7) return 1;
+    if (dayOfMonth <= 14) return 2;
+    if (dayOfMonth <= 21) return 3;
+    if (dayOfMonth <= 28) return 4;
+    return 5;
   };
 
   const groupedData = useMemo(() => {
@@ -74,10 +78,14 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
         const date = a.date_created ? new Date(a.date_created) : null;
         if (!date) return;
 
-        let weekNum = getWeekNumber(date);
-        const weekKey = weekNum && weekNum >= 1 && weekNum <= 4 ? `week${weekNum}` : "unassigned";
+        const weekNum = getWeekFromDate(date);
 
-        if (!map[channel]) map[channel] = { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0 };
+        // Only count if week is selected
+        if (!selectedWeeks.includes(weekNum)) return;
+
+        const weekKey = `week${weekNum}`;
+
+        if (!map[channel]) map[channel] = { week1: 0, week2: 0, week3: 0, week4: 0, week5: 0 };
         map[channel][weekKey] = (map[channel][weekKey] || 0) + 1;
       });
 
@@ -86,11 +94,11 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
       const week2 = weeks.week2 || 0;
       const week3 = weeks.week3 || 0;
       const week4 = weeks.week4 || 0;
-      const unassigned = weeks.unassigned || 0;
-      const total = week1 + week2 + week3 + week4 + unassigned;
-      return { channel, week1, week2, week3, week4, unassigned, total };
+      const week5 = weeks.week5 || 0;
+      const total = week1 + week2 + week3 + week4 + week5;
+      return { channel, week1, week2, week3, week4, week5, total };
     });
-  }, [activities, selectedMonth, selectedYear, customWeekMapping]);
+  }, [activities, selectedMonth, selectedYear, selectedWeeks]);
 
   const totals = groupedData.reduce(
     (acc, curr) => {
@@ -98,41 +106,38 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
       acc.week2 += curr.week2;
       acc.week3 += curr.week3;
       acc.week4 += curr.week4;
-      acc.unassigned += curr.unassigned;
+      acc.week5 += curr.week5;
       acc.total += curr.total;
       return acc;
     },
-    { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0, total: 0 }
+    { week1: 0, week2: 0, week3: 0, week4: 0, week5: 0, total: 0 }
   );
 
- const downloadCSV = () => {
-  const headers = ["Channel", "Week 1", "Week 2", "Week 3", "Week 4", "Total"];
+  const downloadCSV = () => {
+    const headers = ["Channel", ...selectedWeeks.map(w => `Week ${w}`), "Total"];
 
-  const rows = groupedData.map((r) => [
-    r.channel,
-    r.week1,
-    r.week2,
-    r.week3,
-    r.week4,
-    r.total,
-  ]);
+    const rows = groupedData.map((r) => [
+      r.channel,
+      ...selectedWeeks.map(w => r[`week${w}` as keyof typeof r] as number),
+      r.total,
+    ]);
 
-  const csv = [
-    [`Month`, `${selectedMonth + 1}`].join(","),
-    [`Year`, `${selectedYear}`].join(","),
-    [],
-    headers.join(","),
-    ...rows.map((r) => r.join(",")),
-    [],
-    ["Total", totals.week1, totals.week2, totals.week3, totals.week4, totals.total].join(","),
-  ].join("\n");
+    const csv = [
+      [`Month`, `${selectedMonth + 1}`].join(","),
+      [`Year`, `${selectedYear}`].join(","),
+      [],
+      headers.join(","),
+      ...rows.map((r) => r.join(",")),
+      [],
+      ["Total", ...selectedWeeks.map(w => totals[`week${w}` as keyof typeof totals] as number), totals.total].join(","),
+    ].join("\n");
 
-  downloadStyledWorkbookFromCsv(csv, "weekly-inbound-channel-count.xlsx");
-}; 
+    downloadStyledWorkbookFromCsv(csv, "weekly-inbound-channel-count.xlsx");
+  };
 
-useImperativeHandle(ref, () => ({
-  downloadCSV,
-}));
+  useImperativeHandle(ref, () => ({
+    downloadCSV,
+  }));
 
   return (
     <Card>
@@ -165,10 +170,11 @@ useImperativeHandle(ref, () => ({
             <TableHeader>
               <TableRow>
                 <TableHead className="text-left sticky left-0 z-30">Channel</TableHead>
-                <TableHead className="text-right">Week 1</TableHead>
-                <TableHead className="text-right">Week 2</TableHead>
-                <TableHead className="text-right">Week 3</TableHead>
-                <TableHead className="text-right">Week 4</TableHead>
+                {selectedWeeks.includes(1) && <TableHead className="text-right">Week 1</TableHead>}
+                {selectedWeeks.includes(2) && <TableHead className="text-right">Week 2</TableHead>}
+                {selectedWeeks.includes(3) && <TableHead className="text-right">Week 3</TableHead>}
+                {selectedWeeks.includes(4) && <TableHead className="text-right">Week 4</TableHead>}
+                {selectedWeeks.includes(5) && <TableHead className="text-right">Week 5</TableHead>}
                 <TableHead className="text-right font-bold">Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -177,10 +183,11 @@ useImperativeHandle(ref, () => ({
               {groupedData.map((row) => (
                 <TableRow key={row.channel}>
                   <TableCell className="font-medium pt-4 pb-4 text-left">{row.channel}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{row.week1}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{row.week4}</TableCell>
+                  {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums">{row.week1}</TableCell>}
+                  {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>}
+                  {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>}
+                  {selectedWeeks.includes(4) && <TableCell className="text-right font-mono tabular-nums">{row.week4}</TableCell>}
+                  {selectedWeeks.includes(5) && <TableCell className="text-right font-mono tabular-nums">{row.week5}</TableCell>}
                   <TableCell className="text-right font-mono tabular-nums">{row.total}</TableCell>
                 </TableRow>
               ))}
@@ -189,10 +196,11 @@ useImperativeHandle(ref, () => ({
             <tfoot className="bg-gray-100 font-semibold">
               <TableRow>
                 <TableCell>Total</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{totals.week1}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{totals.week4}</TableCell>
+                {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums">{totals.week1}</TableCell>}
+                {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>}
+                {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>}
+                {selectedWeeks.includes(4) && <TableCell className="text-right font-mono tabular-nums">{totals.week4}</TableCell>}
+                {selectedWeeks.includes(5) && <TableCell className="text-right font-mono tabular-nums">{totals.week5}</TableCell>}
                 <TableCell className="text-right font-mono tabular-nums">{totals.total}</TableCell>
               </TableRow>
             </tfoot>

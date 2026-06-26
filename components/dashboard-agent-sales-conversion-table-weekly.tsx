@@ -56,7 +56,7 @@ interface AgentSalesWeeklyCardProps {
     error: string | null;
     selectedMonth: number;
     selectedYear: number;
-    customWeekMapping: { [date: string]: number | undefined };
+    selectedWeeks: number[];
 }
 
 export interface AgentSalesWeeklyCardRef {
@@ -68,8 +68,14 @@ function formatDateKey(dateStr: string) {
     return new Date(dateStr).toISOString().slice(0, 10);
 }
 
-function getWeekFromMapping(dateStr: string, mapping: { [date: string]: number | undefined }) {
-    return mapping[formatDateKey(dateStr)] ?? undefined;
+function getWeekFromDate(dateStr: string) {
+    const date = new Date(dateStr);
+    const dayOfMonth = date.getDate();
+    if (dayOfMonth <= 7) return 1;
+    if (dayOfMonth <= 14) return 2;
+    if (dayOfMonth <= 21) return 3;
+    if (dayOfMonth <= 28) return 4;
+    return 5;
 }
 
 function isDateInMonthYear(dateStr: string | undefined, month: number, year: number) {
@@ -87,7 +93,7 @@ function safeNumber(value?: string | number): number {
 const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
     AgentSalesWeeklyCardRef,
     AgentSalesWeeklyCardProps
-> = ({ activities, loading, error, selectedMonth, selectedYear, customWeekMapping }, ref) => {
+> = ({ activities, loading, error, selectedMonth, selectedYear, selectedWeeks }, ref) => {
     const [agents, setAgents] = useState<Agent[]>([]);
     const [agentsLoading, setAgentsLoading] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
@@ -121,10 +127,10 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                 week2: number;
                 week3: number;
                 week4: number;
+                week5: number;
                 total: number;
                 qtySold: number;
                 convertedCount: number;
-                unassigned: number;
             }
         > = {};
 
@@ -134,7 +140,7 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                 const agent = agents.find((ag) => ag.ReferenceID === a.referenceid);
                 const agentName = agent ? `${agent.Firstname} ${agent.Lastname}` : a.referenceid ?? "Unknown";
 
-                const week = getWeekFromMapping(a.date_created!, customWeekMapping);
+                const week = getWeekFromDate(a.date_created!);
                 const amount = safeNumber(a.so_amount);
                 const qty = safeNumber(a.qty_sold);
 
@@ -145,47 +151,40 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
                         week2: 0,
                         week3: 0,
                         week4: 0,
+                        week5: 0,
                         total: 0,
                         qtySold: 0,
                         convertedCount: 0,
-                        unassigned: 0,
                     };
                 }
 
-                // Add to weekly amount
-                if (week && week >= 1 && week <= 4) {
-                    const key = `week${week}` as "week1" | "week2" | "week3" | "week4";
+                // Add to weekly amount only if week is selected
+                if (week && selectedWeeks.includes(week)) {
+                    const key = `week${week}` as "week1" | "week2" | "week3" | "week4" | "week5";
                     map[agentName][key] += amount;
-
-                    // ✅ Count qtySold only if it belongs to a week
                     map[agentName].qtySold += qty;
-                } else {
-                    map[agentName].unassigned += amount;
-                }
+                    map[agentName].total += amount;
 
-                map[agentName].total += amount;
-
-                // ✅ Only count converted sales if it belongs to an assigned week
-                const statusNormalized = a.status?.trim().toLowerCase();
-                if (statusNormalized === "converted into sales") {
-                    if (week && week >= 1 && week <= 4) map[agentName].convertedCount++;
+                    // Count converted sales
+                    const statusNormalized = a.status?.trim().toLowerCase();
+                    if (statusNormalized === "converted into sales") {
+                        map[agentName].convertedCount++;
+                    }
                 }
             });
 
         return Object.values(map);
-    }, [activities, agents, agentsLoading, selectedMonth, selectedYear, customWeekMapping]);
+    }, [activities, agents, agentsLoading, selectedMonth, selectedYear, selectedWeeks]);
 
     const totalSoAmount = groupedData.reduce((sum, r) => sum + r.total, 0);
+
 const downloadCSV = () => {
   if (!groupedData.length) return;
 
   const headers = [
     "Rank",
     "Agent",
-    "Week 1",
-    "Week 2",
-    "Week 3",
-    "Week 4",
+    ...selectedWeeks.map(w => `Week ${w}`),
     "Total",
     "QTY Sold",
     "Converted Sales",
@@ -194,10 +193,7 @@ const downloadCSV = () => {
   const rows = groupedData.map((r, index) => [
     index + 1,
     r.name,
-    r.week1,
-    r.week2,
-    r.week3,
-    r.week4,
+    ...selectedWeeks.map(w => r[`week${w}` as keyof typeof r] as number),
     r.total,
     r.qtySold,
     r.convertedCount,
@@ -213,10 +209,7 @@ const downloadCSV = () => {
     [
       "TOTAL",
       "",
-      groupedData.reduce((sum, r) => sum + r.week1, 0),
-      groupedData.reduce((sum, r) => sum + r.week2, 0),
-      groupedData.reduce((sum, r) => sum + r.week3, 0),
-      groupedData.reduce((sum, r) => sum + r.week4, 0),
+      ...selectedWeeks.map(w => groupedData.reduce((sum, r) => sum + (r[`week${w}` as keyof typeof r] as number), 0)),
       groupedData.reduce((sum, r) => sum + r.total, 0),
       groupedData.reduce((sum, r) => sum + r.qtySold, 0),
       groupedData.reduce((sum, r) => sum + r.convertedCount, 0),
@@ -230,13 +223,11 @@ useImperativeHandle(ref, () => ({
   downloadCSV() {
     if (!groupedData || groupedData.length === 0) return;
 
+    const weekHeaders = selectedWeeks.map(w => `Week ${w}`);
     const rows = groupedData.map((r, index) => ({
       Rank: index + 1,
       Agent: r.name,
-      "Week 1": r.week1,
-      "Week 2": r.week2,
-      "Week 3": r.week3,
-      "Week 4": r.week4,
+      ...Object.fromEntries(selectedWeeks.map(w => [`Week ${w}`, r[`week${w}` as keyof typeof r] as number])),
       Total: r.total,
       "QTY Sold": r.qtySold,
       "Converted Sales": r.convertedCount,
@@ -245,32 +236,26 @@ useImperativeHandle(ref, () => ({
     const headers = [
       "Rank",
       "Agent",
-      "Week 1",
-      "Week 2",
-      "Week 3",
-      "Week 4",
+      ...weekHeaders,
       "Total",
       "QTY Sold",
       "Converted Sales",
     ];
 
-// DATE FILTER TEXT (same logic as TSA export)
-const firstDay = new Date(selectedYear, selectedMonth, 1);
-const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
+    // DATE FILTER TEXT (same logic as TSA export)
+    const firstDay = new Date(selectedYear, selectedMonth, 1);
+    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
 
-const from = firstDay.toLocaleDateString();
-const to = lastDay.toLocaleDateString();
+    const from = firstDay.toLocaleDateString();
+    const to = lastDay.toLocaleDateString();
 
-const filterText = `${from} - ${to}`;
+    const filterText = `${from} - ${to}`;
 
     // TOTAL ROW
     const totalRow = [
       "",
       "TOTAL",
-      groupedData.reduce((sum, r) => sum + r.week1, 0),
-      groupedData.reduce((sum, r) => sum + r.week2, 0),
-      groupedData.reduce((sum, r) => sum + r.week3, 0),
-      groupedData.reduce((sum, r) => sum + r.week4, 0),
+      ...selectedWeeks.map(w => groupedData.reduce((sum, r) => sum + (r[`week${w}` as keyof typeof r] as number), 0)),
       groupedData.reduce((sum, r) => sum + r.total, 0),
       groupedData.reduce((sum, r) => sum + r.qtySold, 0),
       groupedData.reduce((sum, r) => sum + r.convertedCount, 0),
@@ -289,6 +274,7 @@ const filterText = `${from} - ${to}`;
     downloadStyledWorkbookFromCsv(csv, "weekly-agent-sales-conversion.xlsx");
   },
 }));
+
     return (
         <Card>
             <CardHeader className="flex justify-between items-center">
@@ -317,10 +303,11 @@ const filterText = `${from} - ${to}`;
                             <TableRow>
                                 <TableHead className="sticky left-0 z-30">#</TableHead>
                                 <TableHead className="sticky left-[50px] z-30">Agent</TableHead>
-                                <TableHead className="text-right">Week 1</TableHead>
-                                <TableHead className="text-right">Week 2</TableHead>
-                                <TableHead className="text-right">Week 3</TableHead>
-                                <TableHead className="text-right">Week 4</TableHead>
+                                {selectedWeeks.includes(1) && <TableHead className="text-right">Week 1</TableHead>}
+                                {selectedWeeks.includes(2) && <TableHead className="text-right">Week 2</TableHead>}
+                                {selectedWeeks.includes(3) && <TableHead className="text-right">Week 3</TableHead>}
+                                {selectedWeeks.includes(4) && <TableHead className="text-right">Week 4</TableHead>}
+                                {selectedWeeks.includes(5) && <TableHead className="text-right">Week 5</TableHead>}
                                 <TableHead className="text-right">Total</TableHead>
                                 <TableHead className="text-right">QTY Sold</TableHead>
                                 <TableHead className="text-right">Converted Sales</TableHead>
@@ -332,10 +319,11 @@ const filterText = `${from} - ${to}`;
                                 <TableRow key={row.name}>
                                     <TableCell className="sticky left-0 z-20">{index + 1}</TableCell>
                                     <TableCell className="sticky left-[50px] z-20">{row.name}</TableCell>
-                                    <TableCell className="text-right">{row.week1.toLocaleString()}</TableCell>
-                                    <TableCell className="text-right">{row.week2.toLocaleString()}</TableCell>
-                                    <TableCell className="text-right">{row.week3.toLocaleString()}</TableCell>
-                                    <TableCell className="text-right">{row.week4.toLocaleString()}</TableCell>
+                                    {selectedWeeks.includes(1) && <TableCell className="text-right">{row.week1.toLocaleString()}</TableCell>}
+                                    {selectedWeeks.includes(2) && <TableCell className="text-right">{row.week2.toLocaleString()}</TableCell>}
+                                    {selectedWeeks.includes(3) && <TableCell className="text-right">{row.week3.toLocaleString()}</TableCell>}
+                                    {selectedWeeks.includes(4) && <TableCell className="text-right">{row.week4.toLocaleString()}</TableCell>}
+                                    {selectedWeeks.includes(5) && <TableCell className="text-right">{row.week5.toLocaleString()}</TableCell>}
                                     <TableCell className="text-right">{row.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                                     <TableCell className="text-right">{row.qtySold.toLocaleString()}</TableCell>
                                     <TableCell className="text-right">{row.convertedCount.toLocaleString()}</TableCell>
@@ -347,10 +335,11 @@ const filterText = `${from} - ${to}`;
                             <TableRow className="font-bold bg-muted/50">
                                 <TableCell className="sticky left-0 z-20">Total</TableCell>
                                 <TableCell className="sticky left-[50px] z-20">-</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week1, 0).toLocaleString()}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0).toLocaleString()}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0).toLocaleString()}</TableCell>
-                                <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week4, 0).toLocaleString()}</TableCell>
+                                {selectedWeeks.includes(1) && <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week1, 0).toLocaleString()}</TableCell>}
+                                {selectedWeeks.includes(2) && <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0).toLocaleString()}</TableCell>}
+                                {selectedWeeks.includes(3) && <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0).toLocaleString()}</TableCell>}
+                                {selectedWeeks.includes(4) && <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week4, 0).toLocaleString()}</TableCell>}
+                                {selectedWeeks.includes(5) && <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week5, 0).toLocaleString()}</TableCell>}
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.total, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.qtySold, 0).toLocaleString()}</TableCell>
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.convertedCount, 0).toLocaleString()}</TableCell>

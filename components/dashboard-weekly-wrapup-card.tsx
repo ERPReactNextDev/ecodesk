@@ -40,7 +40,7 @@ interface WrapUpWeeklyCardProps {
   error: string | null;
   selectedMonth: number;
   selectedYear: number;
-  customWeekMapping: { [date: string]: number | undefined };
+  selectedWeeks: number[];
 }
 
 export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
@@ -51,7 +51,7 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
       error,
       selectedMonth,
       selectedYear,
-      customWeekMapping,
+      selectedWeeks,
     },
     ref,
   ) => {
@@ -65,9 +65,13 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
       );
     };
 
-    const getWeekNumber = (date: Date): number | undefined => {
-      const key = date.toISOString().slice(0, 10);
-      return customWeekMapping[key];
+    const getWeekFromDate = (date: Date): number => {
+      const dayOfMonth = date.getDate();
+      if (dayOfMonth <= 7) return 1;
+      if (dayOfMonth <= 14) return 2;
+      if (dayOfMonth <= 21) return 3;
+      if (dayOfMonth <= 28) return 4;
+      return 5;
     };
 
     const WRAP_UP_LIST = [
@@ -91,11 +95,11 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
 
     const groupedData = useMemo(() => {
       type WeekCounts = { [week: number]: number };
-      const map: Record<string, WeekCounts & { unassigned: number }> = {};
+      const map: Record<string, WeekCounts> = {};
 
       // Initialize all wrap-ups with zero counts
       WRAP_UP_LIST.forEach((wrap) => {
-        map[wrap] = { 1: 0, 2: 0, 3: 0, 4: 0, unassigned: 0 };
+        map[wrap] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       });
 
       // Only consider activities in the selected month/year
@@ -104,11 +108,7 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
         if (!wrap || !WRAP_UP_LIST.includes(wrap)) return;
 
         const wrap_up = wrap;
-        if (!a.date_created) {
-          // No date → count as unassigned
-          map[wrap_up].unassigned += 1;
-          return;
-        }
+        if (!a.date_created) return;
 
         const date = new Date(a.date_created);
         if (
@@ -119,15 +119,12 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
           return;
         }
 
-        // Map date to week using customWeekMapping
-        const key = date.toISOString().slice(0, 10);
-        const weekNum = customWeekMapping[key];
+        const weekNum = getWeekFromDate(date);
 
-        if (weekNum && weekNum >= 1 && weekNum <= 4) {
-          map[wrap_up][weekNum] += 1;
-        } else {
-          map[wrap_up].unassigned += 1;
-        }
+        // Only count if week is selected
+        if (!selectedWeeks.includes(weekNum)) return;
+
+        map[wrap_up][weekNum] += 1;
       });
 
       // Convert map to array for table
@@ -136,7 +133,8 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
         const week2 = counts[2] ?? 0;
         const week3 = counts[3] ?? 0;
         const week4 = counts[4] ?? 0;
-        const total = week1 + week2 + week3 + week4 + (counts.unassigned ?? 0);
+        const week5 = counts[5] ?? 0;
+        const total = week1 + week2 + week3 + week4 + week5;
 
         return {
           wrap_up,
@@ -144,11 +142,11 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
           week2,
           week3,
           week4,
-          unassigned: counts.unassigned ?? 0,
+          week5,
           total,
         };
       });
-    }, [activities, selectedMonth, selectedYear, customWeekMapping]);
+    }, [activities, selectedMonth, selectedYear, selectedWeeks]);
 
     const totals = groupedData.reduce(
       (acc, curr) => {
@@ -159,26 +157,24 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
         acc.week2 += curr.week2;
         acc.week3 += curr.week3;
         acc.week4 += curr.week4;
-        acc.unassigned += curr.unassigned;
+        acc.week5 += curr.week5;
         acc.total += curr.total;
 
         return acc;
       },
-      { week1: 0, week2: 0, week3: 0, week4: 0, unassigned: 0, total: 0 },
+      { week1: 0, week2: 0, week3: 0, week4: 0, week5: 0, total: 0 },
     );
 
     useImperativeHandle(ref, () => ({
       downloadCSV() {
         if (!groupedData || groupedData.length === 0) return;
 
+        const weekHeaders = selectedWeeks.map(w => `Week ${w}`);
         const rows = groupedData.map((row, index) => {
           return {
             Rank: index + 1,
             "Wrap-Up": row.wrap_up,
-            "Week 1": row.week1,
-            "Week 2": row.week2,
-            "Week 3": row.week3,
-            "Week 4": row.week4,
+            ...Object.fromEntries(selectedWeeks.map(w => [`Week ${w}`, row[`week${w}` as keyof typeof row] as number])),
             Total: row.total,
           };
         });
@@ -186,10 +182,7 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
         const headers = [
           "Rank",
           "Wrap-Up",
-          "Week 1",
-          "Week 2",
-          "Week 3",
-          "Week 4",
+          ...weekHeaders,
           "Total",
         ];
 
@@ -209,10 +202,7 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
         const totalRow = [
           "",
           "TOTAL",
-          totals.week1,
-          totals.week2,
-          totals.week3,
-          totals.week4,
+          ...selectedWeeks.map(w => totals[`week${w}` as keyof typeof totals] as number),
           totals.total,
         ];
 
@@ -229,6 +219,7 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
         downloadStyledWorkbookFromCsv(csv, "weekly-wrapup-distribution.xlsx");
       },
     }));
+
     return (
       <Card>
         <CardHeader className="flex justify-between items-center">
@@ -262,10 +253,11 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
               <TableHeader>
                 <TableRow>
                   <TableHead>Wrap-Up</TableHead>
-                  <TableHead className="text-right">Week 1</TableHead>
-                  <TableHead className="text-right">Week 2</TableHead>
-                  <TableHead className="text-right">Week 3</TableHead>
-                  <TableHead className="text-right">Week 4</TableHead>
+                  {selectedWeeks.includes(1) && <TableHead className="text-right">Week 1</TableHead>}
+                  {selectedWeeks.includes(2) && <TableHead className="text-right">Week 2</TableHead>}
+                  {selectedWeeks.includes(3) && <TableHead className="text-right">Week 3</TableHead>}
+                  {selectedWeeks.includes(4) && <TableHead className="text-right">Week 4</TableHead>}
+                  {selectedWeeks.includes(5) && <TableHead className="text-right">Week 5</TableHead>}
                   <TableHead className="text-right font-bold">Total</TableHead>
                 </TableRow>
               </TableHeader>
@@ -276,18 +268,11 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
                     <TableCell className="font-medium pt-4 pb-4 text-left">
                       {row.wrap_up}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {row.week1}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {row.week2}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {row.week3}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {row.week4}
-                    </TableCell>
+                    {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums">{row.week1}</TableCell>}
+                    {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>}
+                    {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>}
+                    {selectedWeeks.includes(4) && <TableCell className="text-right font-mono tabular-nums">{row.week4}</TableCell>}
+                    {selectedWeeks.includes(5) && <TableCell className="text-right font-mono tabular-nums">{row.week5}</TableCell>}
                     <TableCell className="text-right font-mono tabular-nums">
                       {row.total}
                     </TableCell>
@@ -298,18 +283,11 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
               <tfoot className="bg-gray-100 font-semibold">
                 <TableRow>
                   <TableCell>Total</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {totals.week1}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {totals.week2}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {totals.week3}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {totals.week4}
-                  </TableCell>
+                  {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums">{totals.week1}</TableCell>}
+                  {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>}
+                  {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>}
+                  {selectedWeeks.includes(4) && <TableCell className="text-right font-mono tabular-nums">{totals.week4}</TableCell>}
+                  {selectedWeeks.includes(5) && <TableCell className="text-right font-mono tabular-nums">{totals.week5}</TableCell>}
                   <TableCell className="text-right font-mono tabular-nums">
                     {totals.total}
                   </TableCell>
