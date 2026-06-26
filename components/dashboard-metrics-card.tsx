@@ -263,10 +263,11 @@ export const MetricsCard = React.forwardRef<
         )}
 
         {!loading && !error && groupedData.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-muted/50">
-                <TableHead className="sticky left-0 z-30 border-r font-semibold">Channel</TableHead>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-muted/50">
+                  <TableHead className="sticky left-0 z-30 border-r bg-background font-semibold">Channel</TableHead>
                 <TableHead className="text-right font-semibold">Traffic</TableHead>
                 <TableHead className="text-right font-semibold">Amount</TableHead>
                 <TableHead className="text-right font-semibold">Converted</TableHead>
@@ -276,10 +277,10 @@ export const MetricsCard = React.forwardRef<
               </TableRow>
             </TableHeader>
 
-            <TableBody>
-              {groupedData.map((r) => (
-                <TableRow key={r.channel} className="hover:bg-muted/30 transition-colors">
-                  <TableCell className="sticky left-0 z-30 border-r font-medium">{r.channel}</TableCell>
+              <TableBody>
+                {groupedData.map((r) => (
+                  <TableRow key={r.channel} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="sticky left-0 z-30 border-r bg-background font-medium">{r.channel}</TableCell>
                   <TableCell className="text-right tabular-nums">{r.traffic}</TableCell>
                   <TableCell className="text-right tabular-nums">₱{r.soAmountTotal.toLocaleString()}</TableCell>
                   <TableCell className="text-right tabular-nums">{r.convertedCount}</TableCell>
@@ -292,7 +293,7 @@ export const MetricsCard = React.forwardRef<
 
             <tfoot className="bg-muted/50 font-semibold">
               <TableRow>
-                <TableCell className="sticky left-0 z-30 border-r font-semibold">Total</TableCell>
+                <TableCell className="sticky left-0 z-30 border-r bg-background font-semibold">Total</TableCell>
                 <TableCell className="text-right tabular-nums">{totalTraffic}</TableCell>
                 <TableCell className="text-right tabular-nums">₱{totalSoAmount.toLocaleString()}</TableCell>
                 <TableCell className="text-right tabular-nums">{totalConverted}</TableCell>
@@ -301,7 +302,8 @@ export const MetricsCard = React.forwardRef<
                 <TableCell className="text-right tabular-nums">₱{Math.round(avgTransactionValueTotal).toLocaleString()}</TableCell>
               </TableRow>
             </tfoot>
-          </Table>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

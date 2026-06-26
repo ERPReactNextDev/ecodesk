@@ -240,7 +240,7 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
           </div>
         </CardHeader>
 
-        <CardContent className="pb-3">
+        <CardContent className="pb-3 max-h- overflow-y-auto">
           {loading && <p className="text-sm text-muted-foreground">Loading activities...</p>}
           {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -249,31 +249,31 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
           )}
 
           {!loading && !error && groupedData.length > 0 && (
-            <Table>
-              <TableHeader>
+            <Table className="text-xs">
+              <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
-                  <TableHead>Wrap-Up</TableHead>
-                  {selectedWeeks.includes(1) && <TableHead className="text-right">Week 1</TableHead>}
-                  {selectedWeeks.includes(2) && <TableHead className="text-right">Week 2</TableHead>}
-                  {selectedWeeks.includes(3) && <TableHead className="text-right">Week 3</TableHead>}
-                  {selectedWeeks.includes(4) && <TableHead className="text-right">Week 4</TableHead>}
-                  {selectedWeeks.includes(5) && <TableHead className="text-right">Week 5</TableHead>}
-                  <TableHead className="text-right font-bold">Total</TableHead>
+                  <TableHead className="py-2 px-2">Wrap-Up</TableHead>
+                  {selectedWeeks.includes(1) && <TableHead className="text-right py-2 px-2">W1</TableHead>}
+                  {selectedWeeks.includes(2) && <TableHead className="text-right py-2 px-2">W2</TableHead>}
+                  {selectedWeeks.includes(3) && <TableHead className="text-right py-2 px-2">W3</TableHead>}
+                  {selectedWeeks.includes(4) && <TableHead className="text-right py-2 px-2">W4</TableHead>}
+                  {selectedWeeks.includes(5) && <TableHead className="text-right py-2 px-2">W5</TableHead>}
+                  <TableHead className="text-right font-bold py-2 px-2">Total</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {groupedData.map((row) => (
                   <TableRow key={row.wrap_up}>
-                    <TableCell className="font-medium pt-4 pb-4 text-left">
+                    <TableCell className="font-medium py-2 px-2 text-left">
                       {row.wrap_up}
                     </TableCell>
-                    {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums">{row.week1}</TableCell>}
-                    {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>}
-                    {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>}
-                    {selectedWeeks.includes(4) && <TableCell className="text-right font-mono tabular-nums">{row.week4}</TableCell>}
-                    {selectedWeeks.includes(5) && <TableCell className="text-right font-mono tabular-nums">{row.week5}</TableCell>}
-                    <TableCell className="text-right font-mono tabular-nums">
+                    {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{row.week1}</TableCell>}
+                    {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{row.week2}</TableCell>}
+                    {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{row.week3}</TableCell>}
+                    {selectedWeeks.includes(4) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{row.week4}</TableCell>}
+                    {selectedWeeks.includes(5) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{row.week5}</TableCell>}
+                    <TableCell className="text-right font-mono tabular-nums py-2 px-2">
                       {row.total}
                     </TableCell>
                   </TableRow>
@@ -282,13 +282,13 @@ export const WrapUpWeeklyCard = forwardRef<any, WrapUpWeeklyCardProps>(
 
               <tfoot className="bg-gray-100 font-semibold">
                 <TableRow>
-                  <TableCell>Total</TableCell>
-                  {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums">{totals.week1}</TableCell>}
-                  {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>}
-                  {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>}
-                  {selectedWeeks.includes(4) && <TableCell className="text-right font-mono tabular-nums">{totals.week4}</TableCell>}
-                  {selectedWeeks.includes(5) && <TableCell className="text-right font-mono tabular-nums">{totals.week5}</TableCell>}
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="py-2 px-2">Total</TableCell>
+                  {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{totals.week1}</TableCell>}
+                  {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{totals.week2}</TableCell>}
+                  {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{totals.week3}</TableCell>}
+                  {selectedWeeks.includes(4) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{totals.week4}</TableCell>}
+                  {selectedWeeks.includes(5) && <TableCell className="text-right font-mono tabular-nums py-2 px-2">{totals.week5}</TableCell>}
+                  <TableCell className="text-right font-mono tabular-nums py-2 px-2">
                     {totals.total}
                   </TableCell>
                 </TableRow>

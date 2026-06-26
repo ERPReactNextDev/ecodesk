@@ -519,11 +519,12 @@ downloadCSV() {
                 {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 {!loading && !error && groupedAgents.length > 0 && (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>#</TableHead>
-                                <TableHead>Head Name</TableHead>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="sticky top-0 bg-background z-10">
+                                <TableRow>
+                                    <TableHead className="sticky left-0 z-30 bg-background">#</TableHead>
+                                    <TableHead className="sticky left-[50px] z-30 border-r bg-background">Head Name</TableHead>
                                 <TableHead>TSA Response Time</TableHead>
                                 <TableHead>Non-Quotation HT</TableHead>
                                 <TableHead>Quotation HT</TableHead>
@@ -532,8 +533,8 @@ downloadCSV() {
                         </TableHeader>
 
                         <TableRow className="font-semibold bg-muted/80 border-b">
-                            <TableCell>-</TableCell>
-                            <TableCell>Total</TableCell>
+                            <TableCell className="sticky left-0 z-20 bg-background">-</TableCell>
+                            <TableCell className="sticky left-[50px] z-20 border-r bg-background">Total</TableCell>
                             <TableCell>{formatHoursToHMS(avgTSAResponseTime)}</TableCell>
                             <TableCell>{formatHoursToHMS(avgNonQuotationHandlingTime)}</TableCell>
                             <TableCell>{formatHoursToHMS(avgQuotationHandlingTime)}</TableCell>
@@ -553,8 +554,8 @@ downloadCSV() {
                                                 setExpandedAgent(isOpen ? null : a.agentName)
                                             }
                                         >
-                                            <TableCell>{index + 1}</TableCell>
-                                            <TableCell className="font-semibold">
+                                            <TableCell className="sticky left-0 z-20 bg-background">{index + 1}</TableCell>
+                                            <TableCell className="font-semibold sticky left-[50px] z-20 border-r bg-background">
                                                 {a.agentName}
                                             </TableCell>
                                             <TableCell className={getTextColorClass(a.avgResponseTime, TSA_RESPONSE_THRESHOLD, "TSA Response Time")}>{formatHoursToHMS(a.avgResponseTime)}</TableCell>
@@ -594,7 +595,8 @@ downloadCSV() {
                                 );
                             })}
                         </TableBody>
-                    </Table>
+                        </Table>
+                    </div>
                 )}
 
                 {!loading && !error && groupedAgents.length === 0 && <p className="text-sm text-muted-foreground">No agents found.</p>}

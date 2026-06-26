@@ -166,10 +166,11 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
         )}
 
         {!loading && !error && groupedData.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-left sticky left-0 z-30">Channel</TableHead>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-left sticky left-0 z-30 border-r bg-background">Channel</TableHead>
                 {selectedWeeks.includes(1) && <TableHead className="text-right">Week 1</TableHead>}
                 {selectedWeeks.includes(2) && <TableHead className="text-right">Week 2</TableHead>}
                 {selectedWeeks.includes(3) && <TableHead className="text-right">Week 3</TableHead>}
@@ -179,10 +180,10 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
               </TableRow>
             </TableHeader>
 
-            <TableBody>
-              {groupedData.map((row) => (
-                <TableRow key={row.channel}>
-                  <TableCell className="font-medium pt-4 pb-4 text-left">{row.channel}</TableCell>
+              <TableBody>
+                {groupedData.map((row) => (
+                  <TableRow key={row.channel}>
+                    <TableCell className="font-medium pt-4 pb-4 text-left sticky left-0 z-20 border-r bg-background">{row.channel}</TableCell>
                   {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums">{row.week1}</TableCell>}
                   {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums">{row.week2}</TableCell>}
                   {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums">{row.week3}</TableCell>}
@@ -195,7 +196,7 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
 
             <tfoot className="bg-gray-100 font-semibold">
               <TableRow>
-                <TableCell>Total</TableCell>
+                <TableCell className="sticky left-0 z-20 border-r bg-background">Total</TableCell>
                 {selectedWeeks.includes(1) && <TableCell className="text-right font-mono tabular-nums">{totals.week1}</TableCell>}
                 {selectedWeeks.includes(2) && <TableCell className="text-right font-mono tabular-nums">{totals.week2}</TableCell>}
                 {selectedWeeks.includes(3) && <TableCell className="text-right font-mono tabular-nums">{totals.week3}</TableCell>}
@@ -204,7 +205,8 @@ export const WeeklyInboundCard = forwardRef(function WeeklyInboundCard({
                 <TableCell className="text-right font-mono tabular-nums">{totals.total}</TableCell>
               </TableRow>
             </tfoot>
-          </Table>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

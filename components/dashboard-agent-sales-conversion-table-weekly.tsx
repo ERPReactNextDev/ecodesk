@@ -299,11 +299,12 @@ useImperativeHandle(ref, () => ({
                 {error && <p className="text-sm text-destructive">{error}</p>}
 
                 {!loading && !agentsLoading && groupedData.length > 0 && (
-                    <Table className="min-w-[1200px]">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="sticky left-0 z-30">#</TableHead>
-                                <TableHead className="sticky left-[50px] z-30">Agent</TableHead>
+                    <div className="overflow-x-auto">
+                        <Table className="min-w-[1200px]">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="sticky left-0 z-30 bg-background">#</TableHead>
+                                    <TableHead className="sticky left-[50px] z-30 border-r bg-background">Agent</TableHead>
                                 {selectedWeeks.includes(1) && <TableHead className="text-right">Week 1</TableHead>}
                                 {selectedWeeks.includes(2) && <TableHead className="text-right">Week 2</TableHead>}
                                 {selectedWeeks.includes(3) && <TableHead className="text-right">Week 3</TableHead>}
@@ -315,11 +316,11 @@ useImperativeHandle(ref, () => ({
                             </TableRow>
                         </TableHeader>
 
-                        <TableBody>
-                            {groupedData.map((row, index) => (
-                                <TableRow key={row.name}>
-                                    <TableCell className="sticky left-0 z-20">{index + 1}</TableCell>
-                                    <TableCell className="sticky left-[50px] z-20">{row.name}</TableCell>
+                            <TableBody>
+                                {groupedData.map((row, index) => (
+                                    <TableRow key={row.name}>
+                                        <TableCell className="sticky left-0 z-20 bg-background">{index + 1}</TableCell>
+                                        <TableCell className="sticky left-[50px] z-20 border-r bg-background">{row.name}</TableCell>
                                     {selectedWeeks.includes(1) && <TableCell className="text-right">{row.week1.toLocaleString()}</TableCell>}
                                     {selectedWeeks.includes(2) && <TableCell className="text-right">{row.week2.toLocaleString()}</TableCell>}
                                     {selectedWeeks.includes(3) && <TableCell className="text-right">{row.week3.toLocaleString()}</TableCell>}
@@ -334,8 +335,8 @@ useImperativeHandle(ref, () => ({
 
                         <tfoot>
                             <TableRow className="font-bold bg-muted/50">
-                                <TableCell className="sticky left-0 z-20">Total</TableCell>
-                                <TableCell className="sticky left-[50px] z-20">-</TableCell>
+                                <TableCell className="sticky left-0 z-20 bg-background">Total</TableCell>
+                                <TableCell className="sticky left-[50px] z-20 border-r bg-background">-</TableCell>
                                 {selectedWeeks.includes(1) && <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week1, 0).toLocaleString()}</TableCell>}
                                 {selectedWeeks.includes(2) && <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week2, 0).toLocaleString()}</TableCell>}
                                 {selectedWeeks.includes(3) && <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.week3, 0).toLocaleString()}</TableCell>}
@@ -346,7 +347,8 @@ useImperativeHandle(ref, () => ({
                                 <TableCell className="text-right">{groupedData.reduce((sum, r) => sum + r.convertedCount, 0).toLocaleString()}</TableCell>
                             </TableRow>
                         </tfoot>
-                    </Table>
+                        </Table>
+                    </div>
                 )}
             </CardContent>
 
