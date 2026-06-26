@@ -8,6 +8,7 @@ import { useImperativeHandle } from "react";
 import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { TicketHistoryDialog } from "@/components/ticket-history-dialog";
+import { normalizeName } from "@/lib/name-utils";
 
 interface Activity {
   manager?: string;
@@ -144,7 +145,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
         
         if (typeOfSales !== "PROJECT") return;
 
-        const name = agentObj ? `${agentObj.Firstname} ${agentObj.Lastname}` : null;
+        const name = agentObj ? `${normalizeName(agentObj.Firstname)} ${normalizeName(agentObj.Lastname)}` : null;
         if (!name || name.toLowerCase() === "unknown") return;
 
         if (!map[a.manager || name]) {
@@ -666,7 +667,7 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
                   <React.Fragment key={a.agentName}>
                     <TableRow className="group">
                       <TableCell className="sticky left-0 z-20 bg-background">{index + 1}</TableCell>
-                      <TableCell className={`sticky left-5 z-20 uppercase border-r bg-background`}>
+                      <TableCell className={`sticky left-5 z-20 border-r bg-background`}>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleRow(a.agentName)}

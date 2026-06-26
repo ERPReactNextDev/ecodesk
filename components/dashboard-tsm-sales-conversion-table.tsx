@@ -8,6 +8,7 @@ import { useImperativeHandle } from "react";
 import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { TicketHistoryDialog } from "@/components/ticket-history-dialog";
+import { normalizeName } from "@/lib/name-utils";
 
 interface Activity {
   manager?: string;
@@ -126,7 +127,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
       .filter((a) => isDateInRange(a.date_created, dateCreatedFilterRange))
       .forEach((a) => {
         const agentObj = agents.find((ag) => ag.ReferenceID === a.manager);
-        const name = agentObj ? `${agentObj.Firstname} ${agentObj.Lastname}` : null;
+        const name = agentObj ? `${normalizeName(agentObj.Firstname)} ${normalizeName(agentObj.Lastname)}` : null;
         if (!name || name.toLowerCase() === "unknown") return;
 
         if (!map[a.manager || name]) {
@@ -577,7 +578,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                   <React.Fragment key={a.agentName}>
                     <TableRow key={a.agentName} className="group">
                       <TableCell className="sticky left-0 z-20">{index + 1}</TableCell>
-                      <TableCell className={`sticky left-5 z-20 uppercase border-r`}>
+                      <TableCell className={`sticky left-5 z-20 border-r`}>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleRow(a.agentName)}

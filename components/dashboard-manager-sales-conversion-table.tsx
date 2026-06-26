@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
 import { type DateRange } from "react-day-picker";
 import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
+import { normalizeName } from "@/lib/name-utils";
 
 interface Activity {
     department_head?: string;
@@ -124,7 +125,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
                 );
 
                 const name = agentObj
-                    ? `${agentObj.Firstname} ${agentObj.Lastname}`
+                    ? `${normalizeName(agentObj.Firstname)} ${normalizeName(agentObj.Lastname)}`
                     : null;
 
                 if (!name || name.toLowerCase() === "unknown") return;
@@ -553,7 +554,7 @@ downloadCSV() {
                                             }
                                         >
                                             <TableCell>{index + 1}</TableCell>
-                                            <TableCell className="uppercase font-semibold">
+                                            <TableCell className="font-semibold">
                                                 {a.agentName}
                                             </TableCell>
                                             <TableCell className={getTextColorClass(a.avgResponseTime, TSA_RESPONSE_THRESHOLD, "TSA Response Time")}>{formatHoursToHMS(a.avgResponseTime)}</TableCell>

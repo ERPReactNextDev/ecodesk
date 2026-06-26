@@ -12,6 +12,7 @@ import React, {
 
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
+import { normalizeName } from "@/lib/name-utils";
 
 import {
   Card,
@@ -444,7 +445,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         const agent = agents.find((a) => a.ReferenceID === row.referenceid);
 
         const fullName = agent
-          ? `${agent.Firstname} ${agent.Lastname}`
+          ? `${normalizeName(agent.Firstname)} ${normalizeName(agent.Lastname)}`
           : "(Unknown Agent)";
 
         const avgHandling =
@@ -677,7 +678,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                       (a) => a.ReferenceID === row.referenceid,
                     );
                     const fullName = agent
-                      ? `${agent.Firstname} ${agent.Lastname}`
+                      ? `${normalizeName(agent.Firstname)} ${normalizeName(agent.Lastname)}`
                       : "(Unknown Agent)";
 
                     const avgHandling =
@@ -693,7 +694,7 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
                     return (
                       <TableRow key={row.referenceid}>
                         <TableCell className="text-center sticky left-0 z-30">{index + 1}</TableCell>
-                        <TableCell className="sticky left-[50px] z-30 border uppercase">{fullName}</TableCell>
+                        <TableCell className="sticky left-[50px] z-30 border">{fullName}</TableCell>
                         <TableCell className="text-right">{row.salesCount}</TableCell>
                         <TableCell className="text-right">{row.nonSalesCount}</TableCell>
                         <TableCell className="text-right">₱{row.amount.toLocaleString()}</TableCell>

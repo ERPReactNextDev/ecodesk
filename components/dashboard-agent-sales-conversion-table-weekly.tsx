@@ -23,6 +23,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { downloadStyledWorkbookFromCsv } from "@/lib/download-styled-workbook";
+import { normalizeName } from "@/lib/name-utils";
 
 /* ---------------- Tooltip ---------------- */
 function TooltipInfo({ children }: { children: React.ReactNode }) {
@@ -138,7 +139,7 @@ const AgentSalesTableWeeklyCard: ForwardRefRenderFunction<
             .filter((a) => a.date_created && isDateInMonthYear(a.date_created, selectedMonth, selectedYear))
             .forEach((a) => {
                 const agent = agents.find((ag) => ag.ReferenceID === a.referenceid);
-                const agentName = agent ? `${agent.Firstname} ${agent.Lastname}` : a.referenceid ?? "Unknown";
+                const agentName = agent ? `${normalizeName(agent.Firstname)} ${normalizeName(agent.Lastname)}` : a.referenceid ?? "Unknown";
 
                 const week = getWeekFromDate(a.date_created!);
                 const amount = safeNumber(a.so_amount);

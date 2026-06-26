@@ -8,6 +8,7 @@ import React, {
   useEffect,
 } from "react";
 import { type DateRange } from "react-day-picker";
+import { normalizeName } from "@/lib/name-utils";
 
 import {
   Card,
@@ -191,7 +192,7 @@ const CountTickets: ForwardRefRenderFunction<CountTicketsRef, CountTicketsProps>
                     .map((row, index) => {
                       const agent = agents.find((a) => a.ReferenceID === row.referenceid);
                       const fullName = agent
-                        ? `${agent.Firstname} ${agent.Lastname} (${agent.ReferenceID})`
+                        ? `${normalizeName(agent.Firstname)} ${normalizeName(agent.Lastname)} (${agent.ReferenceID})`
                         : "(Unknown Agent)";
                       const isExpanded = expandedAgentId === row.referenceid;
 
@@ -205,7 +206,7 @@ const CountTickets: ForwardRefRenderFunction<CountTicketsRef, CountTicketsProps>
                               <Badge>{index + 1}</Badge>
                             </TableCell>
 
-                            <TableCell className="uppercase">{fullName}</TableCell>
+                            <TableCell>{fullName}</TableCell>
                             <TableCell className="text-right">{row.totalCount}</TableCell>
                           </TableRow>
 
