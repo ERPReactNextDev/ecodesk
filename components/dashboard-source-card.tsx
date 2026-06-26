@@ -165,9 +165,9 @@ useImperativeHandle(ref, () => ({
 }));
 
     return (
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <CardTitle>Where Customer Find Us</CardTitle>
+      <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+        <CardHeader className="flex justify-between items-center pb-3">
+          <CardTitle className="text-lg font-semibold">Where Customer Find Us</CardTitle>
 
           <div
             className="relative cursor-pointer text-muted-foreground hover:text-foreground"
@@ -186,13 +186,13 @@ useImperativeHandle(ref, () => ({
           </div>
         </CardHeader>
 
-        <CardContent className="flex-grow overflow-auto">
-          {loading && <p>Loading sources...</p>}
+        <CardContent className="flex-grow overflow-auto pb-3">
+          {loading && <p className="text-sm text-muted-foreground">Loading sources...</p>}
 
-          {error && <p className="text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           {!loading && !error && sourceCountsArray.length === 0 && (
-            <p>No source data available</p>
+            <p className="text-sm text-muted-foreground">No source data available</p>
           )}
 
           {!loading && !error && sourceCountsArray.length > 0 && (
@@ -217,10 +217,10 @@ useImperativeHandle(ref, () => ({
           )}
         </CardContent>
 
-        <Separator />
+        <Separator className="my-2" />
 
-        <CardFooter className="flex justify-end items-center text-sm">
-          <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+        <CardFooter className="flex justify-end items-center text-sm pt-3">
+          <Badge className="h-12 min-w-12 rounded-full px-4 font-mono tabular-nums text-lg font-semibold bg-primary/10 text-primary border-primary/20">
             Total: {totalSourcesCount}
           </Badge>
         </CardFooter>

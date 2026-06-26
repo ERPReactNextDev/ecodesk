@@ -33,7 +33,7 @@ export function NavFavorites({
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Favorites</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">Favorites</SidebarGroupLabel>
       <SidebarMenu>
         {favorites.map((item) => {
           const Icon = item.icon;
@@ -41,10 +41,14 @@ export function NavFavorites({
           const isActive = pathname === basePath || (basePath !== "/" && pathname.startsWith(basePath));
           return (
             <SidebarMenuItem key={item.name}>
-              <SidebarMenuButton asChild isActive={isActive}>
+              <SidebarMenuButton 
+                asChild 
+                isActive={isActive}
+                className="hover:bg-sidebar-accent/50 transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+              >
                 <a href={item.url} title={item.name} className="flex items-center space-x-2">
                   <Icon className="w-5 h-5" />
-                  <span>{item.name}</span>
+                  <span className="font-medium">{item.name}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>

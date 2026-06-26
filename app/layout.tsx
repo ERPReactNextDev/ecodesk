@@ -38,9 +38,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-mono`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <UserProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider attribute="class" defaultTheme="ecodesk" enableSystem>
             <Suspense fallback={null}>
               <TicketReceived />
               <TicketHistory />

@@ -82,11 +82,11 @@ export function AccountsCard() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <CardTitle>Overall Client Database</CardTitle>
+      <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+        <CardHeader className="flex justify-between items-center pb-3">
+          <CardTitle className="text-lg font-semibold">Overall Client Database</CardTitle>
           <div
-            className="relative cursor-pointer text-muted-foreground hover:text-foreground"
+            className="relative cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
             aria-label="Accounts count explanation"
@@ -100,29 +100,27 @@ export function AccountsCard() {
           </div>
         </CardHeader>
 
-        <CardContent>
-          {loading && <p>Loading accounts...</p>}
-          {error && <p className="text-destructive">{error}</p>}
+        <CardContent className="pb-3">
+          {loading && <p className="text-sm text-muted-foreground">Loading accounts...</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           {!loading && !error && (
-            <p className="flex justify-between items-center">
-              <span>Total accounts:</span>
-              <strong>
-                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                  {totalAccounts}
-                </Badge>
-              </strong>
-            </p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-muted-foreground">Total accounts:</span>
+              <Badge className="h-12 min-w-12 rounded-full px-4 font-mono tabular-nums text-lg font-semibold bg-primary/10 text-primary border-primary/20">
+                {totalAccounts}
+              </Badge>
+            </div>
           )}
         </CardContent>
 
-        <Separator />
+        <Separator className="my-2" />
 
-        <CardFooter className="text-sm text-muted-foreground flex justify-between items-center">
-          <div>Showing total accounts</div>
+        <CardFooter className="text-sm text-muted-foreground flex justify-between items-center pt-3">
+          <div className="text-xs">Showing total accounts</div>
 
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" className="cursor-pointer">
+              <Button variant="outline" className="cursor-pointer hover:bg-primary/5 hover:text-primary transition-all duration-200">
                 Show Breakdown
               </Button>
             </SheetTrigger>
@@ -135,12 +133,12 @@ export function AccountsCard() {
               </SheetHeader>
               <div className="mt-4 p-6">
                 {Object.entries(breakdown).length === 0 ? (
-                  <p>No data available</p>
+                  <p className="text-sm text-muted-foreground">No data available</p>
                 ) : (
                   Object.entries(breakdown).map(([type, count]) => (
-                    <div key={type} className="flex justify-between border-b border-muted py-2 text-xs">
-                      <span className="uppercase">{type}</span>
-                      <span>{count}</span>
+                    <div key={type} className="flex justify-between border-b border-border/50 py-3 text-sm">
+                      <span className="uppercase font-medium">{type}</span>
+                      <span className="font-semibold tabular-nums">{count}</span>
                     </div>
                   ))
                 )}

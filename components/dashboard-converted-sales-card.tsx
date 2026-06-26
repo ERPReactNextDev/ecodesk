@@ -89,9 +89,9 @@ export function ConvertedSalesCard({
   }, [filteredActivities]);
 
   return (
-    <Card>
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle>Converted Into Sales Tickets</CardTitle>
+    <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+      <CardHeader className="flex justify-between items-center pb-3">
+        <CardTitle className="text-lg font-semibold">Converted Into Sales Tickets</CardTitle>
 
         <div
           className="relative cursor-pointer text-muted-foreground hover:text-foreground"
@@ -111,40 +111,36 @@ export function ConvertedSalesCard({
         </div>
       </CardHeader>
 
-      <CardContent>
-        {loading && <p>Loading activities...</p>}
-        {error && <p className="text-destructive">{error}</p>}
+      <CardContent className="pb-3">
+        {loading && <p className="text-sm text-muted-foreground">Loading activities...</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         {!loading && !error && (
           <div className="flex flex-col gap-4">
-            <p className="flex justify-between items-center">
-              <span>Total Converted Tickets:</span>
-              <strong>
-                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                  {convertedCount}
-                </Badge>
-              </strong>
-            </p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-muted-foreground">Total Converted Tickets:</span>
+              <Badge className="h-12 min-w-12 rounded-full px-4 font-mono tabular-nums text-lg font-semibold bg-primary/10 text-primary border-primary/20">
+                {convertedCount}
+              </Badge>
+            </div>
 
-            <Separator />
+            <Separator className="my-2" />
 
-            <p className="flex justify-between items-center">
-              <span>Total SO Amount:</span>
-              <strong>
-                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                  ₱
-                  {totalSoAmount.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </Badge>
-              </strong>
-            </p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-muted-foreground">Total SO Amount:</span>
+              <Badge className="h-12 min-w-12 rounded-full px-4 font-mono tabular-nums text-lg font-semibold bg-primary/10 text-primary border-primary/20">
+                ₱
+                {totalSoAmount.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Badge>
+            </div>
           </div>
         )}
       </CardContent>
 
-      <CardFooter />
+      <CardFooter className="pt-3" />
     </Card>
   );
 }

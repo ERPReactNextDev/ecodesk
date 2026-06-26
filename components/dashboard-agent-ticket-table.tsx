@@ -161,15 +161,15 @@ const CountTickets: ForwardRefRenderFunction<CountTicketsRef, CountTicketsProps>
     // 7️⃣ Render component
     // -----------------------------
     return (
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <CardTitle>CSR Tickets Counts</CardTitle>
+      <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+        <CardHeader className="flex justify-between items-center pb-3">
+          <CardTitle className="text-lg font-semibold">CSR Tickets Counts</CardTitle>
         </CardHeader>
 
-        <CardContent>
-          {loading && <p>Loading activities...</p>}
-          {agentsLoading && <p>Loading agents...</p>}
-          {error && <p className="text-red-600">Error: {error}</p>}
+        <CardContent className="pb-3">
+          {loading && <p className="text-sm text-muted-foreground">Loading activities...</p>}
+          {agentsLoading && <p className="text-sm text-muted-foreground">Loading agents...</p>}
+          {error && <p className="text-sm text-destructive">Error: {error}</p>}
           {!loading && !agentsLoading && groupedData.length === 0 && (
             <p>No activities found.</p>
           )}
@@ -243,7 +243,7 @@ const CountTickets: ForwardRefRenderFunction<CountTicketsRef, CountTicketsProps>
           )}
         </CardContent>
 
-        <Separator />
+        <Separator className="my-2" />
       </Card>
     );
   };

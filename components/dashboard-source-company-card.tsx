@@ -143,9 +143,9 @@ useImperativeHandle(ref, () => ({
 }));
 
   return (
-    <Card>
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle>Company Distribution</CardTitle>
+    <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+      <CardHeader className="flex justify-between items-center pb-3">
+        <CardTitle className="text-lg font-semibold">Company Distribution</CardTitle>
 
         <div
           className="relative cursor-pointer text-muted-foreground hover:text-foreground"
@@ -161,12 +161,12 @@ useImperativeHandle(ref, () => ({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-grow overflow-auto">
-        {loading && <p>Loading activities...</p>}
-        {error && <p className="text-destructive">{error}</p>}
+      <CardContent className="flex-grow overflow-auto pb-3">
+        {loading && <p className="text-sm text-muted-foreground">Loading activities...</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         {!loading && !error && groupedData.length === 0 && (
-          <p className="text-muted-foreground">No data available.</p>
+          <p className="text-sm text-muted-foreground">No data available.</p>
         )}
 
         {!loading && !error && groupedData.length > 0 && (
@@ -195,9 +195,9 @@ useImperativeHandle(ref, () => ({
           </Table>
         )}
       </CardContent>
-      <Separator />
-      <CardFooter className="flex justify-end">
-        <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+      <Separator className="my-2" />
+      <CardFooter className="flex justify-end pt-3">
+        <Badge className="h-12 min-w-12 rounded-full px-4 font-mono tabular-nums text-lg font-semibold bg-primary/10 text-primary border-primary/20">
           Total: {totalCount}
         </Badge>
       </CardFooter>

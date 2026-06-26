@@ -74,9 +74,9 @@ isDateInRange(a.date_created, dateCreatedFilterRange)
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <CardTitle>Closed Tickets</CardTitle>
+      <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+        <CardHeader className="flex justify-between items-center pb-3">
+          <CardTitle className="text-lg font-semibold">Closed Tickets</CardTitle>
           <div
             className="relative cursor-pointer text-muted-foreground hover:text-foreground"
             onMouseEnter={() => setShowTooltip(true)}
@@ -93,23 +93,21 @@ isDateInRange(a.date_created, dateCreatedFilterRange)
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="pb-3">
           {!loading && !error && (
-            <p className="flex justify-between items-center">
-              <span>Total Closed Tickets:</span>
-              <strong>
-                <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
-                  {closedCount}
-                </Badge>
-              </strong>
-            </p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-muted-foreground">Total Closed Tickets:</span>
+              <Badge className="h-12 min-w-12 rounded-full px-4 font-mono tabular-nums text-lg font-semibold bg-primary/10 text-primary border-primary/20">
+                {closedCount}
+              </Badge>
+            </div>
           )}
         </CardContent>
 
-        <Separator />
+        <Separator className="my-2" />
 
-        <CardFooter className="text-sm text-muted-foreground">
-          Showing total activities with status Closed
+        <CardFooter className="text-sm text-muted-foreground pt-3">
+          <div className="text-xs">Showing total activities with status Closed</div>
         </CardFooter>
       </Card>
     </>

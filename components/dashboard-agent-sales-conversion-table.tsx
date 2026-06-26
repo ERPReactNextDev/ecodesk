@@ -548,9 +548,9 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
     },
   }));
   return (
-    <Card>
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle>CSR Sales Conversion Table</CardTitle>
+    <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+      <CardHeader className="flex justify-between items-center pb-3">
+        <CardTitle className="text-lg font-semibold">CSR Sales Conversion Table</CardTitle>
 
         <div
           className="relative cursor-pointer text-muted-foreground hover:text-foreground"
@@ -614,12 +614,12 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         </div>
       </CardHeader>
 
-      <CardContent>
-        {(loading || agentsLoading) && <p>Loading data...</p>}
-        {error && <p className="text-destructive">{error}</p>}
+      <CardContent className="pb-3">
+        {(loading || agentsLoading) && <p className="text-sm text-muted-foreground">Loading data...</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         {!loading && !agentsLoading && !error && groupedData.length === 0 && (
-          <p className="text-muted-foreground">No data available.</p>
+          <p className="text-sm text-muted-foreground">No data available.</p>
         )}
 
         {!loading && !agentsLoading && !error && groupedData.length > 0 && (
@@ -718,10 +718,10 @@ const AgentSalesTableCard: ForwardRefRenderFunction<
         )}
       </CardContent>
 
-      <Separator />
+      <Separator className="my-2" />
 
-      <CardFooter className="flex justify-end">
-        <Badge className="h-10 min-w-10 rounded-full px-3 font-mono tabular-nums">
+      <CardFooter className="flex justify-end pt-3">
+        <Badge className="h-12 min-w-12 rounded-full px-4 font-mono tabular-nums text-lg font-semibold bg-primary/10 text-primary border-primary/20">
           Total Amount: ₱
           {totalSoAmount.toLocaleString(undefined, {
             minimumFractionDigits: 2,

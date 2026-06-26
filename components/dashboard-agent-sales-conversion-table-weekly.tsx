@@ -277,9 +277,9 @@ useImperativeHandle(ref, () => ({
 }));
 
     return (
-        <Card>
-            <CardHeader className="flex justify-between items-center">
-                <CardTitle>Weekly Agent Sales Conversion</CardTitle>
+        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+            <CardHeader className="flex justify-between items-center pb-3">
+                <CardTitle className="text-lg font-semibold">Weekly Agent Sales Conversion</CardTitle>
                 <div
                     className="relative cursor-pointer"
                     onMouseEnter={() => setShowTooltip(true)}
@@ -294,9 +294,9 @@ useImperativeHandle(ref, () => ({
                 </div>
             </CardHeader>
 
-            <CardContent className="overflow-auto">
-                {(loading || agentsLoading) && <p>Loading...</p>}
-                {error && <p className="text-destructive">{error}</p>}
+            <CardContent className="overflow-auto pb-3">
+                {(loading || agentsLoading) && <p className="text-sm text-muted-foreground">Loading...</p>}
+                {error && <p className="text-sm text-destructive">{error}</p>}
 
                 {!loading && !agentsLoading && groupedData.length > 0 && (
                     <Table className="min-w-[1200px]">
@@ -350,10 +350,10 @@ useImperativeHandle(ref, () => ({
                 )}
             </CardContent>
 
-            <Separator />
+            <Separator className="my-2" />
 
-            <CardFooter className="flex justify-end">
-                <Badge className="h-10 px-4 font-mono">
+            <CardFooter className="flex justify-end pt-3">
+                <Badge className="h-12 min-w-12 rounded-full px-4 font-mono tabular-nums text-lg font-semibold bg-primary/10 text-primary border-primary/20">
                     Total Amount: ₱{totalSoAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </Badge>
             </CardFooter>

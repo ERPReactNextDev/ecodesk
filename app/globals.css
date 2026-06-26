@@ -610,6 +610,64 @@
   --calendar-weekday-fg: #6B6B6B; /* Dark gray weekday text */
 }
 
+.ecodesk {
+  --radius: 0.75rem;
+
+  /* Base - Professional light gray background */
+  --background: oklch(0.98 0.005 220);
+  --foreground: oklch(0.20 0.02 220);
+
+  /* Cards - Clean white with subtle blue tint */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.02 220);
+
+  /* Popover */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.02 220);
+
+  /* Primary - Professional customer service blue */
+  --primary: oklch(0.55 0.18 240);
+  --primary-foreground: oklch(0.99 0 0);
+
+  /* Secondary - Soft blue-gray */
+  --secondary: oklch(0.94 0.02 220);
+  --secondary-foreground: oklch(0.25 0.03 220);
+
+  /* Muted - Light gray */
+  --muted: oklch(0.92 0.01 220);
+  --muted-foreground: oklch(0.45 0.02 220);
+
+  /* Accent - Vibrant teal for highlights */
+  --accent: oklch(0.65 0.15 180);
+  --accent-foreground: oklch(0.99 0 0);
+
+  /* Destructive - Professional red */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Borders, inputs, rings */
+  --border: oklch(0.88 0.01 220);
+  --input: oklch(0.95 0.01 220);
+  --ring: oklch(0.55 0.18 240);
+
+  /* Chart colors - Professional palette */
+  --chart-1: oklch(0.55 0.18 240);
+  --chart-2: oklch(0.65 0.15 180);
+  --chart-3: oklch(0.70 0.12 280);
+  --chart-4: oklch(0.60 0.14 320);
+  --chart-5: oklch(0.50 0.10 150);
+
+  /* Sidebar - Professional dark blue */
+  --sidebar: oklch(0.15 0.03 240);
+  --sidebar-foreground: oklch(0.90 0.01 220);
+  --sidebar-primary: oklch(0.55 0.18 240);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.65 0.15 180);
+  --sidebar-accent-foreground: oklch(0.15 0.03 240);
+  --sidebar-border: oklch(0.25 0.03 240);
+  --sidebar-ring: oklch(0.55 0.18 240);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -617,6 +675,55 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-3xl;
+  }
+
+  h2 {
+    @apply text-2xl;
+  }
+
+  h3 {
+    @apply text-xl;
+  }
+
+  h4 {
+    @apply text-lg;
+  }
+
+  p {
+    @apply text-base leading-relaxed;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus states for accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Button hover transitions */
+  button {
+    @apply transition-all duration-200;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    @apply hover:shadow-lg hover:border-primary/30 transition-all duration-200;
+  }
+
+  /* Input focus improvements */
+  input:focus, textarea:focus, select:focus {
+    @apply ring-2 ring-ring/20;
   }
 }
 

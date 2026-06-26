@@ -492,9 +492,9 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
 }));
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <CardTitle>TSM's and Other Manager List</CardTitle>
+    <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 pb-3">
+        <CardTitle className="text-lg font-semibold">TSM's and Other Manager List</CardTitle>
         <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
           <input
             type="text"
@@ -517,9 +517,9 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         </div>
       </CardHeader>
 
-      <CardContent>
-        {loading && <p>Loading...</p>}
-        {error && <p className="text-red-600">{error}</p>}
+      <CardContent className="pb-3">
+        {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
         {!loading && !error && groupedManager.length > 0 && (
           <Table>
             <TableHeader>
@@ -651,7 +651,7 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
           </Table>
         )}
 
-        {!loading && !error && groupedManager.length === 0 && <p>No agents found.</p>}
+        {!loading && !error && groupedManager.length === 0 && <p className="text-sm text-muted-foreground">No agents found.</p>}
       </CardContent>
     </Card>
   );

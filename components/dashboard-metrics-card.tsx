@@ -231,12 +231,12 @@ export const MetricsCard = React.forwardRef<
 
   /* ---------------- Render ---------------- */
   return (
-    <Card>
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle>Channel Traffic</CardTitle>
+    <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border-border/50">
+      <CardHeader className="flex justify-between items-center pb-3">
+        <CardTitle className="text-lg font-semibold">Channel Traffic</CardTitle>
 
         <div
-          className="relative cursor-pointer text-muted-foreground hover:text-foreground"
+          className="relative cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
         >
@@ -255,50 +255,50 @@ export const MetricsCard = React.forwardRef<
       </CardHeader>
 
       <CardContent>
-        {loading && <p>Loading activities...</p>}
-        {error && <p className="text-destructive">{error}</p>}
+        {loading && <p className="text-sm text-muted-foreground">Loading activities...</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         {!loading && !error && groupedData.length === 0 && (
-          <p className="text-muted-foreground">No data available.</p>
+          <p className="text-sm text-muted-foreground">No data available.</p>
         )}
 
         {!loading && !error && groupedData.length > 0 && (
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="sticky left-0 z-30 border-r">Channel</TableHead>
-                <TableHead className="text-right">Traffic</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Converted</TableHead>
-                <TableHead className="text-right">Qty Sold</TableHead>
-                <TableHead className="text-right">ATU</TableHead>
-                <TableHead className="text-right">ATV</TableHead>
+              <TableRow className="hover:bg-muted/50">
+                <TableHead className="sticky left-0 z-30 border-r font-semibold">Channel</TableHead>
+                <TableHead className="text-right font-semibold">Traffic</TableHead>
+                <TableHead className="text-right font-semibold">Amount</TableHead>
+                <TableHead className="text-right font-semibold">Converted</TableHead>
+                <TableHead className="text-right font-semibold">Qty Sold</TableHead>
+                <TableHead className="text-right font-semibold">ATU</TableHead>
+                <TableHead className="text-right font-semibold">ATV</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {groupedData.map((r) => (
-                <TableRow key={r.channel}>
-                  <TableCell className="sticky left-0 z-30 border-r">{r.channel}</TableCell>
-                  <TableCell className="text-right">{r.traffic}</TableCell>
-                  <TableCell className="text-right">₱{r.soAmountTotal.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{r.convertedCount}</TableCell>
-                  <TableCell className="text-right">{r.qtySoldTotal}</TableCell>
-                  <TableCell className="text-right">{Math.round(r.avgTransactionUnit)}</TableCell>
-                  <TableCell className="text-right">₱{Math.round(r.avgTransactionValue).toLocaleString()}</TableCell>
+                <TableRow key={r.channel} className="hover:bg-muted/30 transition-colors">
+                  <TableCell className="sticky left-0 z-30 border-r font-medium">{r.channel}</TableCell>
+                  <TableCell className="text-right tabular-nums">{r.traffic}</TableCell>
+                  <TableCell className="text-right tabular-nums">₱{r.soAmountTotal.toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{r.convertedCount}</TableCell>
+                  <TableCell className="text-right tabular-nums">{r.qtySoldTotal}</TableCell>
+                  <TableCell className="text-right tabular-nums">{Math.round(r.avgTransactionUnit)}</TableCell>
+                  <TableCell className="text-right tabular-nums">₱{Math.round(r.avgTransactionValue).toLocaleString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
 
-            <tfoot className="bg-muted font-semibold">
+            <tfoot className="bg-muted/50 font-semibold">
               <TableRow>
-                <TableCell className="sticky left-0 z-30 border-r">Total</TableCell>
-                <TableCell className="text-right">{totalTraffic}</TableCell>
-                <TableCell className="text-right">₱{totalSoAmount.toLocaleString()}</TableCell>
-                <TableCell className="text-right">{totalConverted}</TableCell>
-                <TableCell className="text-right">{totalQtySold}</TableCell>
-                <TableCell className="text-right">{Math.round(avgTransactionUnitTotal)}</TableCell>
-                <TableCell className="text-right">₱{Math.round(avgTransactionValueTotal).toLocaleString()}</TableCell>
+                <TableCell className="sticky left-0 z-30 border-r font-semibold">Total</TableCell>
+                <TableCell className="text-right tabular-nums">{totalTraffic}</TableCell>
+                <TableCell className="text-right tabular-nums">₱{totalSoAmount.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums">{totalConverted}</TableCell>
+                <TableCell className="text-right tabular-nums">{totalQtySold}</TableCell>
+                <TableCell className="text-right tabular-nums">{Math.round(avgTransactionUnitTotal)}</TableCell>
+                <TableCell className="text-right tabular-nums">₱{Math.round(avgTransactionValueTotal).toLocaleString()}</TableCell>
               </TableRow>
             </tfoot>
           </Table>

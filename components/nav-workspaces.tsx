@@ -52,7 +52,7 @@ export function NavWorkspaces({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Workspaces</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">Workspaces</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {workspaces.map((workspace) => {
@@ -67,10 +67,10 @@ export function NavWorkspaces({
                   {/* This button toggles collapse */}
                   <SidebarMenuButton
                     onClick={() => onToggleSection(workspace.name)}
-                    className="flex items-center space-x-2 cursor-pointer grow"
+                    className="flex items-center space-x-2 cursor-pointer grow hover:bg-sidebar-accent/50 transition-all duration-200"
                   >
                     <WorkspaceIcon className="w-5 h-5" />
-                    <span>{workspace.name}</span>
+                    <span className="font-medium">{workspace.name}</span>
                   </SidebarMenuButton>
 
                   {/* Optional navigation link as separate button */}
@@ -78,7 +78,7 @@ export function NavWorkspaces({
                     <a
                       href={workspace.url}
                       onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking this link
-                      className="text-sm text-blue-500 hover:underline ml-2"
+                      className="text-sm text-primary hover:underline ml-2 font-medium"
                     >
                       Go
                     </a>
@@ -103,10 +103,14 @@ export function NavWorkspaces({
                       const isActive = pathname === basePath || (basePath !== "/" && pathname.startsWith(basePath));
                       return (
                         <SidebarMenuSubItem key={page.name}>
-                          <SidebarMenuSubButton asChild isActive={isActive}>
+                          <SidebarMenuSubButton 
+                            asChild 
+                            isActive={isActive}
+                            className="hover:bg-sidebar-accent/50 transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+                          >
                             <a href={page.url} className="flex items-center space-x-2">
                               <PageIcon className="w-4 h-4" />
-                              <span>{page.name}</span>
+                              <span className="font-medium">{page.name}</span>
                             </a>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
