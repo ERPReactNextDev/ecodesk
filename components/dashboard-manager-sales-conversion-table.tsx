@@ -351,7 +351,8 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
     }, [activities, agents]);
 
     const formatHoursToHMS = (hours: number) => {
-        const totalSeconds = Math.round(hours * 3600); // ROUND instead of floor
+        const totalSecondsRaw = hours * 3600;
+        const totalSeconds = Math.floor(totalSecondsRaw) + (totalSecondsRaw % 1 >= 0.5 ? 1 : 0);
         const h = Math.floor(totalSeconds / 3600);
         const m = Math.floor((totalSeconds % 3600) / 60);
         const s = totalSeconds % 60;
@@ -380,19 +381,19 @@ const AgentListCard = forwardRef((_props: Props, ref) => {
         values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
 
     const avgTSAResponseTime = AVERAGE(
-        groupedAgentsAllData.map(a => a.avgResponseTime).filter(v => v > 0)
+        groupedAgents.map(a => a.avgResponseTime).filter(v => v > 0)
     );
 
     const avgQuotationHandlingTime = AVERAGE(
-        groupedAgentsAllData.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
+        groupedAgents.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
     );
 
     const avgNonQuotationHandlingTime = AVERAGE(
-        groupedAgentsAllData.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
+        groupedAgents.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
     );
 
     const avgSPFHandlingTime = AVERAGE(
-        groupedAgentsAllData.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
+        groupedAgents.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
     );
 
     React.useImperativeHandle(ref, () => ({

@@ -420,7 +420,8 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
   }, [activities, agents]);
 
   const formatHoursToHMS = (hours: number) => {
-    const totalSeconds = Math.round(hours * 3600);
+    const totalSecondsRaw = hours * 3600;
+    const totalSeconds = Math.floor(totalSecondsRaw) + (totalSecondsRaw % 1 >= 0.5 ? 1 : 0);
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
@@ -445,37 +446,37 @@ const TSMResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
     return "";
   };
 
-  const totalSales = groupedManagerAllData.reduce((sum, a) => sum + a.salesCount, 0);
-  const totalNonSales = groupedManagerAllData.reduce((sum, a) => sum + a.nonSalesCount, 0);
-  const totalAmount = groupedManagerAllData.reduce((sum, a) => sum + a.amount, 0);
-  const totalConvertedSales = groupedManagerAllData.reduce((sum, a) => sum + a.convertedSalesCount, 0);
+  const totalSales = groupedManager.reduce((sum, a) => sum + a.salesCount, 0);
+  const totalNonSales = groupedManager.reduce((sum, a) => sum + a.nonSalesCount, 0);
+  const totalAmount = groupedManager.reduce((sum, a) => sum + a.amount, 0);
+  const totalConvertedSales = groupedManager.reduce((sum, a) => sum + a.convertedSalesCount, 0);
   const totalInquiryToSalesPercent = totalSales > 0 ? (totalConvertedSales / totalSales) * 100 : 0;
-  const totalNewClient = groupedManagerAllData.reduce((sum, a) => sum + a.newClientCount, 0);
-  const totalNewNonBuying = groupedManagerAllData.reduce((sum, a) => sum + a.newNonBuyingCount, 0);
-  const totalExistingActive = groupedManagerAllData.reduce((sum, a) => sum + a.existingActiveCount, 0);
-  const totalExistingInactive = groupedManagerAllData.reduce((sum, a) => sum + a.existingInactiveCount, 0);
-  const totalNewClientConverted = groupedManagerAllData.reduce((sum, a) => sum + a.newClientConvertedAmount, 0);
-  const totalNewNonBuyingConverted = groupedManagerAllData.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0);
-  const totalExistingActiveConverted = groupedManagerAllData.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0);
-  const totalExistingInactiveConverted = groupedManagerAllData.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0);
+  const totalNewClient = groupedManager.reduce((sum, a) => sum + a.newClientCount, 0);
+  const totalNewNonBuying = groupedManager.reduce((sum, a) => sum + a.newNonBuyingCount, 0);
+  const totalExistingActive = groupedManager.reduce((sum, a) => sum + a.existingActiveCount, 0);
+  const totalExistingInactive = groupedManager.reduce((sum, a) => sum + a.existingInactiveCount, 0);
+  const totalNewClientConverted = groupedManager.reduce((sum, a) => sum + a.newClientConvertedAmount, 0);
+  const totalNewNonBuyingConverted = groupedManager.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0);
+  const totalExistingActiveConverted = groupedManager.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0);
+  const totalExistingInactiveConverted = groupedManager.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0);
 
   const AVERAGE = (values: number[]): number =>
     values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
 
   const avgTSMResponseTime = AVERAGE(
-    groupedManagerAllData.map(a => a.avgResponseTime).filter(v => v > 0)
+    groupedManager.map(a => a.avgResponseTime).filter(v => v > 0)
   );
 
   const avgQuotationHandlingTime = AVERAGE(
-    groupedManagerAllData.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
+    groupedManager.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
   );
 
   const avgNonQuotationHandlingTime = AVERAGE(
-    groupedManagerAllData.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
+    groupedManager.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
   );
 
   const avgSPFHandlingTime = AVERAGE(
-    groupedManagerAllData.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
+    groupedManager.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
   );
 
   useImperativeHandle(ref, () => ({

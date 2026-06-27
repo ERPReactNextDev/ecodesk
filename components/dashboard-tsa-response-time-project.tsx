@@ -419,7 +419,8 @@ const TSAResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
   }, [activities, agents]);
 
   const formatHoursToHMS = (hours: number) => {
-    const totalSeconds = Math.round(hours * 3600);
+    const totalSecondsRaw = hours * 3600;
+    const totalSeconds = Math.floor(totalSecondsRaw) + (totalSecondsRaw % 1 >= 0.5 ? 1 : 0);
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
@@ -444,37 +445,37 @@ const TSAResponseTimeProjectCard = forwardRef((_props: Props, ref) => {
     return "";
   };
 
-  const totalSales = groupedAgentsAllData.reduce((sum, a) => sum + a.salesCount, 0);
-  const totalNonSales = groupedAgentsAllData.reduce((sum, a) => sum + a.nonSalesCount, 0);
-  const totalAmount = groupedAgentsAllData.reduce((sum, a) => sum + a.amount, 0);
-  const totalConvertedSales = groupedAgentsAllData.reduce((sum, a) => sum + a.convertedSalesCount, 0);
+  const totalSales = groupedAgents.reduce((sum, a) => sum + a.salesCount, 0);
+  const totalNonSales = groupedAgents.reduce((sum, a) => sum + a.nonSalesCount, 0);
+  const totalAmount = groupedAgents.reduce((sum, a) => sum + a.amount, 0);
+  const totalConvertedSales = groupedAgents.reduce((sum, a) => sum + a.convertedSalesCount, 0);
   const totalInquiryToSalesPercent = totalSales > 0 ? (totalConvertedSales / totalSales) * 100 : 0;
-  const totalNewClient = groupedAgentsAllData.reduce((sum, a) => sum + a.newClientCount, 0);
-  const totalNewNonBuying = groupedAgentsAllData.reduce((sum, a) => sum + a.newNonBuyingCount, 0);
-  const totalExistingActive = groupedAgentsAllData.reduce((sum, a) => sum + a.existingActiveCount, 0);
-  const totalExistingInactive = groupedAgentsAllData.reduce((sum, a) => sum + a.existingInactiveCount, 0);
-  const totalNewClientConverted = groupedAgentsAllData.reduce((sum, a) => sum + a.newClientConvertedAmount, 0);
-  const totalNewNonBuyingConverted = groupedAgentsAllData.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0);
-  const totalExistingActiveConverted = groupedAgentsAllData.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0);
-  const totalExistingInactiveConverted = groupedAgentsAllData.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0);
+  const totalNewClient = groupedAgents.reduce((sum, a) => sum + a.newClientCount, 0);
+  const totalNewNonBuying = groupedAgents.reduce((sum, a) => sum + a.newNonBuyingCount, 0);
+  const totalExistingActive = groupedAgents.reduce((sum, a) => sum + a.existingActiveCount, 0);
+  const totalExistingInactive = groupedAgents.reduce((sum, a) => sum + a.existingInactiveCount, 0);
+  const totalNewClientConverted = groupedAgents.reduce((sum, a) => sum + a.newClientConvertedAmount, 0);
+  const totalNewNonBuyingConverted = groupedAgents.reduce((sum, a) => sum + a.newNonBuyingConvertedAmount, 0);
+  const totalExistingActiveConverted = groupedAgents.reduce((sum, a) => sum + a.existingActiveConvertedAmount, 0);
+  const totalExistingInactiveConverted = groupedAgents.reduce((sum, a) => sum + a.existingInactiveConvertedAmount, 0);
 
   const AVERAGE = (values: number[]): number =>
     values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
 
   const avgTSAResponseTime = AVERAGE(
-    groupedAgentsAllData.map(a => a.avgResponseTime).filter(v => v > 0)
+    groupedAgents.map(a => a.avgResponseTime).filter(v => v > 0)
   );
 
   const avgQuotationHandlingTime = AVERAGE(
-    groupedAgentsAllData.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
+    groupedAgents.map(a => a.avgQuotationHandlingTime).filter(v => v > 0)
   );
 
   const avgNonQuotationHandlingTime = AVERAGE(
-    groupedAgentsAllData.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
+    groupedAgents.map(a => a.avgNonQuotationHandlingTime).filter(v => v > 0)
   );
 
   const avgSPFHandlingTime = AVERAGE(
-    groupedAgentsAllData.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
+    groupedAgents.map(a => a.avgSPFHandlingTime).filter(v => v > 0)
   );
 
   useImperativeHandle(ref, () => ({
