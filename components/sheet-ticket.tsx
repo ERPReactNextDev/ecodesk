@@ -1223,6 +1223,8 @@ export function TicketSheet(props: TicketSheetProps) {
     const newErrors: typeof errors = {};
     if (!ticketReceived) newErrors.ticketReceived = "Ticket Received is required.";
     if (!ticketEndorsed) newErrors.ticketEndorsed = "Ticket Endorsed is required.";
+    if (!channel) newErrors.channel = "Channel is required.";
+    if (!wrapUp) newErrors.wrapUp = "Wrap Up is required.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1310,7 +1312,7 @@ export function TicketSheet(props: TicketSheetProps) {
   };
 
   const isStep3NextDisabled =
-    !ticketReceived || !ticketEndorsed || !!timeError || !!inquiryTimeError;
+    !ticketReceived || !ticketEndorsed || !channel || !wrapUp || !!timeError || !!inquiryTimeError;
 
   const Navigation = () => (
     <div className="flex justify-between mt-4">
@@ -1345,7 +1347,7 @@ export function TicketSheet(props: TicketSheetProps) {
             setClientSpecs("");
             handleUpdate(false);
           }}
-          disabled={!!timeError}
+          disabled={!!timeError || !channel || !wrapUp}
           className="cursor-pointer"
         >
           Save
@@ -1507,7 +1509,10 @@ export function TicketSheet(props: TicketSheetProps) {
 
               {/* CHANNEL */}
               <Field>
-                <FieldLabel>Channel</FieldLabel>
+                <FieldLabel>
+                  Channel{" "}
+                  <span className="text-red-600 text-xs italic">*required</span>
+                </FieldLabel>
                 <FieldDescription>
                   Platform or medium where the customer initially contacted the company.
                 </FieldDescription>
@@ -1538,7 +1543,10 @@ export function TicketSheet(props: TicketSheetProps) {
 
               {/* WRAP UP */}
               <Field>
-                <FieldLabel>Wrap Up</FieldLabel>
+                <FieldLabel>
+                  Wrap Up{" "}
+                  <span className="text-red-600 text-xs italic">*required</span>
+                </FieldLabel>
                 <FieldDescription>
                   Final classification describing the outcome or purpose of the interaction.
                 </FieldDescription>
@@ -1589,6 +1597,12 @@ export function TicketSheet(props: TicketSheetProps) {
             Step 4 — Customer Details{" "}
             <span className="text-red-600 text-xs italic">*required</span>
           </h2>
+          <Field>
+            <FieldLabel>
+              Customer Status{" "}
+              <span className="text-red-600 text-xs italic">*required</span>
+            </FieldLabel>
+          </Field>
           <RadioGroup value={customerStatus} onValueChange={setCustomerStatus}>
             {customerStatusOptions.map((item) => (
               <FieldLabel key={item.value}>
@@ -1607,6 +1621,12 @@ export function TicketSheet(props: TicketSheetProps) {
           )}
 
           <div className={!customerStatus ? "opacity-50 pointer-events-none" : ""}>
+            <Field>
+              <FieldLabel>
+                Customer Type{" "}
+                <span className="text-red-600 text-xs italic">*required</span>
+              </FieldLabel>
+            </Field>
             <RadioGroup value={customerType} onValueChange={setCustomerType}>
               {errors.customerType && (
                 <p className="text-sm text-red-600 mt-2">{errors.customerType}</p>
@@ -1635,7 +1655,10 @@ export function TicketSheet(props: TicketSheetProps) {
 
       {step === 5 && !isJobApplicant && (
         <>
-          <h2 className="text-sm font-semibold mt-4">Step 5 — Status</h2>
+          <h2 className="text-sm font-semibold mt-4">
+            Step 5 — Status{" "}
+            <span className="text-red-600 text-xs italic">*required</span>
+          </h2>
           {wrapUp !== "Job Applicants" && (
             <>
               <Field>
