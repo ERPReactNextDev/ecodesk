@@ -132,6 +132,7 @@ interface FormData {
   email_address: string[];
   address: string;
   industry: string;
+  type: string;
 }
 
 const INDUSTRY_OPTIONS = [
@@ -145,6 +146,14 @@ const INDUSTRY_OPTIONS = [
   "Trading / Individual - Reseller / Dealer / Influencer / End User",
   "Distributorship",
   "Transportation"
+];
+
+const TYPE_OPTIONS = [
+  "B2B",
+  "B2C",
+  "B2G",
+  "Gentrade",
+  "Modern Trade"
 ];
 
 export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
@@ -165,6 +174,7 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
     email_address: [""],
     address: "",
     industry: "",
+    type: "",
   });
 
   useEffect(() => {
@@ -188,6 +198,7 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
         email_address: emails,
         address: account.address ?? "",
         industry: account.industry ?? "",
+        type: account.type_client ?? "",
       });
 
       setContactNumberTypes(new Array(contactNumbers.length).fill("+63"));
@@ -200,13 +211,18 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
     const hasCompanyName = formData.company_name.trim() !== "";
     const hasContactNumber = formData.contact_number.some((n) => n.trim() !== "");
     const hasContactPerson = formData.contact_person.some((p) => p.trim() !== "");
+    const hasType = formData.type.trim() !== "";
     const hasValidEmail = formData.email_address.some((e) => {
       const trimmed = e.trim();
       return trimmed !== "" && isValidEmail(trimmed);
     });
     const hasIndustry = formData.industry.trim() !== "";
 
-    return hasCompanyName && hasContactNumber && hasContactPerson && hasValidEmail && hasIndustry;
+    // Email required only for B2B or B2G
+    const emailRequired = formData.type === "B2B" || formData.type === "B2G";
+    const meetsEmailRequirement = emailRequired ? hasValidEmail : true;
+
+    return hasCompanyName && hasContactNumber && hasContactPerson && hasType && meetsEmailRequirement && hasIndustry;
   };
 
   const handleContactNumberTypeChange = (index: number, type: string) => {
@@ -432,7 +448,7 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
           email_address: joinedEmails,
           address: formData.address,
           industry: formData.industry,
-          type_client: account.type_client,
+          type_client: formData.type,
           status: account.status,
           company_group: account.company_group,
           date_updated: new Date().toISOString(),
@@ -487,6 +503,29 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
                 className="mt-1"
                 disabled={loading}
               />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                Type <span className="text-xs text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value) => setFormData({ ...formData, type: value })}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TYPE_OPTIONS.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!formData.type && (
+                <p className="text-xs text-red-600 mt-1">Type is required.</p>
+              )}
             </div>
 
             <div>
@@ -608,7 +647,9 @@ export const CustomerDatabaseEditModal: React.FC<EditModalProps> = ({
             </div>
 
             <div>
-              <Label className="text-sm font-medium">Email Address(es) *</Label>
+              <Label className="text-sm font-medium">
+                Email Address(es) {((formData.type === "B2B" || formData.type === "B2G") && <span className="text-xs text-red-500">*</span>)}
+              </Label>
               <div className="space-y-2 mt-1">
                 {formData.email_address.map((email, idx) => (
                   <div key={idx} className="flex gap-2">

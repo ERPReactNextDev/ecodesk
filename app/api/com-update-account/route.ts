@@ -14,7 +14,7 @@ export async function PUT(req: Request) {
     const body = await req.json();
 
     const {
-      account_reference_number,
+      id,
       company_name,
       contact_person,
       contact_number,
@@ -22,9 +22,9 @@ export async function PUT(req: Request) {
       address,
     } = body;
 
-    if (!account_reference_number) {
+    if (!id) {
       return NextResponse.json(
-        { success: false, error: "Missing account_reference_number" },
+        { success: false, error: "Missing id" },
         { status: 400 }
       );
     }
@@ -38,7 +38,7 @@ export async function PUT(req: Request) {
         email_address = ${email_address},
         address = ${address},
         date_updated = NOW()
-      WHERE account_reference_number = ${account_reference_number};
+      WHERE id = ${id};
     `;
 
     return NextResponse.json(

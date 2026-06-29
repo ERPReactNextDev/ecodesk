@@ -197,6 +197,14 @@ const INDUSTRY_OPTIONS = [
   "Transportation"
 ];
 
+const TYPE_OPTIONS = [
+  "B2B",
+  "B2C",
+  "B2G",
+  "Gentrade",
+  "Modern Trade"
+];
+
 // Generate account reference number
 function generateAccountReferenceNumber(companyName: string, region: string): string {
   const companyPart = (companyName || "").trim().substring(0, 2).toUpperCase() || "XX";
@@ -218,6 +226,7 @@ interface FormData {
   region: string;
   industry: string;
   type_client: string;
+  type: string;
   status: string;
   remarks: string;
 }
@@ -245,6 +254,7 @@ const [formData, setFormData] = useState<FormData>({
     region: "",
     industry: "",
     type_client: "New Client",
+    type: "",
     status: "For Approval",
     remarks: "",
   });
@@ -268,7 +278,7 @@ const [formData, setFormData] = useState<FormData>({
   };
 
   const isFormValid = () => {
-    // Required fields: company_name, contact_number, contact_person, email_address, industry, type_client, remarks
+    // Required fields: company_name, contact_number, contact_person, email_address (for B2B/B2G), industry, type_client, type, remarks
     const hasCompanyName = formData.company_name.trim() !== "";
     const hasContactNumber = formData.contact_number.some((n) => n.trim() !== "");
     const hasContactPerson = formData.contact_person.some((p) => p.trim() !== "");
@@ -278,14 +288,19 @@ const [formData, setFormData] = useState<FormData>({
     });
     const hasIndustry = formData.industry.trim() !== "";
     const hasTypeClient = formData.type_client.trim() !== "";
+    const hasType = formData.type.trim() !== "";
     const hasRemarks = formData.remarks.trim() !== "";
+    
+    // Email required only for B2B/B2G
+    const emailRequired = formData.type === "B2B" || formData.type === "B2G";
+    const meetsEmailRequirement = emailRequired ? hasValidEmail : true;
     
     // Check for invalid special characters (commas) in array fields
     const hasInvalidContactPerson = formData.contact_person.some((p) => p.trim() !== "" && hasInvalidSpecialCharacters(p));
     const hasInvalidContactNumber = formData.contact_number.some((n) => n.trim() !== "" && hasInvalidSpecialCharacters(n));
     const hasInvalidEmail = formData.email_address.some((e) => e.trim() !== "" && hasInvalidSpecialCharacters(e));
     
-    return hasCompanyName && hasContactNumber && hasContactPerson && hasValidEmail && hasIndustry && hasTypeClient && hasRemarks && !hasInvalidContactPerson && !hasInvalidContactNumber && !hasInvalidEmail;
+    return hasCompanyName && hasContactNumber && hasContactPerson && meetsEmailRequirement && hasIndustry && hasTypeClient && hasType && hasRemarks && !hasInvalidContactPerson && !hasInvalidContactNumber && !hasInvalidEmail;
   };
 
   const handleAddContactPerson = () => {
@@ -596,6 +611,7 @@ const [formData, setFormData] = useState<FormData>({
           .join(", "),
         referenceid,
         account_reference_number: accountRefNumber,
+        type_client: formData.type,
       };
 
       const res = await fetch("/api/com-save-company", {
@@ -626,6 +642,7 @@ const [formData, setFormData] = useState<FormData>({
         region: "",
         industry: "",
         type_client: "New Client",
+        type: "",
         status: "For Approval",
         remarks: "",
       });
@@ -748,6 +765,28 @@ const [formData, setFormData] = useState<FormData>({
                   }
                   className="mt-1"
                 />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">
+                  Type <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => setFormData({ ...formData, type: value })}
+                >
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TYPE_OPTIONS.map((type) => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!formData.type && (
+                  <p className="text-xs text-red-600 mt-1">Type is required.</p>
+                )}
               </div>
 
               <div>
@@ -910,7 +949,7 @@ const [formData, setFormData] = useState<FormData>({
 
               <div>
                 <Label className="text-sm font-medium">
-                  Email Address(es) <span className="text-red-500">*</span>
+                  Email Address(es) {(formData.type === "B2B" || formData.type === "B2G") && <span className="text-red-500">*</span>}
                 </Label>
                 <div className="space-y-2 mt-1">
                   {formData.email_address.map((email, idx) => (
