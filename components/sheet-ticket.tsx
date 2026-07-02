@@ -985,6 +985,40 @@ export function TicketSheet(props: TicketSheetProps) {
     }
   }, [tsaAcknowledgeDate, tsaHandlingTime]);
 
+  // TSA Acknowledgement Date must not be earlier than Ticket Endorsed
+  useEffect(() => {
+    if (!tsaAcknowledgeDate || !ticketEndorsed) {
+      setTsaAckEndorseError(null);
+      return;
+    }
+    const ack = new Date(tsaAcknowledgeDate);
+    const endorsed = new Date(ticketEndorsed);
+    if (!isNaN(ack.getTime()) && !isNaN(endorsed.getTime())) {
+      if (ack < endorsed) {
+        setTsaAckEndorseError("TSA Acknowledgement Date cannot be earlier than Ticket Endorsed.");
+      } else {
+        setTsaAckEndorseError(null);
+      }
+    }
+  }, [tsaAcknowledgeDate, ticketEndorsed]);
+
+  // TSM Handling Time must not be earlier than Ticket Received
+  useEffect(() => {
+    if (!tsmHandlingTime || !ticketReceived) {
+      setTsmHandlingReceivedError(null);
+      return;
+    }
+    const handle = new Date(tsmHandlingTime);
+    const received = new Date(ticketReceived);
+    if (!isNaN(handle.getTime()) && !isNaN(received.getTime())) {
+      if (handle < received) {
+        setTsmHandlingReceivedError("TSM Handling Time cannot be earlier than Ticket Received.");
+      } else {
+        setTsmHandlingReceivedError(null);
+      }
+    }
+  }, [tsmHandlingTime, ticketReceived]);
+
   // 2️⃣ Close Reason → Auto dash logic
   useEffect(() => {
     if (closeReason === "Same Specs Provided") {
@@ -1057,6 +1091,10 @@ export function TicketSheet(props: TicketSheetProps) {
   const [tsmTimeError, setTsmTimeError] = useState<string | null>(null);
   const [tsaTimeError, setTsaTimeError] = useState<string | null>(null);
   const [inquiryTimeError, setInquiryTimeError] = useState<string | null>(null);
+  // TSA Ack must not be earlier than Ticket Endorsed
+  const [tsaAckEndorseError, setTsaAckEndorseError] = useState<string | null>(null);
+  // TSM Handling must not be earlier than Ticket Received
+  const [tsmHandlingReceivedError, setTsmHandlingReceivedError] = useState<string | null>(null);
   const isManagerRequiredButMissing = !revertMode && managersAvailable > 0 && !manager;
   const [highlightAgent, setHighlightAgent] = useState(false);
   const [agentReassigned, setAgentReassigned] = useState(false);
@@ -2083,7 +2121,7 @@ export function TicketSheet(props: TicketSheetProps) {
                       value={tsmHandlingTime}
                       onChange={(e) => setTsmHandlingTime(e.target.value)}
                       min={getMinDateTimeLocal(7)}
-                      error={tsmTimeError || undefined}
+                      error={tsmTimeError || tsmHandlingReceivedError || undefined}
                     />
                   </Field>
                 </div>
@@ -2097,6 +2135,7 @@ export function TicketSheet(props: TicketSheetProps) {
                       value={tsaAcknowledgeDate}
                       onChange={(e) => setTsaAcknowledgeDate(e.target.value)}
                       min={getMinDateTimeLocal(7)}
+                      error={tsaAckEndorseError || undefined}
                     />
                   </Field>
                 </div>
@@ -2210,6 +2249,8 @@ export function TicketSheet(props: TicketSheetProps) {
               loadingSave ||
               loadingLoad ||
               !!timeError ||
+              !!tsaAckEndorseError ||
+              !!tsmHandlingReceivedError ||
               isManagerRequiredButMissing ||
               Object.keys(errors).length > 0
             }

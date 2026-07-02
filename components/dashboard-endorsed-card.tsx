@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Info } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 import {
@@ -98,6 +98,37 @@ export function EndorsedCard({
 }: EndorsedProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [endorsedDialogOpen, setEndorsedDialogOpen] = useState(false);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+
+  // Fetch all users once when dialog opens to resolve ReferenceID → full name
+  useEffect(() => {
+    if (!endorsedDialogOpen) return;
+
+    const roles = [
+      "Territory Sales Associate",
+      "Territory Sales Manager",
+      "Manager",
+      "Admin",
+      "Staff",
+    ];
+
+    Promise.all(
+      roles.map((role) =>
+        fetch(`/api/fetch-users-by-role?role=${encodeURIComponent(role)}`)
+          .then((r) => r.json())
+          .then((j) => j.data || [])
+          .catch(() => [])
+      )
+    ).then((results) => {
+      const map: Record<string, string> = {};
+      results.flat().forEach((u: any) => {
+        if (u.ReferenceID) {
+          map[u.ReferenceID] = `${u.Firstname} ${u.Lastname}`.trim();
+        }
+      });
+      setUserMap(map);
+    });
+  }, [endorsedDialogOpen]);
 
   const isDateInRange = (
     dateStr: string | undefined,
@@ -207,6 +238,27 @@ export function EndorsedCard({
                     <p className="text-sm text-muted-foreground">
                       Ticket #: {activity.ticket_reference_number || "-"}
                     </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">TSA:</span>{" "}
+                        {activity.agent
+                          ? (userMap[activity.agent] || activity.agent)
+                          : "-"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">Endorsed:</span>{" "}
+                        {activity.ticket_endorsed
+                          ? new Date(activity.ticket_endorsed).toLocaleString("en-PH", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })
+                          : "-"}
+                      </p>
+                    </div>
                   </div>
                   <TicketHistoryDialog item={activity} />
                 </div>
