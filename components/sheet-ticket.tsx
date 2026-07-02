@@ -1028,7 +1028,14 @@ export function TicketSheet(props: TicketSheetProps) {
       if (counterOffer === "-") setCounterOffer("");
       if (clientSpecs === "-") setClientSpecs("");
     }
+    // Clear status errors when close reason changes so stale errors don't linger
+    setErrors((prev) => ({ ...prev, status: undefined }));
   }, [closeReason]);
+
+  // Clear status errors when status changes
+  useEffect(() => {
+    setErrors((prev) => ({ ...prev, status: undefined }));
+  }, [status]);
 
   useEffect(() => {
     if (agent) {
@@ -1327,12 +1334,6 @@ export function TicketSheet(props: TicketSheetProps) {
   const [loadingLoad, setLoadingLoad] = useState(false);
 
   // Validate step 6 whenever relevant fields change
-  useEffect(() => {
-    if (step === 6) {
-      validateStep6();
-    }
-  }, [status, tsmAcknowledgeDate, tsmHandlingTime, tsaAcknowledgeDate, tsaHandlingTime, closeReason, counterOffer, clientSpecs, step]);
-
   const onUpdate = async () => {
     if (!validateStep6()) return;
     setErrors({});
@@ -2249,6 +2250,8 @@ export function TicketSheet(props: TicketSheetProps) {
               loadingSave ||
               loadingLoad ||
               !!timeError ||
+              !!tsaTimeError ||
+              !!tsmTimeError ||
               !!tsaAckEndorseError ||
               !!tsmHandlingReceivedError ||
               isManagerRequiredButMissing ||
