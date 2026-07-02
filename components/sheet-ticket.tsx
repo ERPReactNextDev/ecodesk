@@ -315,6 +315,7 @@ interface TicketSheetProps {
   hrAcknowledgeDate: string;
   setHrAcknowledgeDate: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
+  referenceid: string;
   department_head: string;
   setDepartmentHead: React.Dispatch<React.SetStateAction<string>>;
   handleBack: () => void;
@@ -592,6 +593,7 @@ export function TicketSheet(props: TicketSheetProps) {
     handleBack,
     handleNext,
     handleUpdate,
+    referenceid,
   } = props;
 
   // ================= ASSIGNEE (DYNAMIC USERS) =================

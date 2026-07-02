@@ -412,6 +412,12 @@ export function EndorsedCard({
                       </span>{" "}
                       {formatDateTime(activity.ticket_endorsed)}
                     </p>
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">Endorsed By:</span>{" "}
+                      {activity.referenceid
+                        ? (userMap[activity.referenceid] || activity.referenceid)
+                        : "-"}
+                    </p>
                   </div>
                 </div>
 
