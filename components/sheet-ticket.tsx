@@ -916,12 +916,14 @@ export function TicketSheet(props: TicketSheetProps) {
     const received = new Date(ticketReceived);
     const endorsed = new Date(ticketEndorsed);
 
-    if (!isNaN(received.getTime()) && !isNaN(endorsed.getTime())) {
-      if (endorsed < received) {
-        setTimeError("Ticket Endorsed cannot be earlier than Ticket Received.");
-      } else {
-        setTimeError(null);
-      }
+    if (isNaN(received.getTime()) || isNaN(endorsed.getTime())) {
+      setTimeError(null);
+      return;
+    }
+    if (endorsed < received) {
+      setTimeError("Ticket Endorsed cannot be earlier than Ticket Received.");
+    } else {
+      setTimeError(null);
     }
   }, [ticketReceived, ticketEndorsed]);
 
@@ -934,14 +936,14 @@ export function TicketSheet(props: TicketSheetProps) {
     const received = new Date(inquiryReceived);
     const responded = new Date(responseToInquiry);
 
-    if (!isNaN(received.getTime()) && !isNaN(responded.getTime())) {
-      if (responded < received) {
-        setInquiryTimeError(
-          "Response to Inquiry cannot be earlier than Inquiry Received.",
-        );
-      } else {
-        setInquiryTimeError(null);
-      }
+    if (isNaN(received.getTime()) || isNaN(responded.getTime())) {
+      setInquiryTimeError(null);
+      return;
+    }
+    if (responded < received) {
+      setInquiryTimeError("Response to Inquiry cannot be earlier than Inquiry Received.");
+    } else {
+      setInquiryTimeError(null);
     }
   }, [inquiryReceived, responseToInquiry]);
 
@@ -950,18 +952,16 @@ export function TicketSheet(props: TicketSheetProps) {
       setTsmTimeError(null);
       return;
     }
-
     const ack = new Date(tsmAcknowledgeDate);
     const handle = new Date(tsmHandlingTime);
-
-    if (!isNaN(ack.getTime()) && !isNaN(handle.getTime())) {
-      if (handle < ack) {
-        setTsmTimeError(
-          "TSM Handling Time cannot be earlier than TSM Acknowledgement Time.",
-        );
-      } else {
-        setTsmTimeError(null);
-      }
+    if (isNaN(ack.getTime()) || isNaN(handle.getTime())) {
+      setTsmTimeError(null);
+      return;
+    }
+    if (handle < ack) {
+      setTsmTimeError("TSM Handling Time cannot be earlier than TSM Acknowledgement Time.");
+    } else {
+      setTsmTimeError(null);
     }
   }, [tsmAcknowledgeDate, tsmHandlingTime]);
 
@@ -970,18 +970,16 @@ export function TicketSheet(props: TicketSheetProps) {
       setTsaTimeError(null);
       return;
     }
-
     const ack = new Date(tsaAcknowledgeDate);
     const handle = new Date(tsaHandlingTime);
-
-    if (!isNaN(ack.getTime()) && !isNaN(handle.getTime())) {
-      if (handle < ack) {
-        setTsaTimeError(
-          "TSA Handling Time cannot be earlier than TSA Acknowledgement Time.",
-        );
-      } else {
-        setTsaTimeError(null);
-      }
+    if (isNaN(ack.getTime()) || isNaN(handle.getTime())) {
+      setTsaTimeError(null);
+      return;
+    }
+    if (handle < ack) {
+      setTsaTimeError("TSA Handling Time cannot be earlier than TSA Acknowledgement Time.");
+    } else {
+      setTsaTimeError(null);
     }
   }, [tsaAcknowledgeDate, tsaHandlingTime]);
 
@@ -993,12 +991,14 @@ export function TicketSheet(props: TicketSheetProps) {
     }
     const ack = new Date(tsaAcknowledgeDate);
     const endorsed = new Date(ticketEndorsed);
-    if (!isNaN(ack.getTime()) && !isNaN(endorsed.getTime())) {
-      if (ack < endorsed) {
-        setTsaAckEndorseError("TSA Acknowledgement Date cannot be earlier than Ticket Endorsed.");
-      } else {
-        setTsaAckEndorseError(null);
-      }
+    if (isNaN(ack.getTime()) || isNaN(endorsed.getTime())) {
+      setTsaAckEndorseError(null);
+      return;
+    }
+    if (ack < endorsed) {
+      setTsaAckEndorseError("TSA Acknowledgement Date cannot be earlier than Ticket Endorsed.");
+    } else {
+      setTsaAckEndorseError(null);
     }
   }, [tsaAcknowledgeDate, ticketEndorsed]);
 
@@ -1010,12 +1010,14 @@ export function TicketSheet(props: TicketSheetProps) {
     }
     const handle = new Date(tsmHandlingTime);
     const received = new Date(ticketReceived);
-    if (!isNaN(handle.getTime()) && !isNaN(received.getTime())) {
-      if (handle < received) {
-        setTsmHandlingReceivedError("TSM Handling Time cannot be earlier than Ticket Received.");
-      } else {
-        setTsmHandlingReceivedError(null);
-      }
+    if (isNaN(handle.getTime()) || isNaN(received.getTime())) {
+      setTsmHandlingReceivedError(null);
+      return;
+    }
+    if (handle < received) {
+      setTsmHandlingReceivedError("TSM Handling Time cannot be earlier than Ticket Received.");
+    } else {
+      setTsmHandlingReceivedError(null);
     }
   }, [tsmHandlingTime, ticketReceived]);
 
@@ -1028,14 +1030,7 @@ export function TicketSheet(props: TicketSheetProps) {
       if (counterOffer === "-") setCounterOffer("");
       if (clientSpecs === "-") setClientSpecs("");
     }
-    // Clear status errors when close reason changes so stale errors don't linger
-    setErrors((prev) => ({ ...prev, status: undefined }));
   }, [closeReason]);
-
-  // Clear status errors when status changes
-  useEffect(() => {
-    setErrors((prev) => ({ ...prev, status: undefined }));
-  }, [status]);
 
   useEffect(() => {
     if (agent) {
