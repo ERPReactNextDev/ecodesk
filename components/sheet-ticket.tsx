@@ -593,7 +593,6 @@ export function TicketSheet(props: TicketSheetProps) {
     handleBack,
     handleNext,
     handleUpdate,
-    referenceid,
   } = props;
 
   // ================= ASSIGNEE (DYNAMIC USERS) =================

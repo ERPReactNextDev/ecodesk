@@ -1579,6 +1579,7 @@ export function UpdateTicketDialog({
                   setHrAcknowledgeDate={setHrAcknowledgeDate}
                   department_head={departmentHeadState}
                   setDepartmentHead={setDepartmentHeadState}
+                  referenceid={referenceid}
                 />
               )}
             </div>
